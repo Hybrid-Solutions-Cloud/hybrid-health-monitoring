@@ -2,6 +2,31 @@
 
 ## Current session
 
+- **SCOM lab preview published:** Published GitHub prerelease
+  `scom-lab-preview-v0.1.0` with separate Azure Local and Hyper-V ZIPs. Each ZIP contains the five
+  sealed version `0.1.0.0` MPs, a lab-only notice, import order, and per-file SHA-256 checksums. A
+  top-level checksum file covers both ZIPs. No signing key or secret-like file is present.
+- **Public downloads:** Added `docs/downloads/scom-lab-preview.md`, a home-page download action,
+  both product-page links, administration-guide links, and navigation entries. GitHub Pages run
+  `33202030487` completed successfully. The public page and all three release assets returned HTTP
+  200 after deployment.
+- **Publication validation:** Rebuilt all ten source XML artifacts with the preview public token;
+  every SHA-256 hash matched the XML used for transient sealing. Both five-project suites passed
+  Microsoft VSAE/SDK verification against OM2022, all ten sealed assemblies passed strong-name
+  verification, both product contract suites passed, Pester passed 15/15, PSScriptAnalyzer passed
+  for eight scripts, VitePress built, gitleaks found no leaks, package/checksum checks passed, and
+  `git diff --check` passed.
+- **Release status boundary:** This is deliberately a GitHub prerelease for isolated or approved
+  pre-production labs. Public key token `14a10c8275285f00` is transient. The artifacts are not
+  governed-release-signed, representative-lab-certified, or production-supported; customer
+  overrides created against the preview identity may need rebuilding for the permanent release.
+- **Missing-pipeline root cause:** Generated `out/` directories are intentionally ignored. The
+  planning ADR proposed `mp-build.yml` and release asset publication, but that workflow was never
+  implemented. Release Please was archived during the July Azure DevOps/VitePress migration, and
+  the active GitHub/Azure DevOps workflows validate source/deploy docs without sealing or
+  publishing MPs. The August test sealing therefore stopped in `D:/tmp/` until this prerelease.
+- **Published commit/release:** Download documentation commit `ef9b36a`; prerelease and assets at
+  `https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/releases/tag/scom-lab-preview-v0.1.0`.
 - **2026-08-28 artifact audit:** Confirmed that the repository tracks complete source templates,
   manifests, build tools, validators, and override examples for independent Azure Local and
   Hyper-V SCOM products. Git tracks no sealed `.mp` or `.mpb` artifacts now, and
