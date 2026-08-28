@@ -2,14 +2,12 @@
 
 <!-- What is being worked on right now. Keep it short; update as work moves. -->
 
-_Publish and then certify the four product baselines: Azure Local SCOM, Azure Local Azure Monitor,
-Hyper-V SCOM, and constrained Hyper-V Azure Monitor, plus the optional SCOM-to-ServiceNow
-integration. Offline source, design, and contract validation are implemented. Both complete
-five-MP SCOM suites now pass Microsoft VSAE/SDK verification against the installed OM2022
-dependencies and ordered test sealing with a transient key. Both sealed suites are now published
-as the clearly labeled `scom-lab-preview-v0.1.0` GitHub prerelease for controlled lab evaluation,
-with public download documentation and checksums. Remaining SCOM gates are governed release
-signing and representative lab validation; Azure and ServiceNow lab validation also remain._
+_Implement and publish Hyper-V Private Cloud Monitoring v2 as the active priority. The root plan,
+external dependency ownership contracts, modular package/profile ADR, deterministic v2 build, core
+Library, and core Discovery MP are authored. Library and Discovery pass offline contracts,
+OM2022 VSAE/SDK verification, transient test sealing, and strong-name verification. Monitoring,
+Presentation, optional capability MPs, composable public overrides, representative SCOM labs,
+governed release signing, complete packaging, and public latest-download updates remain._
 
 <!--
   Optional advisory model hint the next tool should honour if available.

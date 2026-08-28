@@ -108,6 +108,17 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
     $content = Get-Content -LiteralPath $sourcePath -Raw
     $content = $content.Replace('{{VERSION}}', $Version)
     $content = $content.Replace('{{PUBLIC_KEY_TOKEN}}', $PublicKeyToken.ToLowerInvariant())
+    if ($artifact.kind -eq 'Discovery') {
+        $discoveryScriptPath = Join-Path (Split-Path -Parent $sourcePath) 'Discover-HyperVPrivateCloudTopology.ps1.template'
+        if (-not (Test-Path -LiteralPath $discoveryScriptPath -PathType Leaf)) {
+            throw "Discovery script source does not exist: $discoveryScriptPath"
+        }
+        $discoveryScript = Get-Content -LiteralPath $discoveryScriptPath -Raw
+        if ($discoveryScript.Contains(']]>')) {
+            throw "Discovery script contains the CDATA terminator: $discoveryScriptPath"
+        }
+        $content = $content.Replace('{{TOPOLOGY_DISCOVERY_SCRIPT}}', $discoveryScript.TrimEnd())
+    }
     if ($artifact.kind -eq 'Library' -or $artifact.id.EndsWith('.Library', [System.StringComparison]::Ordinal)) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')
         $content = $content.Replace(

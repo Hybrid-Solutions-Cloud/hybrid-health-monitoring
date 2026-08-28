@@ -2,12 +2,27 @@
 
 ## Current session
 
+- **V2 core Discovery authored:** Added the second required artifact with a VMMS registry seed and
+  staged topology workflow for stable standalone/cluster boundaries, hosts, VMs, VHDs, VM vNICs,
+  virtual switches, Replica relationships, the monitoring pipeline, and all seven DA branches.
+  The discovery source is injected from a separately testable script template. Missing Hyper-V,
+  Failover Clustering, and related commands use non-throwing capability probes; optional Cluster/
+  CSV, Network ATC, Pure, S2D, SDN, and VMM objects remain outside core.
+- **SCOM authoring defect caught and fixed:** Initial VSAE verification rejected dynamic
+  `$MPElement` expressions used by the component loop. Replaced them with literal, compile-time
+  resolvable class and relationship expressions. This is why Microsoft verification remains a
+  required gate beyond well-formed XML.
+- **Discovery verification:** V2 focused Pester passes 12/12. The Library and Discovery both pass
+  Microsoft VSAE/SDK verification against installed OM2022 dependencies, then transient test seal
+  with token `14a10c8275285f00`; both resulting assemblies pass `sn.exe -vf`. Scratch evidence is
+  under `D:/tmp/hcs-hyperv-v2-sdk-discovery-20260828/` and is not a release artifact.
+
 - **V2 executable source started:** Added `src/hyper-v/scom-mp/v2/` with a deterministic PowerShell
   7 build, explicit authored/planned manifest states, an incomplete-build receipt, and the first
   authored v2 sealed-source artifact: `HybridSolutionsCloud.HyperVPrivateCloud.Library`. The build
   refuses `-RequireComplete` while required artifacts remain planned so this milestone cannot be
   mistaken for the public release.
-- **Core model expanded:** The v2 Library has 17 classes, 21 relationships, and generated display
+- **Core model expanded:** The v2 Library has 17 classes, 23 relationships, and generated display
   strings for every property/relationship. It defines stable boundary/host/VM identities, VHDs,
   VM vNICs, virtual switches, Replica relationships, pipeline health, and seven DA branches:
   Management, Compute, Virtual Machines, Availability, Storage, Networking, and Monitoring.

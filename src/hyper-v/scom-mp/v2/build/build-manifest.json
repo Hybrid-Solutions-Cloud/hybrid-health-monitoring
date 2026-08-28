@@ -20,7 +20,7 @@
       "releaseForm": "sealed-mp",
       "kind": "Discovery",
       "required": true,
-      "implementationStatus": "Planned"
+      "implementationStatus": "Authored"
     },
     {
       "id": "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring",

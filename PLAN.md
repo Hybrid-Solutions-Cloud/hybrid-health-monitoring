@@ -573,10 +573,12 @@ versions, cost, and required fixture.
 4. Approve successor ADRs for topology, Microsoft/vendor dependencies, packaging, identity,
    storage modes, networking authority, DA, health/alert policy, and migration. **Core dependency,
    ownership, and packaging decisions complete; implementation-specific successors remain additive.**
-5. Author the Core Library and verified external-object relationships. **In progress: deterministic
-   v2 build and core Library source are authored; SDK verification and capability relationships
+5. Author the Core Library and verified external-object relationships. **Core Library source passes
+   OM2022 VSAE/SDK verification and transient test sealing; optional capability relationships
    remain.**
 6. Implement lightweight capability seeds and staged discovery with independent pipeline health.
+   **Core VMMS seed and staged topology are authored, SDK-verified, and test-sealed; capability
+   discoveries remain.**
 7. Implement Compute and VM monitoring.
 8. Implement Failover Cluster integration and CSV monitoring.
 9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs.
