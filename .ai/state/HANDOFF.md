@@ -2,6 +2,14 @@
 
 ## Current session
 
+- **Root implementation plan confirmed:** `PLAN.md` is the tracked, authoritative public plan for
+  the Hyper-V Private Cloud Monitoring v2 redesign. It includes the complete domain catalog,
+  modular package/dependency policy, Distributed Application and console design, override/profile
+  redesign, representative lab matrix, governed sealing, packaging, documentation, and public
+  download release gates. Its implementation sequence accurately records Core Library, Discovery,
+  and Monitoring as authored while Presentation, capability packs, overrides, labs, and release
+  publication remain open.
+
 - **V2 core Monitoring authored:** Added the third required artifact with 13 host monitors, nine
   agent-hosted per-VM runtime monitors, 14 DA dependency rollups, 12 performance rules, one
   diagnostic task, auto-resolving alerts, and operational knowledge for all 22 unit monitors.
