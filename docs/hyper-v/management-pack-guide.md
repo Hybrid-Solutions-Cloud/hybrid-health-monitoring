@@ -82,6 +82,18 @@ the vendor DSM according to the array vendor's supported host-integration guide.
 transport is Not Applicable when no disk uses it; a visible iSCSI/FC disk without the required
 query or MPIO capability is reported as a configuration or redundancy problem.
 
+The authored `Capability.S2D` adapter requires Microsoft's Storage Spaces Direct Management Pack
+package `1.0.47.4` and its bundled `Microsoft.Storage.Library`. Import and validate the complete
+Microsoft bundle before the HCS adapter; the adapter will not rediscover or replace Microsoft
+storage objects. The S2D package's Cluster and Windows Server prerequisites must also be present,
+and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
+volumes, and file shares.
+
+The HCS adapter references the lowest compatible Microsoft MP identity (`1.0.0.0`) while requiring
+the inspected `1.0.47.4` package as the supported minimum. It contributes DA membership, health
+rollup, query-pipeline coverage, and views only. Microsoft S2D faults, ongoing jobs, leaf monitors,
+alerts, and performance rules remain authoritative.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

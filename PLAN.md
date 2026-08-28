@@ -590,8 +590,12 @@ versions, cost, and required fixture.
 9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs. **Storage Core is authored with
    five Windows SAN projection classes, 13 topology relationships, five health monitors, three DA
    rollups, and six console views. It passes 36 focused offline tests, OM2022 VSAE verification,
-   transient sealing, and strong-name verification. S2D, Pure, and SMB/SOFS adapters plus
-   representative storage fault/lifecycle labs remain.**
+   transient sealing, and strong-name verification. The S2D adapter is also authored without
+   duplicate resource classes: seven Microsoft object families receive DA relationships/rollups,
+   one HCS pipeline monitor, and 11 views. It passes 42 focused tests, VSAE verification against a
+   transiently remapped copy of the inspected `1.0.47.4` bundle, transient sealing, and strong-name
+   verification. Pure and SMB/SOFS adapters plus representative storage fault/lifecycle labs
+   remain.**
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,

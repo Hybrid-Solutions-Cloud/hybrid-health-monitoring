@@ -265,6 +265,61 @@ function Get-HcsStorageCapabilityContent {
     }
 }
 
+function Get-HcsS2DCapabilityContent {
+    [CmdletBinding()]
+    param()
+
+    $definitions = @(
+        [pscustomobject]@{ Kind = 'StorageSubSystem'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.StorageArray'; Name = 'S2D storage subsystems' },
+        [pscustomobject]@{ Kind = 'StorageNode'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.Windows.Node'; Name = 'S2D storage nodes' },
+        [pscustomobject]@{ Kind = 'PhysicalDisk'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.Windows.Disk'; Name = 'S2D physical disks' },
+        [pscustomobject]@{ Kind = 'StoragePool'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.Windows.Pool'; Name = 'S2D storage pools' },
+        [pscustomobject]@{ Kind = 'VirtualDisk'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.Windows.Disk'; Name = 'S2D virtual disks' },
+        [pscustomobject]@{ Kind = 'Volume'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.Windows.Volume'; Name = 'S2D volumes' },
+        [pscustomobject]@{ Kind = 'FileShare'; KeyType = 'StorageLibrary!Microsoft.Storage.Library.Windows.FileShare'; Name = 'S2D file shares' }
+    )
+    $discoveries = [System.Text.StringBuilder]::new()
+    $rollups = [System.Text.StringBuilder]::new()
+    $views = [System.Text.StringBuilder]::new()
+    $folderItems = [System.Text.StringBuilder]::new()
+    $displays = [System.Text.StringBuilder]::new()
+    foreach ($definition in $definitions) {
+        $classId = "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.$($definition.Kind)"
+        $discoveryId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($definition.Kind).Relationship.Discovery"
+        $relationshipId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContains$($definition.Kind)"
+        $computerName = if ($definition.Kind -eq 'Volume') { '$Target/Host/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$' } elseif ($definition.Kind -eq 'FileShare') { '$Target/Host/Host/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$' } else { '$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$' }
+        $parentDisk = if ($definition.Kind -eq 'Volume') { '$Target/Host/Property[Type="StorageLibrary!Microsoft.Storage.Library.Windows.Disk"]/UniqueID$' } elseif ($definition.Kind -eq 'FileShare') { '$Target/Host/Host/Property[Type="StorageLibrary!Microsoft.Storage.Library.Windows.Disk"]/UniqueID$' } else { '' }
+        $parentVolume = if ($definition.Kind -eq 'FileShare') { '$Target/Host/Property[Type="StorageLibrary!Microsoft.Storage.Library.Windows.Volume"]/UniqueID$' } else { '' }
+        [void]$discoveries.AppendLine("<Discovery ID=`"$discoveryId`" Enabled=`"true`" Target=`"S2D!$classId`" ConfirmDelivery=`"false`" Remotable=`"true`" Priority=`"Normal`"><Category>Discovery</Category><DiscoveryTypes><DiscoveryRelationship TypeID=`"$relationshipId`" /></DiscoveryTypes><DataSource ID=`"PowerShellDiscovery`" TypeID=`"Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider`"><IntervalSeconds>1800</IntervalSeconds><SyncTime /><ScriptName>HyperVPrivateCloud.S2D.RelationshipDiscovery.ps1</ScriptName><ScriptBody><![CDATA[{{S2D_RELATIONSHIP_DISCOVERY_SCRIPT}}]]></ScriptBody><Parameters><Parameter><Name>SourceId</Name><Value>`$MPElement`$</Value></Parameter><Parameter><Name>ManagedEntityId</Name><Value>`$Target/Id`$</Value></Parameter><Parameter><Name>ObjectKind</Name><Value>$($definition.Kind)</Value></Parameter><Parameter><Name>ComputerName</Name><Value>$computerName</Value></Parameter><Parameter><Name>UniqueId</Name><Value>`$Target/Property[Type=`"$($definition.KeyType)`"]`/UniqueID`$</Value></Parameter><Parameter><Name>ParentDiskUniqueId</Name><Value>$parentDisk</Value></Parameter><Parameter><Name>ParentVolumeUniqueId</Name><Value>$parentVolume</Value></Parameter></Parameters><TimeoutSeconds>120</TimeoutSeconds></DataSource></Discovery>")
+        $rollupId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($definition.Kind).Dependency.Monitor"
+        [void]$rollups.AppendLine("<DependencyMonitor ID=`"$rollupId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$relationshipId`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
+        $viewId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($definition.Kind).State.View"
+        [void]$views.AppendLine("<View ID=`"$viewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"S2D!$classId`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$rollupId`"><Name>Roll up $($definition.Name) health</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($definition.Name)</Name></DisplayString>")
+    }
+
+    $extraViews = @(
+        @('Performance', 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem', 'SC!Microsoft.SystemCenter.PerformanceViewType', 'S2D performance'),
+        @('ActiveAlerts', 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageObject.Group', 'SC!Microsoft.SystemCenter.AlertViewType', 'S2D active alerts'),
+        @('Faults', 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageObject.Group', 'SC!Microsoft.SystemCenter.AlertViewType', 'S2D faults'),
+        @('OngoingJobs', 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageObject.Group', 'SC!Microsoft.SystemCenter.AlertViewType', 'S2D ongoing jobs')
+    )
+    foreach ($view in $extraViews) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($view[0]).View"
+        $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
+        [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($view[1])`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
+    }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor"><Name>S2D integration pipeline health</Name><Description>Verifies the HCS query path without duplicating Microsoft S2D leaf monitoring.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor.Message"><Name>S2D integration pipeline health</Name><Description>{0}</Description></DisplayString>')
+
+    return [pscustomobject]@{ Discoveries = $discoveries.ToString(); Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
+}
+
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -370,6 +425,26 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{STORAGE_STRING_RESOURCES}}', $storageContent.StringResources)
         $content = $content.Replace('{{STORAGE_DISPLAY_STRINGS}}', $storageContent.DisplayStrings)
         $content = $content.Replace('{{STORAGE_KNOWLEDGE}}', $storageContent.Knowledge)
+    }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            S2D_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudS2DRelationships.ps1.template'
+            S2D_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudS2DIntegrationHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "S2D capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "S2D capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+        $s2dContent = Get-HcsS2DCapabilityContent
+        $content = $content.Replace('{{S2D_DISCOVERIES}}', $s2dContent.Discoveries)
+        $content = $content.Replace('{{S2D_ROLLUPS}}', $s2dContent.Rollups)
+        $content = $content.Replace('{{S2D_VIEWS}}', $s2dContent.Views)
+        $content = $content.Replace('{{S2D_FOLDER_ITEMS}}', $s2dContent.FolderItems)
+        $content = $content.Replace('{{S2D_DISPLAY_STRINGS}}', $s2dContent.DisplayStrings)
     }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')

@@ -57,6 +57,15 @@
       "kind": "Capability",
       "required": false,
       "implementationStatus": "Authored"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D",
+      "source": "fragments/capabilities/s2d/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
     }
   ]
 }

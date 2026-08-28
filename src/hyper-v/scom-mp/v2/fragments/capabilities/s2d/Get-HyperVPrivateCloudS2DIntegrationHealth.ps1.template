@@ -1,0 +1,51 @@
+#Requires -Version 7.0
+param([string]$ComputerName)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = "Microsoft S2D integration queries completed on '$ComputerName'."
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-StorageSubSystem')) {
+        $state = 'Critical'
+        $detail = 'The Windows Storage PowerShell module is unavailable on an object discovered by the Microsoft S2D Management Pack.'
+    }
+    else {
+        $subsystems = @(Get-StorageSubSystem -ErrorAction Stop | Where-Object { [string]$_.Model -like 'Cluster*' })
+        if ($subsystems.Count -eq 0) {
+            $state = 'Critical'
+            $detail = "The Microsoft S2D object exists, but no clustered Storage subsystem is visible on '$ComputerName'."
+        }
+        else {
+            $unhealthy = @($subsystems | Where-Object { [string]$_.HealthStatus -notin @('Healthy', 'Unknown') })
+            if ($unhealthy.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "$($unhealthy.Count) clustered Storage subsystem(s) report non-healthy state. Microsoft S2D leaf workflows remain the alert authority."
+            }
+            else {
+                $detail = "$($subsystems.Count) clustered Storage subsystem(s) are queryable on '$ComputerName'."
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Microsoft S2D integration query failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.S2D.IntegrationHealth.ps1', 8503, 1, $detail)
+}
+
+$bag.AddValue('S2DIntegrationState', $state)
+$bag.AddValue('S2DIntegrationStateDetail', $detail)
+$bag

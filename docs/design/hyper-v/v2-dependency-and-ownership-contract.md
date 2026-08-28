@@ -99,6 +99,21 @@ policy, iSCSI targets, zoning, or array state. Pure owns FlashArray objects and 
 owns S2D objects and alerts. Their optional adapters relate those authoritative objects to SAN Core
 and the private-cloud DA; SAN and S2D discovery are independent and may be enabled together.
 
+## S2D adapter contract
+
+`Capability.S2D` defines no storage resource class. It relates the seven public Microsoft S2D
+families—storage subsystem, node, physical disk, pool, virtual disk, volume, and file share—to the
+private-cloud Storage component using their inherited `UniqueID` keys and complete hosting chains.
+Seven dependency monitors roll `System.Health.AvailabilityState`; unavailable members are Success
+so an absent optional family does not make a SAN-only or partially populated deployment unhealthy.
+
+One HCS monitor checks only the local Storage query path on a Microsoft-discovered subsystem. The
+Microsoft pack remains responsible for Health Service faults/actions, ongoing jobs, physical-disk
+telemetry, subsystem/node/pool/volume/file-share health, alerts, and performance collection. HCS
+views expose those authoritative objects and signals under the private-cloud Storage console root.
+The adapter's sealed references use the lowest compatible `1.0.0.0` identity while the supported
+installation floor remains the inspected Microsoft package `1.0.47.4`.
+
 ## v2 service graph
 
 ```mermaid

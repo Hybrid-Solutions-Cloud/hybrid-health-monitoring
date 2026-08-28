@@ -18,6 +18,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:Presentation = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation.xml') -Raw
         [xml]$script:ClusterCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.xml') -Raw
         [xml]$script:StorageCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.xml') -Raw
+        [xml]$script:S2DCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.xml') -Raw
     }
 
     AfterAll {
@@ -68,9 +69,10 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 6
+        @($script:Receipt.artifacts).Count | Should -Be 7
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -370,6 +372,66 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             $script:StorageCapability.SelectSingleNode("//StringResource[@ID='$($monitor.AlertSettings.AlertMessage)']") | Should -Not -BeNullOrEmpty
             $script:StorageCapability.SelectSingleNode("//DisplayString[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
             $script:StorageCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'pins the S2D adapter to the inspected Microsoft 1.0.47.4 package contract' {
+        $references = @{}
+        foreach ($reference in $script:S2DCapability.SelectNodes('/ManagementPack/Manifest/References/Reference')) { $references[[string]$reference.Alias] = $reference }
+        $references.StorageLibrary.ID | Should -Be 'Microsoft.Storage.Library'
+        $references.S2D.ID | Should -Be 'Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect'
+        $references.S2D.Version | Should -Be '1.0.0.0'
+        $references.HCSV2Presentation.ID | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation'
+    }
+
+    It 'reuses all seven authoritative Microsoft S2D resource families without defining duplicates' {
+        @($script:S2DCapability.SelectNodes('//ClassType')).Count | Should -Be 0
+        $relationships = @($script:S2DCapability.SelectNodes('//RelationshipType'))
+        $relationships.Count | Should -Be 7
+        foreach ($leaf in @('StorageSubSystem', 'StorageNode', 'PhysicalDisk', 'StoragePool', 'VirtualDisk', 'Volume', 'FileShare')) {
+            @($relationships.Target.Type) | Should -Contain "S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.$leaf"
+        }
+    }
+
+    It 'discovers each S2D family into the private-cloud Storage branch with host-chain keys' {
+        @($script:S2DCapability.SelectNodes('//Discovery')).Count | Should -Be 7
+        @($script:S2DCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 7
+        foreach ($discovery in $script:S2DCapability.SelectNodes('//Discovery')) {
+            [string]$discovery.Target | Should -BeLike 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.*'
+            $discovery.SelectSingleNode('.//Parameter[Name="ComputerName"]/Value').InnerText | Should -Match 'Microsoft.Windows.Computer'
+            $discovery.SelectSingleNode('.//Parameter[Name="UniqueId"]/Value').InnerText | Should -Match 'UniqueID'
+        }
+        $script:S2DCapability.SelectSingleNode("//Discovery[contains(@ID,'Volume.Relationship')]//Parameter[Name='ParentDiskUniqueId']/Value").InnerText | Should -Match 'Windows.Disk'
+        $script:S2DCapability.SelectSingleNode("//Discovery[contains(@ID,'FileShare.Relationship')]//Parameter[Name='ParentVolumeUniqueId']/Value").InnerText | Should -Match 'Windows.Volume'
+    }
+
+    It 'adds only HCS integration coverage and authoritative Microsoft S2D health rollups' {
+        @($script:S2DCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:S2DCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 7
+        @($script:S2DCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        foreach ($rollup in $script:S2DCapability.SelectNodes('//DependencyMonitor')) {
+            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberUnAvailable | Should -Be 'Success'
+            $rollup.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'provides S2D component, fault, job, alert, and performance views beneath Storage' {
+        @($script:S2DCapability.SelectNodes('//View')).Count | Should -Be 11
+        foreach ($leaf in @('StorageSubSystem', 'StorageNode', 'PhysicalDisk', 'StoragePool', 'VirtualDisk', 'Volume', 'FileShare')) {
+            $script:S2DCapability.SelectSingleNode("//View[@Target='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.$leaf']") | Should -Not -BeNullOrEmpty
+        }
+        foreach ($item in $script:S2DCapability.SelectNodes('//FolderItem')) { [string]$item.Folder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder' }
+    }
+
+    It 'uses literal SCOM element expressions, non-throwing probes, and valid S2D PowerShell' {
+        foreach ($scriptBody in $script:S2DCapability.SelectNodes('//ScriptBody')) {
+            $scriptBody.InnerText | Should -Not -Match "MPElement\[Name='S2D!\$"
+            $scriptBody.InnerText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
         }
     }
 

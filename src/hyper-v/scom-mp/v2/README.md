@@ -26,7 +26,7 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first two optional capabilities are also authored:
+The first three optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
@@ -36,6 +36,11 @@ The first two optional capabilities are also authored:
   state, iSCSI sessions, Fibre Channel ports, and VHDX-to-LUN mappings. It adds five health
   monitors, three Storage-branch rollups, and six console views. Stable hashed HCS keys preserve
   identity while the raw Windows serial and unique IDs remain available for vendor correlation.
+- `Capability.S2D` reuses the seven public object families in Microsoft's S2D package `1.0.47.4`:
+  subsystem, node, physical disk, pool, virtual disk, volume, and file share. It adds seven
+  private-cloud Storage relationships and rollups, one HCS integration-pipeline monitor, and 11
+  console views for state, performance, faults, jobs, and alerts. Microsoft remains the leaf-alert
+  and performance-collection authority.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage

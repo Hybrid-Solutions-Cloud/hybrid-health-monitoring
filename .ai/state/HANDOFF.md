@@ -2,6 +2,21 @@
 
 ## Current session
 
+- **V2 Microsoft S2D adapter authored:** Added `Capability.S2D` with no competing storage classes.
+  Seven relationships and seven dependency rollups connect Microsoft's `1.0.47.4` subsystem, node,
+  physical disk, pool, virtual disk, volume, and file-share objects to the HCS Storage branch. One
+  HCS monitor checks only adapter query coverage; 11 views expose authoritative Microsoft state,
+  performance, faults, ongoing jobs, and alerts. Focused v2 Pester passes 42/42 and combined
+  preview/v2 Pester passes 57/57; ScriptAnalyzer and the VitePress production build pass. VSAE
+  found and drove correction of duplicate localization and Volume/FileShare hosting-depth
+  expressions. The
+  final source passes VSAE against transiently re-signed dependency copies derived from the exact
+  inspected Microsoft bundle; the committed references retain Microsoft's genuine token. The pack
+  transiently seals and passes `sn.exe -vf`. Scratch evidence is
+  `D:/tmp/hcs-hyperv-v2-s2d-verify-6fad554e032e4991a403849525bf687c` and
+  `D:/tmp/hcs-hyperv-v2-s2d-seal-4cf66cf13fba4f2dbe690c20b6e046d6`. Exact `.mpb` import and
+  relationship/fault/job/performance labs remain release gates. Pure Storage integration is next.
+
 - **V2 Storage Core capability authored:** Added `Capability.Storage` with five HCS-owned Windows
   SAN projections (logical unit, per-host attachment, iSCSI session, FC port, and VHDX mapping), 13
   topology relationships, five health monitors, three Storage-branch rollups, and six console
