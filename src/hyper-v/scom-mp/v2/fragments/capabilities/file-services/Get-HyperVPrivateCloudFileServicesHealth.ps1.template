@@ -1,0 +1,65 @@
+#Requires -Version 7.0
+param([string]$RequireRdma)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    try {
+        if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+        Import-Module $ModuleName -ErrorAction SilentlyContinue
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsRequiredShare {
+    $result = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
+        foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | Where-Object Path -Like '\\*')) {
+            $match = [regex]::Match([string]$drive.Path, '^\\\\(?<server>[^\\]+)\\(?<share>[^\\]+)', 'IgnoreCase')
+            if ($match.Success) { [void]$result.Add("$($match.Groups['server'].Value)|$($match.Groups['share'].Value)") }
+        }
+    }
+    return $result
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = 'Hyper-V over SMB client connectivity is operational.'
+$requireRdmaEnabled = [System.Convert]::ToBoolean($RequireRdma)
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { throw 'The Hyper-V PowerShell module is unavailable. Install Hyper-V-PowerShell.' }
+    $required = Get-HcsRequiredShare
+    if ($required.Count -eq 0) { $state = 'NotApplicable'; $detail = 'No Hyper-V virtual hard disk uses a UNC path on this host.' }
+    elseif (-not (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection')) { throw 'The SMB client PowerShell capability is unavailable. Install the Windows file-services management tools.' }
+    else {
+        $connections = @(Get-SmbConnection -ErrorAction Stop)
+        $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction Stop) } else { @() }
+        $problems = [System.Collections.Generic.List[string]]::new()
+        foreach ($key in $required) {
+            $parts = $key.Split('|', 2)
+            $connection = $connections | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and ([string]$_.ShareName).Equals($parts[1], [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+            if ($null -eq $connection) { $problems.Add("No active SMB connection for \\$($parts[0])\$($parts[1])."); continue }
+            if ($connection.PSObject.Properties['ContinuouslyAvailable'] -and -not [bool]$connection.ContinuouslyAvailable) { $problems.Add("\\$($parts[0])\$($parts[1]) is not continuously available.") }
+            if ($requireRdmaEnabled) {
+                $rdma = @($channels | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and $_.Selected -and $_.ClientRdmaCapable -and $_.ServerRdmaCapable })
+                if ($rdma.Count -eq 0) { $problems.Add("\\$($parts[0])\$($parts[1]) has no selected RDMA-capable SMB path.") }
+            }
+        }
+        if ($problems.Count -gt 0) { $state = 'Critical'; $detail = $problems -join ' ' }
+        else { $detail = "$($required.Count) required SMB share connection(s) are active; $($channels.Count) Multichannel path(s) are visible." }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Hyper-V over SMB query failed: $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $detail)
+}
+
+$bag.AddValue('FileServicesState', $state)
+$bag.AddValue('FileServicesStateDetail', $detail)
+$bag

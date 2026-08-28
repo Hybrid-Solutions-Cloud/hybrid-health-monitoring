@@ -113,6 +113,19 @@ Pure has not published support evidence for SCOM 2025 for this vendor MP release
 the Pure adapter is not supported on SCOM 2025 unless a later Pure package is separately inspected,
 tested, and added to the release support matrix.
 
+The authored `Capability.FileServices` adapter requires Microsoft's Windows Server File & iSCSI
+Services package `10.1.0.4`. Import the complete Microsoft bundle and confirm that its File Server
+and SMB service objects are healthy before importing the HCS adapter. Hyper-V compute hosts require
+the Hyper-V and `SmbShare` PowerShell modules. Clustered SOFS deployments also require the Microsoft
+Cluster/CSV packages and the optional HCS Cluster capability; nonclustered SMB deployments do not.
+
+The adapter creates stable projections only for SMB shares that actually back an attached VM disk,
+their selected Multichannel/RDMA paths, and share-to-VHDX/VM mappings. It requires an active SMB
+connection and continuous availability. RDMA enforcement defaults off because not every supported
+SMB design requires SMB Direct; set `RequireRdma` only for a validated RDMA/DCB design. Microsoft
+remains authoritative for File Server, SMB service, witness, resume-key, firewall, and clustered
+continuous-availability alerts.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

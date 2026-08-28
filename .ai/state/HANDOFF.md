@@ -2,6 +2,24 @@
 
 ## Current session
 
+- **V2 SMB/SOFS File Services adapter authored:** Added `Capability.FileServices` against the
+  inspected Microsoft File & iSCSI Services `10.1.0.4` contract. It defines three HCS-only classes
+  (SMB share, Multichannel/RDMA client path, and VHDX mapping), seven relationships, one Hyper-V
+  host dependency monitor, three rollups, and seven views. UNC/server/share, channel endpoint, and
+  VM/disk identities are stable hashes; the adapter references Microsoft's SMB service and leaves
+  Microsoft as File Server/SMB leaf-alert authority. Cluster remains an independently composable
+  capability rather than a hard dependency for nonclustered SMB. Focused v2 Pester passes 55/55;
+  combined preview/v2 Pester passes 70/70; ScriptAnalyzer and the VitePress production build pass.
+  OM2022 VSAE passes with only expected pre-seal type warnings; transient sealing and `sn.exe -vf`
+  pass. Final scratch evidence is `D:/tmp/hcs-hyperv-v2-fileservices-final-9d59ea95d5e041bca8a3dca5c99752bf`
+  and `D:/tmp/hcs-hyperv-v2-fileservices-final-seal-8d3e9461c4494bcabc3c9cf4c988fbe9`.
+  Representative standalone SMB/SOFS runtime, failover, path-loss, and recovery labs remain.
+
+- **S2D builder defect fixed:** The generated S2D discovery fragments previously inserted
+  `{{S2D_RELATIONSHIP_DISCOVERY_SCRIPT}}` after the replacement pass. The builder now generates
+  fragments before replacing scripts, expands unresolved-token detection to include digits, and
+  the v2 suite checks every artifact for any remaining build token.
+
 - **PowerShell execution host is now an explicit release blocker:** Microsoft currently documents
   Windows PowerShell 3.0 as the SCOM agent prerequisite for MPs that use PowerShell scripts, while
   the HCS standard mandates `#Requires -Version 7.0`. The authored XML uses Microsoft Windows

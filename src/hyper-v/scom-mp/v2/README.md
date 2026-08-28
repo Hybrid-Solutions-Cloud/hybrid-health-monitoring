@@ -26,7 +26,7 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first four optional capabilities are also authored:
+The first five optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
@@ -47,6 +47,12 @@ The first four optional capabilities are also authored:
   integration-pipeline monitor, and 11 console views. Correlation is read-only and exact:
   IQN/WWPN joins Pure hosts to Windows SAN initiators, and serial numbers join Pure volumes to HCS
   logical units. Ambiguous or missing identities are left uncorrelated rather than guessed.
+- `Capability.FileServices` requires Microsoft's File & iSCSI Services `10.1.0.4` package. It
+  discovers only Hyper-V virtual disks on UNC paths and adds stable SMB share, Multichannel/RDMA
+  path, and VHDX mapping projections. Seven relationships connect shares to Storage, hosts, VMs,
+  disks, and the authoritative Microsoft SMB service; one host monitor validates required
+  connections and continuous availability, with RDMA opt-in by override. Seven views expose the
+  combined HCS/Microsoft topology without duplicating Microsoft file-server alerts.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
@@ -64,6 +70,11 @@ the Windows iSCSI module; Fibre Channel monitoring requires an HBA driver that e
 The Pure Storage capability is supported only on the vendor MP's documented SCOM 2016, 2019, and
 2022 lane. Pure's MP must discover the FlashArray before this adapter can add relationships. The
 adapter does not use the vendor Run As profile, call the FlashArray REST API, or modify the array.
+
+The File Services capability requires the complete Microsoft Windows Server File & iSCSI Services
+`10.1.0.4` bundle and the Windows `SmbShare` and Hyper-V PowerShell modules on compute hosts. The
+Cluster capability remains independently optional: install it for SOFS cluster/role service impact,
+but a nonclustered Hyper-V-over-SMB deployment does not acquire a hard Cluster MP dependency.
 
 Build the currently authored artifacts with PowerShell 7:
 

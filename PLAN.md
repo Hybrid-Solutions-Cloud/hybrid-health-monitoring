@@ -599,7 +599,11 @@ versions, cost, and required fixture.
    adds exact IQN/WWPN and volume-serial correlations, four relationships and rollups, one
    integration monitor, and 11 views; 48 focused tests, OM2022 VSAE verification, transient
    sealing, and strong-name verification pass. Representative FlashArray validation, combined
-   SAN/Pure/S2D lifecycle and fault labs, and the SMB/SOFS adapter remain.**
+   SAN/Pure/S2D lifecycle and fault labs remain. The SMB/SOFS adapter is authored with three stable
+   Hyper-V-specific projections (share, Multichannel/RDMA path, and VHDX mapping), seven topology
+   relationships, Microsoft SMB leaf-health reuse, one client dependency monitor, and seven views.
+   It passes focused offline and OM2022 VSAE verification plus transient sealing; representative
+   standalone SMB and clustered SOFS lifecycle/fault labs remain.**
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,

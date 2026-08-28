@@ -173,6 +173,15 @@ model includes File Server, File Server service, SMB service, clustered SMB serv
 Target service classes. HCS may add missing concrete SOFS share, Multichannel/RDMA path,
 share-to-VHDX/VM correlation, coverage, and service-impact concepts.
 
+The authored `Capability.FileServices` implements this boundary with three HCS-only projections:
+an SMB share used by Hyper-V, a client Multichannel/RDMA path, and a share-to-VHDX mapping. Stable
+SHA-256 identities are derived from normalized UNC, host/interface endpoints, and VM/disk keys.
+Seven relationships attach these projections to the private-cloud Storage branch, Hyper-V hosts,
+VMs/disks, and the exact Microsoft SMB service host identity. One HCS monitor validates only the
+client-side dependency that Microsoft does not own: required connection presence, continuous
+availability, and optionally RDMA. The pack defines no File Server or SMB service class and emits
+no duplicate Microsoft leaf alert.
+
 The built-in network libraries expose `System.NetworkManagement.Node`/`Switch`, hosted
 `NetworkAdapter`/`Interface`/`Port`, `VLAN`, and `NetworkConnection`. Nodes use `DeviceKey`; hosted
 adapters use `Key`. Public topology includes node-to-adapter, VLAN-to-adapter, adapter-peer, and

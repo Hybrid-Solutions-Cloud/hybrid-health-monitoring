@@ -365,6 +365,47 @@ function Get-HcsPureStorageCapabilityContent {
     return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
+function Get-HcsFileServicesCapabilityContent {
+    [CmdletBinding()]
+    param()
+
+    $rollupDefinitions = @(
+        @('StorageShare', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.StorageContainsSmbShare', 'SMB share health into Storage'),
+        @('HostShare', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.HostRoleUsesSmbShare', 'SMB share health into Hyper-V hosts'),
+        @('MicrosoftSmb', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShare', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService', 'Microsoft SMB service health into shares')
+    )
+    $rollups = [System.Text.StringBuilder]::new()
+    $views = [System.Text.StringBuilder]::new()
+    $folderItems = [System.Text.StringBuilder]::new()
+    $displays = [System.Text.StringBuilder]::new()
+    foreach ($definition in $rollupDefinitions) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.$($definition[0]).Dependency.Monitor"
+        [void]$rollups.AppendLine("<DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$($definition[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name></DisplayString>")
+    }
+    $viewDefinitions = @(
+        @('Share', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.StateViewType', 'Hyper-V SMB shares'),
+        @('ClientPath', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbClientPath', 'SC!Microsoft.SystemCenter.StateViewType', 'SMB Multichannel and RDMA paths'),
+        @('VhdxMapping', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping', 'SC!Microsoft.SystemCenter.StateViewType', 'SMB VHDX mappings'),
+        @('FileServer', 'FileServices!Microsoft.Windows.FileServer', 'SC!Microsoft.SystemCenter.StateViewType', 'Microsoft file servers'),
+        @('SmbService', 'FileSMB!Microsoft.Windows.FileServices.Service.SMB.10.0', 'SC!Microsoft.SystemCenter.StateViewType', 'Microsoft SMB services'),
+        @('ActiveAlerts', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.AlertViewType', 'SMB and SOFS active alerts'),
+        @('Performance', 'FileSMB!Microsoft.Windows.FileServices.Service.SMB.10.0', 'SC!Microsoft.SystemCenter.PerformanceViewType', 'SMB service performance')
+    )
+    foreach ($view in $viewDefinitions) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.$($view[0]).View"
+        $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
+        $target = if ($view[1] -like '*!*') { $view[1] } elseif ($view[1] -like 'Microsoft.*') { "FileServices!$($view[1])" } else { $view[1] }
+        [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$target`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
+    }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor"><Name>Hyper-V over SMB health</Name><Description>Validates required SMB connections, continuous availability, and optional RDMA paths.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor.Message"><Name>Hyper-V over SMB health</Name><Description>{0}</Description></DisplayString>')
+    return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
+}
+
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -473,6 +514,12 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
     }
     if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
+        $s2dContent = Get-HcsS2DCapabilityContent
+        $content = $content.Replace('{{S2D_DISCOVERIES}}', $s2dContent.Discoveries)
+        $content = $content.Replace('{{S2D_ROLLUPS}}', $s2dContent.Rollups)
+        $content = $content.Replace('{{S2D_VIEWS}}', $s2dContent.Views)
+        $content = $content.Replace('{{S2D_FOLDER_ITEMS}}', $s2dContent.FolderItems)
+        $content = $content.Replace('{{S2D_DISPLAY_STRINGS}}', $s2dContent.DisplayStrings)
         $scriptTokens = [ordered]@{
             S2D_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudS2DRelationships.ps1.template'
             S2D_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudS2DIntegrationHealth.ps1.template'
@@ -484,12 +531,6 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             if ($capabilityScript.Contains(']]>')) { throw "S2D capability script contains the CDATA terminator: $capabilityScriptPath" }
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
-        $s2dContent = Get-HcsS2DCapabilityContent
-        $content = $content.Replace('{{S2D_DISCOVERIES}}', $s2dContent.Discoveries)
-        $content = $content.Replace('{{S2D_ROLLUPS}}', $s2dContent.Rollups)
-        $content = $content.Replace('{{S2D_VIEWS}}', $s2dContent.Views)
-        $content = $content.Replace('{{S2D_FOLDER_ITEMS}}', $s2dContent.FolderItems)
-        $content = $content.Replace('{{S2D_DISPLAY_STRINGS}}', $s2dContent.DisplayStrings)
     }
     if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
@@ -510,6 +551,25 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{PURE_FOLDER_ITEMS}}', $pureContent.FolderItems)
         $content = $content.Replace('{{PURE_DISPLAY_STRINGS}}', $pureContent.DisplayStrings)
     }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            FILE_SERVICES_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudFileServices.ps1.template'
+            FILE_SERVICES_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudFileServicesHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "File Services capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "File Services capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+        $fileServicesContent = Get-HcsFileServicesCapabilityContent
+        $content = $content.Replace('{{FILE_SERVICES_ROLLUPS}}', $fileServicesContent.Rollups)
+        $content = $content.Replace('{{FILE_SERVICES_VIEWS}}', $fileServicesContent.Views)
+        $content = $content.Replace('{{FILE_SERVICES_FOLDER_ITEMS}}', $fileServicesContent.FolderItems)
+        $content = $content.Replace('{{FILE_SERVICES_DISPLAY_STRINGS}}', $fileServicesContent.DisplayStrings)
+    }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')
         $content = $content.Replace(
@@ -517,7 +577,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             (Get-HcsElementDisplayStringContent -ManagementPack $librarySource)
         )
     }
-    if ($content -match '\{\{[A-Z_]+\}\}') {
+    if ($content -match '\{\{[A-Z0-9_]+\}\}') {
         throw "Unresolved build token in $sourcePath"
     }
 

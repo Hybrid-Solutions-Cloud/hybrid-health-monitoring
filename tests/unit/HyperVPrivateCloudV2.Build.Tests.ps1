@@ -20,6 +20,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:StorageCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.xml') -Raw
         [xml]$script:S2DCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.xml') -Raw
         [xml]$script:PureCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.xml') -Raw
+        [xml]$script:FileServicesCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.xml') -Raw
     }
 
     AfterAll {
@@ -70,11 +71,12 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 8
+        @($script:Receipt.artifacts).Count | Should -Be 9
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -496,6 +498,66 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $monitor = $script:PureCapability.SelectSingleNode("//UnitMonitor[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor']")
         $script:PureCapability.SelectSingleNode("//StringResource[@ID='$($monitor.AlertSettings.AlertMessage)']") | Should -Not -BeNullOrEmpty
         $script:PureCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'emits no unresolved build token in any authored artifact' {
+        foreach ($artifact in $script:Receipt.artifacts) {
+            Get-Content -LiteralPath (Join-Path $script:Output $artifact.output) -Raw | Should -Not -Match '\{\{[A-Z0-9_]+\}\}'
+        }
+    }
+
+    It 'pins File Services to the inspected Microsoft 10.1.0.4 SMB contract' {
+        $references = @{}
+        foreach ($reference in $script:FileServicesCapability.SelectNodes('/ManagementPack/Manifest/References/Reference')) { $references[[string]$reference.Alias] = $reference }
+        $references.FileSMB.ID | Should -Be 'Microsoft.Windows.FileServices.SMB.2016'
+        $references.FileSMB.Version | Should -Be '10.1.0.4'
+        $references.FileServices.ID | Should -Be 'Microsoft.Windows.FileServices'
+        $references.Keys | Should -Not -Contain 'FileServices2016'
+    }
+
+    It 'models complete Hyper-V over SMB share, path, and VHDX mapping topology' {
+        @($script:FileServicesCapability.SelectNodes('//ClassType')).Count | Should -Be 3
+        foreach ($classId in @('SmbShare', 'SmbClientPath', 'SmbVhdxMapping')) {
+            $script:FileServicesCapability.SelectSingleNode("//ClassType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.$classId']") | Should -Not -BeNullOrEmpty
+        }
+        @($script:FileServicesCapability.SelectNodes('//RelationshipType')).Count | Should -Be 7
+        $script:FileServicesCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService']") | Should -Not -BeNullOrEmpty
+        $script:FileServicesCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualMachine']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'discovers only UNC-backed VM disks with stable hashed identities and exact Microsoft service correlation' {
+        $scriptText = $script:FileServicesCapability.SelectSingleNode("//Discovery[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Discovery']//ScriptBody").InnerText
+        $scriptText | Should -Match 'Get-VMHardDiskDrive'
+        $scriptText | Should -Match 'Get-SmbMultichannelConnection'
+        $scriptText | Should -Match 'Get-HcsStableId'
+        $scriptText | Should -Match 'System\.Net\.Dns.*GetHostEntry'
+        $scriptText | Should -Match 'FileSMB!Microsoft\.Windows\.FileServices\.Service\.SMB\.10\.0'
+        $scriptText | Should -Not -Match 'New-Smb|Set-Smb|Remove-Smb|Invoke-RestMethod'
+    }
+
+    It 'monitors required SMB connections, continuous availability, and optional RDMA without duplicate Microsoft alerts' {
+        @($script:FileServicesCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:FileServicesCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 3
+        @($script:FileServicesCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        $monitor = $script:FileServicesCapability.SelectSingleNode("//UnitMonitor[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor']")
+        $monitor.Configuration.RequireRdma | Should -Be 'false'
+        $script:FileServicesCapability.OuterXml | Should -Match 'ContinuouslyAvailable'
+        $script:FileServicesCapability.OuterXml | Should -Match 'ClientRdmaCapable'
+    }
+
+    It 'provides SMB, SOFS, Microsoft service, alert, and performance views under Storage' {
+        @($script:FileServicesCapability.SelectNodes('//View')).Count | Should -Be 7
+        foreach ($item in $script:FileServicesCapability.SelectNodes('//FolderItem')) { [string]$item.Folder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder' }
+    }
+
+    It 'contains syntactically valid File Services scripts and monitor knowledge' {
+        foreach ($scriptBody in $script:FileServicesCapability.SelectNodes('//ScriptBody')) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
+        $script:FileServicesCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor']") | Should -Not -BeNullOrEmpty
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

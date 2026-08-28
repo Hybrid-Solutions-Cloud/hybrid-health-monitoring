@@ -9,8 +9,9 @@ OM2022 VSAE/SDK verification, ordered transient test sealing, and strong-name ve
 optional capability MPs are the active implementation work; composable public overrides,
 representative SCOM labs, governed release signing, complete packaging, and public latest-download
 updates remain. `Capability.Cluster`, `Capability.Storage`, `Capability.S2D`, and
-`Capability.PureStorage` are authored and verified; the SMB/SOFS File Services adapter is the next
-capability._
+`Capability.PureStorage`, and `Capability.FileServices` are authored and verified; networking,
+Network ATC, SDN, and VMM are the remaining capability packs. The PowerShell execution-host proof
+remains release-blocking._
 
 <!--
   Optional advisory model hint the next tool should honour if available.
