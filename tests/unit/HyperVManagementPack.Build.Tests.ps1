@@ -23,9 +23,28 @@ BeforeAll {
     $script:ContractScript = Join-Path $script:SourceRoot 'tools/Test-HyperVManagementPacks.ps1'
     $script:OverrideScript = Join-Path $script:SourceRoot 'tools/New-HyperVOverrideManagementPacks.ps1'
     $script:OverrideExampleScript = Join-Path $script:SourceRoot 'tools/Update-HyperVOverrideExamples.ps1'
+    $script:V2DependencyContract = Join-Path $script:SourceRoot 'contracts/dependencies.v2.json'
 }
 
 Describe 'Hyper-V Management Pack development build' {
+    It 'records the approved v2 product identity and authoritative Microsoft cluster contracts' {
+        $contract = Get-Content -LiteralPath $script:V2DependencyContract -Raw | ConvertFrom-Json
+        $contract.schemaVersion | Should -Be '1.0'
+        $contract.product.displayName | Should -Be 'Hyper-V Private Cloud Monitoring'
+        $contract.product.consoleRoot | Should -Be 'Hyper-V Private Cloud'
+        $contract.product.namespace | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud'
+
+        $cluster = $contract.capabilities | Where-Object id -eq 'FailoverCluster'
+        $cluster.status | Should -Be 'Approved'
+        $cluster.packageVersion | Should -Be '10.1.0.0'
+        $cluster.authoritativeClasses | Should -Contain 'Microsoft.Windows.Cluster.Node'
+
+        $csv = $contract.capabilities | Where-Object id -eq 'ClusterSharedVolume'
+        $csv.status | Should -Be 'Approved'
+        $csv.packageVersion | Should -Be '10.1.2.2'
+        $csv.authoritativeClasses | Should -Contain 'Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume'
+    }
+
     It 'passes the repository contract suite' {
         $result = & $script:ContractScript
         $result | Should -Contain 'Hyper-V Management Pack contract tests passed.'

@@ -18,7 +18,7 @@ Hyper-V simply because both products use SCOM or share health terminology.
 | Azure Local platform baseline | ADRs 0001–0003, 0007–0009, and 0014–0018 |
 | Azure Local SCOM | ADRs 0022, 0026, and 0032–0035 supersede or refine the earlier Azure Local SCOM baseline |
 | Azure Local Azure Monitor | ADRs 0006, 0010, 0012, 0013, 0019, and current preview refinement ADR 0036 |
-| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, and 0031 for product boundary, network authority, DA, package, object/discovery, health/DA, and authoring-toolchain architecture |
+| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0039 for product boundary, network authority, DA, package, object/discovery, health/DA, authoring toolchain, and v2 external-object ownership |
 | Hyper-V Azure Monitor | ADR 0023 constrained go and ADR 0037 development architecture |
 
 Cross-cutting lifecycle ADRs can provide reusable patterns, but each platform and delivery lane
@@ -66,6 +66,7 @@ must still validate its applicable topology, dependencies, artifacts, tests, and
 | [0036](./0036-azure-local-azure-monitor-health-model-v1.md) | Azure Local Azure Monitor Health Model v1 — preview resource graph, identity, entities, and initial signals | Accepted |
 | [0037](./0037-hyper-v-azure-monitor-health-model-architecture.md) | Hyper-V Azure Monitor Health Model — SCVMM inventory plus Arc-enabled host telemetry | Accepted |
 | [0038](./0038-scom-servicenow-connector-boundary.md) | SCOM-to-ServiceNow connector boundary — optional MID Server connector with product allow-lists | Accepted |
+| [0039](./0039-hyper-v-v2-external-object-ownership.md) | Hyper-V v2 external object ownership — authoritative Microsoft/vendor objects through optional capability adapters | Accepted |
 
 ## When to write an ADR
 

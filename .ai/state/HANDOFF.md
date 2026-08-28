@@ -2,6 +2,25 @@
 
 ## Current session
 
+- **V2 dependency decision accepted:** Added ADR 0039 and the public v2 dependency/ownership
+  contract. The product console identity is `Hyper-V Private Cloud Monitoring`, console root is
+  `Hyper-V Private Cloud`, and the new namespace is
+  `HybridSolutionsCloud.HyperVPrivateCloud`. Standalone core remains independent; optional
+  capability adapters own external prerequisites and relationships.
+- **Microsoft contracts inspected:** Downloaded the official current Microsoft Windows Server
+  Cluster `10.1.0.0` and Windows Server OS/CSV `10.1.2.2` packages from Microsoft, extracted and
+  exported their sealed MPs, and inventoried public classes/relationships. The Cluster package
+  exposes cluster nodes, groups, networks, resources, and containment. The Windows Server package
+  exposes public CSV and cluster-disk objects plus discovery/monitoring. V2 will reuse these
+  identities rather than create duplicate cluster/CSV objects.
+- **Machine-readable dependency gate:** Added
+  `src/hyper-v/scom-mp/contracts/dependencies.v2.json` with approved Cluster/CSV versions,
+  authoritative class IDs, and explicit pending spikes for Pure, VMM, SDN, SOFS, and physical
+  networking. Pester now enforces the product identity and approved Microsoft contracts.
+- **Latest verification:** Hyper-V Pester passes 14/14, VitePress production build passes, new
+  local Markdown links resolve, dependency JSON parses, and `git diff --check` passes. The VitePress
+  build reports only the existing large-chunk warning.
+
 - **Generated override examples and semantic CI gate:** Added
   `Update-HyperVOverrideExamples.ps1`, regenerated all six Hyper-V Lab/Standard/Strict example
   XML files from the supported generator, and documented that the examples are generated

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "product": {
+    "displayName": "Hyper-V Private Cloud Monitoring",
+    "consoleRoot": "Hyper-V Private Cloud",
+    "namespace": "HybridSolutionsCloud.HyperVPrivateCloud"
+  },
+  "capabilities": [
+    {
+      "id": "Core",
+      "status": "Approved",
+      "optional": false,
+      "policy": "Use only built-in SCOM libraries at the lowest verified versions containing the referenced types."
+    },
+    {
+      "id": "FailoverCluster",
+      "status": "Approved",
+      "optional": true,
+      "packageVersion": "10.1.0.0",
+      "download": "https://www.microsoft.com/en-us/download/details.aspx?id=54701",
+      "managementPacks": [
+        "Microsoft.Windows.Cluster.Management.Library",
+        "Microsoft.Windows.2016.Cluster.Management.Library"
+      ],
+      "authoritativeClasses": [
+        "Microsoft.Windows.Cluster",
+        "Microsoft.Windows.Cluster.Node",
+        "Microsoft.Windows.10.0.Cluster.Node",
+        "Microsoft.Windows.Cluster.Group",
+        "Microsoft.Windows.Cluster.Network",
+        "Microsoft.Windows.Cluster.Resource"
+      ]
+    },
+    {
+      "id": "ClusterSharedVolume",
+      "status": "Approved",
+      "optional": true,
+      "packageVersion": "10.1.2.2",
+      "download": "https://www.microsoft.com/en-us/download/details.aspx?id=54303",
+      "managementPacks": [
+        "Microsoft.Windows.Server.Library",
+        "Microsoft.Windows.Server.ClusterSharedVolumeMonitoring"
+      ],
+      "authoritativeClasses": [
+        "Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume",
+        "Microsoft.Windows.Server.ClusterDisksMonitoring.ClusterDisk"
+      ]
+    },
+    {
+      "id": "StorageSpacesDirect",
+      "status": "HcsOwnedGap",
+      "optional": true,
+      "policy": "Own S2D objects not exposed by the inspected Microsoft packages and correlate S2D volumes to authoritative Microsoft CSV objects."
+    },
+    {
+      "id": "PureStorage",
+      "status": "ContractSpikeRequired",
+      "optional": true
+    },
+    {
+      "id": "VirtualMachineManager",
+      "status": "ContractSpikeRequired",
+      "optional": true
+    },
+    {
+      "id": "SoftwareDefinedNetworking",
+      "status": "ContractSpikeRequired",
+      "optional": true
+    },
+    {
+      "id": "ScaleOutFileServer",
+      "status": "ContractSpikeRequired",
+      "optional": true
+    },
+    {
+      "id": "PhysicalNetwork",
+      "status": "ContractSpikeRequired",
+      "optional": true
+    }
+  ]
+}

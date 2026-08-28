@@ -297,6 +297,14 @@ migration guidance, and define side-by-side and uninstall restrictions explicitl
 
 ### Authoritative ownership and dependency policy
 
+The verified v2 decision is recorded in
+[ADR 0039](docs/design/decisions/0039-hyper-v-v2-external-object-ownership.md) and the
+[dependency and ownership contract](docs/design/hyper-v/v2-dependency-and-ownership-contract.md).
+The current Microsoft Cluster `10.1.0.0` and Windows Server/CSV `10.1.2.2` packages expose public
+cluster, node, group, network, resource, disk, and CSV identities. V2 therefore consumes those
+objects through optional adapters instead of creating competing cluster or CSV copies. The base
+standalone product retains only built-in SCOM dependencies.
+
 Reuse stable public objects from sealed Microsoft and vendor MPs when they represent the same
 managed resource. Do not create disconnected duplicate Windows computer, cluster, storage-array,
 network-device, or VMM-fabric identities.
