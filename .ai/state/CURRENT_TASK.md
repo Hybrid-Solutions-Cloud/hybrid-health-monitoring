@@ -4,8 +4,8 @@
 
 _Implement and publish Hyper-V Private Cloud Monitoring v2 as the active priority. The root plan,
 external dependency ownership contracts, modular package/profile ADR, deterministic v2 build, core
-Library, and core Discovery MP are authored. Library and Discovery pass offline contracts,
-OM2022 VSAE/SDK verification, transient test sealing, and strong-name verification. Monitoring,
+Library, core Discovery, and core Monitoring MPs are authored. All three pass offline contracts,
+OM2022 VSAE/SDK verification, ordered transient test sealing, and strong-name verification.
 Presentation, optional capability MPs, composable public overrides, representative SCOM labs,
 governed release signing, complete packaging, and public latest-download updates remain._
 

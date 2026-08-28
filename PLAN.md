@@ -579,7 +579,10 @@ versions, cost, and required fixture.
 6. Implement lightweight capability seeds and staged discovery with independent pipeline health.
    **Core VMMS seed and staged topology are authored, SDK-verified, and test-sealed; capability
    discoveries remain.**
-7. Implement Compute and VM monitoring.
+7. Implement Compute and VM monitoring. **Core baseline authored: 13 host and nine agent-hosted
+   per-VM runtime monitors, 12 performance rules, a diagnostic task, operational knowledge, and 14
+   DA rollups pass OM2022 VSAE/SDK verification and transient test sealing. Curated event rules,
+   deeper performance families, and representative fault/scale validation remain.**
 8. Implement Failover Cluster integration and CSV monitoring.
 9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs.
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.

@@ -1,0 +1,21 @@
+$ErrorActionPreference = 'Stop'
+if (-not (Get-Command -Name 'Get-VMHost' -ErrorAction SilentlyContinue)) {
+    if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue }
+}
+if (-not (Get-Command -Name 'Get-VMHost' -ErrorAction SilentlyContinue)) {
+    throw 'The Hyper-V PowerShell module is unavailable. Install Hyper-V-PowerShell with Install-WindowsFeature Hyper-V -IncludeManagementTools.'
+}
+$hostData = Get-VMHost
+$vms = @(Get-VM)
+$switches = @(Get-VMSwitch)
+$oldCheckpoints = @($vms | Get-VMSnapshot -ErrorAction SilentlyContinue | Where-Object CreationTime -lt (Get-Date).AddDays(-7))
+[pscustomobject]@{
+    Computer = $env:COMPUTERNAME
+    HyperVVersion = $hostData.HyperVVersion
+    VirtualMachines = $vms.Count
+    RunningVirtualMachines = @($vms | Where-Object State -eq 'Running').Count
+    VirtualSwitches = $switches.Count
+    ReplicationWarnings = @(Get-VMReplication -ErrorAction SilentlyContinue | Where-Object Health -ne 'Normal').Count
+    CheckpointsOlderThanSevenDays = $oldCheckpoints.Count
+    GeneratedUtc = [DateTime]::UtcNow.ToString('o')
+} | Format-List | Out-String

@@ -1,0 +1,98 @@
+param($CpuWarningPercent, $CpuCriticalPercent, $MemoryWarningMB, $MemoryCriticalMB, $PagesInputWarningPerSecond, $PagesInputCriticalPerSecond, $CheckpointWarningHours, $CheckpointCriticalHours)
+
+$ErrorActionPreference = 'Stop'
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$bag = $api.CreatePropertyBag()
+$statesSet = @{}
+
+function Set-HcsState {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
+    $bag.AddValue($Name, $State)
+    $bag.AddValue($Name + 'Detail', $Detail)
+    $statesSet[$Name] = $true
+}
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [Parameter(Mandatory)][string]$CommandName)
+    try {
+        if ($ModuleName) {
+            if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+            if (-not (Get-Module -Name $ModuleName -ErrorAction SilentlyContinue)) { Import-Module -Name $ModuleName -ErrorAction SilentlyContinue }
+        }
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VMHost')) {
+        $message = 'The Hyper-V PowerShell module is missing. Install Hyper-V-PowerShell with Install-WindowsFeature Hyper-V -IncludeManagementTools.'
+        foreach ($state in @('HyperVPowerShellState', 'HypervisorState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState')) { Set-HcsState $state 'Critical' $message }
+    }
+    else {
+        Set-HcsState 'HyperVPowerShellState' 'Good' 'The Hyper-V PowerShell module and Get-VMHost command are available.'
+        $vmHost = Get-VMHost
+        Set-HcsState 'HypervisorState' 'Good' ('Hyper-V host version: ' + [string]$vmHost.HyperVVersion)
+        $vms = @(Get-VM)
+
+        $unexpected = @($vms | Where-Object { $_.AutomaticStartAction -eq 'Start' -and $_.State -notin @('Running', 'Starting', 'Stopping', 'Saving', 'Pausing', 'Resuming') })
+        Set-HcsState 'VirtualMachineState' $(if ($unexpected.Count) { 'Critical' } else { 'Good' }) ("Unexpected auto-start VMs: {0}; total: {1}" -f $unexpected.Count, $vms.Count)
+
+        $checkpoints = @($vms | Get-VMSnapshot -ErrorAction SilentlyContinue)
+        $now = [DateTime]::UtcNow
+        $oldestHours = if ($checkpoints.Count) { [math]::Round(($now - ($checkpoints | Sort-Object CreationTime | Select-Object -First 1).CreationTime.ToUniversalTime()).TotalHours, 1) } else { 0 }
+        $checkpointState = if ($oldestHours -ge [double]$CheckpointCriticalHours) { 'Critical' } elseif ($oldestHours -ge [double]$CheckpointWarningHours) { 'Warning' } else { 'Good' }
+        Set-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
+
+        $replications = @(Get-VMReplication -ErrorAction SilentlyContinue)
+        $replicationCritical = @($replications | Where-Object { [string]$_.Health -eq 'Critical' }).Count
+        $replicationWarning = @($replications | Where-Object { [string]$_.Health -eq 'Warning' }).Count
+        $replicationState = if ($replicationCritical) { 'Critical' } elseif ($replicationWarning) { 'Warning' } else { 'Good' }
+        Set-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
+
+        $switches = @(Get-VMSwitch -ErrorAction SilentlyContinue)
+        $invalidSwitches = @($switches | Where-Object { $_.SwitchType -eq 'External' -and @($_.NetAdapterInterfaceDescriptions).Count -eq 0 })
+        Set-HcsState 'VirtualSwitchState' $(if ($invalidSwitches.Count) { 'Critical' } else { 'Good' }) ("Switches: {0}; external switches without uplinks: {1}" -f $switches.Count, $invalidSwitches.Count)
+
+        $invalidDisks = 0
+        foreach ($drive in @($vms | Get-VMHardDiskDrive -ErrorAction SilentlyContinue)) {
+            if ($drive.Path -and -not (Test-Path -LiteralPath $drive.Path -PathType Leaf)) { $invalidDisks++ }
+            elseif ($drive.Path -and -not (Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue)) { $invalidDisks++ }
+        }
+        Set-HcsState 'StorageAttachmentState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable virtual-disk attachments: {0}" -f $invalidDisks)
+    }
+
+    foreach ($serviceName in @('vmms', 'vmcompute')) {
+        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+        $stateName = if ($serviceName -eq 'vmms') { 'VMMSState' } else { 'VmComputeState' }
+        if ($null -eq $service) { Set-HcsState $stateName 'Critical' ("Required service {0} is not installed." -f $serviceName) }
+        else { Set-HcsState $stateName $(if ($service.Status -eq 'Running') { 'Good' } else { 'Critical' }) ("Service {0}: {1}" -f $serviceName, $service.Status) }
+    }
+
+    $os = Get-CimInstance -ClassName 'Win32_OperatingSystem'
+    $availableMemoryMB = [math]::Round($os.FreePhysicalMemory / 1024, 0)
+    $memoryState = if ($availableMemoryMB -le [double]$MemoryCriticalMB) { 'Critical' } elseif ($availableMemoryMB -le [double]$MemoryWarningMB) { 'Warning' } else { 'Good' }
+    Set-HcsState 'MemoryState' $memoryState ("Available physical memory: {0} MB" -f $availableMemoryMB)
+    $bag.AddValue('AvailableMemoryMB', $availableMemoryMB)
+
+    try { $cpu = [math]::Round((Get-Counter '\Hyper-V Hypervisor Logical Processor(_Total)\% Total Run Time').CounterSamples[0].CookedValue, 2) }
+    catch { $cpu = [math]::Round((Get-CimInstance -ClassName 'Win32_Processor' | Measure-Object -Property LoadPercentage -Average).Average, 2) }
+    $cpuState = if ($cpu -ge [double]$CpuCriticalPercent) { 'Critical' } elseif ($cpu -ge [double]$CpuWarningPercent) { 'Warning' } else { 'Good' }
+    Set-HcsState 'CpuState' $cpuState ("Hypervisor processor utilization: {0}%" -f $cpu)
+    $bag.AddValue('HypervisorCpuPercent', $cpu)
+
+    $pagesInput = [math]::Round((Get-Counter '\Memory\Pages Input/sec').CounterSamples[0].CookedValue, 2)
+    $pagingState = if ($pagesInput -ge [double]$PagesInputCriticalPerSecond) { 'Critical' } elseif ($pagesInput -ge [double]$PagesInputWarningPerSecond) { 'Warning' } else { 'Good' }
+    Set-HcsState 'PagingState' $pagingState ("Pages Input/sec: {0}" -f $pagesInput)
+    $bag.AddValue('PagesInputPerSecond', $pagesInput)
+
+    Set-HcsState 'PipelineState' 'Good' ('Host health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
+}
+catch {
+    foreach ($state in @('VMMSState', 'VmComputeState', 'HyperVPowerShellState', 'HypervisorState', 'CpuState', 'MemoryState', 'PagingState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState', 'PipelineState')) {
+        if (-not $statesSet.ContainsKey($state)) { Set-HcsState $state 'Critical' $_.Exception.Message }
+    }
+    $api.LogScriptEvent('Hyper-V Private Cloud Host Health', 8201, 1, $_.Exception.ToString())
+}
+
+$bag

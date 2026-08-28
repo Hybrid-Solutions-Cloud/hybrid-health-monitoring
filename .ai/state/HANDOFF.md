@@ -2,6 +2,22 @@
 
 ## Current session
 
+- **V2 core Monitoring authored:** Added the third required artifact with 13 host monitors, nine
+  agent-hosted per-VM runtime monitors, 14 DA dependency rollups, 12 performance rules, one
+  diagnostic task, auto-resolving alerts, and operational knowledge for all 22 unit monitors.
+  Host coverage includes VMMS, vmcompute, module/hypervisor availability, CPU, available memory,
+  paging, expected VM states, checkpoints, Replica, vSwitch uplinks, VHD attachments, and pipeline
+  health. VM coverage includes expected runtime, heartbeat, integration services, checkpoints,
+  Replica, disks, networking, Dynamic Memory pressure, and pipeline health.
+- **Stable identity plus executable health:** Added `VirtualMachineRuntime`, an agent-hosted
+  projection related to the stable logical VM. Monitoring runs on the current host; discovery moves
+  the runtime projection during migration while the logical VM/DA identity stays stable. Runtime
+  membership also supplies Availability, Storage, and Network branch rollups.
+- **Monitoring verification:** Initial VSAE verification caught a malformed VM target-property
+  expression; corrected it. Library, Discovery, and Monitoring all pass OM2022 VSAE verification,
+  ordered transient sealing, and `sn.exe -vf`. Focused v2 Pester passes 18/18. Scratch evidence is
+  `D:/tmp/hcs-hyperv-v2-sdk-monitoring-20260828/`; it is not release-signed output.
+
 - **V2 core Discovery authored:** Added the second required artifact with a VMMS registry seed and
   staged topology workflow for stable standalone/cluster boundaries, hosts, VMs, VHDs, VM vNICs,
   virtual switches, Replica relationships, the monitoring pipeline, and all seven DA branches.
@@ -22,7 +38,7 @@
   authored v2 sealed-source artifact: `HybridSolutionsCloud.HyperVPrivateCloud.Library`. The build
   refuses `-RequireComplete` while required artifacts remain planned so this milestone cannot be
   mistaken for the public release.
-- **Core model expanded:** The v2 Library has 17 classes, 23 relationships, and generated display
+- **Core model expanded:** The v2 Library now has 18 classes, 29 relationships, and generated display
   strings for every property/relationship. It defines stable boundary/host/VM identities, VHDs,
   VM vNICs, virtual switches, Replica relationships, pipeline health, and seven DA branches:
   Management, Compute, Virtual Machines, Availability, Storage, Networking, and Monitoring.

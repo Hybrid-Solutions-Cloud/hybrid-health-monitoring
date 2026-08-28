@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity><ID>HybridSolutionsCloud.HyperVPrivateCloud.Monitoring</ID><Version>{{VERSION}}</Version></Identity>
+    <Name>Hyper-V Private Cloud Monitoring</Name>
+    <References>
+      <Reference Alias="System"><ID>System.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="Windows"><ID>Microsoft.Windows.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="Health"><ID>System.Health.Library</ID><Version>7.0.8433.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="Perf"><ID>System.Performance.Library</ID><Version>7.0.8433.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="SC"><ID>Microsoft.SystemCenter.Library</ID><Version>7.0.8433.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="MSDL"><ID>Microsoft.SystemCenter.DataWarehouse.Library</ID><Version>7.0.8433.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Library"><ID>HybridSolutionsCloud.HyperVPrivateCloud.Library</ID><Version>{{VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+    </References>
+  </Manifest>
+  <TypeDefinitions>
+    <ModuleTypes>
+      <DataSourceModuleType ID="HybridSolutionsCloud.HyperVPrivateCloud.HostHealth.DataSource" Accessibility="Internal" Batching="false">
+        <Configuration>
+          <xsd:element name="IntervalSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="SyncTime" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="CpuWarningPercent" type="xsd:double" minOccurs="1" />
+          <xsd:element name="CpuCriticalPercent" type="xsd:double" minOccurs="1" />
+          <xsd:element name="MemoryWarningMB" type="xsd:double" minOccurs="1" />
+          <xsd:element name="MemoryCriticalMB" type="xsd:double" minOccurs="1" />
+          <xsd:element name="PagesInputWarningPerSecond" type="xsd:double" minOccurs="1" />
+          <xsd:element name="PagesInputCriticalPerSecond" type="xsd:double" minOccurs="1" />
+          <xsd:element name="CheckpointWarningHours" type="xsd:double" minOccurs="1" />
+          <xsd:element name="CheckpointCriticalHours" type="xsd:double" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="SyncTime" Selector="$Config/SyncTime$" ParameterType="string" />
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="CpuWarningPercent" Selector="$Config/CpuWarningPercent$" ParameterType="double" />
+          <OverrideableParameter ID="CpuCriticalPercent" Selector="$Config/CpuCriticalPercent$" ParameterType="double" />
+          <OverrideableParameter ID="MemoryWarningMB" Selector="$Config/MemoryWarningMB$" ParameterType="double" />
+          <OverrideableParameter ID="MemoryCriticalMB" Selector="$Config/MemoryCriticalMB$" ParameterType="double" />
+          <OverrideableParameter ID="PagesInputWarningPerSecond" Selector="$Config/PagesInputWarningPerSecond$" ParameterType="double" />
+          <OverrideableParameter ID="PagesInputCriticalPerSecond" Selector="$Config/PagesInputCriticalPerSecond$" ParameterType="double" />
+          <OverrideableParameter ID="CheckpointWarningHours" Selector="$Config/CheckpointWarningHours$" ParameterType="double" />
+          <OverrideableParameter ID="CheckpointCriticalHours" Selector="$Config/CheckpointCriticalHours$" ParameterType="double" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <DataSource ID="Scheduler" TypeID="System!System.Scheduler">
+                <Scheduler><SimpleReccuringSchedule><Interval Unit="Seconds">$Config/IntervalSeconds$</Interval><SyncTime>$Config/SyncTime$</SyncTime></SimpleReccuringSchedule><ExcludeDates /></Scheduler>
+              </DataSource>
+              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellPropertyBagTriggerOnlyProbe">
+                <ScriptName>HybridSolutionsCloud.HyperVPrivateCloud.HostHealth.Probe.ps1</ScriptName>
+                <ScriptBody><![CDATA[{{HOST_HEALTH_SCRIPT}}]]></ScriptBody>
+                <Parameters>
+                  <Parameter><Name>CpuWarningPercent</Name><Value>$Config/CpuWarningPercent$</Value></Parameter>
+                  <Parameter><Name>CpuCriticalPercent</Name><Value>$Config/CpuCriticalPercent$</Value></Parameter>
+                  <Parameter><Name>MemoryWarningMB</Name><Value>$Config/MemoryWarningMB$</Value></Parameter>
+                  <Parameter><Name>MemoryCriticalMB</Name><Value>$Config/MemoryCriticalMB$</Value></Parameter>
+                  <Parameter><Name>PagesInputWarningPerSecond</Name><Value>$Config/PagesInputWarningPerSecond$</Value></Parameter>
+                  <Parameter><Name>PagesInputCriticalPerSecond</Name><Value>$Config/PagesInputCriticalPerSecond$</Value></Parameter>
+                  <Parameter><Name>CheckpointWarningHours</Name><Value>$Config/CheckpointWarningHours$</Value></Parameter>
+                  <Parameter><Name>CheckpointCriticalHours</Name><Value>$Config/CheckpointCriticalHours$</Value></Parameter>
+                </Parameters>
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition><Node ID="Probe"><Node ID="Scheduler" /></Node></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+      </DataSourceModuleType>
+      <DataSourceModuleType ID="HybridSolutionsCloud.HyperVPrivateCloud.VmHealth.DataSource" Accessibility="Internal" Batching="false">
+        <Configuration>
+          <xsd:element name="VMId" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ExpectedState" type="xsd:string" minOccurs="1" />
+          <xsd:element name="IntervalSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="SyncTime" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="CheckpointWarningHours" type="xsd:double" minOccurs="1" />
+          <xsd:element name="CheckpointCriticalHours" type="xsd:double" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="SyncTime" Selector="$Config/SyncTime$" ParameterType="string" />
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="CheckpointWarningHours" Selector="$Config/CheckpointWarningHours$" ParameterType="double" />
+          <OverrideableParameter ID="CheckpointCriticalHours" Selector="$Config/CheckpointCriticalHours$" ParameterType="double" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any"><Composite><MemberModules>
+          <DataSource ID="Scheduler" TypeID="System!System.Scheduler"><Scheduler><SimpleReccuringSchedule><Interval Unit="Seconds">$Config/IntervalSeconds$</Interval><SyncTime>$Config/SyncTime$</SyncTime></SimpleReccuringSchedule><ExcludeDates /></Scheduler></DataSource>
+          <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellPropertyBagTriggerOnlyProbe">
+            <ScriptName>HyperVPrivateCloud.VmHealth.Probe.ps1</ScriptName>
+            <ScriptBody><![CDATA[{{VM_HEALTH_SCRIPT}}]]></ScriptBody>
+            <Parameters>
+              <Parameter><Name>VMId</Name><Value>$Config/VMId$</Value></Parameter>
+              <Parameter><Name>ExpectedState</Name><Value>$Config/ExpectedState$</Value></Parameter>
+              <Parameter><Name>CheckpointWarningHours</Name><Value>$Config/CheckpointWarningHours$</Value></Parameter>
+              <Parameter><Name>CheckpointCriticalHours</Name><Value>$Config/CheckpointCriticalHours$</Value></Parameter>
+            </Parameters>
+            <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+          </ProbeAction>
+        </MemberModules><Composition><Node ID="Probe"><Node ID="Scheduler" /></Node></Composition></Composite></ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+      </DataSourceModuleType>
+      <WriteActionModuleType ID="HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.WriteAction" Accessibility="Internal" Batching="false">
+        <Configuration><xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" /></Configuration>
+        <OverrideableParameters><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" /></OverrideableParameters>
+        <ModuleImplementation Isolation="Any"><Composite><MemberModules>
+          <WriteAction ID="PowerShell" TypeID="Windows!Microsoft.Windows.PowerShellWriteAction">
+            <ScriptName>HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task.ps1</ScriptName>
+            <ScriptBody><![CDATA[{{DIAGNOSTIC_SCRIPT}}]]></ScriptBody><Parameters /><TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+          </WriteAction>
+        </MemberModules><Composition><Node ID="PowerShell" /></Composition></Composite></ModuleImplementation>
+        <OutputType>System!System.BaseData</OutputType><InputType>System!System.BaseData</InputType>
+      </WriteActionModuleType>
+    </ModuleTypes>
+    <MonitorTypes>
+      <UnitMonitorType ID="HybridSolutionsCloud.HyperVPrivateCloud.PropertyBag.ThreeState.MonitorType" Accessibility="Internal">
+        <MonitorTypeStates><MonitorTypeState ID="Good" NoDetection="false" /><MonitorTypeState ID="Warning" NoDetection="false" /><MonitorTypeState ID="Critical" NoDetection="false" /></MonitorTypeStates>
+        <Configuration>
+          <xsd:element name="PropertyName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="IntervalSeconds" type="xsd:integer" minOccurs="1" /><xsd:element name="SyncTime" type="xsd:string" minOccurs="0" /><xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="CpuWarningPercent" type="xsd:double" minOccurs="1" /><xsd:element name="CpuCriticalPercent" type="xsd:double" minOccurs="1" /><xsd:element name="MemoryWarningMB" type="xsd:double" minOccurs="1" /><xsd:element name="MemoryCriticalMB" type="xsd:double" minOccurs="1" /><xsd:element name="PagesInputWarningPerSecond" type="xsd:double" minOccurs="1" /><xsd:element name="PagesInputCriticalPerSecond" type="xsd:double" minOccurs="1" /><xsd:element name="CheckpointWarningHours" type="xsd:double" minOccurs="1" /><xsd:element name="CheckpointCriticalHours" type="xsd:double" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" /><OverrideableParameter ID="SyncTime" Selector="$Config/SyncTime$" ParameterType="string" /><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="CpuWarningPercent" Selector="$Config/CpuWarningPercent$" ParameterType="double" /><OverrideableParameter ID="CpuCriticalPercent" Selector="$Config/CpuCriticalPercent$" ParameterType="double" /><OverrideableParameter ID="MemoryWarningMB" Selector="$Config/MemoryWarningMB$" ParameterType="double" /><OverrideableParameter ID="MemoryCriticalMB" Selector="$Config/MemoryCriticalMB$" ParameterType="double" /><OverrideableParameter ID="PagesInputWarningPerSecond" Selector="$Config/PagesInputWarningPerSecond$" ParameterType="double" /><OverrideableParameter ID="PagesInputCriticalPerSecond" Selector="$Config/PagesInputCriticalPerSecond$" ParameterType="double" /><OverrideableParameter ID="CheckpointWarningHours" Selector="$Config/CheckpointWarningHours$" ParameterType="double" /><OverrideableParameter ID="CheckpointCriticalHours" Selector="$Config/CheckpointCriticalHours$" ParameterType="double" />
+        </OverrideableParameters>
+        <MonitorImplementation><MemberModules>
+          <DataSource ID="DataSource" TypeID="HybridSolutionsCloud.HyperVPrivateCloud.HostHealth.DataSource"><IntervalSeconds>$Config/IntervalSeconds$</IntervalSeconds><SyncTime>$Config/SyncTime$</SyncTime><TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds><CpuWarningPercent>$Config/CpuWarningPercent$</CpuWarningPercent><CpuCriticalPercent>$Config/CpuCriticalPercent$</CpuCriticalPercent><MemoryWarningMB>$Config/MemoryWarningMB$</MemoryWarningMB><MemoryCriticalMB>$Config/MemoryCriticalMB$</MemoryCriticalMB><PagesInputWarningPerSecond>$Config/PagesInputWarningPerSecond$</PagesInputWarningPerSecond><PagesInputCriticalPerSecond>$Config/PagesInputCriticalPerSecond$</PagesInputCriticalPerSecond><CheckpointWarningHours>$Config/CheckpointWarningHours$</CheckpointWarningHours><CheckpointCriticalHours>$Config/CheckpointCriticalHours$</CheckpointCriticalHours></DataSource>
+          <ConditionDetection ID="GoodFilter" TypeID="System!System.ExpressionFilter"><Expression><Or><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Good</Value></ValueExpression></SimpleExpression></Expression><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">NotApplicable</Value></ValueExpression></SimpleExpression></Expression></Or></Expression></ConditionDetection>
+          <ConditionDetection ID="WarningFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Warning</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+          <ConditionDetection ID="CriticalFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Critical</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+        </MemberModules><RegularDetections><RegularDetection MonitorTypeStateID="Good"><Node ID="GoodFilter"><Node ID="DataSource" /></Node></RegularDetection><RegularDetection MonitorTypeStateID="Warning"><Node ID="WarningFilter"><Node ID="DataSource" /></Node></RegularDetection><RegularDetection MonitorTypeStateID="Critical"><Node ID="CriticalFilter"><Node ID="DataSource" /></Node></RegularDetection></RegularDetections></MonitorImplementation>
+      </UnitMonitorType>
+      <UnitMonitorType ID="HybridSolutionsCloud.HyperVPrivateCloud.VmPropertyBag.ThreeState.MonitorType" Accessibility="Internal">
+        <MonitorTypeStates><MonitorTypeState ID="Good" NoDetection="false" /><MonitorTypeState ID="Warning" NoDetection="false" /><MonitorTypeState ID="Critical" NoDetection="false" /></MonitorTypeStates>
+        <Configuration>
+          <xsd:element name="PropertyName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="VMId" type="xsd:string" minOccurs="1" /><xsd:element name="ExpectedState" type="xsd:string" minOccurs="1" />
+          <xsd:element name="IntervalSeconds" type="xsd:integer" minOccurs="1" /><xsd:element name="SyncTime" type="xsd:string" minOccurs="0" /><xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="CheckpointWarningHours" type="xsd:double" minOccurs="1" /><xsd:element name="CheckpointCriticalHours" type="xsd:double" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" /><OverrideableParameter ID="SyncTime" Selector="$Config/SyncTime$" ParameterType="string" /><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="CheckpointWarningHours" Selector="$Config/CheckpointWarningHours$" ParameterType="double" /><OverrideableParameter ID="CheckpointCriticalHours" Selector="$Config/CheckpointCriticalHours$" ParameterType="double" />
+        </OverrideableParameters>
+        <MonitorImplementation><MemberModules>
+          <DataSource ID="DataSource" TypeID="HybridSolutionsCloud.HyperVPrivateCloud.VmHealth.DataSource"><VMId>$Config/VMId$</VMId><ExpectedState>$Config/ExpectedState$</ExpectedState><IntervalSeconds>$Config/IntervalSeconds$</IntervalSeconds><SyncTime>$Config/SyncTime$</SyncTime><TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds><CheckpointWarningHours>$Config/CheckpointWarningHours$</CheckpointWarningHours><CheckpointCriticalHours>$Config/CheckpointCriticalHours$</CheckpointCriticalHours></DataSource>
+          <ConditionDetection ID="GoodFilter" TypeID="System!System.ExpressionFilter"><Expression><Or><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Good</Value></ValueExpression></SimpleExpression></Expression><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">NotApplicable</Value></ValueExpression></SimpleExpression></Expression></Or></Expression></ConditionDetection>
+          <ConditionDetection ID="WarningFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Warning</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+          <ConditionDetection ID="CriticalFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Critical</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+        </MemberModules><RegularDetections><RegularDetection MonitorTypeStateID="Good"><Node ID="GoodFilter"><Node ID="DataSource" /></Node></RegularDetection><RegularDetection MonitorTypeStateID="Warning"><Node ID="WarningFilter"><Node ID="DataSource" /></Node></RegularDetection><RegularDetection MonitorTypeStateID="Critical"><Node ID="CriticalFilter"><Node ID="DataSource" /></Node></RegularDetection></RegularDetections></MonitorImplementation>
+      </UnitMonitorType>
+    </MonitorTypes>
+  </TypeDefinitions>
+  <Monitoring>
+    <Rules>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.Cpu.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>% Total Run Time</CounterName><ObjectName>Hyper-V Hypervisor Logical Processor</ObjectName><InstanceName>_Total</InstanceName><AllInstances>false</AllInstances><Frequency>300</Frequency><Tolerance>2</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.AvailableMemory.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Available MBytes</CounterName><ObjectName>Memory</ObjectName><InstanceName /><AllInstances>false</AllInstances><Frequency>300</Frequency><Tolerance>128</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.DynamicMemoryAvailable.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Available Memory</CounterName><ObjectName>Hyper-V Dynamic Memory Balancer</ObjectName><InstanceName>System Balancer</InstanceName><AllInstances>false</AllInstances><Frequency>300</Frequency><Tolerance>128</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualProcessor.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>% Total Run Time</CounterName><ObjectName>Hyper-V Hypervisor Virtual Processor</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>2</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.RootVirtualProcessor.Collection.Rule" Enabled="false" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>% Total Run Time</CounterName><ObjectName>Hyper-V Hypervisor Root Virtual Processor</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>2</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PagesInput.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Pages Input/sec</CounterName><ObjectName>Memory</ObjectName><InstanceName /><AllInstances>false</AllInstances><Frequency>300</Frequency><Tolerance>1</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.NetworkBytes.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Bytes Total/sec</CounterName><ObjectName>Network Interface</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>1048576</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualNetworkBytes.Collection.Rule" Enabled="false" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Bytes/sec</CounterName><ObjectName>Hyper-V Virtual Network Adapter</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>1048576</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadLatency.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Avg. Disk sec/Read</CounterName><ObjectName>PhysicalDisk</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>0.005</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteLatency.Collection.Rule" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Avg. Disk sec/Write</CounterName><ObjectName>PhysicalDisk</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>0.005</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadQueue.Collection.Rule" Enabled="false" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Avg. Disk Read Queue Length</CounterName><ObjectName>PhysicalDisk</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>1</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+      <Rule ID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteQueue.Collection.Rule" Enabled="false" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100"><Category>PerformanceCollection</Category><DataSources><DataSource ID="Performance" TypeID="Perf!System.Performance.OptimizedDataProvider"><ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</ComputerName><CounterName>Avg. Disk Write Queue Length</CounterName><ObjectName>PhysicalDisk</ObjectName><InstanceName>*</InstanceName><AllInstances>true</AllInstances><Frequency>300</Frequency><Tolerance>1</Tolerance><ToleranceType>Absolute</ToleranceType><MaximumSampleSeparation>6</MaximumSampleSeparation></DataSource></DataSources><WriteActions><WriteAction ID="Database" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" /><WriteAction ID="Warehouse" TypeID="MSDL!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" /></WriteActions></Rule>
+    </Rules>
+    <Tasks><Task ID="HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task" Accessibility="Public" Enabled="true" Target="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole" Timeout="180" Remotable="true"><Category>Maintenance</Category><WriteAction ID="Diagnostic" TypeID="HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.WriteAction"><TimeoutSeconds>120</TimeoutSeconds></WriteAction></Task></Tasks>
+    <Monitors>
+      <!-- All host monitors use identical acquisition configuration. This is intentional cookdown. -->
+      {{HOST_MONITORS}}
+      {{VM_RUNTIME_MONITORS}}
+      {{ROLLUP_MONITORS}}
+    </Monitors>
+  </Monitoring>
+  <Presentation><StringResources>{{STRING_RESOURCES}}</StringResources></Presentation>
+  <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Monitoring"><Name>Hyper-V Private Cloud Monitoring</Name><Description>Health, alert, performance collection, diagnostic task, and Distributed Application rollup workflows for Hyper-V.</Description></DisplayString>
+    {{MONITOR_DISPLAY_STRINGS}}
+    {{ROLLUP_DISPLAY_STRINGS}}
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.Cpu.Collection.Rule"><Name>Collect Hyper-V hypervisor logical processor total run time</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.AvailableMemory.Collection.Rule"><Name>Collect host available memory</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.DynamicMemoryAvailable.Collection.Rule"><Name>Collect Hyper-V Dynamic Memory balancer available memory</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualProcessor.Collection.Rule"><Name>Collect Hyper-V virtual processor total run time</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.RootVirtualProcessor.Collection.Rule"><Name>Collect Hyper-V root virtual processor total run time (disabled by default)</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PagesInput.Collection.Rule"><Name>Collect host memory pages input per second</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.NetworkBytes.Collection.Rule"><Name>Collect physical network interface bytes per second</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualNetworkBytes.Collection.Rule"><Name>Collect Hyper-V virtual network adapter bytes per second (disabled by default)</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadLatency.Collection.Rule"><Name>Collect physical disk average read latency</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteLatency.Collection.Rule"><Name>Collect physical disk average write latency</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadQueue.Collection.Rule"><Name>Collect physical disk average read queue length (disabled by default)</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteQueue.Collection.Rule"><Name>Collect physical disk average write queue length (disabled by default)</Name></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task"><Name>Collect Hyper-V diagnostic summary</Name><Description>Returns a read-only summary of host, VM, switch, and replication state.</Description></DisplayString>
+  </DisplayStrings><KnowledgeArticles>{{KNOWLEDGE_ARTICLES}}
+  </KnowledgeArticles></LanguagePack></LanguagePacks>
+</ManagementPack>

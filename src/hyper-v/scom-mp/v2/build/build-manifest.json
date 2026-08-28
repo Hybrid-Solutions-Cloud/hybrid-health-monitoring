@@ -29,7 +29,7 @@
       "releaseForm": "sealed-mp",
       "kind": "Monitoring",
       "required": true,
-      "implementationStatus": "Planned"
+      "implementationStatus": "Authored"
     },
     {
       "id": "HybridSolutionsCloud.HyperVPrivateCloud.Presentation",

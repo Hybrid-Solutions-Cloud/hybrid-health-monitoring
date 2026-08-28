@@ -14,6 +14,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $script:Receipt = Get-Content -LiteralPath (Join-Path $script:Output 'build-receipt.json') -Raw | ConvertFrom-Json
         [xml]$script:Library = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Library.xml') -Raw
         [xml]$script:Discovery = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Discovery.xml') -Raw
+        [xml]$script:Monitoring = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Monitoring.xml') -Raw
     }
 
     AfterAll {
@@ -63,7 +64,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'does not claim the incomplete authoring milestone is a complete release' {
         $script:Receipt.complete | Should -BeFalse
-        @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 2
+        @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 1
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Throw '*not complete*'
     }
 
@@ -106,6 +107,61 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $parseErrors = $null
         [System.Management.Automation.Language.Parser]::ParseInput($scriptText, [ref]$tokens, [ref]$parseErrors) | Out-Null
         @($parseErrors).Count | Should -Be 0
+    }
+
+    It 'implements core host and agent-hosted per-VM monitoring' {
+        @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 22
+        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 14
+        @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 12
+        @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 1
+        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 22
+        @($script:Monitoring.SelectNodes("//UnitMonitor[starts-with(@ID,'HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.')]")).Count | Should -Be 9
+    }
+
+    It 'resolves every monitoring target and rollup relationship against the Library' {
+        $classIds = @($script:Library.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType') | ForEach-Object ID)
+        $relationshipIds = @($script:Library.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/RelationshipTypes/RelationshipType') | ForEach-Object ID)
+        foreach ($target in @($script:Monitoring.SelectNodes('//UnitMonitor|//DependencyMonitor|//Rule|//Task') | ForEach-Object Target)) {
+            if ($target -like 'HCSV2Library!*') { ($target -replace '^HCSV2Library!', '') | Should -BeIn $classIds }
+        }
+        foreach ($relationship in @($script:Monitoring.SelectNodes('//DependencyMonitor') | ForEach-Object RelationshipType)) {
+            ($relationship -replace '^HCSV2Library!', '') | Should -BeIn $relationshipIds
+        }
+    }
+
+    It 'uses only parameters exposed by each referenced monitor type' {
+        foreach ($monitor in $script:Monitoring.SelectNodes('//UnitMonitor')) {
+            $typeId = [string]$monitor.TypeID
+            $monitorType = $script:Monitoring.SelectSingleNode("//UnitMonitorType[@ID='$typeId']")
+            $monitorType | Should -Not -BeNullOrEmpty
+            $allowed = @($monitorType.Configuration.ChildNodes | Where-Object LocalName -eq 'element' | ForEach-Object { $_.GetAttribute('name') })
+            foreach ($parameter in $monitor.Configuration.ChildNodes | Where-Object NodeType -eq Element) {
+                $allowed | Should -Contain $parameter.LocalName
+            }
+        }
+    }
+
+    It 'ships actionable alert resources, displays, and knowledge for every unit monitor' {
+        foreach ($monitor in $script:Monitoring.SelectNodes('//UnitMonitor')) {
+            $script:Monitoring.SelectSingleNode("//StringResource[@ID='$($monitor.AlertSettings.AlertMessage)']") | Should -Not -BeNullOrEmpty
+            $script:Monitoring.SelectSingleNode("//DisplayString[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
+            $script:Monitoring.SelectSingleNode("//KnowledgeArticle[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'keeps capability monitoring out of core and uses non-throwing module probes' {
+        $monitoringText = $script:Monitoring.OuterXml
+        $monitoringText | Should -Not -Match 'ClusterSharedVolume|NetworkAtcIntent|PureStorage|StorageSpacesDirect|SoftwareDefinedNetwork'
+        $monitoringText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
+    }
+
+    It 'contains syntactically valid host, VM, and diagnostic monitoring scripts' {
+        foreach ($scriptBody in $script:Monitoring.SelectNodes('//ScriptBody')) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {
