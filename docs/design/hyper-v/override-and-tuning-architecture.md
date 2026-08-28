@@ -125,11 +125,28 @@ library would have to be sealed and is not part of the initial product design.
 | Standard | Typical production starting point | Evidence-backed product defaults with only documented, broadly applicable adjustments |
 | Strict | Explicitly designated critical services | More sensitive or frequent policy only where evidence, response capacity, and noise testing justify it |
 
-Each profile is delivered as public documentation, a machine-readable setting manifest, and two
-non-importable example files: one for Discovery and one for Monitoring. Before use, a customer must
-copy the selected examples, assign organization-owned IDs and display names, review every setting,
-and import the resulting unsealed files. Only one profile can be the starting point for a given
-customer override pair; later adjustments are normal customer-owned overrides.
+Each profile is delivered as public documentation, a machine-readable setting manifest, generated
+examples, and optional first-party unsealed profile MPs. Customer mode assigns organization-owned
+IDs and display names. Public-profile mode assigns product-owned profile IDs so the reviewed packs
+can be distributed with a release. Import only one profile for a product and environment; later
+adjustments belong in customer-owned overrides.
+
+### Profile schema
+
+Schema `1.2` makes every monitoring target explicit. Each target declares its complete `monitorId`
+and `contextClassId`; the generator does not construct either value from naming conventions.
+Discovery settings likewise declare their workflow, context class, and module. The generator
+rejects unknown schema versions before producing output.
+
+The generated override MP has two independent version facts:
+
+- `Version` is the customer- or profile-owned unsealed MP identity and defaults to `1.0.0.0`.
+- `ProductVersion` is mandatory and must equal the installed sealed product version used in every
+  product reference.
+
+Changing the override MP version must never change its sealed product references. Release and CI
+tests generate different values for these fields and assert that each is written only to its
+intended XML elements.
 
 The templates are versioned with the product release that defined their workflow IDs. A release
 must publish a profile change log and identify added, changed, retired, and no-longer-effective

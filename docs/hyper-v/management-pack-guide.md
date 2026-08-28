@@ -140,10 +140,15 @@ Templates are examples, not signed product dependencies. Generate one selected p
     -TuningProfile Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
-    -Version '0.1.0.0' `
+    -Version '1.0.0.0' `
+    -ProductVersion '0.1.0.0' `
     -PublicKeyToken '<product-public-key-token>' `
     -OutputPath './out/contoso-overrides'
 ```
+
+`Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
+installed sealed Hyper-V Library, Discovery, and Monitoring MPs. The generator deliberately has no
+default product version because guessing it produces unresolved references at import time.
 
 Then:
 

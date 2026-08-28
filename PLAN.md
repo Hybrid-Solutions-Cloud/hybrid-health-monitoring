@@ -1,10 +1,11 @@
 # Implementation plan — Hybrid Infrastructure Health Monitoring
 
-> Last updated: August 13, 2026
+> Last updated: August 28, 2026
 >
-> Status: Azure Local and Hyper-V functional SCOM MPs and Distributed Applications authored;
-> release certification requires SDK dependencies, sealing/signing, and representative SCOM lab
-> validation. Azure Monitor research and implementation are next.
+> Status: Azure Local is under development. The published Hyper-V `0.1` lab preview is a
+> superseded host-centric baseline, not the complete private-cloud monitoring product. Active
+> priority is the clean-sheet Hyper-V Private Cloud Monitoring v2 research, architecture,
+> implementation, and representative-lab certification program defined below.
 > Published roadmap: <https://labs.hybridsolutions.cloud/hybrid-health-monitoring/project/roadmap>
 
 ## Objective
@@ -211,18 +212,17 @@ Deliver:
 
 ### Hyper-V SCOM Management Pack
 
-1. Continue topology/support evidence, including per-cluster and per-standalone-host DA boundaries,
-   and raise successor ADRs if lab results invalidate accepted ADRs 0027–0029.
-2. Apply the independent product boundary in ADR 0022.
-3. Author approved classes, relationships, discoveries, DA classes, and dynamic membership for
-   each supported topology variant.
-4. Author monitors, rules, DA rollups, operator views, reports, SLO targets, separate Discovery and
-   Monitoring override contracts, and optional Lab, Standard, and Strict starter templates using
-   Hyper-V evidence.
-5. Validate standalone, clustered, and approved SCVMM-managed configurations, including DA
-   population, topology change, state propagation, coexistence, upgrade, and removal.
-6. Seal, sign, version, package, publish the administration and override guide, and release
-   independently.
+The `0.1` lab preview proved source generation, Microsoft verification, and test sealing. It did
+not deliver the complete private-cloud topology or monitoring depth required for public release.
+It is superseded as the product design baseline by the v2 program in
+[Hyper-V Private Cloud Monitoring v2](#hyper-v-private-cloud-monitoring-v2).
+
+The console-facing product name for v2 is **Hyper-V Private Cloud Monitoring**. The console root is
+**Hyper-V Private Cloud**. `Hybrid Solutions Cloud` remains publisher metadata and may remain in
+internal element namespaces, but it is not the primary operator-facing product name.
+
+No v2 release may be described as complete until its supported compute, availability, storage,
+network, management, and optional orchestration domains pass the release gates below.
 
 ### Hyper-V Azure Monitor through Arc-enabled SCVMM
 
@@ -247,6 +247,372 @@ parity where supported Azure telemetry does not exist.
    outage/replay, close/reopen/ticket behavior, upgrade, rollback, and removal.
 6. Keep the separate SCOM Metrics connector disabled unless Metric Intelligence licensing, Data
    Warehouse access, value, cost, and scale are explicitly approved.
+
+## Hyper-V Private Cloud Monitoring v2
+
+### Product outcome
+
+Deliver a modular SCOM suite that models and monitors a real Windows Server Hyper-V private cloud,
+not only the state of individual hosts. The product must provide connected topology, health,
+capacity, performance, alerts, operational knowledge, diagnostics, reports, and a navigable
+Distributed Application across every supported and enabled capability.
+
+The design must support these deployment modes independently and in combination:
+
+- standalone Hyper-V;
+- Hyper-V failover clusters;
+- SAN-backed clusters, beginning with Pure Storage FlashArray;
+- Storage Spaces Direct clusters;
+- environments using SAN and S2D at the same time;
+- Hyper-V over SMB and Scale-Out File Server where supported;
+- Network ATC and manually or externally managed host networking;
+- Windows Server Software Defined Networking; and
+- optional System Center Virtual Machine Manager-managed fabrics.
+
+Capability packs are additive. Detecting S2D must not disable SAN monitoring, and detecting VMM or
+SDN must not remove the underlying host, cluster, storage, or network health model.
+
+### Current-preview disposition
+
+The version `0.1` preview contains a useful but incomplete host-centric baseline: 13 classes, 20
+relationships, two discoveries, nine generated host-level health monitors, ten dependency
+rollups, twelve performance rules, four cluster-event rules, ten basic views, and five broad DA
+component groups. Its single topology discovery and consolidated host probe do not constitute a
+complete private-cloud product.
+
+Before v2 authoring begins, diagnose the currently installed preview:
+
+1. Export all installed product and override MPs.
+2. Record their versions, public key tokens, references, and effective overrides.
+3. Confirm whether the service and component instances were discovered.
+4. Collect relevant Operations Manager event-log failures from monitored hosts and management
+   servers.
+5. Confirm that Library, Discovery, Monitoring, and Presentation were imported in order.
+6. Record every missing object, health state, view, relationship, and DA branch.
+7. Publish a preview-disposition note that states what is retained, replaced, or deprecated.
+
+Treat `0.1` as a superseded preview rather than attempting a destructive in-place model rewrite.
+The v2 compatibility design must preserve historical data where practical, provide preflight and
+migration guidance, and define side-by-side and uninstall restrictions explicitly.
+
+### Authoritative ownership and dependency policy
+
+Reuse stable public objects from sealed Microsoft and vendor MPs when they represent the same
+managed resource. Do not create disconnected duplicate Windows computer, cluster, storage-array,
+network-device, or VMM-fabric identities.
+
+| Domain | Authoritative model | v2 responsibility |
+|---|---|---|
+| Windows Server | Microsoft Windows Server MPs | Relate host foundation health; add only virtualization-specific context |
+| Physical server hardware | Supported hardware-vendor MPs | Relate chassis and component health to hosts and the DA |
+| Failover Clustering | Microsoft Failover Cluster MPs | Reuse or specialize cluster objects and add Hyper-V-specific relationships and health |
+| Hyper-V | Hyper-V Private Cloud v2 | Own virtualization-specific discovery, monitoring, knowledge, and presentation |
+| VMM fabric | Microsoft VMM MPs | Integrate clouds, host groups, networks, storage, compliance, and jobs without duplication |
+| Physical network | SCOM network monitoring and vendor MPs | Correlate host adapters to switches, ports, VLANs, and network health |
+| Pure Storage | Current supported Pure Storage MP where viable | Map arrays and volumes through Windows storage, CSV/VHDX, and VMs; fill verified gaps only |
+| S2D | Windows storage APIs and cluster Health Service | Own S2D topology, faults, jobs, capacity, performance, and service impact |
+| SDN | Microsoft Network Controller and SDN APIs | Discover and monitor control-plane and data-plane components |
+
+For every external dependency, record the exact MP ID, minimum compatible version, public
+elements used, import order, supported SCOM/Windows matrix, licensing or redistribution boundary,
+upgrade behavior, and removal impact. Reference the lowest version that supplies the required
+stable public contract.
+
+### Package architecture
+
+The target suite is modular so customers install only applicable capability packs while retaining
+one connected health model:
+
+| Package | Requirement | Responsibility |
+|---|---|---|
+| Core Library | Required | Public classes, relationships, common module types, Run As profiles, and localization |
+| Compute | Required | Hyper-V hosts, hypervisor, services, VMs, integration services, replica, capacity, and performance |
+| Failover Clustering | Optional for standalone; required for clusters | Cluster, node, quorum, roles, resources, networks, CSV, failover, and Microsoft-object integration |
+| Storage Core | Required | Common provider, system, pool, volume/LUN, path, CSV/share, VHDX, and VM storage relationships |
+| Storage Spaces Direct | Optional | S2D subsystem, pools, disks, virtual disks, volumes, Health Service, jobs, faults, and history |
+| SAN Integration | Optional | Windows MPIO, iSCSI/Fibre Channel, paths, HBAs, LUN visibility, and common SAN correlation |
+| Pure Storage Integration | Optional | FlashArray discovery/integration, capacity, health, performance, protection, and end-to-end mapping |
+| Networking | Required | Physical adapters, SET/teams, switches, vNICs, VLAN, RDMA, VMQ, RSS, QoS, and migration/storage networks |
+| Network ATC | Optional | Intents, participating adapters, status, drift, overrides, symmetry, and remediation |
+| SDN | Optional | Network Controller, host agents, SLB/MUX, gateways, HNV, VIP/DIP, BGP, ACL, and certificates |
+| VMM Integration | Optional | VMM services, clouds, host groups, logical networks/switches, storage fabric, compliance, and jobs |
+| Presentation | Required | Console hierarchy, state/alert/event/performance/diagram views, dashboards, and tasks |
+| Reporting | Optional | Availability, capacity, performance, configuration, and forecast reports |
+
+Customer customization remains in separate unsealed Discovery and Monitoring override MPs. Never
+write customer configuration to the Default Management Pack.
+
+### Complete topology and monitoring catalog
+
+#### Windows and physical foundation
+
+- Windows computer, OS availability, SCOM agent, and HealthService health;
+- system volume, page file, time, DNS/domain reachability, WinRM, WMI/CIM, PowerShell, and required
+  feature/module availability where these are prerequisites for virtualization monitoring;
+- relevant WHEA, system, driver, and hardware events;
+- supported vendor hardware objects including chassis, processor, memory, power, cooling,
+  controller, firmware, and network components; and
+- explicit relationships from hardware and Windows health to the Hyper-V host and private-cloud DA.
+
+Do not reproduce complete Windows, Active Directory, DNS, or hardware-vendor monitoring. Consume
+and relate their authoritative health where the corresponding MPs are installed.
+
+#### Hyper-V compute
+
+- role and hypervisor launch state, VMMS, Host Compute Service where applicable, worker-process
+  failures, operational event channels, configuration, and Best Practices Analyzer findings;
+- logical, root, and guest virtual processor usage, NUMA, interrupts/DPC, oversubscription, and
+  capacity headroom;
+- available memory, Dynamic Memory demand/pressure, host reserve, paging, and capacity;
+- VM storage and network I/O, migration configuration and failures, maintenance/drain state, and
+  monitoring-pipeline health;
+- Hyper-V Replica broker, relationship health, backlog, last success, authentication, and recovery
+  readiness; and
+- duration, recovery, hysteresis, suppression, and topology-aware threshold behavior.
+
+#### Virtual machines
+
+- stable VM identity across migration and owner changes;
+- expected versus actual state, clustered-role state, current owner, configuration version,
+  automatic start/stop policy, checkpoints, replica, migration, and backup/checkpoint failures;
+- heartbeat, shutdown, time synchronization, KVP, VSS, guest service, and PowerShell Direct
+  integration components as applicable;
+- vCPU, assigned/demand memory, pressure, virtual disks, vNICs, and host/storage/network
+  relationships; and
+- correlation to guest OS and workload health without replacing their product MPs.
+
+#### Failover Clustering
+
+- cluster, service, nodes, membership, isolation/quarantine, pause/drain, groups, roles, resources,
+  dependencies, ownership, and repeated failover behavior;
+- quorum mode, witness, dynamic quorum/witness, functional level, validation currency, and
+  Cluster-Aware Updating where deployed;
+- cluster networks, roles, metrics, heartbeat, live-migration eligibility, and communication
+  failures;
+- CSV ownership, online/paused/redirected state, redirected-I/O reason, capacity, cache, latency,
+  and relevant operational channels; and
+- Microsoft Cluster MP relationships, Health Explorer integration, and duplicate-alert analysis.
+
+#### Common storage and SAN
+
+- provider, array/system, controller, pool, volume/LUN, host group, initiator, target, path,
+  CSV/share, VHDX, and VM mappings;
+- iSCSI and Fibre Channel configuration, sessions, portals, HBAs, MPIO/DSM, path count, path state,
+  and consistent LUN visibility across cluster nodes;
+- capacity, thin-provisioning exposure, latency, IOPS, throughput, queueing, errors, repair/rebuild,
+  replication, and Storage QoS; and
+- end-to-end service-impact mapping from array and path through CSV/VHDX to affected VMs.
+
+#### Pure Storage FlashArray
+
+First determine whether Pure's current FlashArray SCOM MP is supported for the target SCOM and
+Purity versions. Prefer vendor monitoring and create an integration pack around it. Use direct REST
+or PowerShell collection only for verified gaps.
+
+Required topology and health include arrays, controllers, hardware, ports, hosts/host groups,
+volumes, protection groups, replication, pods/ActiveCluster where licensed, capacity, latency,
+IOPS, bandwidth, connectivity, protection status, API/certificate health, and mappings through
+Windows disks and CSVs to VMs. Use a least-privilege Run As profile; never store credentials in MP
+configuration or source.
+
+#### Storage Spaces Direct
+
+- storage subsystem, S2D cluster, pools, physical disks, tiers, cache, virtual disks, volumes,
+  CSVs, enclosures/fault domains where exposed, jobs, and Health Service;
+- pool/disk/virtual-disk/volume health and operational states, resiliency, capacity, abnormal
+  latency, endurance where exposed, cache, repair, regeneration, and firmware/driver consistency;
+- Health Service faults and autonomous actions;
+- Cluster Performance History availability, collection health, capacity, latency, IOPS,
+  throughput, and `ClusterPerformanceHistory` volume health; and
+- mixed SAN/S2D operation with independent discovery, targeting, views, and rollup.
+
+#### SMB and Scale-Out File Server
+
+- SOFS role and cluster health, continuously available shares, SMB Multichannel, SMB Direct/RDMA,
+  authentication, share availability, path redundancy, and Storage QoS;
+- mappings from share to VM configuration/VHDX and affected VMs; and
+- separate compute-cluster and file-server-cluster relationships where Hyper-V over SMB is used.
+
+#### Host and physical networking
+
+- physical adapters, SET/teams, Hyper-V switches, host/management vNICs, VM vNICs, VLAN/MTU,
+  QoS, RSS/vRSS, VMQ/VMMQ, RDMA, SMB Direct, DCB/PFC where applicable, and switch extensions;
+- management, cluster, live-migration, storage, replica, provider, and tenant network purpose;
+- link state, speed, driver/firmware consistency, errors, discards, drops, saturation, symmetry,
+  and configuration drift; and
+- SCOM network-device relationships to physical switches, ports, interfaces, and VLANs.
+
+#### Network ATC
+
+- intent, scope, type, participating adapters, provisioning/configuration status, global and
+  per-intent overrides, expected/actual state, remediation, and cluster consistency;
+- failed/prolonged provisioning, adapter symmetry, missing or unsuitable adapters, drift, failed
+  remediation, invalid overrides, and required RDMA/DCB capabilities; and
+- explicit Not Applicable handling where manual, VMM, SDN, or another authority owns networking.
+
+#### Software Defined Networking
+
+- Network Controller cluster, replicas, services, REST endpoint, host agents, policy distribution,
+  SLB Manager, MUXes, gateways, pools, HNV policies, virtual networks/subnets, VIP/DIP, ACLs, BGP,
+  and certificates;
+- controller quorum, control-plane availability, host connectivity, policy consistency, SLB and
+  gateway availability/capacity, BGP peers, certificate expiry, performance counters, and
+  control/data-plane mismatch; and
+- separate optional discovery and Run As requirements with secure credential distribution.
+
+#### Virtual Machine Manager integration
+
+Reuse the Microsoft VMM MPs and correlate, rather than duplicate, VMM management servers/services,
+clouds, host groups, hosts, VMs, libraries, logical networks, network sites, VM networks, IP pools,
+logical switches, uplink profiles, port classifications, storage providers/classifications, pools,
+LUNs, shares, compliance, failed jobs, maintenance integration, and PRO where enabled.
+
+V2 must operate without VMM and must not infer VMM ownership merely because VMM classes exist.
+
+### Distributed Application and health model
+
+Create one private-cloud service instance per supported boundary: standalone deployment, Hyper-V
+failover cluster, or explicitly selected VMM private cloud/host group. The DA must be dynamically
+populated and must remain stable through host ownership and VM migration changes.
+
+```text
+Hyper-V Private Cloud
+├── Management
+├── Compute
+├── Virtual Machines
+├── Availability and Clustering
+├── Storage
+│   ├── CSV and common storage
+│   ├── Storage Spaces Direct
+│   ├── SAN and Pure Storage
+│   └── SMB and Scale-Out File Server
+├── Networking
+│   ├── Physical and host networking
+│   ├── Network ATC
+│   └── VMM logical networking
+└── Software Defined Networking
+```
+
+Provide dynamic membership, explicit relationships, diagram views, contextual tasks, Health
+Explorer rollup, maintenance behavior, Unknown and Not Applicable semantics, leaf-level actionable
+alerts, and dependency-aware symptom suppression. Aggregate and dependency monitors should not
+generate duplicate alerts when a leaf monitor already identifies the cause.
+
+### Console and operator experience
+
+Replace the current generic view set with these console areas:
+
+- Overview: private-cloud health, DAs, critical alerts, and monitoring coverage;
+- Compute: hosts, hypervisor services, hardware, performance, and capacity;
+- Virtual Machines: state, integration services, checkpoints, replica, and performance;
+- Clustering: clusters, nodes, quorum/witness, roles/resources, networks, CSVs, and events;
+- Storage: common overview, S2D, SAN, Pure Storage, MPIO, SMB/SOFS, capacity, and performance;
+- Networking: adapters, physical switches, SET/teams, vSwitches, Network ATC, VMM logical
+  networks, and performance;
+- SDN: Network Controller, SLB/MUX, gateways, virtual networks, and alerts;
+- VMM: management health, clouds, host groups, fabric compliance, and failed jobs; and
+- Operations: alerts, events, performance, discovery/workflow health, diagnostics, and
+  configuration.
+
+Each health-bearing class requires an appropriate state view. Each collected performance family
+requires a useful scoped performance view or report. Provide an actual DA diagram experience, not
+only a state view targeted at the service class.
+
+### Research and architecture work packages
+
+Complete these evidence-backed spikes before locking v2 authoring:
+
+1. **Installed-preview diagnosis** — explain missing discoveries, views, and DA instances.
+2. **Support matrix** — Windows Server, SCOM, Cluster MP, VMM, S2D, Network ATC, SDN, Pure
+   Purity/FlashArray, protocols, and topology combinations.
+3. **Microsoft MP inventory** — public Cluster, Windows, VMM, network, storage, and Service Designer
+   classes, relationships, discoveries, modules, and version contracts.
+4. **Hyper-V capability catalog** — every observable object and signal classified as must, should,
+   could, collection-only, diagnostic, or excluded.
+5. **S2D spike** — Health Service, faults/actions, storage states, jobs, performance history,
+   capacity, failure injection, and scale.
+6. **SAN/Pure spike** — current vendor MP viability, REST/API contract, security, mappings, MPIO,
+   capacity/performance, replication, and real-array validation.
+7. **Networking spike** — physical/virtual networking, SET, RDMA/DCB, Network ATC, physical switch
+   correlation, authority selection, and failure injection.
+8. **SDN spike** — Network Controller, SLB, gateway, HNV, security, scale, and test topology.
+9. **VMM spike** — official MP model, supported integration, clouds, fabric networks/storage,
+   compliance, jobs, and coexistence without duplicate objects or alerts.
+10. **DA and presentation spike** — stable boundaries, membership, rollup, diagram/dashboard
+    behavior, maintenance, migration, and operator usability.
+
+Every catalog entry must record source, acquisition method, target, interval, timeout, cardinality,
+permissions, health role, threshold/duration/recovery, alert/suppression behavior, supported
+versions, cost, and required fixture.
+
+### Implementation sequence
+
+1. Diagnose and formally supersede the `0.1` preview.
+2. Approve the v2 product contract, naming, support matrix, and dependency policy.
+3. Complete raw capability inventories and the ten research spikes.
+4. Approve successor ADRs for topology, Microsoft/vendor dependencies, packaging, identity,
+   storage modes, networking authority, DA, health/alert policy, and migration.
+5. Author the Core Library and verified external-object relationships.
+6. Implement lightweight capability seeds and staged discovery with independent pipeline health.
+7. Implement Compute and VM monitoring.
+8. Implement Failover Cluster integration and CSV monitoring.
+9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs.
+10. Implement Networking, Network ATC, SDN, and VMM integration packs.
+11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
+    reports.
+12. Implement composable deployment profiles and corrected override generation.
+13. Run automated verification, representative topology labs, fault injection, performance/scale,
+    upgrade/migration, security, and removal tests.
+14. Seal with the governed identity, package, publish checksums and guides, and release only after
+    every claimed domain passes its gate.
+
+### Override and profile redesign
+
+Profiles compose capabilities instead of imposing one universal threshold set. Provide reviewed
+starting points for standalone, clustered SAN, clustered S2D, hybrid SAN/S2D, VMM-managed,
+Network ATC, and SDN-enabled environments, plus Lab, Standard, and Strict tuning levels.
+
+Correct the generator before v2 publication:
+
+- separate customer override MP version from sealed product reference version;
+- generate committed examples and fail CI on drift;
+- resolve every class, workflow, module, reference, and override parameter against built MPs;
+- use explicit workflow/context schema rather than constructed IDs;
+- support class and same-MP group targeting; and
+- reject unknown schemas, cross-unsealed-MP group references, and invalid capabilities.
+
+### V2 validation and definition of done
+
+Automated gates include deterministic build, schema validation, VSAE/SDK verification, dependency
+resolution, test sealing, reference and override resolution, example drift, cookdown, discovery
+fixtures, cardinality/performance budgets, documentation consistency, upgrade compatibility, and
+secret scanning.
+
+Representative labs must cover standalone Hyper-V; clustered SAN; Pure Storage; S2D; combined SAN
+and S2D; Hyper-V over SMB where supported; Network ATC; VMM; SDN; and configurations where optional
+capabilities are absent. Exercise maintenance, migration, failover, quorum/witness loss, node
+isolation, CSV redirection, storage path loss, disk failure and repair, array/controller or API
+failure, switch/NIC failure, Network ATC drift, VMM outage, SDN control-plane failure, missing
+modules, credential failure, recovery, upgrade, migration from preview, and dependency-safe
+removal.
+
+V2 is complete only when:
+
+- every promised domain has an explicit implemented, integrated, deferred, or unsupported
+  disposition;
+- all supported topology combinations discover and reconcile correctly;
+- SAN and S2D operate simultaneously;
+- the DA is visible, navigable, stable, and rolls up verified service impact;
+- required missing capabilities are actionable failures while optional absent capabilities are Not
+  Applicable;
+- duplicate Microsoft/vendor monitoring has been removed or deliberately tuned;
+- Pure integration passes against a representative FlashArray;
+- S2D faults, jobs, repairs, and performance history pass representative tests;
+- VMM-managed and non-VMM deployments both work;
+- public guides accurately list objects, monitors, rules, views, reports, dependencies, defaults,
+  disabled workflows, permissions, and limitations; and
+- governed signing, clean import, checksums, migration, upgrade, rollback, and removal evidence is
+  approved.
 
 ## Planned repository shape
 

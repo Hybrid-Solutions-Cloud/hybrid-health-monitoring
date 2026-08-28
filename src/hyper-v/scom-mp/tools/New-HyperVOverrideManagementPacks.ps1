@@ -21,7 +21,12 @@
     Generates official product-owned profile packs instead of customer-prefixed starting points.
 
 .PARAMETER Version
-    Four-part version for the generated unsealed Management Packs and sealed product references.
+    Four-part version for the generated unsealed Management Packs. This customer-owned version is
+    independent of the installed sealed product version and defaults to 1.0.0.0.
+
+.PARAMETER ProductVersion
+    Four-part version of the installed sealed Hyper-V product Management Packs. This value is
+    mandatory because an incorrect reference version produces an override MP that cannot import.
 
 .PARAMETER PublicKeyToken
     Public key token of the sealed Hyper-V product Management Packs.
@@ -29,10 +34,14 @@
 .PARAMETER OutputPath
     Destination directory for the generated customer-owned XML files.
 
+.PARAMETER ProfilePath
+    Optional path to a compatible profile manifest. When omitted, the selected built-in profile is
+    used. Custom profiles must declare the supported schemaVersion.
+
 .NOTES
     Author: Kristopher Turner
     Contact: kris@hybridsolutions.cloud
-    Version: 1.0.0
+    Version: 1.1.0
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'HCS scripting standard requires Write-Host for operator status.')]
@@ -56,7 +65,11 @@ param(
 
     [Parameter()]
     [ValidatePattern('^\d+\.\d+\.\d+\.\d+$')]
-    [string]$Version = '0.2.0.0',
+    [string]$Version = '1.0.0.0',
+
+    [Parameter(Mandatory)]
+    [ValidatePattern('^\d+\.\d+\.\d+\.\d+$')]
+    [string]$ProductVersion,
 
     [Parameter(Mandatory)]
     [ValidatePattern('^[0-9a-fA-F]{16}$')]
@@ -64,7 +77,11 @@ param(
 
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
-    [string]$OutputPath
+    [string]$OutputPath,
+
+    [Parameter()]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$ProfilePath
 )
 
 Set-StrictMode -Version Latest
@@ -81,7 +98,8 @@ function Get-OverrideDocument {
         [Parameter(Mandatory)][string]$OverridesXml,
         [Parameter(Mandatory)][string]$CustomerOrganizationId,
         [Parameter(Mandatory)][string]$CustomerOrganizationName,
-        [Parameter(Mandatory)][string]$ManagementPackVersion,
+        [Parameter(Mandatory)][string]$CustomerManagementPackVersion,
+        [Parameter(Mandatory)][string]$ProductManagementPackVersion,
         [Parameter(Mandatory)][string]$ProductPublicKeyToken,
         [Parameter(Mandatory)][string]$SelectedTuningProfile
     )
@@ -111,11 +129,11 @@ function Get-OverrideDocument {
 <?xml version="1.0" encoding="utf-8"?>
 <ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <Manifest>
-    <Identity><ID>$managementPackId</ID><Version>$ManagementPackVersion</Version></Identity>
+    <Identity><ID>$managementPackId</ID><Version>$CustomerManagementPackVersion</Version></Identity>
     <Name>$displayName</Name>
     <References>
-      <Reference Alias="HCSHyperVLibrary"><ID>HybridSolutionsCloud.HyperV.Library</ID><Version>$ManagementPackVersion</Version><PublicKeyToken>$($ProductPublicKeyToken.ToLowerInvariant())</PublicKeyToken></Reference>
-      <Reference Alias="$alias"><ID>$productId</ID><Version>$ManagementPackVersion</Version><PublicKeyToken>$($ProductPublicKeyToken.ToLowerInvariant())</PublicKeyToken></Reference>
+      <Reference Alias="HCSHyperVLibrary"><ID>HybridSolutionsCloud.HyperV.Library</ID><Version>$ProductManagementPackVersion</Version><PublicKeyToken>$($ProductPublicKeyToken.ToLowerInvariant())</PublicKeyToken></Reference>
+      <Reference Alias="$alias"><ID>$productId</ID><Version>$ProductManagementPackVersion</Version><PublicKeyToken>$($ProductPublicKeyToken.ToLowerInvariant())</PublicKeyToken></Reference>
     </References>
   </Manifest>
   <Monitoring><Overrides>
@@ -127,8 +145,16 @@ $OverridesXml
 }
 
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$profilePath = Join-Path $sourceRoot "templates/overrides/$($TuningProfile.ToLowerInvariant())/profile.json"
+$profilePath = if ($ProfilePath) {
+    (Resolve-Path -LiteralPath $ProfilePath).Path
+}
+else {
+    Join-Path $sourceRoot "templates/overrides/$($TuningProfile.ToLowerInvariant())/profile.json"
+}
 $profileData = Get-Content -LiteralPath $profilePath -Raw | ConvertFrom-Json
+if ([string]$profileData.schemaVersion -ne '1.2') {
+    throw "Unsupported Hyper-V override profile schemaVersion '$($profileData.schemaVersion)'. Expected '1.2'."
+}
 $OrganizationId = if ($PublicProfile) { 'HybridSolutionsCloud' } else { $OrganizationId }
 $OrganizationName = if ($PublicProfile) { 'Hybrid Solutions Cloud' } else { $OrganizationName }
 $overrideIdPrefix = if ($PublicProfile) { "HybridSolutionsCloud.HyperV.$TuningProfile" } else { "$OrganizationId.HyperV" }
@@ -143,16 +169,15 @@ foreach ($setting in $profileData.discoverySettings) {
 
 $monitoringOverrides = [System.Text.StringBuilder]::new()
 foreach ($setting in $profileData.monitoringSettings) {
-    foreach ($shortWorkflowId in $setting.workflowIds) {
-        $monitorId = "HybridSolutionsCloud.HyperV.Host.$shortWorkflowId.Monitor"
-        $id = "$overrideIdPrefix.Monitoring.$shortWorkflowId.$($setting.parameter).Override"
-        [void]$monitoringOverrides.AppendLine("    <MonitorConfigurationOverride ID=`"$id`" Context=`"HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole`" Enforced=`"false`" Monitor=`"HCSHyperVMonitoring!$monitorId`"><Parameter>$($setting.parameter)</Parameter><Value>$($setting.value)</Value></MonitorConfigurationOverride>")
+    foreach ($target in $setting.targets) {
+        $id = "$overrideIdPrefix.Monitoring.$($target.id).$($setting.parameter).Override"
+        [void]$monitoringOverrides.AppendLine("    <MonitorConfigurationOverride ID=`"$id`" Context=`"HCSHyperVLibrary!$($target.contextClassId)`" Enforced=`"false`" Monitor=`"HCSHyperVMonitoring!$($target.monitorId)`"><Parameter>$($setting.parameter)</Parameter><Value>$($setting.value)</Value></MonitorConfigurationOverride>")
     }
 }
 
 $documents = @{
-    Discovery = Get-OverrideDocument -Kind Discovery -OverridesXml $discoveryOverrides.ToString() -CustomerOrganizationId $OrganizationId -CustomerOrganizationName $OrganizationName -ManagementPackVersion $Version -ProductPublicKeyToken $PublicKeyToken -SelectedTuningProfile $TuningProfile
-    Monitoring = Get-OverrideDocument -Kind Monitoring -OverridesXml $monitoringOverrides.ToString() -CustomerOrganizationId $OrganizationId -CustomerOrganizationName $OrganizationName -ManagementPackVersion $Version -ProductPublicKeyToken $PublicKeyToken -SelectedTuningProfile $TuningProfile
+    Discovery = Get-OverrideDocument -Kind Discovery -OverridesXml $discoveryOverrides.ToString() -CustomerOrganizationId $OrganizationId -CustomerOrganizationName $OrganizationName -CustomerManagementPackVersion $Version -ProductManagementPackVersion $ProductVersion -ProductPublicKeyToken $PublicKeyToken -SelectedTuningProfile $TuningProfile
+    Monitoring = Get-OverrideDocument -Kind Monitoring -OverridesXml $monitoringOverrides.ToString() -CustomerOrganizationId $OrganizationId -CustomerOrganizationName $OrganizationName -CustomerManagementPackVersion $Version -ProductManagementPackVersion $ProductVersion -ProductPublicKeyToken $PublicKeyToken -SelectedTuningProfile $TuningProfile
 }
 
 foreach ($kind in $documents.Keys) {

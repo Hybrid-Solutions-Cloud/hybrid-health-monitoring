@@ -113,10 +113,14 @@ Describe 'Hyper-V Management Pack development build' {
     It 'renders separate customer-owned Discovery and Monitoring override MPs for every starter profile' {
         foreach ($tuningProfile in @('Lab', 'Standard', 'Strict')) {
             $outputPath = Join-Path $TestDrive "overrides-$tuningProfile"
-            & $script:OverrideScript -TuningProfile $tuningProfile -OrganizationId Contoso -OrganizationName Contoso -Version '0.1.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $outputPath
+            & $script:OverrideScript -TuningProfile $tuningProfile -OrganizationId Contoso -OrganizationName Contoso -Version '2.0.0.0' -ProductVersion '0.2.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $outputPath
 
             [xml]$discoveryOverrides = Get-Content (Join-Path $outputPath 'Contoso.HybridSolutionsCloud.HyperV.Discovery.Overrides.xml') -Raw
             [xml]$monitoringOverrides = Get-Content (Join-Path $outputPath 'Contoso.HybridSolutionsCloud.HyperV.Monitoring.Overrides.xml') -Raw
+            [string]$discoveryOverrides.ManagementPack.Manifest.Identity.Version | Should -Be '2.0.0.0'
+            [string]$monitoringOverrides.ManagementPack.Manifest.Identity.Version | Should -Be '2.0.0.0'
+            @($discoveryOverrides.ManagementPack.Manifest.References.Reference.Version | Select-Object -Unique) | Should -Be @('0.2.0.0')
+            @($monitoringOverrides.ManagementPack.Manifest.References.Reference.Version | Select-Object -Unique) | Should -Be @('0.2.0.0')
             @($discoveryOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
             @($monitoringOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
         }
@@ -125,7 +129,7 @@ Describe 'Hyper-V Management Pack development build' {
     It 'renders official public Discovery and Monitoring override MPs for every tuning profile' {
         foreach ($tuningProfile in @('Lab', 'Standard', 'Strict')) {
             $outputPath = Join-Path $TestDrive "public-overrides-$tuningProfile"
-            & $script:OverrideScript -TuningProfile $tuningProfile -PublicProfile -Version '0.1.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $outputPath
+            & $script:OverrideScript -TuningProfile $tuningProfile -PublicProfile -Version '1.0.0.0' -ProductVersion '0.2.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $outputPath
             [xml]$discoveryOverrides = Get-Content (Join-Path $outputPath "HybridSolutionsCloud.HyperV.Discovery.Overrides.$tuningProfile.xml") -Raw
             [xml]$monitoringOverrides = Get-Content (Join-Path $outputPath "HybridSolutionsCloud.HyperV.Monitoring.Overrides.$tuningProfile.xml") -Raw
             [string]$discoveryOverrides.ManagementPack.Manifest.Identity.ID | Should -Be "HybridSolutionsCloud.HyperV.Discovery.Overrides.$tuningProfile"
@@ -133,5 +137,23 @@ Describe 'Hyper-V Management Pack development build' {
             @($discoveryOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
             @($monitoringOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
         }
+    }
+
+    It 'requires an explicit sealed product version' {
+        {
+            & $script:OverrideScript -TuningProfile Standard -OrganizationId Contoso -OrganizationName Contoso -PublicKeyToken '0123456789abcdef' -OutputPath (Join-Path $TestDrive 'missing-product-version')
+        } | Should -Throw '*ProductVersion*'
+    }
+
+    It 'rejects an unknown override profile schema version' {
+        $sourceProfile = Join-Path $script:SourceRoot 'templates/overrides/standard/profile.json'
+        $invalidProfile = Join-Path $TestDrive 'unsupported-profile.json'
+        $profile = Get-Content -LiteralPath $sourceProfile -Raw | ConvertFrom-Json
+        $profile.schemaVersion = '9.9'
+        $profile | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $invalidProfile -Encoding utf8NoBOM
+
+        {
+            & $script:OverrideScript -TuningProfile Standard -ProfilePath $invalidProfile -OrganizationId Contoso -OrganizationName Contoso -ProductVersion '0.2.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath (Join-Path $TestDrive 'unsupported-schema')
+        } | Should -Throw "*Unsupported Hyper-V override profile schemaVersion '9.9'*"
     }
 }

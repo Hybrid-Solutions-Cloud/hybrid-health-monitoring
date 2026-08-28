@@ -45,7 +45,8 @@ identity:
 
 ```powershell
 ./tools/Build-HyperVManagementPacks.ps1 `
-    -Version '0.1.0.0' `
+    -Version '1.0.0.0' `
+    -ProductVersion '0.1.0.0' `
     -PublicKeyToken '<16-hex-character-public-token>'
 ```
 

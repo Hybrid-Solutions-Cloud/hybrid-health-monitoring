@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "profile": "Lab",
   "status": "DevelopmentStarter",
   "purpose": "Fast feedback for bounded functional, fault, transition, and diagnostic validation; not a production baseline.",
@@ -16,16 +16,26 @@
   "monitoringSettings": [
     {
       "id": "MonitorInterval",
-      "workflowIds": ["VMMS", "Cluster", "VirtualMachines", "Replication", "NetworkATC", "Memory", "Cpu", "Csv", "Pipeline"],
+      "targets": [
+        { "id": "VMMS", "monitorId": "HybridSolutionsCloud.HyperV.Host.VMMS.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "Cluster", "monitorId": "HybridSolutionsCloud.HyperV.Host.Cluster.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "VirtualMachines", "monitorId": "HybridSolutionsCloud.HyperV.Host.VirtualMachines.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "Replication", "monitorId": "HybridSolutionsCloud.HyperV.Host.Replication.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "NetworkATC", "monitorId": "HybridSolutionsCloud.HyperV.Host.NetworkATC.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "Memory", "monitorId": "HybridSolutionsCloud.HyperV.Host.Memory.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "Cpu", "monitorId": "HybridSolutionsCloud.HyperV.Host.Cpu.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "Csv", "monitorId": "HybridSolutionsCloud.HyperV.Host.Csv.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" },
+        { "id": "Pipeline", "monitorId": "HybridSolutionsCloud.HyperV.Host.Pipeline.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }
+      ],
       "parameter": "IntervalSeconds",
       "value": 60
     },
-    { "id": "CpuWarning", "workflowIds": ["Cpu"], "parameter": "CpuWarningPercent", "value": 70 },
-    { "id": "CpuCritical", "workflowIds": ["Cpu"], "parameter": "CpuCriticalPercent", "value": 85 },
-    { "id": "MemoryWarning", "workflowIds": ["Memory"], "parameter": "MemoryWarningMB", "value": 6144 },
-    { "id": "MemoryCritical", "workflowIds": ["Memory"], "parameter": "MemoryCriticalMB", "value": 4096 },
-    { "id": "CsvWarning", "workflowIds": ["Csv"], "parameter": "CsvWarningPercentFree", "value": 20 },
-    { "id": "CsvCritical", "workflowIds": ["Csv"], "parameter": "CsvCriticalPercentFree", "value": 15 }
+    { "id": "CpuWarning", "targets": [{ "id": "Cpu", "monitorId": "HybridSolutionsCloud.HyperV.Host.Cpu.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }], "parameter": "CpuWarningPercent", "value": 70 },
+    { "id": "CpuCritical", "targets": [{ "id": "Cpu", "monitorId": "HybridSolutionsCloud.HyperV.Host.Cpu.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }], "parameter": "CpuCriticalPercent", "value": 85 },
+    { "id": "MemoryWarning", "targets": [{ "id": "Memory", "monitorId": "HybridSolutionsCloud.HyperV.Host.Memory.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }], "parameter": "MemoryWarningMB", "value": 6144 },
+    { "id": "MemoryCritical", "targets": [{ "id": "Memory", "monitorId": "HybridSolutionsCloud.HyperV.Host.Memory.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }], "parameter": "MemoryCriticalMB", "value": 4096 },
+    { "id": "CsvWarning", "targets": [{ "id": "Csv", "monitorId": "HybridSolutionsCloud.HyperV.Host.Csv.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }], "parameter": "CsvWarningPercentFree", "value": 20 },
+    { "id": "CsvCritical", "targets": [{ "id": "Csv", "monitorId": "HybridSolutionsCloud.HyperV.Host.Csv.Monitor", "contextClassId": "HybridSolutionsCloud.HyperV.HostRole" }], "parameter": "CsvCriticalPercentFree", "value": 15 }
   ],
   "activationRule": "Use only in an isolated lab. Fast schedules increase agent, OperationsManager database, and warehouse cost."
 }

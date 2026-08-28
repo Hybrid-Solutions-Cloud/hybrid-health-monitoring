@@ -2,6 +2,27 @@
 
 ## Current session
 
+- **Hyper-V v2 plan:** Updated root `PLAN.md` to make Hyper-V Private Cloud Monitoring v2 the
+  active priority and Azure Local explicitly under development. The `0.1` Hyper-V preview is now
+  classified as a superseded host-centric baseline rather than a complete private-cloud product.
+  Added the clean-sheet modular package architecture, authoritative Microsoft/vendor dependency
+  policy, complete compute/cluster/S2D/SAN/Pure/SMB/network/ATC/SDN/VMM catalog, DA and console
+  redesign, research spikes, implementation sequence, override remediation, compatibility path,
+  lab matrix, release gates, and definition of done. No source code or release assets changed.
+- **Validation:** `git diff --check` passed. Branch remains `main`; `PLAN.md` and this handoff are
+  modified and uncommitted.
+- **Override remediation begun:** Hyper-V override generation now separates the unsealed override
+  MP identity (`-Version`, default `1.0.0.0`) from mandatory sealed references
+  (`-ProductVersion`). Profile schema `1.2` carries explicit monitor IDs and context classes and
+  rejects unknown schemas. Updated all three Hyper-V profiles, operator examples, design guidance,
+  contract invocation, and Pester assertions. Hyper-V Pester passes 11/11 and the product contract
+  suite passes. The equivalent Azure Local remediation remains deferred while that product is
+  explicitly under development.
+- **Cluster dependency evidence:** The installed sealed SCOM 2022
+  `Microsoft.Windows.Cluster.Library` is version `7.0.8447.6` and exposes public Cluster, Cluster
+  Service, and Virtual Server model classes, but no public CSV class. V2 can reuse Microsoft
+  cluster identity while retaining HCS-owned CSV/S2D/SAN classes with explicit correlations.
+
 - **SCOM lab preview published:** Published GitHub prerelease
   `scom-lab-preview-v0.1.0` with separate Azure Local and Hyper-V ZIPs. Each ZIP contains the five
   sealed version `0.1.0.0` MPs, a lab-only notice, import order, and per-file SHA-256 checksums. A

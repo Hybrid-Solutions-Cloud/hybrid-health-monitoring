@@ -194,7 +194,7 @@ try {
 
         $overrideOutput = Join-Path $tempRoot "overrides-$profileName"
         $overrideGenerator = Join-Path $PSScriptRoot 'New-HyperVOverrideManagementPacks.ps1'
-        & $overrideGenerator -TuningProfile $profileName -OrganizationId 'Contoso' -OrganizationName 'Contoso' -Version '0.1.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $overrideOutput
+        & $overrideGenerator -TuningProfile $profileName -OrganizationId 'Contoso' -OrganizationName 'Contoso' -Version '1.0.0.0' -ProductVersion '0.1.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $overrideOutput
         $generatedDiscovery = Join-Path $overrideOutput 'Contoso.HybridSolutionsCloud.HyperV.Discovery.Overrides.xml'
         $generatedMonitoring = Join-Path $overrideOutput 'Contoso.HybridSolutionsCloud.HyperV.Monitoring.Overrides.xml'
         [xml]$discoveryOverridesXml = Get-Content -LiteralPath $generatedDiscovery -Raw
