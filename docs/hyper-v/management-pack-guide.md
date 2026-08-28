@@ -28,6 +28,40 @@ profiles; import exactly one profile's separate Discovery and Monitoring XML fil
 
 The sealed MPs are product-owned. Every active override is stored in customer-owned, unsealed XML.
 
+## V2 development dependency profile
+
+Hyper-V Private Cloud Monitoring v2 is still under development and is not the lab-preview download
+described above. Its four required core MPs have no optional Cluster, CSV, S2D, SAN, Pure, SDN, or
+VMM dependency. Each supported capability is a separate sealed adapter.
+
+The authored `Capability.Cluster` adapter requires these prerequisites before import:
+
+| Prerequisite | Minimum | Purpose |
+|---|---:|---|
+| Microsoft Windows Server Cluster 2016 and above MPs | `10.1.0.0` | Authoritative cluster, node, role/group, network, and leaf health |
+| Microsoft Windows Server OS/CSV MPs | `10.1.2.2` | Authoritative Cluster Shared Volume objects, health, and performance |
+| HCS v2 Library and Presentation | Matching product version | DA relationships, rollup targets, and common console folders |
+| Failover Clustering management tools | Matching Windows Server | Local, read-only topology queries used by the HCS relationship adapter |
+
+Install the Hyper-V and Failover Clustering roles with their management tools on participating
+Windows Server hosts:
+
+```powershell
+Install-WindowsFeature Hyper-V -IncludeManagementTools
+Install-WindowsFeature Failover-Clustering -IncludeManagementTools
+```
+
+If the clustering role is already present without its PowerShell module, install the missing
+feature explicitly:
+
+```powershell
+Install-WindowsFeature RSAT-Clustering-PowerShell
+```
+
+The HCS adapter does not replace or duplicate Microsoft cluster monitoring. It submits key-based
+relationships to Microsoft objects, rolls their health into the private-cloud DA, and adds an HCS
+integration-pipeline monitor. Microsoft remains the leaf-alert authority.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

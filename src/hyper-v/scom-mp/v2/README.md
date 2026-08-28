@@ -26,6 +26,17 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
+The first optional capability is also authored:
+
+- `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
+  `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
+  HCS integration-pipeline monitor, five leaf-health rollups, and seven cluster/CSV console views.
+  Microsoft remains the cluster and CSV leaf-alert authority.
+
+The Cluster capability requires the Microsoft Cluster and Windows Server/CSV MPs plus the
+`FailoverClusters` PowerShell module on participating nodes. It is optional and has no effect on a
+standalone core installation.
+
 Build the currently authored artifacts with PowerShell 7:
 
 ```powershell

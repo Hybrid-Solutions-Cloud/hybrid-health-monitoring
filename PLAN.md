@@ -583,7 +583,10 @@ versions, cost, and required fixture.
    per-VM runtime monitors, 12 performance rules, a diagnostic task, operational knowledge, and 14
    DA rollups pass OM2022 VSAE/SDK verification and transient test sealing. Curated event rules,
    deeper performance families, and representative fault/scale validation remain.**
-8. Implement Failover Cluster integration and CSV monitoring.
+8. Implement Failover Cluster integration and CSV monitoring. **Capability.Cluster is authored,
+   resolves against the inspected Microsoft Cluster `10.1.0.0` and CSV `10.1.2.2` contracts,
+   rolls authoritative leaf health into the Availability and Storage branches, and passes OM2022
+   verification plus transient sealing; representative cluster lifecycle/fault labs remain.**
 9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs.
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and

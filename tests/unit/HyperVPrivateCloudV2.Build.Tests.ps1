@@ -16,6 +16,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:Discovery = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Discovery.xml') -Raw
         [xml]$script:Monitoring = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Monitoring.xml') -Raw
         [xml]$script:Presentation = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation.xml') -Raw
+        [xml]$script:ClusterCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.xml') -Raw
     }
 
     AfterAll {
@@ -63,10 +64,11 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         }
     }
 
-    It 'builds all four required core artifacts without claiming they are sealed' {
+    It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 4
+        @($script:Receipt.artifacts).Count | Should -Be 5
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -232,6 +234,64 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'keeps optional capability views out of the required core Presentation MP' {
         $script:Presentation.OuterXml | Should -Not -Match 'ClusterSharedVolume|NetworkAtcIntent|PureStorage|StorageSpacesDirect|SoftwareDefinedNetwork|VirtualMachineManager'
+    }
+
+    It 'pins the optional Cluster capability to the inspected Microsoft Cluster and CSV contracts' {
+        $references = @{}
+        foreach ($reference in $script:ClusterCapability.SelectNodes('/ManagementPack/Manifest/References/Reference')) { $references[[string]$reference.Alias] = $reference }
+        $references.Cluster.ID | Should -Be 'Microsoft.Windows.Cluster.Library'
+        $references.ClusterManagement.ID | Should -Be 'Microsoft.Windows.Cluster.Management.Library'
+        $references.ClusterManagement.Version | Should -Be '10.1.0.0'
+        $references.CSV.ID | Should -Be 'Microsoft.Windows.Server.ClusterSharedVolumeMonitoring'
+        $references.CSV.Version | Should -Be '10.1.2.2'
+        $references.HCSV2Presentation.ID | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation'
+    }
+
+    It 'relates authoritative Microsoft cluster objects without defining duplicate cluster classes' {
+        @($script:ClusterCapability.SelectNodes('//ClassType')).Count | Should -Be 0
+        $relationships = @($script:ClusterCapability.SelectNodes('//RelationshipType'))
+        $relationships.Count | Should -Be 6
+        @($relationships.Target.Type) | Should -Contain 'Cluster!Microsoft.Windows.Cluster'
+        @($relationships.Target.Type) | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Node'
+        @($relationships.Target.Type) | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Group'
+        @($relationships.Target.Type) | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Network'
+        @($relationships.Target.Type) | Should -Contain 'CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume'
+        @($script:ClusterCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 0
+        @($script:ClusterCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 6
+    }
+
+    It 'uses Microsoft leaf health and adds only HCS integration-pipeline monitoring and rollups' {
+        @($script:ClusterCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:ClusterCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 5
+        @($script:ClusterCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        $script:ClusterCapability.SelectSingleNode("//UnitMonitor[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
+        foreach ($rollup in $script:ClusterCapability.SelectNodes('//DependencyMonitor')) {
+            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberUnAvailable | Should -Be 'Success'
+            $rollup.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'ships cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
+        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 7
+        $targets = @($script:ClusterCapability.SelectNodes('//View') | ForEach-Object Target)
+        $targets | Should -Contain 'Cluster!Microsoft.Windows.Cluster'
+        $targets | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Node'
+        $targets | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Group'
+        $targets | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Network'
+        $targets | Should -Contain 'CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume'
+        foreach ($item in $script:ClusterCapability.SelectNodes('//FolderItem')) { [string]$item.Folder | Should -BeLike 'HCSV2Presentation!*' }
+    }
+
+    It 'uses non-throwing cluster capability probes and syntactically valid embedded PowerShell' {
+        foreach ($scriptBody in $script:ClusterCapability.SelectNodes('//ScriptBody')) {
+            $scriptBody.InnerText | Should -Match 'function Test-HcsCapability'
+            $scriptBody.InnerText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

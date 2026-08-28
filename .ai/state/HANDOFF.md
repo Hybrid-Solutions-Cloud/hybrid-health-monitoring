@@ -2,6 +2,17 @@
 
 ## Current session
 
+- **V2 Cluster capability authored:** Added `Capability.Cluster` against the inspected Microsoft
+  Cluster `10.1.0.0` and CSV `10.1.2.2` contracts. It defines no duplicate cluster classes: six
+  relationships connect existing Microsoft cluster, node, role/group, network, and CSV objects to
+  the HCS boundary, Availability, and Storage branches. One HCS monitor validates the adapter query
+  pipeline and `FailoverClusters` module; five dependency monitors roll authoritative Microsoft
+  leaf health without duplicate alerts; seven views attach beneath core Presentation folders.
+  Focused v2 Pester passes 29/29. The capability resolves through OM2022 VSAE (only the expected
+  pre-seal type-definition warnings), transiently seals with token `14a10c8275285f00`, and passes
+  `sn.exe -vf`. Scratch evidence is under `D:/tmp/hcs-hyperv-v2-cluster-*`; representative cluster
+  import, correlation, failover, rename, CSV, and removal labs remain.
+
 - **Root implementation plan confirmed:** `PLAN.md` is the tracked, authoritative public plan for
   the Hyper-V Private Cloud Monitoring v2 redesign. It includes the complete domain catalog,
   modular package/dependency policy, Distributed Application and console design, override/profile

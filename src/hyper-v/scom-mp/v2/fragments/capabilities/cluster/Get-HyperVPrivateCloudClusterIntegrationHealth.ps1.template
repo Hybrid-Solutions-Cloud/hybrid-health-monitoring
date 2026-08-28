@@ -1,0 +1,53 @@
+#Requires -Version 7.0
+param([string]$ComputerName, [string]$BoundaryId)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = 'Cluster integration queries completed successfully.'
+
+try {
+    if ($BoundaryId -notlike 'cluster:*') {
+        $state = 'NotApplicable'
+        $detail = 'This Hyper-V host belongs to a standalone boundary; the optional cluster capability is not applicable.'
+    }
+    elseif (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-Cluster')) {
+        $state = 'Critical'
+        $detail = 'The FailoverClusters PowerShell module is missing. Install RSAT-Clustering-PowerShell with Install-WindowsFeature RSAT-Clustering-PowerShell.'
+    }
+    else {
+        $cluster = Get-Cluster -ErrorAction Stop
+        $nodes = @(Get-ClusterNode -Cluster $cluster -ErrorAction Stop)
+        $groups = @(Get-ClusterGroup -Cluster $cluster -ErrorAction Stop)
+        $networks = @(Get-ClusterNetwork -Cluster $cluster -ErrorAction Stop)
+        $csvCount = if (Get-Command -Name 'Get-ClusterSharedVolume' -ErrorAction SilentlyContinue) { @(Get-ClusterSharedVolume -Cluster $cluster -ErrorAction Stop).Count } else { 0 }
+        if ($nodes.Count -eq 0) {
+            $state = 'Critical'
+            $detail = "Cluster '$($cluster.Name)' returned no node objects; HCS relationship discovery cannot populate service impact."
+        }
+        else {
+            $detail = "Cluster '$($cluster.Name)' integration query succeeded: $($nodes.Count) node(s), $($groups.Count) group(s), $($networks.Count) network(s), and $csvCount CSV(s). Microsoft Cluster and CSV MPs remain the leaf-health authority."
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Cluster integration query failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.Cluster.IntegrationHealth.ps1', 8303, 1, $detail)
+}
+
+$bag.AddValue('ClusterIntegrationState', $state)
+$bag.AddValue('ClusterIntegrationStateDetail', $detail)
+$bag
