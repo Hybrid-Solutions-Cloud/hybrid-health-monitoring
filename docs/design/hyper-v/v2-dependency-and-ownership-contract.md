@@ -61,6 +61,8 @@ suitable relationship endpoints and must not be duplicated by v2.
 | Pure Storage Integration | Pure Storage FlashArray MP `2.0.120.0` for SCOM 2016/2019/2022 and Purity 5.3+ | Never a core dependency; reuse Pure arrays, controllers, hosts, host groups, ports, volumes, and pods; HCS adds the SAN-to-VM correlation chain and DA impact only |
 | VMM Integration | Matching Microsoft VMM Management Packs for the supported VMM/SCOM version pair | Never a core dependency; reference VMM clouds, host groups, logical networks, logical switches, storage, and jobs instead of rediscovering them |
 | SDN Integration | Microsoft Windows Server SDN MP, minimum package `10.0.0.2` | Never a core dependency; reuse Microsoft SDN objects and add only verified correlations, coverage, and service impact |
+| SMB/SOFS Integration | Microsoft Windows Server File & iSCSI Services package `10.1.0.4` plus matching Cluster MPs for SOFS | Reuse Microsoft File Server, clustered SMB, iSCSI Target, cluster role/resource, and leaf health; HCS owns only missing share/path/VHDX/VM mappings and service impact |
+| Physical Network Integration | Built-in SCOM network libraries matching the installed SCOM version | Reuse nodes, switches, ports/interfaces, VLANs, connections, server-port correlation, health, and performance; HCS adds private-cloud membership, coverage, and service impact |
 
 An optional capability's presentation and Distributed Application population are packaged with or
 behind that capability. The base presentation MP must not take every optional dependency and turn a
@@ -129,6 +131,21 @@ Pure's published support evidence does not include SCOM 2025. The v2 preflight t
 that combination until either Pure publishes support or a mutually exclusive HCS Purity REST 2.x
 provider passes its own security, scale, migration, and representative-array gates.
 
+## SMB/SOFS and physical network contracts
+
+[ADR 0042](../decisions/0042-hyper-v-v2-file-services-and-physical-network-ownership.md) makes
+Microsoft's File & iSCSI and built-in SCOM network objects authoritative. File & iSCSI Services
+package `10.1.0.4` supports Windows Server and SCOM 2016, 2019, 2022, and 2025. The inspected public
+model includes File Server, File Server service, SMB service, clustered SMB service, and iSCSI
+Target service classes. HCS may add missing concrete SOFS share, Multichannel/RDMA path,
+share-to-VHDX/VM correlation, coverage, and service-impact concepts.
+
+The built-in network libraries expose `System.NetworkManagement.Node`/`Switch`, hosted
+`NetworkAdapter`/`Interface`/`Port`, `VLAN`, and `NetworkConnection`. Nodes use `DeviceKey`; hosted
+adapters use `Key`. Public topology includes node-to-adapter, VLAN-to-adapter, adapter-peer, and
+network-connection-to-`System.NetworkAdapter` relationships. HCS consumes those objects and
+Microsoft's server-port correlation rather than rediscovering devices or handling SNMP secrets.
+
 ## Preview migration boundary
 
 The `0.1` preview is not upgraded by renaming its public elements. The v2 installer and guide must:
@@ -144,11 +161,9 @@ The `0.1` preview is not upgraded by renaming its public elements. The v2 instal
 The following dependencies are not approved until their exact public contracts are inspected and
 recorded in this page:
 
-- Microsoft VMM MPs for each supported SCOM/VMM pair;
+- exact VMM MP IDs, classes, and keys from each supported, build-coupled SCOM/VMM pair; and
 - the SCOM 2025 Pure Storage path, either vendor-certified or a separately approved read-only
-  Purity REST 2.x provider;
-- File and iSCSI Services/SOFS objects used for Hyper-V over SMB; and
-- physical network-device classes used for switch-to-NIC correlation.
+  Purity REST 2.x provider.
 
 ## Sources
 
@@ -161,3 +176,5 @@ recorded in this page:
 - [What is in an Operations Manager Management Pack?](https://learn.microsoft.com/en-us/system-center/scom/manage-overview-management-pack?view=sc-om-2025)
 - [Pure Storage FlashArray PowerShell SDK 2](https://github.com/PureStorage-Connect/PowerShellSDK2)
 - [Pure Storage FlashArray SCOM MP 2.0.120.0](https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0)
+- [Windows Server File & iSCSI Services MP 10.1.0.4](https://www.microsoft.com/en-us/download/details.aspx?id=57594)
+- [Monitoring networks by using Operations Manager](https://learn.microsoft.com/en-us/system-center/scom/manage-monitor-networkdevice-overview?view=sc-om-2025)

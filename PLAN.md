@@ -547,7 +547,8 @@ coexistence, and gap analysis remain open.
    inventory completed; finish SAN mappings, MPIO, REST gap, SCOM 2025, ActiveCluster, and
    representative-array validation.
 7. **Networking spike** — physical/virtual networking, SET, RDMA/DCB, Network ATC, physical switch
-   correlation, authority selection, and failure injection.
+   public-contract inventory completed; finish virtual networking, SET, RDMA/DCB, Network ATC,
+   authority selection, correlation failure, and fault injection.
 8. **SDN spike** — inventory completed for Microsoft SDN MP `10.0.0.2`; finish HNV, certificate,
    service-impact, duplicate-monitoring, security, scale, and test-topology gap analysis.
 9. **VMM spike** — official MP model, supported integration, clouds, fabric networks/storage,

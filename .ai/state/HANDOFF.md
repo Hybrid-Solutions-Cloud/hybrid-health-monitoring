@@ -2,6 +2,23 @@
 
 ## Current session
 
+- **SOFS and physical network ownership approved:** Added ADR 0042 after inspecting Microsoft File
+  & iSCSI Services `10.1.0.4` and the OM2022 built-in network libraries. File Server, clustered SMB,
+  iSCSI Target, network node/switch, interface/port, VLAN, connection, topology, health, and
+  performance remain Microsoft-owned.
+- **HCS gap boundary:** The SMB/SOFS adapter may add concrete SOFS share, Multichannel/RDMA path,
+  share-to-VHDX/VM, coverage, and DA-impact concepts. Physical network integration consumes
+  Microsoft's existing server-port correlation and adds private-cloud membership/rollup; it does
+  not rediscover devices or handle SNMP secrets. Ambiguous/missing correlation is Unknown/Not
+  Monitored, never guessed Healthy.
+- **Machine contract:** `dependencies.v2.json` now records File & iSCSI MP IDs and supported
+  Windows/SCOM 2016–2025 versions plus built-in network classes, `DeviceKey`/`Key` identities, and
+  public topology relationships. VMM remains the only uninspected major external object contract;
+  Microsoft couples those MPs to each VMM build and supplies them from the VMM installation.
+- **Verification:** Hyper-V Pester passes 14/14, VitePress production build passes, dependency JSON
+  parses, edited links resolve, and `git diff --check` passes; the existing large-chunk warning is
+  unchanged.
+
 - **Pure Storage contract approved:** Added ADR 0041 after inspecting Pure's current GitHub release,
   official release notes/guide, and sealed `PureStorageFlashArray` MP `2.0.120.0` (token
   `a9d994eedb5e7179`). The vendor lane explicitly supports SCOM 2016/2019/2022 and Purity 5.3+;

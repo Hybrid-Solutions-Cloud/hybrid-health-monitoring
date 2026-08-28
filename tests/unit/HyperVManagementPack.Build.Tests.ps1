@@ -67,6 +67,20 @@ Describe 'Hyper-V Management Pack development build' {
         $pure.managementPacks | Should -Contain 'PureStorageFlashArray'
         $pure.secureReference | Should -Be 'PureStorage.FlashArray.FlashArrayAdminAccount'
         $pure.authoritativeClasses | Should -Contain 'PureStorage.FlashArray.PureVolume'
+
+        $sofs = $contract.capabilities | Where-Object id -eq 'ScaleOutFileServer'
+        $sofs.status | Should -Be 'Approved'
+        $sofs.packageVersion | Should -Be '10.1.0.4'
+        $sofs.supportedScomVersions | Should -Contain '2025'
+        $sofs.managementPacks | Should -Contain 'Microsoft.Windows.FileServices.SMB.2016'
+        $sofs.authoritativeClasses | Should -Contain 'Microsoft.Windows.FileServices.Service.SMB.10.0.Clustered'
+
+        $network = $contract.capabilities | Where-Object id -eq 'PhysicalNetwork'
+        $network.status | Should -Be 'Approved'
+        $network.versionPolicy | Should -Match 'matching the installed SCOM version'
+        $network.authoritativeClasses | Should -Contain 'System.NetworkManagement.Switch'
+        $network.identityKeys.'System.NetworkManagement.Node' | Should -Be 'DeviceKey'
+        $network.authoritativeRelationships | Should -Contain 'System.NetworkManagement.NetworkConnectionConnectedToNetworkAdapter'
     }
 
     It 'passes the repository contract suite' {

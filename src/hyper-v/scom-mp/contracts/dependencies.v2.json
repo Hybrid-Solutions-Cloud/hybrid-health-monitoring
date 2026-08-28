@@ -147,13 +147,70 @@
     },
     {
       "id": "ScaleOutFileServer",
-      "status": "ContractSpikeRequired",
-      "optional": true
+      "status": "Approved",
+      "optional": true,
+      "packageVersion": "10.1.0.4",
+      "download": "https://www.microsoft.com/en-us/download/details.aspx?id=57594",
+      "managementPacks": [
+        "Microsoft.Windows.FileServices",
+        "Microsoft.Windows.FileServices.2016",
+        "Microsoft.Windows.FileServices.SMB.2016",
+        "Microsoft.Windows.FileServices.iSCSITarget.2016"
+      ],
+      "supportedWindowsServerVersions": [
+        "2016",
+        "2019",
+        "2022",
+        "2025"
+      ],
+      "supportedScomVersions": [
+        "2016",
+        "2019",
+        "2022",
+        "2025"
+      ],
+      "authoritativeClasses": [
+        "Microsoft.Windows.FileServer",
+        "Microsoft.Windows.FileServer.Service",
+        "Microsoft.Windows.FileServices.10.0.FileServer",
+        "Microsoft.Windows.FileServices.Service.SMB.10.0",
+        "Microsoft.Windows.FileServices.Service.SMB.10.0.Clustered",
+        "Microsoft.Windows.FileServices.Service.iSCSITarget.10.0"
+      ],
+      "policy": "Reuse Microsoft File Server, SMB, clustered SMB, iSCSI Target, and cluster role health; HCS adds only missing SOFS share, Multichannel/RDMA path, VHDX/VM mapping, coverage, and service-impact objects."
     },
     {
       "id": "PhysicalNetwork",
-      "status": "ContractSpikeRequired",
-      "optional": true
+      "status": "Approved",
+      "optional": true,
+      "versionPolicy": "Use the built-in network libraries matching the installed SCOM version.",
+      "inspectedScomVersion": "2022",
+      "inspectedPackageVersion": "10.22.10118.0",
+      "managementPacks": [
+        "Microsoft.SystemCenter.NetworkDevice.Library",
+        "System.NetworkManagement.Library",
+        "System.Snmp.Library"
+      ],
+      "authoritativeClasses": [
+        "System.NetworkManagement.Node",
+        "System.NetworkManagement.Switch",
+        "System.NetworkManagement.NetworkAdapter",
+        "System.NetworkManagement.Interface",
+        "System.NetworkManagement.Port",
+        "System.NetworkManagement.VLAN",
+        "System.NetworkManagement.NetworkConnection"
+      ],
+      "identityKeys": {
+        "System.NetworkManagement.Node": "DeviceKey",
+        "System.NetworkManagement.NetworkAdapter": "Key"
+      },
+      "authoritativeRelationships": [
+        "System.NetworkManagement.NodeComposedOfNetworkAdapter",
+        "System.NetworkManagement.VLANComposedOfNetworkAdapter",
+        "System.NetworkManagement.NetworkAdapterPeerNetworkAdapter",
+        "System.NetworkManagement.NetworkConnectionConnectedToNetworkAdapter"
+      ],
+      "policy": "Reuse SCOM network devices, ports/interfaces, VLANs, topology, server-port correlation, health, and performance; HCS adds only private-cloud membership, coverage, and service impact."
     }
   ]
 }
