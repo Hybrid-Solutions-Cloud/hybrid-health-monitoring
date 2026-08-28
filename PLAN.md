@@ -633,6 +633,16 @@ resolution, test sealing, reference and override resolution, example drift, cook
 fixtures, cardinality/performance budgets, documentation consistency, upgrade compatibility, and
 secret scanning.
 
+**Release-blocking PowerShell host gate:** the HCS scripting standard requires every first-party
+script to declare PowerShell 7, but Microsoft's current SCOM system requirements describe Windows
+PowerShell 3.0 as the agent prerequisite for Management Packs that use PowerShell scripts. VSAE
+validates the MP contract but does not prove the Health Service runtime host. Before any v2 build
+is called usable, a representative SCOM agent must prove that every referenced PowerShell module
+type launches a PowerShell 7-compatible host. If it does not, replace the module path with an
+explicit, supported `pwsh.exe` execution design or obtain and document a narrowly scoped governance
+exception; do not remove `#Requires -Version 7.0` or claim runtime support without one of those
+outcomes.
+
 Representative labs must cover standalone Hyper-V; clustered SAN; Pure Storage; S2D; combined SAN
 and S2D; Hyper-V over SMB where supported; Network ATC; VMM; SDN; and configurations where optional
 capabilities are absent. Exercise maintenance, migration, failover, quorum/witness loss, node
@@ -646,6 +656,8 @@ V2 is complete only when:
 - every promised domain has an explicit implemented, integrated, deferred, or unsupported
   disposition;
 - all supported topology combinations discover and reconcile correctly;
+- every embedded script executes under its declared PowerShell 7 requirement on every supported
+  SCOM/Windows Server pair;
 - SAN and S2D operate simultaneously;
 - the DA is visible, navigable, stable, and rolls up verified service impact;
 - required missing capabilities are actionable failures while optional absent capabilities are Not

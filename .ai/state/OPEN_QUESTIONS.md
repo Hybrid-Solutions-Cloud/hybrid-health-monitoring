@@ -12,9 +12,11 @@
 - Beyond the verified SCOM 2022 dependency set, which exact sealed dependency-MP versions should
   the first release support? Export them from each additional target SCOM release and run
   `Test-HyperVManagementPacksWithSdk.ps1`.
-- Does the target SCOM HealthService and supported Windows Server matrix execute every embedded
-  PowerShell provider workflow consistently, including Hyper-V, FailoverClusters, and Network ATC
-  modules? Prove in the standalone and clustered labs.
+- **Release blocker:** SCOM's published agent requirement names Windows PowerShell 3.0 for MPs that
+  use PowerShell scripts, while the HCS standard mandates `#Requires -Version 7.0`. Does each
+  selected SCOM module type actually launch a PowerShell 7-compatible host? Prove it immediately
+  in a representative agent lab. If not, author and validate an explicit `pwsh.exe` execution
+  module or obtain a documented governance exception before claiming any v2 runtime support.
 - Do stable VM identity, multi-node topology contributions, DA population/rollup, maintenance,
   migration/failover, recovery, upgrade, and removal behave as designed in SCOM?
 - What release signing identity and governed sealing pipeline will produce the first signed bundle?

@@ -2,6 +2,14 @@
 
 ## Current session
 
+- **PowerShell execution host is now an explicit release blocker:** Microsoft currently documents
+  Windows PowerShell 3.0 as the SCOM agent prerequisite for MPs that use PowerShell scripts, while
+  the HCS standard mandates `#Requires -Version 7.0`. The authored XML uses Microsoft Windows
+  PowerShell probe/provider module types. VSAE does not prove their runtime host, so `PLAN.md` and
+  `OPEN_QUESTIONS.md` now require a representative agent proof before any v2 runtime claim. If the
+  providers do not host PowerShell 7, the pack needs an explicit supported `pwsh.exe` module path
+  or a documented governance exception; silently dropping the requirement is prohibited.
+
 - **V2 Pure Storage adapter authored:** Added `Capability.PureStorage` against the inspected vendor
   `PureStorageFlashArray` `2.0.120.0` identity. It defines no competing Pure classes, uses no Pure
   credential or REST/control path, and preserves the vendor pack as leaf-topology, health, alert,
