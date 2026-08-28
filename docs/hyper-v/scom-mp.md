@@ -36,6 +36,10 @@ certification now requires:
    views, overrides, scale, upgrade, and removal; and
 5. release-seal, sign, version, and publish the certified artifacts with the governed identity.
 
+[Download the sealed Hyper-V SCOM 0.1.0 lab preview](../downloads/scom-lab-preview.md) for
+controlled pre-production evaluation. The preview uses a transient development signing identity;
+read the warning and checksum instructions before import.
+
 The comprehensive proposed design is now available in the
 [Hyper-V SCOM architecture map](../design/hyper-v/scom-mp.md). It covers package decomposition,
 classes and relationships, staged discovery, workflows and cookdown, health and alerts, dynamic DA

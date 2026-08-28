@@ -17,6 +17,9 @@ hero:
     - theme: alt
       text: View the roadmap
       link: /project/roadmap
+    - theme: alt
+      text: Download SCOM lab previews
+      link: /downloads/scom-lab-preview
 features:
   - title: Azure Local
     details: A committed SCOM Management Pack and Azure Monitor Health Models for the full Azure Local infrastructure stack.
@@ -79,6 +82,8 @@ SCOM-to-ServiceNow mapping/profile baseline also passes offline validation. Both
 Microsoft VSAE/SDK verification and ordered transient test sealing. Release signing and live SCOM,
 Azure, and ServiceNow certification gates remain. See the [project roadmap](/project/roadmap) and
 [implementation plan](https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/blob/main/PLAN.md).
+The sealed SCOM suites are available for controlled testing from the
+[lab-preview download page](/downloads/scom-lab-preview).
 :::
 
 | Phase | Description | Status |

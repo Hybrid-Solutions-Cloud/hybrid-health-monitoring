@@ -2,6 +2,25 @@
 
 ## Current session
 
+- **2026-08-28 artifact audit:** Confirmed that the repository tracks complete source templates,
+  manifests, build tools, validators, and override examples for independent Azure Local and
+  Hyper-V SCOM products. Git tracks no sealed `.mp` or `.mpb` artifacts now, and
+  `git rev-list --objects --all` found no such artifact anywhere in repository history.
+- **Repository-local output:** Ignored `src/azure-local/scom-mp/out/development/` and
+  `src/hyper-v/scom-mp/out/development/` directories remain on this workstation. Each contains
+  four unsealed development XML outputs plus an inventory; optional Reporting is absent because
+  the default development build excludes it. The inventories explicitly mark the outputs
+  `releaseReady: false`, `sealed: false`, `signed: false`, and `labImported: false`.
+- **Transient sealed artifacts found:** The five Azure Local and five Hyper-V version `0.1.0.0`
+  test-sealed `.mp` files remain outside the repository under
+  `D:/tmp/hcs-scom-seal-92cb5ef4f7374e9299ece6638c3cef63/{azure-local,hyper-v}/`.
+  All ten expose public key token `14a10c8275285f00`; an independent `sn.exe -vf` audit returned
+  exit code 0 and `Assembly ... is valid` for every file. These are transient development/test
+  artifacts, not governed-release-signed, published, or lab-certified deliverables.
+- **Audit conclusion:** The previous completion claim is accurate only for authored development
+  source plus OM2022 verification/test sealing. It is not accurate if interpreted to mean that
+  release Management Packs were committed or published. A governed release still needs a durable
+  artifact location, release signing, and representative SCOM lab certification.
 - **Public-site reconciliation:** Updated the landing/status pages, both SCOM product and design
   lanes, validation pages, roadmap, administration guides, source READMEs, current ADR notes, and
   the Azure Local package diagram to record completed OM2022 VSAE verification and transient test

@@ -10,6 +10,10 @@ validation page records governed release signing and successful SCOM lab gates. 
 already passes Microsoft VSAE/SDK verification and ordered transient test sealing; those authoring
 checks do not certify runtime behavior.
 
+A [sealed lab-preview package](../downloads/scom-lab-preview.md) is available for controlled
+pre-production validation. It uses the transient development signing identity and must not be
+treated as a production release.
+
 ## Build
 
 Run the PowerShell 7 build script with a four-part version, the intended product public-key token,

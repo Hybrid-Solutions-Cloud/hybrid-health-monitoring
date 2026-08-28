@@ -6,10 +6,14 @@ description: Public operator guide for building, installing, validating, tuning,
 # Hyper-V Management Pack administration guide
 
 This guide explains how the Hyper-V SCOM Management Pack is built, installed, tuned, and
-maintained. Functional development XML is available; no sealed and signed product package has been
-released yet. Microsoft VSAE/SDK verification and ordered transient test sealing pass for the full
+maintained. Functional development XML is available; no governed-release-signed production package
+has been released yet. Microsoft VSAE/SDK verification and ordered transient test sealing pass for the full
 five-project suite. A release remains blocked until clean SCOM lab import, runtime, fault/recovery,
 scale, lifecycle, and governed release-signing gates pass.
+
+A [sealed lab-preview package](../downloads/scom-lab-preview.md) is available for controlled
+pre-production validation. It uses the transient development signing identity and must not be
+treated as a production release.
 
 ## What customers will receive
 

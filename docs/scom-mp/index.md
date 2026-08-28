@@ -19,6 +19,10 @@ the installed SCOM 2022 dependencies. Governed release signing and SCOM lab cert
 still required before release.
 :::
 
+[Download the sealed Azure Local SCOM 0.1.0 lab preview](../downloads/scom-lab-preview.md) for
+controlled pre-production evaluation. The preview uses a transient development signing identity;
+read the warning and checksum instructions before import.
+
 Looking for the other SCOM product? See the independent
 [Hyper-V SCOM Management Pack](../hyper-v/scom-mp.md).
 
