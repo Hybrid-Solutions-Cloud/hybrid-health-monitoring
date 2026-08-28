@@ -320,6 +320,51 @@ function Get-HcsS2DCapabilityContent {
     return [pscustomobject]@{ Discoveries = $discoveries.ToString(); Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
+function Get-HcsPureStorageCapabilityContent {
+    [CmdletBinding()]
+    param()
+
+    $rollupDefinitions = @(
+        @('Array', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray', 'Pure array health'),
+        @('Port', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort', 'Pure port health'),
+        @('Host', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost', 'Pure host health'),
+        @('Volume', 'HCSV2Storage!HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume', 'Pure volume health')
+    )
+    $rollups = [System.Text.StringBuilder]::new()
+    $views = [System.Text.StringBuilder]::new()
+    $folderItems = [System.Text.StringBuilder]::new()
+    $displays = [System.Text.StringBuilder]::new()
+    foreach ($definition in $rollupDefinitions) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.$($definition[0]).Dependency.Monitor"
+        [void]$rollups.AppendLine("<DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$($definition[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name></DisplayString>")
+    }
+    $viewDefinitions = @(
+        @('Pod', 'PureStorage.FlashArray.Pod', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure ActiveCluster pods'),
+        @('PodReplica', 'PureStorage.FlashArray.PodReplica', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure pod replicas'),
+        @('Array', 'PureStorage.FlashArray.PureArray', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure arrays'),
+        @('Controller', 'PureStorage.FlashArray.PureController', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure controllers'),
+        @('Host', 'PureStorage.FlashArray.PureHost', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure hosts'),
+        @('Hostgroup', 'PureStorage.FlashArray.PureHostgroup', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure host groups'),
+        @('Port', 'PureStorage.FlashArray.PurePort', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure ports'),
+        @('Volume', 'PureStorage.FlashArray.PureVolume', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure volumes'),
+        @('ActiveAlerts', 'PureStorage.FlashArray.PureArray', 'SC!Microsoft.SystemCenter.AlertViewType', 'Pure active alerts'),
+        @('ArrayPerformance', 'PureStorage.FlashArray.PureArray', 'SC!Microsoft.SystemCenter.PerformanceViewType', 'Pure array performance'),
+        @('VolumePerformance', 'PureStorage.FlashArray.PureVolume', 'SC!Microsoft.SystemCenter.PerformanceViewType', 'Pure volume performance')
+    )
+    foreach ($view in $viewDefinitions) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.$($view[0]).View"
+        $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
+        [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"Pure!$($view[1])`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
+    }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor"><Name>Pure Storage correlation health</Name><Description>Verifies exact IQN, WWPN, and serial correlations without duplicating array monitoring.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor.Message"><Name>Pure Storage correlation health</Name><Description>{0}</Description></DisplayString>')
+    return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
+}
+
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -445,6 +490,25 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{S2D_VIEWS}}', $s2dContent.Views)
         $content = $content.Replace('{{S2D_FOLDER_ITEMS}}', $s2dContent.FolderItems)
         $content = $content.Replace('{{S2D_DISPLAY_STRINGS}}', $s2dContent.DisplayStrings)
+    }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            PURE_CORRELATION_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudPureCorrelations.ps1.template'
+            PURE_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudPureIntegrationHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "Pure Storage capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "Pure Storage capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+        $pureContent = Get-HcsPureStorageCapabilityContent
+        $content = $content.Replace('{{PURE_ROLLUPS}}', $pureContent.Rollups)
+        $content = $content.Replace('{{PURE_VIEWS}}', $pureContent.Views)
+        $content = $content.Replace('{{PURE_FOLDER_ITEMS}}', $pureContent.FolderItems)
+        $content = $content.Replace('{{PURE_DISPLAY_STRINGS}}', $pureContent.DisplayStrings)
     }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')

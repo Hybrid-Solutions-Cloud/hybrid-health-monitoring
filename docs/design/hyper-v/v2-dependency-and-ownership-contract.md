@@ -151,11 +151,14 @@ Pure lane for SCOM 2016, 2019, and 2022. The inspected sealed bundle is
   `PureStorage.FlashArray.FlashArrayAdminAccount` Secure Reference.
 
 The vendor pack remains responsible for leaf topology, alerts, capacity, performance, and
-ActiveCluster pod/mediator health. HCS supplies read-only mappings from Windows IQN/WWPN
-initiators through Pure host and volume presentation to Windows disks, MPIO paths, CSV/SMB
-storage, VHDX files, affected VMs, and the private-cloud DA. The adapter must not acknowledge or
-close array alerts and must not enable vendor-disabled high-cardinality volume performance
-workflows by default.
+ActiveCluster pod/mediator health. The authored HCS adapter defines no competing Pure class and
+uses no Pure Run As credential or REST control path. It correlates Pure host IQN/WWN values to
+Windows iSCSI/FC initiators and Pure volume serials to HCS logical units only when the identity has
+exactly one match. It then adds Pure arrays and ports to the private-cloud Storage branch and rolls
+authoritative vendor availability health through four relationships. Existing HCS Storage and
+core topology carries that impact onward to attached disks, VHDX files, hosts, VMs, and the DA.
+The adapter does not acknowledge or close array alerts and does not enable vendor-disabled
+high-cardinality volume performance workflows.
 
 Pure's published support evidence does not include SCOM 2025. The v2 preflight therefore rejects
 that combination until either Pure publishes support or a mutually exclusive HCS Purity REST 2.x

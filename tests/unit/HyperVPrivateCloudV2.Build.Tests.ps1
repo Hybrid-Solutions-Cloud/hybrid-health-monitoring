@@ -19,6 +19,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:ClusterCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.xml') -Raw
         [xml]$script:StorageCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.xml') -Raw
         [xml]$script:S2DCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.xml') -Raw
+        [xml]$script:PureCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.xml') -Raw
     }
 
     AfterAll {
@@ -69,10 +70,11 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 7
+        @($script:Receipt.artifacts).Count | Should -Be 8
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -433,6 +435,67 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
             @($parseErrors).Count | Should -Be 0
         }
+    }
+
+    It 'pins Pure integration to the vendor-supported 2.0.120.0 identity and Storage Core' {
+        $references = @{}
+        foreach ($reference in $script:PureCapability.SelectNodes('/ManagementPack/Manifest/References/Reference')) { $references[[string]$reference.Alias] = $reference }
+        $references.Pure.ID | Should -Be 'PureStorageFlashArray'
+        $references.Pure.Version | Should -Be '2.0.120.0'
+        $references.Pure.PublicKeyToken | Should -Be 'a9d994eedb5e7179'
+        $references.HCSV2Storage.ID | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
+        @($script:PureCapability.SelectNodes('//ClassType')).Count | Should -Be 0
+    }
+
+    It 'maps Pure arrays and ports into Storage and correlates hosts and volumes by exact identities' {
+        $relationships = @($script:PureCapability.SelectNodes('//RelationshipType'))
+        $relationships.Count | Should -Be 4
+        @($relationships.ID) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray'
+        @($relationships.ID) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort'
+        @($relationships.ID) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost'
+        @($relationships.ID) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume'
+        $script:PureCapability.SelectSingleNode("//DiscoveryRelationship[@TypeID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'uses no Pure credential or REST control path and preserves vendor leaf-alert authority' {
+        @($script:PureCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:PureCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
+        @($script:PureCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        $script:PureCapability.OuterXml | Should -Not -Match 'FlashArrayAdminAccount|RunAs|Invoke-RestMethod|New-Pfa|Set-Pfa|Remove-Pfa'
+        foreach ($rollup in $script:PureCapability.SelectNodes('//DependencyMonitor')) {
+            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberUnAvailable | Should -Be 'Success'
+            $rollup.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'normalizes IQN, WWPN, and serial identifiers and refuses guessed correlations' {
+        $scriptText = $script:PureCapability.SelectSingleNode("//Discovery[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.Correlation.Discovery']//ScriptBody").InnerText
+        $scriptText | Should -Match 'ConvertTo-HcsIdentifierSet'
+        $scriptText | Should -Match 'ConvertTo-HcsSerial'
+        $scriptText | Should -Match '\$principals\.Count -ne 1'
+        $scriptText | Should -Match '\$lunBySerial\[\$serial\]\.Count -ne 1'
+        $scriptText | Should -Not -Match 'Endpoint|FlashArrayAdminAccount|Invoke-RestMethod'
+    }
+
+    It 'provides Pure topology, ActiveCluster, alert, and performance views beneath Storage' {
+        @($script:PureCapability.SelectNodes('//View')).Count | Should -Be 11
+        foreach ($target in @('Pod', 'PodReplica', 'PureArray', 'PureController', 'PureHost', 'PureHostgroup', 'PurePort', 'PureVolume')) {
+            $script:PureCapability.SelectSingleNode("//View[@Target='Pure!PureStorage.FlashArray.$target']") | Should -Not -BeNullOrEmpty
+        }
+        foreach ($item in $script:PureCapability.SelectNodes('//FolderItem')) { [string]$item.Folder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder' }
+    }
+
+    It 'contains syntactically valid Pure correlation scripts and actionable monitor knowledge' {
+        foreach ($scriptBody in $script:PureCapability.SelectNodes('//ScriptBody')) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
+        $monitor = $script:PureCapability.SelectSingleNode("//UnitMonitor[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor']")
+        $script:PureCapability.SelectSingleNode("//StringResource[@ID='$($monitor.AlertSettings.AlertMessage)']") | Should -Not -BeNullOrEmpty
+        $script:PureCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

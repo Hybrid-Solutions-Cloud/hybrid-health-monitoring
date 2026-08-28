@@ -26,7 +26,7 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first three optional capabilities are also authored:
+The first four optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
@@ -41,6 +41,12 @@ The first three optional capabilities are also authored:
   private-cloud Storage relationships and rollups, one HCS integration-pipeline monitor, and 11
   console views for state, performance, faults, jobs, and alerts. Microsoft remains the leaf-alert
   and performance-collection authority.
+- `Capability.PureStorage` requires Pure's `PureStorageFlashArray` `2.0.120.0` MP and reuses its
+  arrays, controllers, hosts, host groups, ports, volumes, pods, leaf health, alerts, and
+  performance data. It adds four HCS service relationships, four dependency rollups, one
+  integration-pipeline monitor, and 11 console views. Correlation is read-only and exact:
+  IQN/WWPN joins Pure hosts to Windows SAN initiators, and serial numbers join Pure volumes to HCS
+  logical units. Ambiguous or missing identities are left uncorrelated rather than guessed.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
@@ -54,6 +60,10 @@ The Storage capability requires the Windows `Storage` module. MPIO monitoring re
 Multipath-IO feature and a correctly configured Microsoft or vendor DSM. iSCSI monitoring requires
 the Windows iSCSI module; Fibre Channel monitoring requires an HBA driver that exposes the standard
 `MSFC_FibrePortHBAAttributes` WMI provider.
+
+The Pure Storage capability is supported only on the vendor MP's documented SCOM 2016, 2019, and
+2022 lane. Pure's MP must discover the FlashArray before this adapter can add relationships. The
+adapter does not use the vendor Run As profile, call the FlashArray REST API, or modify the array.
 
 Build the currently authored artifacts with PowerShell 7:
 

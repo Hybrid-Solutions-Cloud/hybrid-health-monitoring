@@ -594,8 +594,12 @@ versions, cost, and required fixture.
    duplicate resource classes: seven Microsoft object families receive DA relationships/rollups,
    one HCS pipeline monitor, and 11 views. It passes 42 focused tests, VSAE verification against a
    transiently remapped copy of the inspected `1.0.47.4` bundle, transient sealing, and strong-name
-   verification. Pure and SMB/SOFS adapters plus representative storage fault/lifecycle labs
-   remain.**
+   verification. The Pure Storage adapter is also authored against the vendor's exact
+   `PureStorageFlashArray` `2.0.120.0` identity without duplicating vendor classes or alerts. It
+   adds exact IQN/WWPN and volume-serial correlations, four relationships and rollups, one
+   integration monitor, and 11 views; 48 focused tests, OM2022 VSAE verification, transient
+   sealing, and strong-name verification pass. Representative FlashArray validation, combined
+   SAN/Pure/S2D lifecycle and fault labs, and the SMB/SOFS adapter remain.**
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,

@@ -2,6 +2,20 @@
 
 ## Current session
 
+- **V2 Pure Storage adapter authored:** Added `Capability.PureStorage` against the inspected vendor
+  `PureStorageFlashArray` `2.0.120.0` identity. It defines no competing Pure classes, uses no Pure
+  credential or REST/control path, and preserves the vendor pack as leaf-topology, health, alert,
+  and performance authority. Four relationships and rollups connect arrays and ports to Storage,
+  Pure hosts to HCS hosts by exact IQN/WWPN, and Pure volumes to HCS logical units by exact serial;
+  ambiguous identities are skipped. One integration monitor and 11 views cover the adapter and
+  vendor topology. Focused v2 Pester passes 48/48, combined preview/v2 Pester passes 63/63,
+  ScriptAnalyzer passes for the changed scripts, and the VitePress production build passes.
+  OM2022 VSAE passes with only expected pre-seal relationship warnings, and transient sealing plus
+  `sn.exe -vf` pass. VSAE scratch evidence is
+  `D:/tmp/hcs-hyperv-v2-pure-verify-5cfd228c25334bc899e7564030c8199d`; sealed scratch evidence is
+  `D:/tmp/hcs-hyperv-v2-pure-seal-4616e269fb744167a3d021c8fec3e12d`. A representative FlashArray
+  runtime lab remains a release gate. SMB/SOFS File Services is next.
+
 - **V2 Microsoft S2D adapter authored:** Added `Capability.S2D` with no competing storage classes.
   Seven relationships and seven dependency rollups connect Microsoft's `1.0.47.4` subsystem, node,
   physical disk, pool, virtual disk, volume, and file-share objects to the HCS Storage branch. One

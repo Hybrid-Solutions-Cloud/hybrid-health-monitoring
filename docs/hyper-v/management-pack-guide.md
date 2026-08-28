@@ -94,6 +94,25 @@ the inspected `1.0.47.4` package as the supported minimum. It contributes DA mem
 rollup, query-pipeline coverage, and views only. Microsoft S2D faults, ongoing jobs, leaf monitors,
 alerts, and performance rules remain authoritative.
 
+The authored `Capability.PureStorage` adapter has these prerequisites and support boundaries:
+
+| Prerequisite | Minimum | Purpose |
+|---|---:|---|
+| Pure Storage FlashArray MP | `2.0.120.0` | Authoritative array, controller, host, port, volume, pod, health, alert, and performance objects |
+| SCOM | 2016, 2019, or 2022 | Vendor-documented support lane for the inspected Pure MP release |
+| HCS v2 Library, Presentation, and Storage | Matching product version | Private-cloud relationships, common folders, and Windows SAN identities |
+| Pure host IQN/WWN and volume serial inventory | Exact values | Deterministic correlation to Windows iSCSI/FC initiators and HCS logical units |
+
+Import and configure the vendor MP first, then verify that it discovers the FlashArray. The HCS
+adapter uses already-discovered SCOM objects through the Operations Manager SDK. It does not use
+the Pure Run As account, call the FlashArray REST API, modify the array, or duplicate vendor leaf
+alerts. A Pure array with no exact HCS host or volume identity match is Not Applicable. An
+ambiguous identity is deliberately left uncorrelated.
+
+Pure has not published support evidence for SCOM 2025 for this vendor MP release. Consequently,
+the Pure adapter is not supported on SCOM 2025 unless a later Pure package is separately inspected,
+tested, and added to the release support matrix.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and
