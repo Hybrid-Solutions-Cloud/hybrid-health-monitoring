@@ -7,8 +7,9 @@ Cloud Monitoring**.
 
 The build manifest records an explicit implementation status for every required artifact. Build
 automation refuses to treat a planned artifact as authored, preventing an incomplete source tree
-from being packaged as the complete product. The Library, Discovery, and Monitoring artifacts are
-currently authored; Presentation is still recorded as planned.
+from being packaged as the complete core. Library, Discovery, Monitoring, and Presentation are
+authored. This four-pack core is not the complete public product: optional capability packs,
+customer override MPs, representative labs, governed signing, packaging, and publication remain.
 
 Core Discovery includes the VMMS registry seed plus staged topology for stable standalone/cluster
 boundaries, hosts, VMs, VHDs, VM adapters, virtual switches, Replica relationships, monitoring
@@ -19,6 +20,11 @@ Core Monitoring currently provides 13 host unit monitors, nine agent-hosted per-
 monitors, 14 DA dependency rollups, 12 performance rules, a diagnostic task, and operational
 knowledge for every unit monitor. The runtime projection lets workflows execute on the VM's
 current host while preserving a separate logical VM identity through migration.
+
+Core Presentation provides the operator-facing **Hyper-V Private Cloud** console root, eight
+domain folders, 17 localized health, diagram, alert, event, inventory, and performance views, and
+a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
+their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
 Build the currently authored artifacts with PowerShell 7:
 

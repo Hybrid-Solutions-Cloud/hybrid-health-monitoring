@@ -38,7 +38,7 @@
       "releaseForm": "sealed-mp",
       "kind": "Presentation",
       "required": true,
-      "implementationStatus": "Planned"
+      "implementationStatus": "Authored"
     }
   ]
 }

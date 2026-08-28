@@ -15,6 +15,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:Library = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Library.xml') -Raw
         [xml]$script:Discovery = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Discovery.xml') -Raw
         [xml]$script:Monitoring = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Monitoring.xml') -Raw
+        [xml]$script:Presentation = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation.xml') -Raw
     }
 
     AfterAll {
@@ -62,10 +63,12 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         }
     }
 
-    It 'does not claim the incomplete authoring milestone is a complete release' {
-        $script:Receipt.complete | Should -BeFalse
-        @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 1
-        { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Throw '*not complete*'
+    It 'builds all four required core artifacts without claiming they are sealed' {
+        $script:Receipt.complete | Should -BeTrue
+        @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
+        @($script:Receipt.artifacts).Count | Should -Be 4
+        @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
+        { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
 
     It 'builds a core Discovery MP with host seed and staged topology workflows' {
@@ -162,6 +165,73 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
             @($parseErrors).Count | Should -Be 0
         }
+    }
+
+    It 'uses the operator-facing console name and complete core folder hierarchy' {
+        $script:Presentation.ManagementPack.Manifest.Name | Should -Be 'Hyper-V Private Cloud Monitoring Presentation'
+        $script:Presentation.SelectSingleNode("//DisplayString[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Root.Folder']/Name").InnerText | Should -Be 'Hyper-V Private Cloud'
+        $folderNames = @($script:Presentation.SelectNodes('//Presentation/Folders/Folder') | ForEach-Object ID)
+        foreach ($leaf in @('Overview', 'Compute', 'VirtualMachines', 'Availability', 'Storage', 'Networking', 'MonitoringPipeline', 'Operations')) {
+            $folderNames | Should -Contain "HybridSolutionsCloud.HyperVPrivateCloud.$leaf.Folder"
+        }
+    }
+
+    It 'provides an actual Distributed Application diagram targeted at the private-cloud service' {
+        $diagram = $script:Presentation.SelectSingleNode("//View[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Service.Diagram.View']")
+        $diagram | Should -Not -BeNullOrEmpty
+        $diagram.TypeID | Should -Be 'SC!Microsoft.SystemCenter.DiagramViewType'
+        $diagram.Target | Should -Be 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service'
+        $diagram.SelectSingleNode('Presentation/DiagramViewCriteria/DiagramViewDisplay') | Should -Not -BeNullOrEmpty
+    }
+
+    It 'resolves every core Presentation target, folder item, and local parent folder' {
+        $classIds = @($script:Library.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType') | ForEach-Object ID)
+        $viewIds = @($script:Presentation.SelectNodes('//Presentation/Views/View') | ForEach-Object ID)
+        $folderIds = @($script:Presentation.SelectNodes('//Presentation/Folders/Folder') | ForEach-Object ID)
+        foreach ($target in @($script:Presentation.SelectNodes('//Presentation/Views/View') | ForEach-Object Target)) {
+            ($target -replace '^HCSV2Library!', '') | Should -BeIn $classIds
+        }
+        foreach ($item in $script:Presentation.SelectNodes('//Presentation/FolderItems/FolderItem')) {
+            [string]$item.ElementID | Should -BeIn $viewIds
+            [string]$item.Folder | Should -BeIn $folderIds
+        }
+        foreach ($folder in $script:Presentation.SelectNodes('//Presentation/Folders/Folder')) {
+            if ([string]$folder.ParentFolder -notlike 'SC!*') { [string]$folder.ParentFolder | Should -BeIn $folderIds }
+        }
+    }
+
+    It 'places every view in a folder and localizes every folder and view' {
+        $viewIds = @($script:Presentation.SelectNodes('//Presentation/Views/View') | ForEach-Object ID)
+        $itemViewIds = @($script:Presentation.SelectNodes('//Presentation/FolderItems/FolderItem') | ForEach-Object ElementID)
+        foreach ($viewId in $viewIds) {
+            $itemViewIds | Should -Contain $viewId
+            $script:Presentation.SelectSingleNode("//DisplayString[@ElementID='$viewId']") | Should -Not -BeNullOrEmpty
+        }
+        foreach ($folder in $script:Presentation.SelectNodes('//Presentation/Folders/Folder')) {
+            $script:Presentation.SelectSingleNode("//DisplayString[@ElementID='$($folder.ID)']") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'provides health or inventory state views for every core resource family' {
+        $stateTargets = @($script:Presentation.SelectNodes("//View[@TypeID='SC!Microsoft.SystemCenter.StateViewType']") | ForEach-Object { $_.Target -replace '^HCSV2Library!', '' })
+        foreach ($classId in @(
+            'HybridSolutionsCloud.HyperVPrivateCloud.Service',
+            'HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup',
+            'HybridSolutionsCloud.HyperVPrivateCloud.HostRole',
+            'HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine',
+            'HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime',
+            'HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk',
+            'HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter',
+            'HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch',
+            'HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship',
+            'HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline'
+        )) {
+            $stateTargets | Should -Contain $classId
+        }
+    }
+
+    It 'keeps optional capability views out of the required core Presentation MP' {
+        $script:Presentation.OuterXml | Should -Not -Match 'ClusterSharedVolume|NetworkAtcIntent|PureStorage|StorageSpacesDirect|SoftwareDefinedNetwork|VirtualMachineManager'
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

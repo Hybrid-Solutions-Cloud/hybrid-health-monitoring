@@ -587,7 +587,9 @@ versions, cost, and required fixture.
 9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs.
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
-    reports.
+    reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,
+    eight folders, 17 localized views, and a native DA diagram; capability-specific views,
+    dashboards, and reports remain.**
 12. Implement composable deployment profiles and corrected override generation.
 13. Run automated verification, representative topology labs, fault injection, performance/scale,
     upgrade/migration, security, and removal tests.

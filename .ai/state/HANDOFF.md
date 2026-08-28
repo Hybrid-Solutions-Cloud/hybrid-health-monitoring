@@ -6,9 +6,17 @@
   the Hyper-V Private Cloud Monitoring v2 redesign. It includes the complete domain catalog,
   modular package/dependency policy, Distributed Application and console design, override/profile
   redesign, representative lab matrix, governed sealing, packaging, documentation, and public
-  download release gates. Its implementation sequence accurately records Core Library, Discovery,
-  and Monitoring as authored while Presentation, capability packs, overrides, labs, and release
-  publication remain open.
+  download release gates. Its implementation sequence accurately records all four required Core
+  MPs as authored while capability packs, overrides, labs, and release publication remain open.
+
+- **V2 core Presentation authored:** Added the operator-facing `Hyper-V Private Cloud` root; eight
+  domain folders; 17 localized state, diagram, alert, event, and performance views; and a native
+  SCOM Distributed Application diagram targeted at the private-cloud Service class. Every view is
+  placed and localized, all targets resolve against the v2 Library, and optional capability views
+  remain outside core. The complete core build now emits Library, Discovery, Monitoring, and
+  Presentation with a zero-pending receipt. Focused Pester passes 24/24. Presentation passes OM2022
+  VSAE verification, transient test sealing, and `sn.exe -vf`; scratch evidence is under
+  `D:/tmp/hcs-hyperv-v2-presentation-*` and is not release-signed output.
 
 - **V2 core Monitoring authored:** Added the third required artifact with 13 host monitors, nine
   agent-hosted per-VM runtime monitors, 14 DA dependency rollups, 12 performance rules, one

@@ -291,7 +291,7 @@ $buildReceipt = [ordered]@{
     productName = $manifest.productName
     productVersion = $Version
     complete = ($requiredPlanned.Count -eq 0)
-    pendingRequiredArtifacts = @($requiredPlanned.id)
+    pendingRequiredArtifacts = @($requiredPlanned | ForEach-Object id)
     artifacts = @($builtArtifacts)
 }
 $receiptPath = Join-Path $resolvedOutput 'build-receipt.json'
@@ -303,5 +303,5 @@ $receiptPath = Join-Path $resolvedOutput 'build-receipt.json'
 
 Write-Host "Built $($builtArtifacts.Count) authored v2 Management Pack artifact(s) in '$resolvedOutput'."
 if ($requiredPlanned.Count -gt 0) {
-    Write-Host "Required artifacts still planned: $($requiredPlanned.id -join ', ')."
+    Write-Host "Required artifacts still planned: $(@($requiredPlanned | ForEach-Object id) -join ', ')."
 }
