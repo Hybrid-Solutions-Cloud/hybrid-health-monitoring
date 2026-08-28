@@ -330,7 +330,9 @@ stable public contract.
 ### Package architecture
 
 The target suite is modular so customers install only applicable capability packs while retaining
-one connected health model:
+one connected health model. [ADR 0043](docs/design/decisions/0043-hyper-v-v2-package-and-deployment-profile-architecture.md)
+fixes the implementation boundary at four required core MPs plus one sealed MP per optional
+capability; generated overrides and release manifests are scoped to the selected capability set.
 
 | Package | Requirement | Responsibility |
 |---|---|---|

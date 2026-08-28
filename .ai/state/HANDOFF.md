@@ -2,6 +2,20 @@
 
 ## Current session
 
+- **V2 artifact graph fixed:** Added ADR 0043 and `contracts/packages.v2.json`. V2 source will live
+  under `src/hyper-v/scom-mp/v2/` with four required sealed core MPs (Library, Discovery,
+  Monitoring, Presentation), nine optional sealed capability MPs (Cluster, Storage, Pure, S2D,
+  File Services, Network ATC, Physical Network, SDN, VMM), and optional Reporting. ADR 0043
+  supersedes the preview's ADR 0027 only for v2.
+- **Deployment and overrides:** Machine-readable profiles cover standalone, clustered SAN/Pure,
+  clustered S2D, simultaneous Pure/S2D, SMB/SOFS, Network ATC, VMM, SDN, and a complete graph.
+  Public Lab/Standard/Strict overrides will be generated per selected capability so absent optional
+  products never become accidental import prerequisites.
+- **Graph verification:** Pester now resolves every artifact dependency against either another HCS
+  artifact or the external dependency contract, validates unique IDs, the four required artifacts,
+  profile capability names, the simultaneous Pure/S2D profile, and tuning tiers. Hyper-V Pester
+  passes 15/15; VitePress production build, JSON parse, edited links, and `git diff --check` pass.
+
 - **SOFS and physical network ownership approved:** Added ADR 0042 after inspecting Microsoft File
   & iSCSI Services `10.1.0.4` and the OM2022 built-in network libraries. File Server, clustered SMB,
   iSCSI Target, network node/switch, interface/port, VLAN, connection, topology, health, and

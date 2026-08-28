@@ -24,6 +24,7 @@ BeforeAll {
     $script:OverrideScript = Join-Path $script:SourceRoot 'tools/New-HyperVOverrideManagementPacks.ps1'
     $script:OverrideExampleScript = Join-Path $script:SourceRoot 'tools/Update-HyperVOverrideExamples.ps1'
     $script:V2DependencyContract = Join-Path $script:SourceRoot 'contracts/dependencies.v2.json'
+    $script:V2PackageContract = Join-Path $script:SourceRoot 'contracts/packages.v2.json'
 }
 
 Describe 'Hyper-V Management Pack development build' {
@@ -81,6 +82,48 @@ Describe 'Hyper-V Management Pack development build' {
         $network.authoritativeClasses | Should -Contain 'System.NetworkManagement.Switch'
         $network.identityKeys.'System.NetworkManagement.Node' | Should -Be 'DeviceKey'
         $network.authoritativeRelationships | Should -Contain 'System.NetworkManagement.NetworkConnectionConnectedToNetworkAdapter'
+    }
+
+    It 'defines an internally resolvable modular v2 artifact and deployment profile graph' {
+        $dependencies = Get-Content -LiteralPath $script:V2DependencyContract -Raw | ConvertFrom-Json
+        $packages = Get-Content -LiteralPath $script:V2PackageContract -Raw | ConvertFrom-Json
+        $packages.schemaVersion | Should -Be '1.0'
+        $packages.namespace | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud'
+        $packages.sourceRoot | Should -Be 'src/hyper-v/scom-mp/v2'
+
+        $artifactIds = @($packages.artifacts.id)
+        @($artifactIds | Sort-Object -Unique).Count | Should -Be $artifactIds.Count
+        @($packages.artifacts | Where-Object required).Count | Should -Be 4
+        @($packages.artifacts | Where-Object required).id | Should -Be @(
+            'HybridSolutionsCloud.HyperVPrivateCloud.Library',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Discovery',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Monitoring',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Presentation'
+        )
+
+        $externalIds = @($dependencies.capabilities.id)
+        foreach ($artifact in $packages.artifacts) {
+            foreach ($reference in @($artifact.dependsOn)) {
+                ($reference -in $artifactIds -or $reference -in $externalIds) | Should -BeTrue `
+                    -Because "artifact '$($artifact.id)' dependency '$reference' must resolve"
+            }
+        }
+
+        $capabilityNames = @(
+            $packages.artifacts |
+                Where-Object kind -eq 'Capability' |
+                ForEach-Object { $_.id -replace '^HybridSolutionsCloud\.HyperVPrivateCloud\.Capability\.', '' }
+        )
+        foreach ($profile in $packages.profiles) {
+            foreach ($capability in @($profile.capabilities)) {
+                $capability | Should -BeIn $capabilityNames
+            }
+        }
+
+        $hybrid = $packages.profiles | Where-Object id -eq 'HybridPureAndS2D'
+        $hybrid.capabilities | Should -Contain 'PureStorage'
+        $hybrid.capabilities | Should -Contain 'S2D'
+        $packages.overrideTiers | Should -Be @('Lab', 'Standard', 'Strict')
     }
 
     It 'passes the repository contract suite' {

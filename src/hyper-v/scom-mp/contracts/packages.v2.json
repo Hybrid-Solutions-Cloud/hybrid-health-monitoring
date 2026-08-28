@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "namespace": "HybridSolutionsCloud.HyperVPrivateCloud",
+  "sourceRoot": "src/hyper-v/scom-mp/v2",
+  "artifacts": [
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Library", "required": true, "kind": "Library", "dependsOn": [] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Discovery", "required": true, "kind": "Discovery", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring", "required": true, "kind": "Monitoring", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Presentation", "required": true, "kind": "Presentation", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "HybridSolutionsCloud.HyperVPrivateCloud.Discovery", "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "FailoverCluster", "ClusterSharedVolume"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage", "PureStorage"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster", "StorageSpacesDirect"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster", "ScaleOutFileServer"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "PhysicalNetwork"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "SoftwareDefinedNetworking"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM", "required": false, "kind": "Capability", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "VirtualMachineManager"] },
+    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Reporting", "required": false, "kind": "Reporting", "dependsOn": ["HybridSolutionsCloud.HyperVPrivateCloud.Library", "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring"] }
+  ],
+  "profiles": [
+    { "id": "Standalone", "capabilities": [] },
+    { "id": "ClusteredSAN", "capabilities": ["Cluster", "Storage"] },
+    { "id": "ClusteredPure", "capabilities": ["Cluster", "Storage", "PureStorage"] },
+    { "id": "ClusteredS2D", "capabilities": ["Cluster", "S2D"] },
+    { "id": "HybridSANAndS2D", "capabilities": ["Cluster", "Storage", "S2D"] },
+    { "id": "HybridPureAndS2D", "capabilities": ["Cluster", "Storage", "PureStorage", "S2D"] },
+    { "id": "HyperVOverSMB", "capabilities": ["Cluster", "FileServices"] },
+    { "id": "NetworkATC", "capabilities": ["NetworkATC"] },
+    { "id": "VMMManaged", "capabilities": ["VMM"] },
+    { "id": "SDNEnabled", "capabilities": ["SDN"] },
+    { "id": "CompletePrivateCloud", "capabilities": ["Cluster", "Storage", "PureStorage", "S2D", "FileServices", "NetworkATC", "PhysicalNetwork", "SDN", "VMM"] }
+  ],
+  "overrideTiers": ["Lab", "Standard", "Strict"]
+}

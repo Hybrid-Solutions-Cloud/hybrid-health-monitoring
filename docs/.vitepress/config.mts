@@ -199,6 +199,7 @@ export default defineConfig({
             { text: '0040 — Hyper-V v2 S2D and SDN ownership', link: '/design/decisions/0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership' },
             { text: '0041 — Hyper-V v2 Pure Storage integration', link: '/design/decisions/0041-hyper-v-v2-pure-storage-integration' },
             { text: '0042 — Hyper-V v2 file and network ownership', link: '/design/decisions/0042-hyper-v-v2-file-services-and-physical-network-ownership' },
+            { text: '0043 — Hyper-V v2 package profiles', link: '/design/decisions/0043-hyper-v-v2-package-and-deployment-profile-architecture' },
             { text: 'ADR template', link: '/design/decisions/template' },
           ],
         },
