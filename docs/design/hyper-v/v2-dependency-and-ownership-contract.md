@@ -84,6 +84,21 @@ standalone installation into an all-or-nothing import.
 6. Optional dependencies are isolated in adapter MPs. Core compute remains importable and useful
    without Cluster, CSV, S2D, Pure, VMM, or SDN packs.
 
+## SAN Core contract
+
+`Capability.Storage` owns only the Windows-host projection that is not supplied as an equivalent
+supported sealed model: a stable logical unit, its per-host attachment, iSCSI sessions, Fibre
+Channel ports, and the VHDX-to-Windows-volume/disk/LUN mapping. Discovery uses `Get-Disk`, the
+Storage volume/partition commands, `Get-IscsiSession`, `MPIO_DISK_INFO`, and
+`MSFC_FibrePortHBAAttributes`. LUN keys are SHA-256 projections of the Windows unique ID or serial;
+the raw identifiers remain properties for read-only vendor correlation.
+
+The pack monitors Windows disk availability and writability, MPIO minimum path count, iSCSI session
+connections, FC port state, and query-pipeline coverage. It does not configure MPIO claiming, DSM
+policy, iSCSI targets, zoning, or array state. Pure owns FlashArray objects and alerts. Microsoft
+owns S2D objects and alerts. Their optional adapters relate those authoritative objects to SAN Core
+and the private-cloud DA; SAN and S2D discovery are independent and may be enabled together.
+
 ## v2 service graph
 
 ```mermaid
@@ -178,3 +193,10 @@ recorded in this page:
 - [Pure Storage FlashArray SCOM MP 2.0.120.0](https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0)
 - [Windows Server File & iSCSI Services MP 10.1.0.4](https://www.microsoft.com/en-us/download/details.aspx?id=57594)
 - [Monitoring networks by using Operations Manager](https://learn.microsoft.com/en-us/system-center/scom/manage-monitor-networkdevice-overview?view=sc-om-2025)
+- [MPIO WMI classes](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/mpio-wmi-classes)
+- [`MPIO_DISK_INFO` WMI class](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/mpio-disk-info-wmi-class)
+- [`MPIO_DRIVE_INFO` WMI class](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/mpio-drive-info-wmi-class)
+- [`Get-Disk`](https://learn.microsoft.com/en-us/powershell/module/storage/get-disk?view=windowsserver2022-ps)
+- [iSCSI PowerShell module](https://learn.microsoft.com/en-us/powershell/module/iscsi/?view=windowsserver2025-ps)
+- [`MSFC_FibrePortHBAAttributes` WMI class](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msfc-fibreporthbaattributes-wmi-class)
+- [Fibre Channel HBA port-state values](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msfc-hbaportattributesresults-wmi-class)

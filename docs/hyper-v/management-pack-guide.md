@@ -62,6 +62,26 @@ The HCS adapter does not replace or duplicate Microsoft cluster monitoring. It s
 relationships to Microsoft objects, rolls their health into the private-cloud DA, and adds an HCS
 integration-pipeline monitor. Microsoft remains the leaf-alert authority.
 
+The authored `Capability.Storage` adapter has these host prerequisites:
+
+| Prerequisite | When required | Purpose |
+|---|---|---|
+| Windows Storage PowerShell module | Always | Disk, partition, volume, and VHDX-to-LUN correlation |
+| Multipath-IO plus an approved DSM | Multipathed SAN | Path inventory and redundancy health |
+| Windows iSCSI PowerShell module | iSCSI SAN | Session and connection discovery and health |
+| HBA driver exposing `MSFC_FibrePortHBAAttributes` | Fibre Channel SAN | FC port identity and operational state |
+
+Install Multipath-IO where the approved storage design requires it:
+
+```powershell
+Install-WindowsFeature Multipath-IO -IncludeManagementTools
+```
+
+The Management Pack never enables automatic claiming or changes MPIO policy. Configure MSDSM or
+the vendor DSM according to the array vendor's supported host-integration guide. A missing optional
+transport is Not Applicable when no disk uses it; a visible iSCSI/FC disk without the required
+query or MPIO capability is reported as a configuration or redundancy problem.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

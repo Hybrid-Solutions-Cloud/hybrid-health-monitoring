@@ -587,7 +587,11 @@ versions, cost, and required fixture.
    resolves against the inspected Microsoft Cluster `10.1.0.0` and CSV `10.1.2.2` contracts,
    rolls authoritative leaf health into the Availability and Storage branches, and passes OM2022
    verification plus transient sealing; representative cluster lifecycle/fault labs remain.**
-9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs.
+9. Implement Storage Core, then S2D, SAN, Pure, and SMB/SOFS packs. **Storage Core is authored with
+   five Windows SAN projection classes, 13 topology relationships, five health monitors, three DA
+   rollups, and six console views. It passes 36 focused offline tests, OM2022 VSAE verification,
+   transient sealing, and strong-name verification. S2D, Pure, and SMB/SOFS adapters plus
+   representative storage fault/lifecycle labs remain.**
 10. Implement Networking, Network ATC, SDN, and VMM integration packs.
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,

@@ -1,0 +1,228 @@
+#Requires -Version 7.0
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$BoundaryId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsStableId {
+    param([Parameter(Mandatory)][string]$Value)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try { return ([Convert]::ToHexString($sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value)))).ToLowerInvariant() }
+    finally { $sha256.Dispose() }
+}
+
+function ConvertTo-HcsHexString {
+    param($Value)
+    if ($null -eq $Value) { return '' }
+    if ($Value -is [byte[]]) { return (($Value | ForEach-Object { $_.ToString('x2') }) -join '') }
+    return ([string]$Value -replace '[^0-9a-fA-F]', '').ToLowerInvariant()
+}
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if ($null -ne $Value) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+function Get-HcsMpioDriveMap {
+    $result = @{}
+    try {
+        foreach ($mpio in @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_DISK_INFO' -ErrorAction SilentlyContinue)) {
+            foreach ($drive in @($mpio.DriveInfo)) {
+                if ($null -eq $drive) { continue }
+                $serial = ([string]$drive.SerialNumber).Trim()
+                if ([string]::IsNullOrWhiteSpace($serial)) { continue }
+                $result[$serial.ToLowerInvariant()] = [pscustomobject]@{
+                    NumberPaths = [int]$drive.NumberPaths
+                    DsmName = [string]$drive.DsmName
+                }
+            }
+        }
+    }
+    catch { }
+    return $result
+}
+
+function Find-HcsMpioDrive {
+    param([hashtable]$Map, [string[]]$Candidates)
+    foreach ($candidate in $Candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        $normalized = $candidate.Trim().ToLowerInvariant()
+        if ($Map.ContainsKey($normalized)) { return $Map[$normalized] }
+        foreach ($key in $Map.Keys) {
+            if ($key.Contains($normalized) -or $normalized.Contains($key)) { return $Map[$key] }
+        }
+    }
+    return $null
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
+        $api.LogScriptEvent('HyperVPrivateCloud.Storage.TopologyDiscovery.ps1', 8401, 2, 'The Windows Storage PowerShell module is unavailable; storage topology was not submitted.')
+        $script:DiscoveryData
+        return
+    }
+
+    $hostInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']$")
+    Add-HcsProperty $hostInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/HostId$" $ComputerName
+
+    $boundary = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']$")
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']/BoundaryId$" $BoundaryId
+
+    $storageComponent = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent']$")
+    Add-HcsProperty $storageComponent "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+
+    $mpioMap = Get-HcsMpioDriveMap
+    $lunByDiskNumber = @{}
+    foreach ($disk in @(Get-Disk -ErrorAction Stop | Where-Object { -not $_.IsBoot -and -not $_.IsSystem -and [string]$_.BusType -in @('iSCSI', 'Fibre Channel', 'SAS', 'RAID') })) {
+        $identitySource = @([string]$disk.UniqueId, [string]$disk.SerialNumber) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1
+        $rawStorageIdentity = if ($identitySource) { ([string]$identitySource).Trim().ToLowerInvariant() } else { "$ComputerName|$($disk.Number)|$($disk.FriendlyName)|$($disk.Size)" }
+        $storageId = 'lun:' + (Get-HcsStableId -Value $rawStorageIdentity)
+        $mpio = Find-HcsMpioDrive -Map $mpioMap -Candidates @([string]$disk.SerialNumber, [string]$disk.UniqueId)
+        $pathCount = if ($null -ne $mpio -and $mpio.NumberPaths -gt 0) { $mpio.NumberPaths } else { 1 }
+        $dsmName = if ($null -ne $mpio) { $mpio.DsmName } else { '' }
+
+        $lun = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']$")
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/StorageId$" $storageId
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/FriendlyName$" $disk.FriendlyName
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/SerialNumber$" $disk.SerialNumber
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/UniqueId$" $disk.UniqueId
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/BusType$" $disk.BusType
+        Add-HcsProperty $lun "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/SizeBytes$" $disk.Size
+        Add-HcsProperty $lun "$MPElement[Name='System!System.Entity']/DisplayName$" ("$($disk.BusType) LUN - $($disk.FriendlyName) [$storageId]")
+        $script:DiscoveryData.AddInstance($lun)
+        $lunByDiskNumber[[int]$disk.Number] = [pscustomobject]@{ Instance = $lun; StorageId = $storageId }
+        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.BoundaryContainsLogicalUnit']$" $boundary $lun
+        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ComponentContainsLogicalUnit']$" $storageComponent $lun
+
+        $attachmentId = Get-HcsStableId -Value "$ComputerName|$storageId"
+        $attachment = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']$")
+        Add-HcsProperty $attachment "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/AttachmentId$" $attachmentId
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/StorageId$" $storageId
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/DiskNumber$" $disk.Number
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/BusType$" $disk.BusType
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/PathCount$" $pathCount
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/DsmName$" $dsmName
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/HealthStatus$" $disk.HealthStatus
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/OperationalStatus$" ($disk.OperationalStatus -join ',')
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/IsOffline$" $disk.IsOffline
+        Add-HcsProperty $attachment "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment']/IsReadOnly$" $disk.IsReadOnly
+        Add-HcsProperty $attachment "$MPElement[Name='System!System.Entity']/DisplayName$" ("Disk $($disk.Number) - $($disk.BusType) - $pathCount path(s)")
+        $script:DiscoveryData.AddInstance($attachment)
+        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostContainsAttachment']$" $hostInstance $attachment
+        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnitContainsAttachment']$" $lun $attachment
+        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ComponentContainsAttachment']$" $storageComponent $attachment
+    }
+
+    if (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession') {
+        foreach ($session in @(Get-IscsiSession -ErrorAction SilentlyContinue)) {
+            $sessionId = [string]$session.SessionIdentifier
+            if ([string]::IsNullOrWhiteSpace($sessionId)) { continue }
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession']$")
+            Add-HcsProperty $instance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession']/SessionId$" $sessionId
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession']/InitiatorNodeAddress$" $session.InitiatorNodeAddress
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession']/TargetNodeAddress$" $session.TargetNodeAddress
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession']/Connections$" $session.NumberOfConnections
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession']/IsPersistent$" $session.IsPersistent
+            Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" ("iSCSI - $($session.TargetNodeAddress)")
+            $script:DiscoveryData.AddInstance($instance)
+            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostContainsIscsiSession']$" $hostInstance $instance
+            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ComponentContainsIscsiSession']$" $storageComponent $instance
+        }
+    }
+
+    try {
+        foreach ($port in @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue)) {
+            $portId = [string]$port.UniquePortId
+            if ([string]::IsNullOrWhiteSpace($portId)) { continue }
+            $attributes = $port.Attributes
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']$")
+            Add-HcsProperty $instance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/PortId$" $portId
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/InstanceName$" $port.InstanceName
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/WWPN$" (ConvertTo-HcsHexString $attributes.PortWWN)
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/WWNN$" (ConvertTo-HcsHexString $attributes.NodeWWN)
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/PortState$" $attributes.PortState
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/PortSpeed$" $attributes.PortSpeed
+            Add-HcsProperty $instance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort']/HbaStatus$" $port.HBAStatus
+            Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" ("FC Port - $(ConvertTo-HcsHexString $attributes.PortWWN)")
+            $script:DiscoveryData.AddInstance($instance)
+            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostContainsFibreChannelPort']$" $hostInstance $instance
+            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ComponentContainsFibreChannelPort']$" $storageComponent $instance
+        }
+    }
+    catch { }
+
+    if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') {
+        foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
+            $vmId = [string]$vm.VMId
+            foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | Where-Object Path)) {
+                try {
+                    $volume = Get-Volume -FilePath $drive.Path -ErrorAction Stop
+                    $partition = $volume | Get-Partition -ErrorAction Stop | Select-Object -First 1
+                    $disk = $partition | Get-Disk -ErrorAction Stop
+                    if (-not $lunByDiskNumber.ContainsKey([int]$disk.Number)) { continue }
+                    $lunEntry = $lunByDiskNumber[[int]$disk.Number]
+                    $lun = $lunEntry.Instance
+                    $diskId = if ($drive.PSObject.Properties['Id'] -and $drive.Id) { [string]$drive.Id } else { [string]$drive.Path }
+                    $storageId = [string]$lunEntry.StorageId
+                    $mappingId = Get-HcsStableId -Value "$BoundaryId|$vmId|$diskId|$storageId"
+                    $mapping = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']$")
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/BoundaryId$" $BoundaryId
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/MappingId$" $mappingId
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/VMId$" $vmId
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/DiskId$" $diskId
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/VhdPath$" $drive.Path
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/StorageId$" $storageId
+                    Add-HcsProperty $mapping "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping']/VolumeId$" $volume.UniqueId
+                    Add-HcsProperty $mapping "$MPElement[Name='System!System.Entity']/DisplayName$" ("$($vm.Name) - $($drive.Path)")
+                    $script:DiscoveryData.AddInstance($mapping)
+
+                    $vhd = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']$")
+                    Add-HcsProperty $vhd "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/BoundaryId$" $BoundaryId
+                    Add-HcsProperty $vhd "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/VMId$" $vmId
+                    Add-HcsProperty $vhd "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/DiskId$" $diskId
+                    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ComponentContainsVirtualDiskMapping']$" $storageComponent $mapping
+                    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMappingReferencesVirtualHardDisk']$" $mapping $vhd
+                    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMappingReferencesLogicalUnit']$" $mapping $lun
+                    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualHardDiskUsesLogicalUnit']$" $vhd $lun
+                }
+                catch { continue }
+            }
+        }
+    }
+
+    $script:DiscoveryData
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.Storage.TopologyDiscovery.ps1', 8402, 1, $_.Exception.Message)
+    throw
+}

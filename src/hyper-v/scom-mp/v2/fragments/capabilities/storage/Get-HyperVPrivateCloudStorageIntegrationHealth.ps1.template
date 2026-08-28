@@ -1,0 +1,59 @@
+#Requires -Version 7.0
+param([string]$ComputerName)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = 'Windows SAN integration queries completed successfully.'
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
+        $state = 'Critical'
+        $detail = 'The Windows Storage PowerShell module is unavailable; install the Windows Server storage management tools.'
+    }
+    else {
+        $sanDisks = @(Get-Disk -ErrorAction Stop | Where-Object { -not $_.IsBoot -and -not $_.IsSystem -and [string]$_.BusType -in @('iSCSI', 'Fibre Channel', 'SAS', 'RAID') })
+        if ($sanDisks.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = 'No supported SAN-backed Windows disks are visible on this host.'
+        }
+        else {
+            $mpioDrives = @()
+            try { $mpioDrives = @((Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_DISK_INFO' -ErrorAction Stop).DriveInfo) }
+            catch { }
+            $iscsiDisks = @($sanDisks | Where-Object BusType -eq 'iSCSI')
+            $fcDisks = @($sanDisks | Where-Object BusType -eq 'Fibre Channel')
+            if ($iscsiDisks.Count -gt 0 -and -not (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession')) {
+                $state = 'Critical'
+                $detail = 'iSCSI disks are visible but the iSCSI PowerShell module is unavailable.'
+            }
+            elseif (($iscsiDisks.Count -gt 0 -or $fcDisks.Count -gt 0) -and $mpioDrives.Count -eq 0) {
+                $state = 'Warning'
+                $detail = "$($sanDisks.Count) SAN disk(s) are visible, but MPIO_DISK_INFO returned no multipath devices. Validate Multipath-IO, DSM claims, and redundant paths."
+            }
+            else {
+                $detail = "$($sanDisks.Count) supported SAN disk(s) and $($mpioDrives.Count) MPIO device record(s) are visible on '$ComputerName'."
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Windows SAN integration query failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.Storage.IntegrationHealth.ps1', 8403, 1, $detail)
+}
+
+$bag.AddValue('StorageIntegrationState', $state)
+$bag.AddValue('StorageIntegrationStateDetail', $detail)
+$bag

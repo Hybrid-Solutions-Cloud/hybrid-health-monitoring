@@ -48,6 +48,15 @@
       "kind": "Capability",
       "required": false,
       "implementationStatus": "Authored"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage",
+      "source": "fragments/capabilities/storage/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
     }
   ]
 }

@@ -2,6 +2,19 @@
 
 ## Current session
 
+- **V2 Storage Core capability authored:** Added `Capability.Storage` with five HCS-owned Windows
+  SAN projections (logical unit, per-host attachment, iSCSI session, FC port, and VHDX mapping), 13
+  topology relationships, five health monitors, three Storage-branch rollups, and six console
+  views. Stable hashed LUN keys preserve identity while raw Windows serial/unique IDs remain
+  available for future Pure correlation. The pack does not duplicate array or Microsoft S2D
+  objects, and SAN/S2D remain independently composable. Focused v2 Pester passes 36/36; combined
+  preview/v2 Pester passes 51/51; ScriptAnalyzer and the VitePress production build pass. OM2022
+  VSAE caught and drove correction of missing FolderItem IDs, then passed with only expected
+  pre-seal type-definition warnings. Transient seal and `sn.exe -vf` pass. Scratch evidence is
+  `D:/tmp/hcs-hyperv-v2-storage-verify-ec2756d2464e428db831d9bee882be64` and
+  `D:/tmp/hcs-hyperv-v2-storage-seal-9bab27f69ff34321a5dec9bb5c882729`; neither is release-signed
+  output. Microsoft S2D integration is next.
+
 - **V2 Cluster capability authored:** Added `Capability.Cluster` against the inspected Microsoft
   Cluster `10.1.0.0` and CSV `10.1.2.2` contracts. It defines no duplicate cluster classes: six
   relationships connect existing Microsoft cluster, node, role/group, network, and CSV objects to

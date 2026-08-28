@@ -26,16 +26,29 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first optional capability is also authored:
+The first two optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
   HCS integration-pipeline monitor, five leaf-health rollups, and seven cluster/CSV console views.
   Microsoft remains the cluster and CSV leaf-alert authority.
+- `Capability.Storage` discovers Windows-visible SAN logical units, host attachments, MPIO path
+  state, iSCSI sessions, Fibre Channel ports, and VHDX-to-LUN mappings. It adds five health
+  monitors, three Storage-branch rollups, and six console views. Stable hashed HCS keys preserve
+  identity while the raw Windows serial and unique IDs remain available for vendor correlation.
+
+Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
+S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
+branch without either discovery path disabling the other.
 
 The Cluster capability requires the Microsoft Cluster and Windows Server/CSV MPs plus the
 `FailoverClusters` PowerShell module on participating nodes. It is optional and has no effect on a
 standalone core installation.
+
+The Storage capability requires the Windows `Storage` module. MPIO monitoring requires the
+Multipath-IO feature and a correctly configured Microsoft or vendor DSM. iSCSI monitoring requires
+the Windows iSCSI module; Fibre Channel monitoring requires an HBA driver that exposes the standard
+`MSFC_FibrePortHBAAttributes` WMI provider.
 
 Build the currently authored artifacts with PowerShell 7:
 

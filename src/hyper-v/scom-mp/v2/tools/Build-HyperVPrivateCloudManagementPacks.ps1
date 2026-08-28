@@ -185,6 +185,86 @@ function Get-HcsRollupContent {
     return [pscustomobject]@{ Monitors = $monitors.ToString(); DisplayStrings = $displays.ToString() }
 }
 
+function Get-HcsStorageCapabilityContent {
+    [CmdletBinding()]
+    param()
+
+    $integrationFilters = @'
+          <ConditionDetection ID="GoodFilter" TypeID="System!System.ExpressionFilter"><Expression><Or><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='StorageIntegrationState']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Good</Value></ValueExpression></SimpleExpression></Expression><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='StorageIntegrationState']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">NotApplicable</Value></ValueExpression></SimpleExpression></Expression></Or></Expression></ConditionDetection>
+          <ConditionDetection ID="WarningFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='StorageIntegrationState']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Warning</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+          <ConditionDetection ID="CriticalFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='StorageIntegrationState']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Critical</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+'@
+    $objectFilters = @'
+          <ConditionDetection ID="GoodFilter" TypeID="System!System.ExpressionFilter"><Expression><Or><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Good</Value></ValueExpression></SimpleExpression></Expression><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">NotApplicable</Value></ValueExpression></SimpleExpression></Expression></Or></Expression></ConditionDetection>
+          <ConditionDetection ID="WarningFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Warning</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+          <ConditionDetection ID="CriticalFilter" TypeID="System!System.ExpressionFilter"><Expression><SimpleExpression><ValueExpression><XPathQuery Type="String">Property[@Name='$Config/PropertyName$']</XPathQuery></ValueExpression><Operator>Equal</Operator><ValueExpression><Value Type="String">Critical</Value></ValueExpression></SimpleExpression></Expression></ConditionDetection>
+'@
+    $detections = '<RegularDetections><RegularDetection MonitorTypeStateID="Good"><Node ID="GoodFilter"><Node ID="DataSource" /></Node></RegularDetection><RegularDetection MonitorTypeStateID="Warning"><Node ID="WarningFilter"><Node ID="DataSource" /></Node></RegularDetection><RegularDetection MonitorTypeStateID="Critical"><Node ID="CriticalFilter"><Node ID="DataSource" /></Node></RegularDetection></RegularDetections>'
+
+    $classIds = @('LogicalUnit', 'HostAttachment', 'IscsiSession', 'FibreChannelPort', 'VirtualDiskMapping')
+    $relationshipIds = @('BoundaryContainsLogicalUnit', 'HostContainsAttachment', 'LogicalUnitContainsAttachment', 'HostContainsIscsiSession', 'HostContainsFibreChannelPort', 'ComponentContainsLogicalUnit', 'ComponentContainsAttachment', 'ComponentContainsIscsiSession', 'ComponentContainsFibreChannelPort', 'ComponentContainsVirtualDiskMapping', 'VirtualDiskMappingReferencesVirtualHardDisk', 'VirtualDiskMappingReferencesLogicalUnit', 'VirtualHardDiskUsesLogicalUnit')
+    $discoveryTypes = [System.Text.StringBuilder]::new()
+    foreach ($id in $classIds) { [void]$discoveryTypes.AppendLine("<DiscoveryClass TypeID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$id`" />") }
+    foreach ($id in $relationshipIds) { [void]$discoveryTypes.AppendLine("<DiscoveryRelationship TypeID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$id`" />") }
+
+    $definitions = @(
+        [pscustomobject]@{ Leaf = 'IntegrationHealth'; Target = 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole'; Type = 'Integration'; Title = 'Windows SAN integration health'; Description = 'Verifies Windows Storage, iSCSI, Fibre Channel, and MPIO query coverage.'; Response = 'Install the required management tools, validate DSM claims and redundant paths, then review Operations Manager event 8403.'; Parent = 'ConfigurationState'; Category = 'ConfigurationHealth'; Alert = 'Error'; Configuration = '<ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</ComputerName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'AttachmentAvailability'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment'; Type = 'Object'; Title = 'SAN disk attachment availability'; Description = 'Tracks Windows-visible SAN disk state and writability.'; Response = 'Validate the array presentation, fabric, Windows disk state, DSM, and recent storage events before returning the disk to service.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>Attachment</ObjectKind><Identity /><DiskNumber>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/DiskNumber$</DiskNumber><StorageId>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/StorageId$</StorageId><BusType>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/BusType$</BusType><MinimumPathCount>2</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'AttachmentRedundancy'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment'; Type = 'Object'; Title = 'SAN MPIO path redundancy'; Description = 'Tracks MPIO path count for iSCSI and Fibre Channel disks.'; Response = 'Inspect HBA or NIC links, switches, target ports, MPIO policy, and vendor DSM state. Do not change claiming policy without vendor guidance.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Warning'; Configuration = '<ObjectKind>Attachment</ObjectKind><Identity /><DiskNumber>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/DiskNumber$</DiskNumber><StorageId>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/StorageId$</StorageId><BusType>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/BusType$</BusType><MinimumPathCount>2</MinimumPathCount><PropertyName>RedundancyState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'IscsiSessionAvailability'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession'; Type = 'Object'; Title = 'iSCSI session availability'; Description = 'Tracks established iSCSI sessions and active connections.'; Response = 'Check initiator service state, target reachability, VLAN and MPIO design, authentication, and persistent-target configuration.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>IscsiSession</ObjectKind><Identity>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession"]/SessionId$</Identity><DiskNumber>0</DiskNumber><StorageId /><BusType>iSCSI</BusType><MinimumPathCount>1</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'FibreChannelPortAvailability'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort'; Type = 'Object'; Title = 'Fibre Channel port availability'; Description = 'Tracks HBA provider and Fibre Channel port operational state.'; Response = 'Inspect HBA, driver, firmware, optic, cable, switch port, zoning, and array target-port state.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>FibreChannelPort</ObjectKind><Identity>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort"]/PortId$</Identity><DiskNumber>0</DiskNumber><StorageId /><BusType>Fibre Channel</BusType><MinimumPathCount>1</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' }
+    )
+    $monitors = [System.Text.StringBuilder]::new()
+    $resources = [System.Text.StringBuilder]::new()
+    $displays = [System.Text.StringBuilder]::new()
+    $knowledge = [System.Text.StringBuilder]::new()
+    foreach ($definition in $definitions) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($definition.Leaf).Monitor"
+        $messageId = "$id.Message"
+        $typeId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($definition.Type)Health.MonitorType"
+        $detailProperty = if ($definition.Leaf -eq 'AttachmentRedundancy') { 'RedundancyStateDetail' } elseif ($definition.Type -eq 'Integration') { 'StorageIntegrationStateDetail' } else { 'ObjectStateDetail' }
+        [void]$monitors.AppendLine("<UnitMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition.Target)`" ParentMonitorID=`"Health!System.Health.$($definition.Parent)`" Remotable=`"true`" Priority=`"Normal`" TypeID=`"$typeId`" ConfirmDelivery=`"true`"><Category>$($definition.Category)</Category><AlertSettings AlertMessage=`"$messageId`"><AlertOnState>$($definition.Alert)</AlertOnState><AutoResolve>true</AutoResolve><AlertPriority>Normal</AlertPriority><AlertSeverity>MatchMonitorHealth</AlertSeverity><AlertParameters><AlertParameter1>`$Data/Context/Property[@Name='$detailProperty']`$</AlertParameter1></AlertParameters></AlertSettings><OperationalStates><OperationalState ID=`"Good`" MonitorTypeStateID=`"Good`" HealthState=`"Success`" /><OperationalState ID=`"Warning`" MonitorTypeStateID=`"Warning`" HealthState=`"Warning`" /><OperationalState ID=`"Critical`" MonitorTypeStateID=`"Critical`" HealthState=`"Error`" /></OperationalStates><Configuration>$($definition.Configuration)</Configuration></UnitMonitor>")
+        [void]$resources.AppendLine("<StringResource ID=`"$messageId`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($definition.Title)</Name><Description>$($definition.Description)</Description></DisplayString>")
+        foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"$id`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$messageId`"><Name>$($definition.Title)</Name><Description>$($definition.Description) Detail: {0}</Description></DisplayString>")
+        [void]$knowledge.AppendLine("<KnowledgeArticle ElementID=`"$id`" Visible=`"true`"><MamlContent><maml:section xmlns:maml=`"http://schemas.microsoft.com/maml/2004/10`"><maml:title>Summary</maml:title><maml:para>$($definition.Description)</maml:para></maml:section><maml:section xmlns:maml=`"http://schemas.microsoft.com/maml/2004/10`"><maml:title>Operator response</maml:title><maml:para>$($definition.Response)</maml:para></maml:section></MamlContent></KnowledgeArticle>")
+    }
+
+    $viewDefinitions = @(
+        @('LogicalUnit', 'LogicalUnit', 'SAN logical units', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
+        @('HostAttachment', 'HostAttachment', 'Host SAN attachments', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
+        @('IscsiSession', 'IscsiSession', 'iSCSI sessions', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
+        @('FibreChannelPort', 'FibreChannelPort', 'Fibre Channel ports', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
+        @('VirtualDiskMapping', 'VirtualDiskMapping', 'VHDX to SAN mappings', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder')
+    )
+    $views = [System.Text.StringBuilder]::new()
+    $folderItems = [System.Text.StringBuilder]::new()
+    foreach ($view in $viewDefinitions) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($view[0]).State.View"
+        [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($view[1])`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"$($view[3])`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[2])</Name></DisplayString>")
+    }
+    $alertViewId = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ActiveAlerts.View'
+    [void]$views.AppendLine("<View ID=`"$alertViewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment`" TypeID=`"SC!Microsoft.SystemCenter.AlertViewType`" Visible=`"true`"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator=`"NotEquals`">255</StateRange></ResolutionState></Criteria></View>")
+    [void]$folderItems.AppendLine("<FolderItem ElementID=`"$alertViewId`" ID=`"$alertViewId.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Operations.Folder`" />")
+    [void]$displays.AppendLine("<DisplayString ElementID=`"$alertViewId`"><Name>SAN and storage active alerts</Name></DisplayString>")
+
+    return [pscustomobject]@{
+        IntegrationFilters = $integrationFilters.Trim()
+        ObjectFilters = $objectFilters.Trim()
+        Detections = $detections
+        DiscoveryTypes = $discoveryTypes.ToString()
+        Monitors = $monitors.ToString()
+        Views = $views.ToString()
+        FolderItems = $folderItems.ToString()
+        StringResources = $resources.ToString()
+        DisplayStrings = $displays.ToString()
+        Knowledge = $knowledge.ToString()
+    }
+}
+
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -264,7 +344,34 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
     }
-    if ($artifact.kind -eq 'Library' -or $artifact.id.EndsWith('.Library', [System.StringComparison]::Ordinal)) {
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            STORAGE_TOPOLOGY_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudStorageTopology.ps1.template'
+            STORAGE_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudStorageIntegrationHealth.ps1.template'
+            STORAGE_OBJECT_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudStorageObjectHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "Storage capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "Storage capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+        $storageContent = Get-HcsStorageCapabilityContent
+        $content = $content.Replace('{{STORAGE_INTEGRATION_FILTERS}}', $storageContent.IntegrationFilters)
+        $content = $content.Replace('{{STORAGE_INTEGRATION_DETECTIONS}}', $storageContent.Detections)
+        $content = $content.Replace('{{STORAGE_OBJECT_FILTERS}}', $storageContent.ObjectFilters)
+        $content = $content.Replace('{{STORAGE_OBJECT_DETECTIONS}}', $storageContent.Detections)
+        $content = $content.Replace('{{STORAGE_DISCOVERY_TYPES}}', $storageContent.DiscoveryTypes)
+        $content = $content.Replace('{{STORAGE_MONITORS}}', $storageContent.Monitors)
+        $content = $content.Replace('{{STORAGE_VIEWS}}', $storageContent.Views)
+        $content = $content.Replace('{{STORAGE_FOLDER_ITEMS}}', $storageContent.FolderItems)
+        $content = $content.Replace('{{STORAGE_STRING_RESOURCES}}', $storageContent.StringResources)
+        $content = $content.Replace('{{STORAGE_DISPLAY_STRINGS}}', $storageContent.DisplayStrings)
+        $content = $content.Replace('{{STORAGE_KNOWLEDGE}}', $storageContent.Knowledge)
+    }
+    if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')
         $content = $content.Replace(
             '{{ELEMENT_DISPLAY_STRINGS}}',

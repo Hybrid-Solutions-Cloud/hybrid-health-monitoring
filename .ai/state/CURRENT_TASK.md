@@ -8,7 +8,8 @@ Library, Discovery, Monitoring, and Presentation MPs are authored. All four pass
 OM2022 VSAE/SDK verification, ordered transient test sealing, and strong-name verification. The
 optional capability MPs are the active implementation work; composable public overrides,
 representative SCOM labs, governed release signing, complete packaging, and public latest-download
-updates remain. `Capability.Cluster` is authored and verified; Storage Core is the next capability._
+updates remain. `Capability.Cluster` and `Capability.Storage` are authored and verified; the
+Microsoft S2D adapter is the next capability._
 
 <!--
   Optional advisory model hint the next tool should honour if available.

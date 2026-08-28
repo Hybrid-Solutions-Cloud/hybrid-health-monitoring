@@ -17,6 +17,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:Monitoring = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Monitoring.xml') -Raw
         [xml]$script:Presentation = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation.xml') -Raw
         [xml]$script:ClusterCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.xml') -Raw
+        [xml]$script:StorageCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.xml') -Raw
     }
 
     AfterAll {
@@ -67,8 +68,9 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 5
+        @($script:Receipt.artifacts).Count | Should -Be 6
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -291,6 +293,83 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             $parseErrors = $null
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
             @($parseErrors).Count | Should -Be 0
+        }
+    }
+
+    It 'defines Windows-owned SAN projection classes without duplicating vendor or S2D objects' {
+        $classes = @($script:StorageCapability.SelectNodes('//ClassType'))
+        $classes.Count | Should -Be 5
+        @($classes.ID) | Should -Be @(
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.VirtualDiskMapping'
+        )
+        $script:StorageCapability.OuterXml | Should -Not -Match 'PureStorageFlashArray|StorageSpacesDirect|Microsoft\.Windows\.Server\.Storage'
+    }
+
+    It 'discovers complete LUN, attachment, transport, and VHDX correlation topology' {
+        @($script:StorageCapability.SelectNodes('//RelationshipType')).Count | Should -Be 13
+        @($script:StorageCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 5
+        @($script:StorageCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 13
+        foreach ($id in @('VirtualDiskMappingReferencesVirtualHardDisk', 'VirtualDiskMappingReferencesLogicalUnit', 'VirtualHardDiskUsesLogicalUnit')) {
+            $script:StorageCapability.SelectSingleNode("//RelationshipType[contains(@ID,'$id')]") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'monitors SAN integration, attachment availability, MPIO, iSCSI, and Fibre Channel health' {
+        @($script:StorageCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 5
+        @($script:StorageCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 3
+        @($script:StorageCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        foreach ($rollup in $script:StorageCapability.SelectNodes('//DependencyMonitor')) {
+            [string]$rollup.MemberUnAvailable | Should -Be 'Success'
+            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+        }
+    }
+
+    It 'resolves every Storage workflow target and configuration parameter' {
+        $localClassIds = @($script:StorageCapability.SelectNodes('//ClassType') | ForEach-Object ID)
+        $libraryClassIds = @($script:Library.SelectNodes('//ClassType') | ForEach-Object ID)
+        foreach ($workflow in $script:StorageCapability.SelectNodes('//UnitMonitor|//DependencyMonitor')) {
+            $target = [string]$workflow.Target
+            if ($target -like 'HCSV2Library!*') { ($target -replace '^HCSV2Library!', '') | Should -BeIn $libraryClassIds }
+            else { $target | Should -BeIn $localClassIds }
+        }
+        foreach ($monitor in $script:StorageCapability.SelectNodes('//UnitMonitor')) {
+            $type = $script:StorageCapability.SelectSingleNode("//UnitMonitorType[@ID='$($monitor.TypeID)']")
+            $type | Should -Not -BeNullOrEmpty
+            $allowed = @($type.Configuration.ChildNodes | Where-Object LocalName -eq 'element' | ForEach-Object { $_.GetAttribute('name') })
+            foreach ($parameter in $monitor.Configuration.ChildNodes | Where-Object NodeType -eq Element) { $allowed | Should -Contain $parameter.LocalName }
+        }
+    }
+
+    It 'ships SAN inventory and alert views beneath the core Presentation folders' {
+        @($script:StorageCapability.SelectNodes('//View')).Count | Should -Be 6
+        foreach ($item in $script:StorageCapability.SelectNodes('//FolderItem')) { [string]$item.Folder | Should -BeLike 'HCSV2Presentation!*' }
+        foreach ($target in @($script:StorageCapability.SelectNodes("//View[@TypeID='SC!Microsoft.SystemCenter.StateViewType']") | ForEach-Object Target)) {
+            $target | Should -BeLike 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.*'
+        }
+    }
+
+    It 'uses stable hashed LUN keys, non-throwing capability probes, and valid embedded PowerShell' {
+        $discoveryScript = $script:StorageCapability.SelectSingleNode("//Discovery[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.Topology.Discovery']//ScriptBody").InnerText
+        $discoveryScript | Should -Match "\$storageId = 'lun:' \+ \(Get-HcsStableId"
+        foreach ($scriptBody in $script:StorageCapability.SelectNodes('//ScriptBody')) {
+            $scriptBody.InnerText | Should -Match 'function Test-HcsCapability'
+            $scriptBody.InnerText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
+    }
+
+    It 'provides alert resources, display strings, and knowledge for every Storage unit monitor' {
+        foreach ($monitor in $script:StorageCapability.SelectNodes('//UnitMonitor')) {
+            $script:StorageCapability.SelectSingleNode("//StringResource[@ID='$($monitor.AlertSettings.AlertMessage)']") | Should -Not -BeNullOrEmpty
+            $script:StorageCapability.SelectSingleNode("//DisplayString[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
+            $script:StorageCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
         }
     }
 
