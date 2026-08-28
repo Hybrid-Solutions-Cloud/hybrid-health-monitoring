@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "namespace": "HybridSolutionsCloud.HyperVPrivateCloud",
+  "developmentVersion": "2.0.0.0",
+  "productName": "Hyper-V Private Cloud Monitoring",
+  "artifacts": [
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Library",
+      "source": "fragments/library/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Library.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Library",
+      "required": true,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Discovery",
+      "source": "fragments/discovery/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Discovery.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Discovery",
+      "required": true,
+      "implementationStatus": "Planned"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring",
+      "source": "fragments/monitoring/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Monitoring",
+      "required": true,
+      "implementationStatus": "Planned"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Presentation",
+      "source": "fragments/presentation/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Presentation.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Presentation",
+      "required": true,
+      "implementationStatus": "Planned"
+    }
+  ]
+}

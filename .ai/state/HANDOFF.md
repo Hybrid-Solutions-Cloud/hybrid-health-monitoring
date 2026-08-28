@@ -2,6 +2,22 @@
 
 ## Current session
 
+- **V2 executable source started:** Added `src/hyper-v/scom-mp/v2/` with a deterministic PowerShell
+  7 build, explicit authored/planned manifest states, an incomplete-build receipt, and the first
+  authored v2 sealed-source artifact: `HybridSolutionsCloud.HyperVPrivateCloud.Library`. The build
+  refuses `-RequireComplete` while required artifacts remain planned so this milestone cannot be
+  mistaken for the public release.
+- **Core model expanded:** The v2 Library has 17 classes, 21 relationships, and generated display
+  strings for every property/relationship. It defines stable boundary/host/VM identities, VHDs,
+  VM vNICs, virtual switches, Replica relationships, pipeline health, and seven DA branches:
+  Management, Compute, Virtual Machines, Availability, Storage, Networking, and Monitoring.
+  Optional Cluster/CSV, Network ATC, Pure, S2D, SDN, and VMM objects remain outside core.
+- **V2 verification:** Added seven focused Pester tests. Combined Hyper-V preview/v2 tests pass
+  22/22 and `git diff --check` passes. ScriptAnalyzer initially found only a plural-noun warning;
+  the function was renamed and ScriptAnalyzer now passes with no Warning/Error findings. VitePress
+  production build passes from `docs/` with only the existing chunk-size warning. VSAE/SDK
+  verification has not yet been run on the v2 Library.
+
 - **V2 artifact graph fixed:** Added ADR 0043 and `contracts/packages.v2.json`. V2 source will live
   under `src/hyper-v/scom-mp/v2/` with four required sealed core MPs (Library, Discovery,
   Monitoring, Presentation), nine optional sealed capability MPs (Cluster, Storage, Pure, S2D,

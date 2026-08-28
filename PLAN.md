@@ -334,21 +334,22 @@ one connected health model. [ADR 0043](docs/design/decisions/0043-hyper-v-v2-pac
 fixes the implementation boundary at four required core MPs plus one sealed MP per optional
 capability; generated overrides and release manifests are scoped to the selected capability set.
 
-| Package | Requirement | Responsibility |
+| Sealed artifact | Requirement | Responsibility |
 |---|---|---|
-| Core Library | Required | Public classes, relationships, common module types, Run As profiles, and localization |
-| Compute | Required | Hyper-V hosts, hypervisor, services, VMs, integration services, replica, capacity, and performance |
-| Failover Clustering | Optional for standalone; required for clusters | Cluster, node, quorum, roles, resources, networks, CSV, failover, and Microsoft-object integration |
-| Storage Core | Required | Common provider, system, pool, volume/LUN, path, CSV/share, VHDX, and VM storage relationships |
-| Storage Spaces Direct | Optional | S2D subsystem, pools, disks, virtual disks, volumes, Health Service, jobs, faults, and history |
-| SAN Integration | Optional | Windows MPIO, iSCSI/Fibre Channel, paths, HBAs, LUN visibility, and common SAN correlation |
-| Pure Storage Integration | Optional | FlashArray discovery/integration, capacity, health, performance, protection, and end-to-end mapping |
-| Networking | Required | Physical adapters, SET/teams, switches, vNICs, VLAN, RDMA, VMQ, RSS, QoS, and migration/storage networks |
-| Network ATC | Optional | Intents, participating adapters, status, drift, overrides, symmetry, and remediation |
-| SDN | Optional | Network Controller, host agents, SLB/MUX, gateways, HNV, VIP/DIP, BGP, ACL, and certificates |
-| VMM Integration | Optional | VMM services, clouds, host groups, logical networks/switches, storage fabric, compliance, and jobs |
-| Presentation | Required | Console hierarchy, state/alert/event/performance/diagram views, dashboards, and tasks |
-| Reporting | Optional | Availability, capacity, performance, configuration, and forecast reports |
+| `Library` | Required | Stable core classes, relationships, DA branch contracts, Run As profiles, and localization |
+| `Discovery` | Required | Standalone-safe Hyper-V seeds and core topology discovery |
+| `Monitoring` | Required | Core Windows/Hyper-V/VM/replica health, performance, events, tasks, and knowledge |
+| `Presentation` | Required | Console root, core views, complete DA shell, diagrams, and operator tasks |
+| `Capability.Cluster` | Optional; required for clusters | Microsoft Cluster/CSV relationships, cluster service impact, capability monitoring, and views |
+| `Capability.Storage` | Optional | Common SAN, MPIO, iSCSI/FC, path/LUN/VHDX correlation, health, and views |
+| `Capability.PureStorage` | Optional | Pure MP object reuse, FlashArray-to-host/volume/VM correlations, service impact, and views |
+| `Capability.S2D` | Optional | Microsoft S2D object reuse, gap monitoring, service impact, and views |
+| `Capability.FileServices` | Optional | Microsoft File/iSCSI object reuse plus SOFS share, SMB path, and VM/VHDX correlations |
+| `Capability.NetworkATC` | Optional | Intents, participating adapters, status, drift, overrides, symmetry, and remediation |
+| `Capability.PhysicalNetwork` | Optional | Built-in SCOM network-object reuse and host-adapter-to-switch-port/VLAN service impact |
+| `Capability.SDN` | Optional | Microsoft SDN object reuse, verified gap monitoring, correlations, service impact, and views |
+| `Capability.VMM` | Optional | Matching-version Microsoft VMM object reuse, fabric correlation, service impact, and views |
+| `Reporting` | Optional | Availability, capacity, performance, configuration, and forecast reports |
 
 Customer customization remains in separate unsealed Discovery and Monitoring override MPs. Never
 write customer configuration to the Default Management Pack.
@@ -564,12 +565,17 @@ versions, cost, and required fixture.
 
 ### Implementation sequence
 
-1. Diagnose and formally supersede the `0.1` preview.
-2. Approve the v2 product contract, naming, support matrix, and dependency policy.
-3. Complete raw capability inventories and the ten research spikes.
+1. Diagnose and formally supersede the `0.1` preview. **Preview is formally superseded; installed
+   management-group diagnosis awaits the operator export and event evidence listed above.**
+2. Approve the v2 product contract, naming, support matrix, and dependency policy. **Complete.**
+3. Complete raw capability inventories and the ten research spikes. **Authoritative package and
+   ownership contracts are complete; representative fault/scale labs remain release gates.**
 4. Approve successor ADRs for topology, Microsoft/vendor dependencies, packaging, identity,
-   storage modes, networking authority, DA, health/alert policy, and migration.
-5. Author the Core Library and verified external-object relationships.
+   storage modes, networking authority, DA, health/alert policy, and migration. **Core dependency,
+   ownership, and packaging decisions complete; implementation-specific successors remain additive.**
+5. Author the Core Library and verified external-object relationships. **In progress: deterministic
+   v2 build and core Library source are authored; SDK verification and capability relationships
+   remain.**
 6. Implement lightweight capability seeds and staged discovery with independent pipeline health.
 7. Implement Compute and VM monitoring.
 8. Implement Failover Cluster integration and CSV monitoring.
