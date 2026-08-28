@@ -58,7 +58,7 @@ suitable relationship endpoints and must not be duplicated by v2.
 | CSV Integration | Microsoft Windows Server Operating System 2016 and above including `Microsoft.Windows.Server.ClusterSharedVolumeMonitoring`, minimum package `10.1.2.2` | Optional for standalone; mandatory before importing the HCS CSV/service-impact adapter |
 | S2D Integration | Microsoft Storage Spaces Direct MP, minimum package `1.0.47.4`, plus its declared Microsoft Storage library | Never a core dependency; reuse Microsoft S2D objects and add only verified gaps, cluster/CSV/VM correlations, coverage, and service impact |
 | SAN Core | Windows Server storage, MPIO, iSCSI, Fibre Channel, SMB, and cluster contracts | HCS owns common path/LUN/mapping projections only where no supported sealed MP owns them |
-| Pure Storage Integration | A currently supported Pure Storage sealed MP, if its public model and target-version support pass the vendor spike; otherwise a documented read-only Purity REST 2.x adapter | Never a core dependency; credentials use Run As, and the adapter is independently installable/removable |
+| Pure Storage Integration | Pure Storage FlashArray MP `2.0.120.0` for SCOM 2016/2019/2022 and Purity 5.3+ | Never a core dependency; reuse Pure arrays, controllers, hosts, host groups, ports, volumes, and pods; HCS adds the SAN-to-VM correlation chain and DA impact only |
 | VMM Integration | Matching Microsoft VMM Management Packs for the supported VMM/SCOM version pair | Never a core dependency; reference VMM clouds, host groups, logical networks, logical switches, storage, and jobs instead of rediscovering them |
 | SDN Integration | Microsoft Windows Server SDN MP, minimum package `10.0.0.2` | Never a core dependency; reuse Microsoft SDN objects and add only verified correlations, coverage, and service impact |
 
@@ -105,6 +105,30 @@ flowchart LR
 S2D and SAN branches are independent and may both populate the same private-cloud service. No
 capability-detection path is allowed to disable the other.
 
+## Pure Storage contract
+
+[ADR 0041](../decisions/0041-hyper-v-v2-pure-storage-integration.md) approves the vendor-integrated
+Pure lane for SCOM 2016, 2019, and 2022. The inspected sealed bundle is
+`PureStorageFlashArray` `2.0.120.0`, public key token `a9d994eedb5e7179`. Its public model exposes:
+
+- `PureStorage.FlashArray.PureArray`, keyed by `ArrayId`;
+- `PureStorage.FlashArray.PureController`, `PureHost`, `PureHostgroup`, `PurePort`, and
+  `PureVolume`, keyed within their hosting path by `Name`;
+- `PureStorage.FlashArray.Pod`, keyed by `PodId`, and hosted `PodReplica`, keyed by `PodName`; and
+- public array-hosting/containment relationships and the public
+  `PureStorage.FlashArray.FlashArrayAdminAccount` Secure Reference.
+
+The vendor pack remains responsible for leaf topology, alerts, capacity, performance, and
+ActiveCluster pod/mediator health. HCS supplies read-only mappings from Windows IQN/WWPN
+initiators through Pure host and volume presentation to Windows disks, MPIO paths, CSV/SMB
+storage, VHDX files, affected VMs, and the private-cloud DA. The adapter must not acknowledge or
+close array alerts and must not enable vendor-disabled high-cardinality volume performance
+workflows by default.
+
+Pure's published support evidence does not include SCOM 2025. The v2 preflight therefore rejects
+that combination until either Pure publishes support or a mutually exclusive HCS Purity REST 2.x
+provider passes its own security, scale, migration, and representative-array gates.
+
 ## Preview migration boundary
 
 The `0.1` preview is not upgraded by renaming its public elements. The v2 installer and guide must:
@@ -121,7 +145,8 @@ The following dependencies are not approved until their exact public contracts a
 recorded in this page:
 
 - Microsoft VMM MPs for each supported SCOM/VMM pair;
-- the current Pure Storage FlashArray SCOM MP, including support status and public class keys;
+- the SCOM 2025 Pure Storage path, either vendor-certified or a separately approved read-only
+  Purity REST 2.x provider;
 - File and iSCSI Services/SOFS objects used for Hyper-V over SMB; and
 - physical network-device classes used for switch-to-NIC correlation.
 
@@ -135,3 +160,4 @@ recorded in this page:
 - [Windows Server SDN MP 10.0.0.2](https://www.microsoft.com/en-us/download/details.aspx?id=54300)
 - [What is in an Operations Manager Management Pack?](https://learn.microsoft.com/en-us/system-center/scom/manage-overview-management-pack?view=sc-om-2025)
 - [Pure Storage FlashArray PowerShell SDK 2](https://github.com/PureStorage-Connect/PowerShellSDK2)
+- [Pure Storage FlashArray SCOM MP 2.0.120.0](https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0)

@@ -57,6 +57,16 @@ Describe 'Hyper-V Management Pack development build' {
         $sdn.identityKey | Should -Be 'Id'
         $sdn.managementPacks | Should -Contain 'Microsoft.Windows.10.SDNMonitoring'
         $sdn.authoritativeClasses | Should -Contain 'SDNMonitoringMP.SDNMonitoring.Stamp'
+
+        $pure = $contract.capabilities | Where-Object id -eq 'PureStorage'
+        $pure.status | Should -Be 'ApprovedWithSupportBoundary'
+        $pure.packageVersion | Should -Be '2.0.120.0'
+        $pure.publicKeyToken | Should -Be 'a9d994eedb5e7179'
+        $pure.supportedScomVersions | Should -Be @('2016', '2019', '2022')
+        $pure.unsupportedScomVersions | Should -Contain '2025'
+        $pure.managementPacks | Should -Contain 'PureStorageFlashArray'
+        $pure.secureReference | Should -Be 'PureStorage.FlashArray.FlashArrayAdminAccount'
+        $pure.authoritativeClasses | Should -Contain 'PureStorage.FlashArray.PureVolume'
     }
 
     It 'passes the repository contract suite' {

@@ -318,7 +318,7 @@ network-device, or VMM-fabric identities.
 | Hyper-V | Hyper-V Private Cloud v2 | Own virtualization-specific discovery, monitoring, knowledge, and presentation |
 | VMM fabric | Microsoft VMM MPs | Integrate clouds, host groups, networks, storage, compliance, and jobs without duplication |
 | Physical network | SCOM network monitoring and vendor MPs | Correlate host adapters to switches, ports, VLANs, and network health |
-| Pure Storage | Current supported Pure Storage MP where viable | Map arrays and volumes through Windows storage, CSV/VHDX, and VMs; fill verified gaps only |
+| Pure Storage | Pure Storage FlashArray MP `2.0.120.0` on its supported SCOM 2016/2019/2022 lane | Reuse vendor arrays, controllers, hosts, host groups, ports, volumes, and pods; add read-only SAN-to-VM mapping and DA service impact only |
 | S2D | Microsoft Storage and Storage Spaces Direct MPs | Reuse Microsoft subsystem, pool, node, disk, virtual-disk, volume, and share objects; add only verified gaps, correlations, and private-cloud service impact |
 | SDN | Microsoft Windows Server SDN MP | Reuse Microsoft stamp, controller, host, virtual-network, ACL, NIC, MUX, gateway, connection, and BGP objects; add correlations, coverage, and private-cloud service impact |
 
@@ -414,9 +414,10 @@ and relate their authoritative health where the corresponding MPs are installed.
 
 #### Pure Storage FlashArray
 
-First determine whether Pure's current FlashArray SCOM MP is supported for the target SCOM and
-Purity versions. Prefer vendor monitoring and create an integration pack around it. Use direct REST
-or PowerShell collection only for verified gaps.
+Pure's current FlashArray SCOM MP `2.0.120.0` is the authoritative model on its stated SCOM
+2016/2019/2022 and Purity 5.3+ support lane. Create an optional integration pack around it. Use
+direct REST or PowerShell collection only for verified correlation gaps; do not claim SCOM 2025
+Pure support until the vendor certifies it or a separate native provider passes its release gates.
 
 Required topology and health include arrays, controllers, hardware, ports, hosts/host groups,
 volumes, protection groups, replication, pods/ActiveCluster where licensed, capacity, latency,
@@ -542,8 +543,9 @@ coexistence, and gap analysis remain open.
    could, collection-only, diagnostic, or excluded.
 5. **S2D spike** — inventory completed for Microsoft S2D MP `1.0.47.4`; finish Health Service
    fault/action, job, performance-history, coexistence, failure-injection, and scale gap analysis.
-6. **SAN/Pure spike** — current vendor MP viability, REST/API contract, security, mappings, MPIO,
-   capacity/performance, replication, and real-array validation.
+6. **SAN/Pure spike** — vendor MP `2.0.120.0` public-contract and SCOM 2016/2019/2022 support
+   inventory completed; finish SAN mappings, MPIO, REST gap, SCOM 2025, ActiveCluster, and
+   representative-array validation.
 7. **Networking spike** — physical/virtual networking, SET, RDMA/DCB, Network ATC, physical switch
    correlation, authority selection, and failure injection.
 8. **SDN spike** — inventory completed for Microsoft SDN MP `10.0.0.2`; finish HNV, certificate,

@@ -18,7 +18,7 @@ Hyper-V simply because both products use SCOM or share health terminology.
 | Azure Local platform baseline | ADRs 0001–0003, 0007–0009, and 0014–0018 |
 | Azure Local SCOM | ADRs 0022, 0026, and 0032–0035 supersede or refine the earlier Azure Local SCOM baseline |
 | Azure Local Azure Monitor | ADRs 0006, 0010, 0012, 0013, 0019, and current preview refinement ADR 0036 |
-| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0040 for product boundary, network authority, DA, package, object/discovery, health/DA, authoring toolchain, and v2 external-object ownership; ADR 0040 supersedes 0039 |
+| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0040–0041 for product boundary, network authority, DA, package, object/discovery, health/DA, authoring toolchain, v2 external-object ownership, and Pure Storage integration; ADR 0040 supersedes 0039 |
 | Hyper-V Azure Monitor | ADR 0023 constrained go and ADR 0037 development architecture |
 
 Cross-cutting lifecycle ADRs can provide reusable patterns, but each platform and delivery lane
@@ -68,6 +68,7 @@ must still validate its applicable topology, dependencies, artifacts, tests, and
 | [0038](./0038-scom-servicenow-connector-boundary.md) | SCOM-to-ServiceNow connector boundary — optional MID Server connector with product allow-lists | Accepted |
 | [0039](./0039-hyper-v-v2-external-object-ownership.md) | Hyper-V v2 external object ownership — initial adapter decision before S2D/SDN inspection | Superseded by 0040 |
 | [0040](./0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership.md) | Hyper-V v2 Microsoft S2D and SDN ownership — authoritative Microsoft objects through optional adapters | Accepted |
+| [0041](./0041-hyper-v-v2-pure-storage-integration.md) | Hyper-V v2 Pure Storage integration — vendor-owned topology with HCS SAN-to-VM correlation | Accepted |
 
 ## When to write an ADR
 

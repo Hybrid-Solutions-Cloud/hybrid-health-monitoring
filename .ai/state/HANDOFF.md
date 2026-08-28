@@ -2,6 +2,22 @@
 
 ## Current session
 
+- **Pure Storage contract approved:** Added ADR 0041 after inspecting Pure's current GitHub release,
+  official release notes/guide, and sealed `PureStorageFlashArray` MP `2.0.120.0` (token
+  `a9d994eedb5e7179`). The vendor lane explicitly supports SCOM 2016/2019/2022 and Purity 5.3+;
+  SCOM 2025 is not claimed and remains a separate vendor-certification/native-provider gate.
+- **Pure adapter boundary:** V2 reuses vendor arrays, controllers, hosts, host groups, ports,
+  volumes, pods/replicas, leaf monitoring, and public Run As profile. HCS owns only read-only
+  IQN/WWPN-to-host, presented-volume-to-Windows-disk/MPIO/CSV/VHDX/VM correlations, coverage
+  freshness, DA membership, and service impact. It never acknowledges/closes vendor alerts or
+  enables vendor-disabled high-cardinality volume workflows by default.
+- **Pure evidence:** The inspected bundle contains 15 public classes, 10 public relationships, 12
+  discoveries, 24 unit monitors, 36 rules, seven views, dashboard components, and one public Secure
+  Reference. The contract JSON records exact keys, supported versions, MP identity, and token.
+- **Verification:** Hyper-V Pester passes 14/14, VitePress production build passes, dependency JSON
+  parses, edited local links resolve, and `git diff --check` passes. The existing VitePress
+  large-chunk warning is unchanged.
+
 - **S2D/SDN ownership corrected:** Added accepted ADR 0040, superseded ADR 0039 without erasing its
   history, and updated the v2 dependency contract, root plan, decision index, and VitePress sidebar.
   Microsoft S2D `1.0.47.4` and SDN `10.0.0.2` public objects are authoritative; optional HCS
