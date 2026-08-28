@@ -67,3 +67,7 @@ starter profiles:
 Customers retain ownership of active overrides. Never store overrides in the Default Management
 Pack. See the public [administration guide](../../../docs/scom-mp/management-pack-guide.md) for the
 complete import, tuning, upgrade, and removal workflow.
+
+Generate an official public profile for release packaging with `-PublicProfile` instead of the
+organization parameters. Public Lab, Standard, and Strict packs use first-party product IDs and
+must remain mutually exclusive.

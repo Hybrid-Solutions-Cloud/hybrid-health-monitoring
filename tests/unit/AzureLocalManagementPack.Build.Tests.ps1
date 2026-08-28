@@ -90,4 +90,17 @@ Describe 'Azure Local Management Pack development build' {
             @($monitoring.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
         }
     }
+
+    It 'renders official public Discovery and Monitoring override MPs for every tuning profile' {
+        foreach ($profileName in @('Lab', 'Standard', 'Strict')) {
+            $output = Join-Path $TestDrive "public-overrides-$profileName"
+            & $script:OverrideScript -TuningProfile $profileName -PublicProfile -Version '0.1.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $output
+            [xml]$discovery = Get-Content -LiteralPath (Join-Path $output "HybridSolutionsCloud.AzureLocal.Discovery.Overrides.$profileName.xml") -Raw
+            [xml]$monitoring = Get-Content -LiteralPath (Join-Path $output "HybridSolutionsCloud.AzureLocal.Monitoring.Overrides.$profileName.xml") -Raw
+            [string]$discovery.ManagementPack.Manifest.Identity.ID | Should -Be "HybridSolutionsCloud.AzureLocal.Discovery.Overrides.$profileName"
+            [string]$monitoring.ManagementPack.Manifest.Identity.ID | Should -Be "HybridSolutionsCloud.AzureLocal.Monitoring.Overrides.$profileName"
+            @($discovery.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
+            @($monitoring.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
+        }
+    }
 }

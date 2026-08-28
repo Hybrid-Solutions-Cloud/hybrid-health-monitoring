@@ -121,4 +121,17 @@ Describe 'Hyper-V Management Pack development build' {
             @($monitoringOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
         }
     }
+
+    It 'renders official public Discovery and Monitoring override MPs for every tuning profile' {
+        foreach ($tuningProfile in @('Lab', 'Standard', 'Strict')) {
+            $outputPath = Join-Path $TestDrive "public-overrides-$tuningProfile"
+            & $script:OverrideScript -TuningProfile $tuningProfile -PublicProfile -Version '0.1.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $outputPath
+            [xml]$discoveryOverrides = Get-Content (Join-Path $outputPath "HybridSolutionsCloud.HyperV.Discovery.Overrides.$tuningProfile.xml") -Raw
+            [xml]$monitoringOverrides = Get-Content (Join-Path $outputPath "HybridSolutionsCloud.HyperV.Monitoring.Overrides.$tuningProfile.xml") -Raw
+            [string]$discoveryOverrides.ManagementPack.Manifest.Identity.ID | Should -Be "HybridSolutionsCloud.HyperV.Discovery.Overrides.$tuningProfile"
+            [string]$monitoringOverrides.ManagementPack.Manifest.Identity.ID | Should -Be "HybridSolutionsCloud.HyperV.Monitoring.Overrides.$tuningProfile"
+            @($discoveryOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
+            @($monitoringOverrides.SelectNodes('/ManagementPack/Monitoring/Overrides/*')).Count | Should -BeGreaterThan 0
+        }
+    }
 }

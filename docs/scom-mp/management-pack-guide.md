@@ -12,7 +12,8 @@ checks do not certify runtime behavior.
 
 A [sealed lab-preview package](../downloads/scom-lab-preview.md) is available for controlled
 pre-production validation. It uses the transient development signing identity and must not be
-treated as a production release.
+treated as a production release. The ZIP includes official Lab, Standard, and Strict override
+profiles; import exactly one profile's separate Discovery and Monitoring XML files.
 
 ## Build
 

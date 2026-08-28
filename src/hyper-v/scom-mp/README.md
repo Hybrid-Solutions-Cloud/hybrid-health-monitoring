@@ -70,6 +70,10 @@ Generate one profile into separate Discovery and Monitoring override MPs:
 Review and test the generated XML before import. Never import more than one starter profile and
 never store active overrides in the Default Management Pack.
 
+Generate an official public profile for release packaging with `-PublicProfile` instead of the
+organization parameters. Public Lab, Standard, and Strict packs use first-party product IDs and
+must remain mutually exclusive.
+
 ## Microsoft SDK verification
 
 Install System Center Visual Studio Authoring Extensions (VSAE) for Visual Studio 2022 and make the
