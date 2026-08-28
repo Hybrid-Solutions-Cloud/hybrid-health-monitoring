@@ -153,6 +153,13 @@ must publish a profile change log and identify added, changed, retired, and no-l
 settings. Templates never contain credentials, notification endpoints, Run As assignments, or
 company-specific groups.
 
+The committed `.xml.example` files are generated artifacts, not hand-maintained samples. Run
+`src/hyper-v/scom-mp/tools/Update-HyperVOverrideExamples.ps1` after changing the generator or a
+profile. CI runs the same tool with `-Check` and rejects any example that is not byte-identical to
+generator output. Generated examples contain complete override elements and documented placeholder
+tokens for the organization identity, override MP version, sealed product version, and public key
+token.
+
 ## Lifecycle rules
 
 ```mermaid

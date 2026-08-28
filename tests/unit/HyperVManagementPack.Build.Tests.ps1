@@ -22,6 +22,7 @@ BeforeAll {
     $script:BuildScript = Join-Path $script:SourceRoot 'tools/Build-HyperVManagementPacks.ps1'
     $script:ContractScript = Join-Path $script:SourceRoot 'tools/Test-HyperVManagementPacks.ps1'
     $script:OverrideScript = Join-Path $script:SourceRoot 'tools/New-HyperVOverrideManagementPacks.ps1'
+    $script:OverrideExampleScript = Join-Path $script:SourceRoot 'tools/Update-HyperVOverrideExamples.ps1'
 }
 
 Describe 'Hyper-V Management Pack development build' {
@@ -155,5 +156,59 @@ Describe 'Hyper-V Management Pack development build' {
         {
             & $script:OverrideScript -TuningProfile Standard -ProfilePath $invalidProfile -OrganizationId Contoso -OrganizationName Contoso -ProductVersion '0.2.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath (Join-Path $TestDrive 'unsupported-schema')
         } | Should -Throw "*Unsupported Hyper-V override profile schemaVersion '9.9'*"
+    }
+
+    It 'keeps every committed override example identical to generator output' {
+        { & $script:OverrideExampleScript -Check } | Should -Not -Throw
+    }
+
+    It 'resolves every generated override target, module, parameter, context, and alias offline' {
+        $buildOutput = Join-Path $TestDrive 'semantic-product'
+        & $script:BuildScript -Version '0.2.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $buildOutput | Out-Null
+
+        [xml]$library = Get-Content -LiteralPath (Join-Path $buildOutput 'HybridSolutionsCloud.HyperV.Library.xml') -Raw
+        [xml]$discovery = Get-Content -LiteralPath (Join-Path $buildOutput 'HybridSolutionsCloud.HyperV.Discovery.xml') -Raw
+        [xml]$monitoring = Get-Content -LiteralPath (Join-Path $buildOutput 'HybridSolutionsCloud.HyperV.Monitoring.xml') -Raw
+        $classIds = @($library.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType') | ForEach-Object { [string]$_.ID })
+
+        foreach ($tuningProfile in @('Lab', 'Standard', 'Strict')) {
+            $overrideOutput = Join-Path $TestDrive "semantic-overrides-$tuningProfile"
+            & $script:OverrideScript -TuningProfile $tuningProfile -OrganizationId Contoso -OrganizationName Contoso -Version '1.0.0.0' -ProductVersion '0.2.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $overrideOutput
+
+            foreach ($kind in @('Discovery', 'Monitoring')) {
+                $overridePath = Join-Path $overrideOutput "Contoso.HybridSolutionsCloud.HyperV.$kind.Overrides.xml"
+                [xml]$overrideDocument = Get-Content -LiteralPath $overridePath -Raw
+                $overrides = @($overrideDocument.SelectNodes('/ManagementPack/Monitoring/Overrides/*'))
+                $usedAliases = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+
+                foreach ($override in $overrides) {
+                    $contextParts = ([string]$override.Context).Split('!', 2)
+                    $contextParts.Count | Should -Be 2
+                    [void]$usedAliases.Add($contextParts[0])
+                    $classIds | Should -Contain $contextParts[1]
+
+                    if ($override.LocalName -eq 'DiscoveryConfigurationOverride') {
+                        $workflowParts = ([string]$override.Discovery).Split('!', 2)
+                        [void]$usedAliases.Add($workflowParts[0])
+                        $workflow = $discovery.SelectSingleNode("/ManagementPack/Monitoring/Discoveries/Discovery[@ID='$($workflowParts[1])']")
+                        $workflow | Should -Not -BeNullOrEmpty
+                        $module = $workflow.SelectSingleNode("DataSource[@ID='$([string]$override.Module)']")
+                        $module | Should -Not -BeNullOrEmpty
+                        $module.SelectSingleNode([string]$override.Parameter) | Should -Not -BeNullOrEmpty
+                    }
+                    else {
+                        $monitorParts = ([string]$override.Monitor).Split('!', 2)
+                        [void]$usedAliases.Add($monitorParts[0])
+                        $unitMonitor = $monitoring.SelectSingleNode("/ManagementPack/Monitoring/Monitors/UnitMonitor[@ID='$($monitorParts[1])']")
+                        $unitMonitor | Should -Not -BeNullOrEmpty
+                        $unitMonitor.SelectSingleNode("Configuration/$([string]$override.Parameter)") | Should -Not -BeNullOrEmpty
+                    }
+                }
+
+                foreach ($reference in @($overrideDocument.ManagementPack.Manifest.References.Reference)) {
+                    $usedAliases.Contains([string]$reference.Alias) | Should -BeTrue
+                }
+            }
+        }
     }
 }

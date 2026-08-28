@@ -1,19 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Strict example. Replace every token and review every setting before import. -->
 <ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <Manifest>
-    <Identity>
-      <ID>{{ORGANIZATION_ID}}.HybridSolutionsCloud.HyperV.Monitoring.Overrides</ID>
-      <Version>{{VERSION}}</Version>
-    </Identity>
-    <Name>{{ORGANIZATION_NAME}} Hyper-V Monitoring Overrides</Name>
+    <Identity><ID>{{ORGANIZATION_ID}}.HybridSolutionsCloud.HyperV.Monitoring.Overrides</ID><Version>{{VERSION}}</Version></Identity>
+    <Name>{{ORGANIZATION_NAME}} Hyper-V Monitoring Overrides (Strict starter)</Name>
     <References>
-      <Reference Alias="HCSHyperVMonitoring">
-        <ID>HybridSolutionsCloud.HyperV.Monitoring</ID>
-        <Version>{{VERSION}}</Version>
-        <PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken>
-      </Reference>
+      <Reference Alias="HCSHyperVLibrary"><ID>HybridSolutionsCloud.HyperV.Library</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSHyperVMonitoring"><ID>HybridSolutionsCloud.HyperV.Monitoring</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
     </References>
   </Manifest>
-  <!-- Structural example only. Use New-HyperVOverrideManagementPacks.ps1 to render the Strict profile. -->
+  <Monitoring><Overrides>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.VMMS.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.VMMS.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Cluster.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Cluster.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.VirtualMachines.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.VirtualMachines.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Replication.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Replication.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.NetworkATC.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.NetworkATC.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Memory.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Memory.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Cpu.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Cpu.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Csv.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Csv.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Pipeline.IntervalSeconds.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Pipeline.Monitor"><Parameter>IntervalSeconds</Parameter><Value>120</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Cpu.CpuWarningPercent.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Cpu.Monitor"><Parameter>CpuWarningPercent</Parameter><Value>70</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Cpu.CpuCriticalPercent.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Cpu.Monitor"><Parameter>CpuCriticalPercent</Parameter><Value>85</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Memory.MemoryWarningMB.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Memory.Monitor"><Parameter>MemoryWarningMB</Parameter><Value>8192</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Memory.MemoryCriticalMB.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Memory.Monitor"><Parameter>MemoryCriticalMB</Parameter><Value>4096</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Csv.CsvWarningPercentFree.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Csv.Monitor"><Parameter>CsvWarningPercentFree</Parameter><Value>20</Value></MonitorConfigurationOverride>
+    <MonitorConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Monitoring.Csv.CsvCriticalPercentFree.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Monitor="HCSHyperVMonitoring!HybridSolutionsCloud.HyperV.Host.Csv.Monitor"><Parameter>CsvCriticalPercentFree</Parameter><Value>15</Value></MonitorConfigurationOverride>
+
+  </Overrides></Monitoring>
+  <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings><DisplayString ElementID="{{ORGANIZATION_ID}}.HybridSolutionsCloud.HyperV.Monitoring.Overrides"><Name>{{ORGANIZATION_NAME}} Hyper-V Monitoring Overrides (Strict starter)</Name><Description>Customer-owned unsealed overrides generated from the reviewed Strict starter profile.</Description></DisplayString></DisplayStrings></LanguagePack></LanguagePacks>
 </ManagementPack>

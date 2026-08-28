@@ -2,6 +2,19 @@
 
 ## Current session
 
+- **Generated override examples and semantic CI gate:** Added
+  `Update-HyperVOverrideExamples.ps1`, regenerated all six Hyper-V Lab/Standard/Strict example
+  XML files from the supported generator, and documented that the examples are generated
+  artifacts. The updater's `-Check` mode performs an ordinal byte comparison and is invoked by
+  the Hyper-V Pester suite, so hand edits or generator drift fail CI.
+- **Offline override contract validation:** Added tests that build version `0.2.0.0`, generate
+  every profile, and resolve each referenced context class, discovery, monitor, module, and
+  configuration parameter against the built sealed-product XML. The tests also require every
+  declared reference alias to be used.
+- **Latest verification:** Hyper-V Pester passes 13/13; the Hyper-V product contract suite and
+  generated-example drift check pass; PSScriptAnalyzer reports zero warnings/errors for both
+  override tools; `git diff --check` passes. These changes are ready for commit and push.
+
 - **Hyper-V v2 plan:** Updated root `PLAN.md` to make Hyper-V Private Cloud Monitoring v2 the
   active priority and Azure Local explicitly under development. The `0.1` Hyper-V preview is now
   classified as a superseded host-centric baseline rather than a complete private-cloud product.

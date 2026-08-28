@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Standard example. Replace every token and review every setting before import. -->
 <ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <Manifest>
-    <Identity>
-      <ID>{{ORGANIZATION_ID}}.HybridSolutionsCloud.HyperV.Discovery.Overrides</ID>
-      <Version>{{VERSION}}</Version>
-    </Identity>
-    <Name>{{ORGANIZATION_NAME}} Hyper-V Discovery Overrides</Name>
+    <Identity><ID>{{ORGANIZATION_ID}}.HybridSolutionsCloud.HyperV.Discovery.Overrides</ID><Version>{{VERSION}}</Version></Identity>
+    <Name>{{ORGANIZATION_NAME}} Hyper-V Discovery Overrides (Standard starter)</Name>
     <References>
-      <Reference Alias="HCSHyperVDiscovery">
-        <ID>HybridSolutionsCloud.HyperV.Discovery</ID>
-        <Version>{{VERSION}}</Version>
-        <PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken>
-      </Reference>
+      <Reference Alias="HCSHyperVLibrary"><ID>HybridSolutionsCloud.HyperV.Library</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSHyperVDiscovery"><ID>HybridSolutionsCloud.HyperV.Discovery</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
     </References>
   </Manifest>
-  <!-- Structural example only. Use New-HyperVOverrideManagementPacks.ps1 to render the Standard profile. -->
+  <Monitoring><Overrides>
+    <DiscoveryConfigurationOverride ID="{{ORGANIZATION_ID}}.HyperV.Discovery.TopologyInterval.Override" Context="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" Enforced="false" Discovery="HCSHyperVDiscovery!HybridSolutionsCloud.HyperV.Topology.Discovery"><Module>PowerShellDiscovery</Module><Parameter>IntervalSeconds</Parameter><Value>1800</Value></DiscoveryConfigurationOverride>
+
+  </Overrides></Monitoring>
+  <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings><DisplayString ElementID="{{ORGANIZATION_ID}}.HybridSolutionsCloud.HyperV.Discovery.Overrides"><Name>{{ORGANIZATION_NAME}} Hyper-V Discovery Overrides (Standard starter)</Name><Description>Customer-owned unsealed overrides generated from the reviewed Standard starter profile.</Description></DisplayString></DisplayStrings></LanguagePack></LanguagePacks>
 </ManagementPack>
