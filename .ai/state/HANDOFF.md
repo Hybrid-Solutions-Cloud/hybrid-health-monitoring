@@ -2,6 +2,16 @@
 
 ## Current session
 
+- **Root v2 plan refreshed:** `PLAN.md` remains the authoritative repository-root implementation
+  plan for Hyper-V Private Cloud Monitoring v2. It now labels Azure Local as under development,
+  the Hyper-V `0.1` artifact as a superseded preview, and Hyper-V v2 as the active priority.
+- **S2D/SDN correction captured in the plan:** Direct inspection established that Microsoft ships
+  S2D MP `1.0.47.4` and SDN MP `10.0.0.2`. The plan now requires reuse of their public objects and
+  limits HCS ownership to verified gaps, correlations, coverage, and private-cloud service impact.
+  ADR 0039 and the dependency contract still require a successor correction before implementation.
+- **Plan validation:** `git diff --check` passed; only `PLAN.md` and this handoff changed in this
+  update. Branch remains `main`.
+
 - **V2 dependency decision accepted:** Added ADR 0039 and the public v2 dependency/ownership
   contract. The product console identity is `Hyper-V Private Cloud Monitoring`, console root is
   `Hyper-V Private Cloud`, and the new namespace is

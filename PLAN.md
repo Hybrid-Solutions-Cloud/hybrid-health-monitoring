@@ -15,8 +15,8 @@ platform first and monitoring surface second:
 
 | Platform | SCOM Management Pack | Azure Monitor Health Models |
 |---|---|---|
-| **Azure Local** | Committed | Committed |
-| **Hyper-V** | Committed | Constrained development through Azure Arc-enabled SCVMM and Arc-enabled Servers |
+| **Azure Local** | Under development; not the active delivery priority | Under development |
+| **Hyper-V** | V2 redesign is the active priority; `0.1` is a superseded lab preview | Constrained development through Azure Arc-enabled SCVMM and Arc-enabled Servers |
 
 The product can reuse research, health terminology, authoring knowledge, and non-runtime engineering
 tooling. Azure Local and Hyper-V remain completely independent SCOM runtime products; they do not
@@ -297,13 +297,14 @@ migration guidance, and define side-by-side and uninstall restrictions explicitl
 
 ### Authoritative ownership and dependency policy
 
-The verified v2 decision is recorded in
+The initial v2 decision is recorded in
 [ADR 0039](docs/design/decisions/0039-hyper-v-v2-external-object-ownership.md) and the
 [dependency and ownership contract](docs/design/hyper-v/v2-dependency-and-ownership-contract.md).
-The current Microsoft Cluster `10.1.0.0` and Windows Server/CSV `10.1.2.2` packages expose public
-cluster, node, group, network, resource, disk, and CSV identities. V2 therefore consumes those
-objects through optional adapters instead of creating competing cluster or CSV copies. The base
-standalone product retains only built-in SCOM dependencies.
+Subsequent package inspection proved that Microsoft also publishes supported S2D and SDN MPs;
+ADR 0039 and its contract must therefore be superseded before implementation begins. The corrected
+plan is to consume authoritative Microsoft Cluster `10.1.0.0`, Windows Server/CSV `10.1.2.2`, S2D
+`1.0.47.4`, and SDN `10.0.0.2` objects through optional adapters instead of creating competing
+copies. The base standalone product retains only built-in SCOM dependencies.
 
 Reuse stable public objects from sealed Microsoft and vendor MPs when they represent the same
 managed resource. Do not create disconnected duplicate Windows computer, cluster, storage-array,
@@ -318,8 +319,8 @@ network-device, or VMM-fabric identities.
 | VMM fabric | Microsoft VMM MPs | Integrate clouds, host groups, networks, storage, compliance, and jobs without duplication |
 | Physical network | SCOM network monitoring and vendor MPs | Correlate host adapters to switches, ports, VLANs, and network health |
 | Pure Storage | Current supported Pure Storage MP where viable | Map arrays and volumes through Windows storage, CSV/VHDX, and VMs; fill verified gaps only |
-| S2D | Windows storage APIs and cluster Health Service | Own S2D topology, faults, jobs, capacity, performance, and service impact |
-| SDN | Microsoft Network Controller and SDN APIs | Discover and monitor control-plane and data-plane components |
+| S2D | Microsoft Storage and Storage Spaces Direct MPs | Reuse Microsoft subsystem, pool, node, disk, virtual-disk, volume, and share objects; add only verified gaps, correlations, and private-cloud service impact |
+| SDN | Microsoft Windows Server SDN MP | Reuse Microsoft stamp, controller, host, virtual-network, ACL, NIC, MUX, gateway, connection, and BGP objects; add correlations, coverage, and private-cloud service impact |
 
 For every external dependency, record the exact MP ID, minimum compatible version, public
 elements used, import order, supported SCOM/Windows matrix, licensing or redistribution boundary,
@@ -528,7 +529,9 @@ only a state view targeted at the service class.
 
 ### Research and architecture work packages
 
-Complete these evidence-backed spikes before locking v2 authoring:
+Complete these evidence-backed spikes before locking v2 authoring. Cluster/CSV, S2D, and SDN
+package inventories are complete at the public-contract level; their representative lab behavior,
+coexistence, and gap analysis remain open.
 
 1. **Installed-preview diagnosis** — explain missing discoveries, views, and DA instances.
 2. **Support matrix** — Windows Server, SCOM, Cluster MP, VMM, S2D, Network ATC, SDN, Pure
@@ -537,13 +540,14 @@ Complete these evidence-backed spikes before locking v2 authoring:
    classes, relationships, discoveries, modules, and version contracts.
 4. **Hyper-V capability catalog** — every observable object and signal classified as must, should,
    could, collection-only, diagnostic, or excluded.
-5. **S2D spike** — Health Service, faults/actions, storage states, jobs, performance history,
-   capacity, failure injection, and scale.
+5. **S2D spike** — inventory completed for Microsoft S2D MP `1.0.47.4`; finish Health Service
+   fault/action, job, performance-history, coexistence, failure-injection, and scale gap analysis.
 6. **SAN/Pure spike** — current vendor MP viability, REST/API contract, security, mappings, MPIO,
    capacity/performance, replication, and real-array validation.
 7. **Networking spike** — physical/virtual networking, SET, RDMA/DCB, Network ATC, physical switch
    correlation, authority selection, and failure injection.
-8. **SDN spike** — Network Controller, SLB, gateway, HNV, security, scale, and test topology.
+8. **SDN spike** — inventory completed for Microsoft SDN MP `10.0.0.2`; finish HNV, certificate,
+   service-impact, duplicate-monitoring, security, scale, and test-topology gap analysis.
 9. **VMM spike** — official MP model, supported integration, clouds, fabric networks/storage,
    compliance, jobs, and coexistence without duplicate objects or alerts.
 10. **DA and presentation spike** — stable boundaries, membership, rollup, diagram/dashboard
