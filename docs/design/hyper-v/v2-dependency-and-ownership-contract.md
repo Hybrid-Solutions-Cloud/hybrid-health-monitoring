@@ -5,6 +5,10 @@ description: Evidence-backed ownership and dependency rules for Microsoft, vendo
 
 # Hyper-V Private Cloud v2 dependency and ownership contract
 
+This contract implements
+[ADR 0040](../decisions/0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership.md), which supersedes the
+pre-inspection assumptions in ADR 0039.
+
 ## Decision summary
 
 Hyper-V Private Cloud Monitoring v2 reuses stable, public objects from supported sealed Microsoft
@@ -29,6 +33,8 @@ from display names or documentation screenshots.
 | Windows Server Cluster 2016 and above | `10.1.0.0` | Public cluster component, node, node role, group, hosted group, network, resource, monitoring-service, and containment/hosting relationships |
 | Windows Server Operating System 2016 and above | `10.1.2.2` | Public Windows Server computer, operating-system, disk, adapter, processor, and group model |
 | Windows Server Cluster Shared Volume Monitoring | `10.1.2.2` | Public CSV and cluster-disk classes, CSV discovery, free-space monitors, performance collection, and dashboards |
+| Storage Spaces Direct | `1.0.47.4` | Public storage subsystem, node, physical disk, pool, virtual disk, volume, file-share, group, and topology relationships; discovery, health, performance, and presentation |
+| Windows Server SDN | `10.0.0.2` | Public stamp, controller-node, host, virtual-network, ACL, network-interface, MUX, virtual-gateway, connection, BGP, gateway-pool, and gateway model; discovery, health, collection, and views |
 
 Microsoft's current SCOM guidance also says that the Windows Server Operating System Management
 Pack provides CSV discovery and monitoring. That makes an HCS-owned parallel CSV identity an
@@ -39,7 +45,9 @@ The inspected CSV MP exposes `Microsoft.Windows.Server.ClusterSharedVolumeMonito
 Microsoft cluster virtual-server identity. The inspected Cluster MP exposes public containment from
 `Microsoft.Windows.Cluster` to node, group, and network and hosting from hosted groups to cluster
 resources. These are suitable endpoints for HCS-owned reference and service-membership
-relationships.
+relationships. The S2D base library uses `UniqueID` keys for its public storage resources. The SDN
+pack uses public `Id` keys for its non-singleton resources. These stable public identities are
+suitable relationship endpoints and must not be duplicated by v2.
 
 ## Required and optional dependency boundary
 
@@ -48,11 +56,11 @@ relationships.
 | Core library, compute, and base presentation | Operations Manager built-in System, Windows, System Center, Health, Performance, and Service Designer libraries | Required; retain the lowest verified reference versions that contain the used types |
 | Failover Cluster Integration | Microsoft Windows Server Cluster 2016 and above MPs, minimum package `10.1.0.0` | Optional for standalone; mandatory before importing the HCS cluster capability |
 | CSV Integration | Microsoft Windows Server Operating System 2016 and above including `Microsoft.Windows.Server.ClusterSharedVolumeMonitoring`, minimum package `10.1.2.2` | Optional for standalone; mandatory before importing the HCS CSV/service-impact adapter |
-| S2D | Windows Server cluster and CSV contracts plus Windows storage and cluster Health Service APIs | HCS owns the S2D objects absent from the inspected Microsoft MP model; it correlates volumes to Microsoft CSV objects |
+| S2D Integration | Microsoft Storage Spaces Direct MP, minimum package `1.0.47.4`, plus its declared Microsoft Storage library | Never a core dependency; reuse Microsoft S2D objects and add only verified gaps, cluster/CSV/VM correlations, coverage, and service impact |
 | SAN Core | Windows Server storage, MPIO, iSCSI, Fibre Channel, SMB, and cluster contracts | HCS owns common path/LUN/mapping projections only where no supported sealed MP owns them |
 | Pure Storage Integration | A currently supported Pure Storage sealed MP, if its public model and target-version support pass the vendor spike; otherwise a documented read-only Purity REST 2.x adapter | Never a core dependency; credentials use Run As, and the adapter is independently installable/removable |
 | VMM Integration | Matching Microsoft VMM Management Packs for the supported VMM/SCOM version pair | Never a core dependency; reference VMM clouds, host groups, logical networks, logical switches, storage, and jobs instead of rediscovering them |
-| SDN Integration | Matching Microsoft SDN/Network Controller contracts where public and supported | Never a core dependency; no inferred authority merely because a class exists |
+| SDN Integration | Microsoft Windows Server SDN MP, minimum package `10.0.0.2` | Never a core dependency; reuse Microsoft SDN objects and add only verified correlations, coverage, and service impact |
 
 An optional capability's presentation and Distributed Application population are packaged with or
 behind that capability. The base presentation MP must not take every optional dependency and turn a
@@ -72,7 +80,7 @@ standalone installation into an all-or-nothing import.
 5. External leaf monitors remain the leaf alert authority. HCS dependency monitors roll their
    health into service impact without creating duplicate symptom alerts.
 6. Optional dependencies are isolated in adapter MPs. Core compute remains importable and useful
-   without Cluster, CSV, Pure, VMM, or SDN packs.
+   without Cluster, CSV, S2D, Pure, VMM, or SDN packs.
 
 ## v2 service graph
 
@@ -86,7 +94,7 @@ flowchart LR
 
     CLUSTER --> MSCLUSTER[Microsoft cluster and node objects]
     STORAGE --> MSCSV[Microsoft CSV objects]
-    STORAGE --> S2D[HCS S2D objects]
+    STORAGE --> S2D[Microsoft S2D objects]
     STORAGE --> SAN[HCS SAN mapping objects]
     SAN --> PURE[Pure Storage objects or adapter]
     NETWORK --> SWITCH[HCS Hyper-V switch and adapter correlations]
@@ -113,7 +121,6 @@ The following dependencies are not approved until their exact public contracts a
 recorded in this page:
 
 - Microsoft VMM MPs for each supported SCOM/VMM pair;
-- Microsoft SDN and Network Controller MPs;
 - the current Pure Storage FlashArray SCOM MP, including support status and public class keys;
 - File and iSCSI Services/SOFS objects used for Hyper-V over SMB; and
 - physical network-device classes used for switch-to-NIC correlation.
@@ -124,6 +131,7 @@ recorded in this page:
 - [Monitoring Failover Cluster with Operations Manager](https://learn.microsoft.com/en-us/system-center/scom/manage-monitor-clusters-overview?view=sc-om-2025)
 - [Windows Server Cluster 2016 and above MP 10.1.0.0](https://www.microsoft.com/en-us/download/details.aspx?id=54701)
 - [Windows Server Operating System 2016 and above MP 10.1.2.2](https://www.microsoft.com/en-us/download/details.aspx?id=54303)
+- [Storage Spaces Direct MP 1.0.47.4](https://www.microsoft.com/en-us/download/details.aspx?id=100782)
+- [Windows Server SDN MP 10.0.0.2](https://www.microsoft.com/en-us/download/details.aspx?id=54300)
 - [What is in an Operations Manager Management Pack?](https://learn.microsoft.com/en-us/system-center/scom/manage-overview-management-pack?view=sc-om-2025)
 - [Pure Storage FlashArray PowerShell SDK 2](https://github.com/PureStorage-Connect/PowerShellSDK2)
-

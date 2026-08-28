@@ -48,9 +48,27 @@
     },
     {
       "id": "StorageSpacesDirect",
-      "status": "HcsOwnedGap",
+      "status": "Approved",
       "optional": true,
-      "policy": "Own S2D objects not exposed by the inspected Microsoft packages and correlate S2D volumes to authoritative Microsoft CSV objects."
+      "packageVersion": "1.0.47.4",
+      "download": "https://www.microsoft.com/en-us/download/details.aspx?id=100782",
+      "managementPacks": [
+        "Microsoft.Storage.Library",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect",
+        "Microsoft.Windows.Server.Storage.Visualization.Library",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.Presentation"
+      ],
+      "authoritativeClasses": [
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageNode",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.PhysicalDisk",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StoragePool",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.VirtualDisk",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.Volume",
+        "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.FileShare"
+      ],
+      "identityKey": "UniqueID",
+      "policy": "Reuse Microsoft S2D objects; add only verified gaps, correlations, monitoring coverage, and private-cloud service impact."
     },
     {
       "id": "PureStorage",
@@ -64,8 +82,31 @@
     },
     {
       "id": "SoftwareDefinedNetworking",
-      "status": "ContractSpikeRequired",
-      "optional": true
+      "status": "Approved",
+      "optional": true,
+      "packageVersion": "10.0.0.2",
+      "download": "https://www.microsoft.com/en-us/download/details.aspx?id=54300",
+      "managementPacks": [
+        "Microsoft.Windows.10.SDNMonitoring.Images",
+        "Microsoft.Windows.10.SDNMonitoring"
+      ],
+      "authoritativeClasses": [
+        "SDNMonitoringMP.SDNMonitoring.Stamp",
+        "SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNode",
+        "SDNMonitoringMP.SDNMonitoring.Host",
+        "SDNMonitoringMP.SDNMonitoring.VirtualNetwork",
+        "SDNMonitoringMP.SDNMonitoring.AccessControlList",
+        "SDNMonitoringMP.SDNMonitoring.NetworkInterface",
+        "SDNMonitoringMP.SDNMonitoring.LoadBalancerMux",
+        "SDNMonitoringMP.SDNMonitoring.VirtualGateway",
+        "SDNMonitoringMP.SDNMonitoring.NetworkConnection",
+        "SDNMonitoringMP.SDNMonitoring.BGPRouter",
+        "SDNMonitoringMP.SDNMonitoring.BGPPeer",
+        "SDNMonitoringMP.SDNMonitoring.GatewayPool",
+        "SDNMonitoringMP.SDNMonitoring.Gateway"
+      ],
+      "identityKey": "Id",
+      "policy": "Reuse Microsoft SDN objects; add only verified correlations, monitoring coverage, and private-cloud service impact."
     },
     {
       "id": "ScaleOutFileServer",

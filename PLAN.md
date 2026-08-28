@@ -297,11 +297,11 @@ migration guidance, and define side-by-side and uninstall restrictions explicitl
 
 ### Authoritative ownership and dependency policy
 
-The initial v2 decision is recorded in
-[ADR 0039](docs/design/decisions/0039-hyper-v-v2-external-object-ownership.md) and the
+The authoritative v2 decision is recorded in
+[ADR 0040](docs/design/decisions/0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership.md), which
+supersedes [ADR 0039](docs/design/decisions/0039-hyper-v-v2-external-object-ownership.md), and the
 [dependency and ownership contract](docs/design/hyper-v/v2-dependency-and-ownership-contract.md).
-Subsequent package inspection proved that Microsoft also publishes supported S2D and SDN MPs;
-ADR 0039 and its contract must therefore be superseded before implementation begins. The corrected
+Package inspection proved that Microsoft publishes supported Cluster, CSV, S2D, and SDN MPs. The
 plan is to consume authoritative Microsoft Cluster `10.1.0.0`, Windows Server/CSV `10.1.2.2`, S2D
 `1.0.47.4`, and SDN `10.0.0.2` objects through optional adapters instead of creating competing
 copies. The base standalone product retains only built-in SCOM dependencies.

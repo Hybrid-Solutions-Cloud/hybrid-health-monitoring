@@ -196,6 +196,7 @@ export default defineConfig({
             { text: '0037 — Hyper-V Health Model', link: '/design/decisions/0037-hyper-v-azure-monitor-health-model-architecture' },
             { text: '0038 — SCOM to ServiceNow', link: '/design/decisions/0038-scom-servicenow-connector-boundary' },
             { text: '0039 — Hyper-V v2 object ownership', link: '/design/decisions/0039-hyper-v-v2-external-object-ownership' },
+            { text: '0040 — Hyper-V v2 S2D and SDN ownership', link: '/design/decisions/0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership' },
             { text: 'ADR template', link: '/design/decisions/template' },
           ],
         },

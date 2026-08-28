@@ -2,6 +2,18 @@
 
 ## Current session
 
+- **S2D/SDN ownership corrected:** Added accepted ADR 0040, superseded ADR 0039 without erasing its
+  history, and updated the v2 dependency contract, root plan, decision index, and VitePress sidebar.
+  Microsoft S2D `1.0.47.4` and SDN `10.0.0.2` public objects are authoritative; optional HCS
+  adapters may add only verified gaps, cross-domain correlations, coverage, and DA service impact.
+- **Machine-readable contracts:** `dependencies.v2.json` now records exact package versions,
+  acquisition URLs, MP IDs, public class IDs, and identity keys (`UniqueID` for Microsoft Storage,
+  `Id` for SDN). Pester asserts both contracts to prevent ownership regression.
+- **Verification:** Hyper-V Pester passes 14/14, the VitePress production build passes, dependency
+  JSON parses, edited local links resolve, and `git diff --check` passes. The only build message is
+  the existing VitePress large-chunk warning. Next dependency spikes are Pure Storage, VMM,
+  SOFS/SMB, and physical networking.
+
 - **Root v2 plan refreshed:** `PLAN.md` remains the authoritative repository-root implementation
   plan for Hyper-V Private Cloud Monitoring v2. It now labels Azure Local as under development,
   the Hyper-V `0.1` artifact as a superseded preview, and Hyper-V v2 as the active priority.

@@ -27,7 +27,7 @@ BeforeAll {
 }
 
 Describe 'Hyper-V Management Pack development build' {
-    It 'records the approved v2 product identity and authoritative Microsoft cluster contracts' {
+    It 'records the approved v2 product identity and authoritative Microsoft dependency contracts' {
         $contract = Get-Content -LiteralPath $script:V2DependencyContract -Raw | ConvertFrom-Json
         $contract.schemaVersion | Should -Be '1.0'
         $contract.product.displayName | Should -Be 'Hyper-V Private Cloud Monitoring'
@@ -43,6 +43,20 @@ Describe 'Hyper-V Management Pack development build' {
         $csv.status | Should -Be 'Approved'
         $csv.packageVersion | Should -Be '10.1.2.2'
         $csv.authoritativeClasses | Should -Contain 'Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume'
+
+        $s2d = $contract.capabilities | Where-Object id -eq 'StorageSpacesDirect'
+        $s2d.status | Should -Be 'Approved'
+        $s2d.packageVersion | Should -Be '1.0.47.4'
+        $s2d.identityKey | Should -Be 'UniqueID'
+        $s2d.managementPacks | Should -Contain 'Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect'
+        $s2d.authoritativeClasses | Should -Contain 'Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem'
+
+        $sdn = $contract.capabilities | Where-Object id -eq 'SoftwareDefinedNetworking'
+        $sdn.status | Should -Be 'Approved'
+        $sdn.packageVersion | Should -Be '10.0.0.2'
+        $sdn.identityKey | Should -Be 'Id'
+        $sdn.managementPacks | Should -Contain 'Microsoft.Windows.10.SDNMonitoring'
+        $sdn.authoritativeClasses | Should -Contain 'SDNMonitoringMP.SDNMonitoring.Stamp'
     }
 
     It 'passes the repository contract suite' {

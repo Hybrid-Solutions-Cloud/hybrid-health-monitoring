@@ -1,10 +1,14 @@
 # ADR 0039 — Hyper-V v2 external object ownership and optional dependencies
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 0040](0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership.md)
 
 **Date:** 2026-08-28
 
 **Decision owners:** Repository owner and maintainers
+
+> This decision was superseded after direct inspection of Microsoft's current S2D and SDN
+> packages proved that both expose supported public topology and monitoring contracts. The
+> original text is retained as the historical record; ADR 0040 is authoritative.
 
 ## Context
 
@@ -112,4 +116,3 @@ into universal prerequisites.
 - [ADR 0022 — SCOM Management Pack packaging boundaries](0022-scom-management-pack-packaging-boundaries.md)
 - [ADR 0027 — Hyper-V SCOM Management Pack decomposition](0027-hyper-v-scom-management-pack-decomposition.md)
 - [ADR 0028 — Hyper-V object and discovery architecture](0028-hyper-v-object-and-discovery-architecture.md)
-
