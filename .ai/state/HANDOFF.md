@@ -2,6 +2,18 @@
 
 ## Current session
 
+- **Representative-lab collection gap closed in source:** Added
+  `tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1`, a core standalone
+  expectation, public validation/runbook guidance, and five unit contracts. The collector is
+  read-only: it inventories exact sealed product identity and unsealed overrides, discovered
+  topology, workflows/views, DA presence, recent alerts, and a recent HealthService diagnostic
+  result, then writes a detailed snapshot and an always-unapproved evidence draft. It does not
+  mislabel fault/recovery, scale, upgrade, removal, or Default MP comparison as passed. Live audit
+  still finds no protected production environment, repository runner, permanent Key Vault signing
+  secret, visible Azure SCOM/Hyper-V lab VM, local OperationsManager module, or HealthService. The
+  built-source expectation cross-check, all 125 unit tests, ScriptAnalyzer, credential-pattern
+  scan, diff hygiene, and the VitePress production build pass.
+
 - **Protected production publication path authored:** Added
   `.github/workflows/release-hyper-v-v2.yml`, an actionlint configuration, release-note source, and
   the public governed release runbook. The manual workflow is restricted to `main`, the protected

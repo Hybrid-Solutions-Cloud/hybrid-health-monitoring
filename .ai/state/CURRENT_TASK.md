@@ -9,7 +9,9 @@ examples, explicit schema, same-MP groups, semantic/drift/cookdown tests, and a 
 Standard pair. Every first-party workflow now uses public SCOM command executors to launch the
 PowerShell 7 MSI path explicitly. Governed release tooling now verifies/seals all 13 MPs through
 Microsoft VSAE, handles official Microsoft/Pure `.mpb` dependencies with publisher provenance,
-generates 66 overrides and 14 stable bundles, and passes the 120-test offline suite. The active
+generates 66 overrides and 14 stable bundles, and passes the 125-test offline suite. A read-only
+management-group collector is ready to capture exact imported identities, topology, workflows,
+views, and recent HealthService diagnostic results. The active
 release blocker is representative HealthService runtime and capability-module proof, followed by
 lifecycle labs and provisioning the documented protected runner/OIDC/permanent-signing environment.
 The production workflow is authored to publish GitHub assets and verify stable latest-download

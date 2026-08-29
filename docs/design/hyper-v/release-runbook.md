@@ -48,6 +48,10 @@ packager rejects a receipt for another version or commit and rejects a dirty wor
 The evidence must cover PowerShell runtime, clean import, topology, health and alerts, Distributed
 Application and views, capability integrations, scale, upgrade and overrides, dependency-safe
 removal, and Default Management Pack protection. VSAE results do not substitute for these labs.
+Run `tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1` with a reviewed expectation
+file in every representative lane to collect the repeatable read-only portion. Its generated draft
+always remains `approved=false`; merge it with fault, recovery, scale, lifecycle, and before/after
+evidence only after a human has reviewed the complete lane.
 
 ## Release execution
 

@@ -38,6 +38,10 @@
   the permanent key from Key Vault only into runner temp, Release-mode eligibility is enforced,
   exact assets are retained, existing releases cannot be overwritten, and stable latest-download
   URLs are verified after publication.
+* Add a read-only SCOM management-group certification collector and core standalone expectation.
+  It verifies imported identities, overrides, topology, workflow and view inventory, Distributed
+  Application presence, and recent HealthService diagnostic evidence while keeping destructive and
+  lifecycle gates explicitly pending for human-reviewed labs.
 * Add the Hyper-V Private Cloud Monitoring v2 override system: 11 composable deployment profiles,
   Lab/Standard/Strict tiers, 66 generated Discovery/Monitoring examples, explicit workflow and
   context schema, independent customer/product versions, same-MP group targeting, semantic and

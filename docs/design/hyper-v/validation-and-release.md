@@ -35,6 +35,15 @@ authoring-host design question; it does not prove agent runtime. The diagnostic 
 through HealthService in each claimed lane and its process, edition, version, home, automation
 assembly, and bitness fields retained with the release evidence.
 
+The read-only collector at
+`tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1` makes that management-group
+evidence repeatable. For a declared lane it verifies imported sealed identities, the separate
+unsealed override MPs, minimum topology cardinality, authored workflows and views, Distributed
+Application presence, and a recent diagnostic-task result. It emits a detailed snapshot and an
+unapproved evidence draft. It deliberately cannot approve the fault/recovery, scale,
+upgrade/override, removal, or before/after Default Management Pack gates; those require the
+multi-phase procedures below and human review.
+
 ## Validation layers
 
 ```mermaid
