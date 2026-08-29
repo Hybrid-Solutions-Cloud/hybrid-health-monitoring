@@ -20,10 +20,11 @@ flowchart LR
     ROLE --> MODE{Stage 2: topology classification}
     MODE -->|Standalone| HOST[Host-boundary topology]
     MODE -->|Clustered| CLUSTER[Cluster-boundary topology]
-    CLUSTER --> AUTH{Stage 3: network authority}
+    CLUSTER --> AUTH{Stage 3: host network authority}
     AUTH --> ATC[Network ATC]
-    AUTH --> SDN[SCVMM/SDN]
-    AUTH --> MANUAL[Manual]
+    AUTH --> MANUAL[SCVMM or manual]
+    ATC --> SDN[Optional SDN overlay]
+    MANUAL --> SDN
     HOST --> DETAIL[Stage 4: approved child entities]
     ATC --> DETAIL
     SDN --> DETAIL
@@ -40,6 +41,10 @@ flowchart LR
     class ROLE,HOST,CLUSTER,ATC,SDN,MANUAL,DETAIL,REL stage
     class FRESH finish
 ```
+
+Network authority is evaluated per layer. Network ATC may own host adapter and SET intent while
+Network Controller owns the SDN overlay and VMM orchestrates the fabric. Discovery suppresses
+duplicate identities and competing health paths, not valid layered coexistence.
 
 Each stage has an independently testable contract. A failure in detailed storage discovery must not
 erase the already proven Hyper-V host role or make the discovery pipeline appear healthy.

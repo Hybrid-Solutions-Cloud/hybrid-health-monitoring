@@ -18,7 +18,7 @@ Hyper-V simply because both products use SCOM or share health terminology.
 | Azure Local platform baseline | ADRs 0001–0003, 0007–0009, and 0014–0018 |
 | Azure Local SCOM | ADRs 0022, 0026, and 0032–0035 supersede or refine the earlier Azure Local SCOM baseline |
 | Azure Local Azure Monitor | ADRs 0006, 0010, 0012, 0013, 0019, and current preview refinement ADR 0036 |
-| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0040–0044 for product boundary, network authority, DA, object/discovery, health/DA, authoring toolchain, external ownership, Pure Storage, SOFS/networking, v2 packaging, and Network ATC; ADR 0040 supersedes 0039 and ADR 0043 supersedes 0027 for v2 |
+| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0040–0045 for product boundary, network authority, DA, object/discovery, health/DA, authoring toolchain, external ownership, Pure Storage, SOFS/networking, v2 packaging, Network ATC, and SDN; ADR 0040 supersedes 0039 and ADR 0043 supersedes 0027 for v2 |
 | Hyper-V Azure Monitor | ADR 0023 constrained go and ADR 0037 development architecture |
 
 Cross-cutting lifecycle ADRs can provide reusable patterns, but each platform and delivery lane
@@ -72,6 +72,7 @@ must still validate its applicable topology, dependencies, artifacts, tests, and
 | [0042](./0042-hyper-v-v2-file-services-and-physical-network-ownership.md) | Hyper-V v2 file services and physical network ownership — Microsoft objects with HCS service correlations | Accepted |
 | [0043](./0043-hyper-v-v2-package-and-deployment-profile-architecture.md) | Hyper-V v2 package and deployment profiles — four required core MPs plus optional capability adapters | Accepted |
 | [0044](./0044-hyper-v-v2-network-atc-monitoring-contract.md) | Hyper-V v2 Network ATC monitoring — stable intent/node identity, explicit authority, read-only convergence and adapter health | Accepted |
+| [0045](./0045-hyper-v-v2-windows-server-sdn-integration-contract.md) | Hyper-V v2 Windows Server SDN integration — Microsoft-owned topology with read-only HCS binding and service impact | Accepted |
 
 ## When to write an ADR
 

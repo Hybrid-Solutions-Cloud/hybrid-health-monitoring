@@ -23,6 +23,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:FileServicesCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.xml') -Raw
         [xml]$script:PhysicalNetworkCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.xml') -Raw
         [xml]$script:NetworkAtcCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.xml') -Raw
+        [xml]$script:SdnCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.xml') -Raw
     }
 
     AfterAll {
@@ -73,7 +74,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 11
+        @($script:Receipt.artifacts).Count | Should -Be 12
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
@@ -81,6 +82,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -666,6 +668,75 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
             @($parseErrors).Count | Should -Be 0
         }
+    }
+
+    It 'pins SDN integration to Microsoft 10.0.0.2 and does not duplicate Microsoft SDN resources' {
+        $sdnReference = $script:SdnCapability.SelectSingleNode("/ManagementPack/Manifest/References/Reference[@Alias='SDN']")
+        $sdnReference.ID | Should -Be 'Microsoft.Windows.10.SDNMonitoring'
+        $sdnReference.Version | Should -Be '10.0.0.2'
+        $sdnReference.PublicKeyToken | Should -Be '31bf3856ad364e35'
+        $classes = @($script:SdnCapability.SelectNodes('//ClassType'))
+        $classes.Count | Should -Be 1
+        $classes[0].ID | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding'
+        $script:SdnCapability.OuterXml | Should -Not -Match '<ClassType ID="SDNMonitoringMP\.'
+    }
+
+    It 'maps SDN control-plane and data-plane groups into the correct private-cloud branches' {
+        @($script:SdnCapability.SelectNodes('//RelationshipType')).Count | Should -Be 10
+        @($script:SdnCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 10
+        $controller = $script:SdnCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.ManagementContainsNetworkControllerGroup']/Target")
+        $controller.Type | Should -Be 'SDN!SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNodeGroup'
+        foreach ($leaf in @('HostGroup', 'VirtualNetworkGroup', 'AccessControlListGroup', 'NetworkInterfaceGroup', 'LoadBalancerMuxGroup', 'GatewayPoolGroup')) {
+            $script:SdnCapability.SelectSingleNode("//RelationshipType[contains(@ID,'NetworkContains$leaf')]") | Should -Not -BeNullOrEmpty
+        }
+        $script:SdnCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkReferencesStamp']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'adds service impact and the missing Network Controller security rollup without duplicate leaf alerts' {
+        @($script:SdnCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:SdnCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 11
+        @($script:SdnCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        $monitor = $script:SdnCapability.SelectSingleNode("//UnitMonitor[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor']")
+        $monitor.Configuration.RequireSDN | Should -Be 'false'
+        $monitor.Configuration.RequireSlbHostAgent | Should -Be 'false'
+        $monitor.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
+        $securityRollup = $script:SdnCapability.SelectSingleNode("//DependencyMonitor[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkControllerGroup.Security.Dependency.Monitor']")
+        $securityRollup.RelationshipType | Should -Be 'SDN!SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNodeGroupHostsNetworkControllerClusterNode'
+        $securityRollup.MemberMonitor | Should -Be 'Health!System.Health.SecurityState'
+    }
+
+    It 'uses read-only local host evidence and no competing Network Controller query or remediation path' {
+        $discoveryScript = $script:SdnCapability.SelectSingleNode("//Discovery[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.Relationship.Discovery']//ScriptBody").InnerText
+        $healthScript = $script:SdnCapability.SelectSingleNode("//DataSourceModuleType[contains(@ID,'IntegrationHealth.DataSource')]//ScriptBody").InnerText
+        $discoveryScript | Should -Match 'NcHostAgent\\Parameters'
+        $discoveryScript | Should -Match 'Get-Service -Name \$Name'
+        $discoveryScript | Should -Match "Get-HcsServiceState -Name 'NcHostAgent'"
+        $healthScript | Should -Match 'RequireSDN'
+        $healthScript | Should -Match 'RequireSlbHostAgent'
+        ($discoveryScript + $healthScript) | Should -Not -Match '(?i)\b(Get|New|Set|Remove|Debug)-NetworkController|Invoke-RestMethod|Restart-Service|Start-Service|Stop-Service'
+    }
+
+    It 'provides localized Microsoft SDN topology, alert, state, and performance views' {
+        @($script:SdnCapability.SelectNodes('//View')).Count | Should -Be 16
+        $folder = $script:SdnCapability.SelectSingleNode("//Folder[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.Folder']")
+        $folder.ParentFolder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Networking.Folder'
+        foreach ($item in $script:SdnCapability.SelectNodes('//FolderItem')) {
+            [string]$item.Folder | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.Folder'
+        }
+        foreach ($target in @('StampGroup', 'NetworkControllerClusterNode', 'Host', 'VirtualNetwork', 'AccessControlList', 'NetworkInterface', 'LoadBalancerMux', 'VirtualGateway', 'NetworkConnection', 'BGPRouter', 'BGPPeer', 'GatewayPool', 'Gateway')) {
+            $script:SdnCapability.SelectSingleNode("//View[contains(@Target,'$target')]") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'contains syntactically valid PowerShell 7 SDN scripts and actionable knowledge' {
+        foreach ($scriptBody in $script:SdnCapability.SelectNodes('//ScriptBody')) {
+            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
+        $script:SdnCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

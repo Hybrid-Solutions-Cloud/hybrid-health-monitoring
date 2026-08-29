@@ -631,6 +631,20 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
     }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            SDN_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudSdnRelationships.ps1.template'
+            SDN_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudSdnIntegrationHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "SDN capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "SDN capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+    }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')
         $content = $content.Replace(

@@ -102,6 +102,15 @@
       "kind": "Capability",
       "required": false,
       "implementationStatus": "Authored"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN",
+      "source": "fragments/capabilities/sdn/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
     }
   ]
 }

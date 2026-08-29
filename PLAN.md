@@ -39,7 +39,7 @@ test-sealed binaries.
 | SMB and Scale-Out File Server | Capability pack authored | Standalone SMB and clustered SOFS/RDMA lifecycle and fault labs pass |
 | Physical network integration | Capability pack authored against built-in SCOM network objects | Adapter-to-switch-port correlation, device fault, recovery, and removal labs pass |
 | Network ATC | Capability pack authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Representative intent convergence, drift, adapter symmetry/RDMA, authority, lifecycle, and removal labs pass |
-| Windows Server SDN | Public Microsoft object contract inventoried; implementation pending | Optional adapter pack, secure discovery, correlations, service impact, views, and SDN fault labs pass |
+| Windows Server SDN | Capability pack authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Microsoft prerequisite setup, topology, certificate/security, controller/gateway fault, coexistence, lifecycle, and removal labs pass |
 | Virtual Machine Manager | Matching-version dependency research and implementation pending | Optional adapter pack works with and without VMM and passes fabric, outage, upgrade, and removal labs |
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | V2 implementation pending | Public Lab, Standard, and Strict Discovery/Monitoring override MPs are generated, validated, documented, and packaged per selected capability set |
@@ -48,15 +48,14 @@ test-sealed binaries.
 
 Execute the remaining work in this order:
 
-1. Author and verify the SDN adapter against the inspected Microsoft SDN contract.
-2. Complete matching-version VMM MP inspection, then author and verify the VMM adapter.
-3. Build composable deployment profiles and public customer-owned override MPs for every supported
+1. Complete matching-version VMM MP inspection, then author and verify the VMM adapter.
+2. Build composable deployment profiles and public customer-owned override MPs for every supported
    capability combination and Lab, Standard, and Strict tuning tier.
-4. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
+3. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
    upgrade, migration, coexistence, and removal labs, including the PowerShell execution-host gate.
-5. Seal every release artifact with the governed signing identity, assemble deterministic packages,
+4. Seal every release artifact with the governed signing identity, assemble deterministic packages,
    and verify clean imports into supported SCOM versions.
-6. Publish the release and make it directly consumable from both surfaces:
+5. Publish the release and make it directly consumable from both surfaces:
    - GitHub release assets contain the complete sealed MP bundle, individual sealed MPs, public
      override starter bundles, checksums, release notes, and installation/migration documentation;
    - the documentation site exposes an obvious **Download now** action using a stable `latest`
@@ -185,7 +184,7 @@ Deliver:
 - Windows Server, Hyper-V, Failover Clustering, SCOM, and optional SCVMM support matrix;
 - topology for standalone hosts, clusters, virtual switches, storage, replica, and VMs;
 - supported PowerShell, CIM/WMI, event, service, and performance sources;
-- Network ATC as the preferred eligible-cluster baseline plus manual and SCVMM/SDN alternatives;
+- layered physical, Network ATC, VMM, and SDN authority, including supported coexistence;
 - useful signal and monitor concepts from the Microsoft Hyper-V 2019 MP, treated as research only
   with no package, class, or runtime dependency;
 - lab fixtures and negative cases;
@@ -389,7 +388,7 @@ capability; generated overrides and release manifests are scoped to the selected
 | `Capability.PureStorage` | Optional | Pure MP object reuse, FlashArray-to-host/volume/VM correlations, service impact, and views |
 | `Capability.S2D` | Optional | Microsoft S2D object reuse, gap monitoring, service impact, and views |
 | `Capability.FileServices` | Optional | Microsoft File/iSCSI object reuse plus SOFS share, SMB path, and VM/VHDX correlations |
-| `Capability.NetworkATC` | Optional | Intents, participating adapters, status, drift, overrides, symmetry, and remediation |
+| `Capability.NetworkATC` | Optional | Intents, participating adapters, status, drift, override inventory, symmetry, and read-only health |
 | `Capability.PhysicalNetwork` | Optional | Built-in SCOM network-object reuse and host-adapter-to-switch-port/VLAN service impact |
 | `Capability.SDN` | Optional | Microsoft SDN object reuse, verified gap monitoring, correlations, service impact, and views |
 | `Capability.VMM` | Optional | Matching-version Microsoft VMM object reuse, fabric correlation, service impact, and views |
@@ -578,8 +577,8 @@ only a state view targeted at the service class.
 ### Research and architecture work packages
 
 Complete these evidence-backed spikes before locking v2 authoring. Cluster/CSV, S2D, and SDN
-package inventories are complete at the public-contract level; their representative lab behavior,
-coexistence, and gap analysis remain open.
+package inventories and optional adapter implementations are complete at the public-contract and
+offline-verification level; representative lab behavior remains open.
 
 1. **Installed-preview diagnosis** — explain missing discoveries, views, and DA instances.
 2. **Support matrix** — Windows Server, SCOM, Cluster MP, VMM, S2D, Network ATC, SDN, Pure
@@ -596,8 +595,10 @@ coexistence, and gap analysis remain open.
 7. **Networking spike** — physical/virtual networking, SET, RDMA/DCB, Network ATC, physical switch
    public-contract inventory completed; finish virtual networking, SET, RDMA/DCB, Network ATC,
    authority selection, correlation failure, and fault injection.
-8. **SDN spike** — inventory completed for Microsoft SDN MP `10.0.0.2`; finish HNV, certificate,
-   service-impact, duplicate-monitoring, security, scale, and test-topology gap analysis.
+8. **SDN spike** — Microsoft SDN MP `10.0.0.2` inventory and adapter authoring complete. Microsoft
+   remains REST/credential/topology/leaf-alert authority; HCS adds local binding evidence, verified
+   missing rollups, private-cloud service impact, and views. Certificate, controller/gateway fault,
+   scale, Network ATC/VMM coexistence, lifecycle, and removal labs remain.
 9. **VMM spike** — official MP model, supported integration, clouds, fabric networks/storage,
    compliance, jobs, and coexistence without duplicate objects or alerts.
 10. **DA and presentation spike** — stable boundaries, membership, rollup, diagram/dashboard
@@ -658,9 +659,15 @@ versions, cost, and required fixture.
     projections; six relationships to the Network branch, hosts, and exact Windows adapters; four
     read-only unit monitors; four dependency rollups; and seven views. It passes focused offline
     tests, OM2022 VSAE verification, transient sealing, and strong-name verification. Network ATC
-    never changes or retries an intent and treats absent manual/VMM/SDN authority as Not Applicable
-    unless explicitly required. Representative convergence, drift, symmetry/RDMA, authority,
-    lifecycle, and removal labs remain; SDN and VMM packs remain to author.**
+    never changes or retries an intent and treats an absent capability as Not Applicable unless
+    explicitly required. Representative convergence, drift, symmetry/RDMA, authority, lifecycle,
+    and removal labs remain. Capability.SDN is also authored against the exact Microsoft
+    `10.0.0.2` contract. It adds one local binding class, ten relationships, one integration
+    monitor, 11 dependency rollups, and 16 views without using the Microsoft Run As credential,
+    calling Network Controller REST, fabricating Host identity, or duplicating leaf alerts. OM2022
+    VSAE verification, transient sealing, strong-name verification, and focused offline tests pass;
+    Microsoft prerequisite setup, topology, controller/certificate/gateway faults, ATC/VMM
+    coexistence, lifecycle, and removal labs remain. VMM is the remaining capability pack.**
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,
     eight folders, 17 localized views, and a native DA diagram; capability-specific views,

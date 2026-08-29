@@ -23,7 +23,7 @@ authority is selected.
 | Failover-cluster node membership | Availability | On | Critical when any cluster node is not Up; N/A on standalone hosts |
 | Expected VM state | Availability | On | Critical when an automatic-start VM is unexpectedly stopped or failed |
 | Hyper-V Replica | Availability | On | Worst reported Replica health; warning does not become critical |
-| Network ATC intent | Configuration | On | Critical for unsuccessful intent status; N/A for manual or SCVMM/SDN authority |
+| Network ATC intent | Configuration | On | Critical for unsuccessful required host intent; N/A where Network ATC is not selected for that host group, including manual or VMM-owned host configuration |
 | Available host memory | Performance | On | 4096 MB warning, 2048 MB critical; absolute reserve, not percent used |
 | Hypervisor processor | Performance | On | 80% warning, 90% critical |
 | CSV health and capacity | Availability | On | Offline/redirected is critical; 15%/10% free-space bands |
@@ -61,7 +61,7 @@ before release.
 | Failover Cluster | Cluster and node state, quorum/witness, groups, resources, clustered VM roles, ownership, failover behavior, networks, and validation findings |
 | CSV | State, pause, redirected I/O, ownership, free space, I/O latency/throughput/errors, cache use, and relevant events |
 | Storage | Physical/logical volumes, SMB/SAN/virtual FC where applicable, VHD/VHDX metadata, capacity, latency, queues, errors, fragmentation, QoS, and differencing chains |
-| Networking | Network ATC intent/status/drift where supported; physical adapters, teams/SET where applicable, virtual switches, extensions, ports, VM adapters, VLAN/QoS, VMQ, vRSS, SR-IOV, bandwidth, queues, errors, and drops; SCVMM/SDN authority where selected |
+| Networking | Layered physical, host-intent, virtualization, and overlay monitoring: Network ATC intent/status/drift where supported; physical adapters, teams/SET, virtual switches, extensions, ports, VM adapters, VLAN/QoS, VMQ, vRSS, SR-IOV, bandwidth, queues, errors, and drops; VMM orchestration and SDN policy/topology where present |
 | Mobility | Live migration, storage migration, drain, placement, compatibility, authentication, duration, throughput, and failure events |
 | Replica and recovery | Replication state/health, lag, frequency, errors, relationship, last successful replication, and RPO policy |
 | Configuration and reliability | Time synchronization, updates, pending reboot, driver/firmware facts exposed by Windows, unexpected role drift, and reliability events |

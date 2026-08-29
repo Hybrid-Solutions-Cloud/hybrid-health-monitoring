@@ -114,10 +114,11 @@ flowchart TD
     SEED[Windows Server with Hyper-V role] --> Q{Cluster member?}
     Q -->|No| STANDALONE[Standalone-host boundary]
     Q -->|Yes| CLUSTER[Failover-cluster boundary]
-    CLUSTER --> N{Network authority?}
-    N -->|Network ATC| ATC[Network ATC topology]
-    N -->|SCVMM and SDN| SDN[SCVMM/SDN topology]
-    N -->|Neither| MANUAL[Manual networking topology]
+    CLUSTER --> N{Host network authority?}
+    N -->|Network ATC| ATC[Network ATC host topology]
+    N -->|SCVMM or manual| MANUAL[External/manual host topology]
+    ATC --> SDN[Optional SDN overlay]
+    MANUAL --> SDN
     STANDALONE --> DA1[One host DA]
     ATC --> DA2[One cluster DA]
     SDN --> DA2
@@ -131,9 +132,10 @@ flowchart TD
     class DA1,DA2 service
 ```
 
-Network ATC is the preferred baseline for eligible Windows Server 2025 Datacenter Hyper-V
-clusters unless SCVMM/SDN is the selected authority. The MP must never populate overlapping network
-authorities into one DA branch.
+Network ATC is the preferred host-network baseline for eligible Windows Server 2025 Datacenter
+Hyper-V clusters. It may coexist with Windows Server SDN, whose Network Controller owns overlay and
+policy resources, and with VMM as orchestrator. The MP must prevent duplicate ownership and health
+membership for the same object; it must not collapse distinct layers into one exclusive choice.
 
 ## Runtime data flow
 

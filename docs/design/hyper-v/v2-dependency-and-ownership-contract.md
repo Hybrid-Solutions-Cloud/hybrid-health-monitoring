@@ -60,10 +60,10 @@ suitable relationship endpoints and must not be duplicated by v2.
 | SAN Core | Windows Server storage, MPIO, iSCSI, Fibre Channel, SMB, and cluster contracts | HCS owns common path/LUN/mapping projections only where no supported sealed MP owns them |
 | Pure Storage Integration | Pure Storage FlashArray MP `2.0.120.0` for SCOM 2016/2019/2022 and Purity 5.3+ | Never a core dependency; reuse Pure arrays, controllers, hosts, host groups, ports, volumes, and pods; HCS adds the SAN-to-VM correlation chain and DA impact only |
 | VMM Integration | Matching Microsoft VMM Management Packs for the supported VMM/SCOM version pair | Never a core dependency; reference VMM clouds, host groups, logical networks, logical switches, storage, and jobs instead of rediscovering them |
-| SDN Integration | Microsoft Windows Server SDN MP, minimum package `10.0.0.2` | Never a core dependency; reuse Microsoft SDN objects and add only verified correlations, coverage, and service impact |
+| SDN Integration | Microsoft Windows Server SDN MP, minimum package `10.0.0.2` | Never a core dependency; Microsoft owns REST discovery, credentials, topology, leaf health, alerts, and performance; HCS adds read-only host-binding evidence, verified missing rollups, correlations, and service impact |
 | SMB/SOFS Integration | Microsoft Windows Server File & iSCSI Services package `10.1.0.4` plus matching Cluster MPs for SOFS | Reuse Microsoft File Server, clustered SMB, iSCSI Target, cluster role/resource, and leaf health; HCS owns only missing share/path/VHDX/VM mappings and service impact |
 | Physical Network Integration | Built-in SCOM network libraries matching the installed SCOM version | Reuse nodes, switches, ports/interfaces, VLANs, connections, server-port correlation, health, and performance; HCS adds private-cloud membership, coverage, and service impact |
-| Network ATC | Windows Server NetworkATC feature and PowerShell module; no external MP dependency | HCS owns stable intent and per-node status projections, read-only status/adapter health, override-kind inventory, and Network-branch service impact; manual/VMM/SDN authority remains Not Applicable unless Network ATC is explicitly required |
+| Network ATC | Windows Server NetworkATC feature and PowerShell module; no external MP dependency | HCS owns stable intent and per-node status projections, read-only status/adapter health, override-kind inventory, and Network-branch service impact; it may coexist with SDN or VMM when those products own a different layer |
 
 An optional capability's presentation and Distributed Application population are packaged with or
 behind that capability. The base presentation MP must not take every optional dependency and turn a
@@ -227,6 +227,42 @@ RDMA by default. Missing Network ATC or no intent is Not Applicable unless `Requ
 overridden to true. The implementation never invokes any Network ATC, adapter, switch, QoS, DCB,
 VLAN, or service mutation command.
 
+Network ATC and Windows Server SDN are not globally exclusive authorities. Network ATC can own
+physical adapters, SET switches, and host intent while Network Controller owns overlay policy and
+SDN resources. VMM can orchestrate either layer. Capability coexistence is therefore supported
+when ownership is explicit; the same object must still have only one canonical health path.
+
+## Windows Server SDN adapter contract
+
+[ADR 0045](../decisions/0045-hyper-v-v2-windows-server-sdn-integration-contract.md) defines the
+optional `Capability.SDN` adapter against Microsoft's signed
+`Microsoft.Windows.10.SDNMonitoring` `10.0.0.2` contract. The inspected Microsoft pack exposes 22
+classes, 20 relationships, two discoveries, 78 unit monitors, 22 dependency monitors, 45 rules,
+15 views, and the `Microsoft.Windows.10.SDNMonitoring.NCRunAsProfile` Secure Reference. Microsoft
+remains authoritative for Network Controller REST discovery, credentials, certificates, stamp and
+leaf identities, monitors, alerts, performance, and native views.
+
+Before importing HCS SDN, operators must import both Microsoft SDN MPs and complete Microsoft's
+setup: add Network Controller nodes as agentless-managed computers, configure a Run As account in
+the Network Controller Clients Kerberos Security Group, associate it to the SDN Monitoring Account
+profile, and trust the Network Controller REST certificate on the SCOM management server. HCS does
+not receive or use that credential and does not call Network Controller REST.
+
+The HCS adapter defines only one hosted `HostBinding` evidence class. It reads the local
+`NcHostAgent` `HostId` plus `NcHostAgent` and `SlbHostAgent` service states. The registry value
+matches Network Controller server `InstanceId`, whereas Microsoft's SDN Host class is keyed by
+resource `ResourceId`; the adapter deliberately does not invent a direct host-to-Microsoft-Host
+relationship. It relates the HCS Management and Networking branches to Microsoft's authoritative
+fixed-key stamp and groups instead.
+
+One integration monitor reports missing or degraded local binding prerequisites without raising a
+duplicate Microsoft SDN leaf alert. Eleven dependency monitors add private-cloud branch impact and
+fill the verified missing Network Controller node `SecurityState` rollup. Sixteen views expose the
+Microsoft topology, health, alerts, and performance beneath **Hyper-V Private Cloud > Networking >
+Software Defined Networking**. Representative SCOM labs must still prove Microsoft setup,
+discovery, controller certificate failure/recovery, gateway and overlay faults, service impact,
+coexistence with Network ATC/VMM, and clean adapter removal.
+
 ## Preview migration boundary
 
 The `0.1` preview is not upgraded by renaming its public elements. The v2 installer and guide must:
@@ -254,6 +290,8 @@ recorded in this page:
 - [Windows Server Operating System 2016 and above MP 10.1.2.2](https://www.microsoft.com/en-us/download/details.aspx?id=54303)
 - [Storage Spaces Direct MP 1.0.47.4](https://www.microsoft.com/en-us/download/details.aspx?id=100782)
 - [Windows Server SDN MP 10.0.0.2](https://www.microsoft.com/en-us/download/details.aspx?id=54300)
+- [Troubleshoot the Windows Server SDN stack](https://learn.microsoft.com/en-us/troubleshoot/windows-server/software-defined-networking/troubleshoot-windows-server-software-defined-networking-stack)
+- [Deploy an SDN infrastructure in VMM](https://learn.microsoft.com/en-us/system-center/vmm/deploy-sdn?view=sc-vmm-2025)
 - [What is in an Operations Manager Management Pack?](https://learn.microsoft.com/en-us/system-center/scom/manage-overview-management-pack?view=sc-om-2025)
 - [Pure Storage FlashArray PowerShell SDK 2](https://github.com/PureStorage-Connect/PowerShellSDK2)
 - [Pure Storage FlashArray SCOM MP 2.0.120.0](https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0)
@@ -267,6 +305,7 @@ recorded in this page:
 - [`MSFC_FibrePortHBAAttributes` WMI class](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msfc-fibreporthbaattributes-wmi-class)
 - [Fibre Channel HBA port-state values](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msfc-hbaportattributesresults-wmi-class)
 - [Host networking with Network ATC](https://learn.microsoft.com/en-us/windows-server/networking/network-atc/network-atc)
+- [Windows Server 2025 Azure Stack HCI networking test](https://learn.microsoft.com/en-us/windows-hardware/test/hlk/testref/device.network.lan.azurestack-testing-server-2025)
 - [`Get-NetIntent`](https://learn.microsoft.com/en-us/powershell/module/networkatc/get-netintent?view=windowsserver2025-ps)
 - [`Get-NetIntentStatus`](https://learn.microsoft.com/en-us/powershell/module/networkatc/get-netintentstatus?view=windowsserver2025-ps)
 - [Manage Network ATC](https://learn.microsoft.com/en-us/windows-server/networking/network-atc/manage-network-atc)

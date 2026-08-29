@@ -1,0 +1,90 @@
+#Requires -Version 7.0
+param(
+    [string]$ComputerName,
+    [string]$RequireSDN,
+    [string]$RequireSlbHostAgent
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function ConvertTo-HcsBoolean {
+    param([string]$Value)
+    return $Value -match '^(?i:true|1|yes)$'
+}
+
+function Get-HcsServiceState {
+    param([string]$Name)
+    try {
+        $service = Get-Service -Name $Name -ErrorAction SilentlyContinue
+        if ($null -eq $service) { return 'NotInstalled' }
+        return [string]$service.Status
+    }
+    catch { return 'Unknown' }
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+
+try {
+    $hostId = ''
+    try {
+        $parameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -Name HostId -ErrorAction SilentlyContinue
+        if ($null -ne $parameters -and $parameters.PSObject.Properties['HostId']) {
+            $hostId = [string]$parameters.HostId
+        }
+    }
+    catch { $hostId = '' }
+
+    $ncState = Get-HcsServiceState -Name 'NcHostAgent'
+    $slbState = Get-HcsServiceState -Name 'SlbHostAgent'
+    $requireSdnValue = ConvertTo-HcsBoolean -Value $RequireSDN
+    $requireSlbValue = ConvertTo-HcsBoolean -Value $RequireSlbHostAgent
+    $detected = -not [string]::IsNullOrWhiteSpace($hostId) -or $ncState -ne 'NotInstalled' -or $slbState -ne 'NotInstalled'
+
+    $state = 'Good'
+    $detail = 'Windows Server SDN is not detected on this host; the capability is Not Applicable.'
+    if (-not $detected -and $requireSdnValue) {
+        $state = 'Critical'
+        $detail = 'Windows Server SDN is required, but no HostId, NcHostAgent service, or SlbHostAgent service was detected.'
+    }
+    elseif ($detected -and [string]::IsNullOrWhiteSpace($hostId)) {
+        $state = 'Warning'
+        $detail = 'An SDN host-agent service is installed, but the NcHostAgent HostId registry value is missing.'
+    }
+    elseif ($detected -and $ncState -eq 'NotInstalled') {
+        $state = 'Critical'
+        $detail = 'An SDN HostId exists, but the Network Controller Host Agent service is not installed.'
+    }
+    elseif ($detected -and $ncState -ne 'Running') {
+        $state = 'Critical'
+        $detail = "The Network Controller Host Agent service state is '$ncState'; expected Running."
+    }
+    elseif ($requireSlbValue -and $slbState -ne 'Running') {
+        $state = 'Critical'
+        $detail = "The Software Load Balancer Host Agent is required, but its service state is '$slbState'."
+    }
+    elseif ($slbState -notin @('Running', 'NotInstalled')) {
+        $state = 'Warning'
+        $detail = "The Network Controller Host Agent is running, but the optional Software Load Balancer Host Agent state is '$slbState'."
+    }
+    elseif ($detected) {
+        $detail = "Windows Server SDN host evidence is present. NcHostAgent=$ncState; SlbHostAgent=$slbState; HostId=$hostId."
+    }
+
+    $bag.AddValue('SdnIntegrationState', $state)
+    $bag.AddValue('SdnIntegrationStateDetail', $detail)
+    $bag.AddValue('SdnDetected', [string]$detected)
+    $bag.AddValue('NetworkControllerHostId', $hostId)
+    $bag.AddValue('NcHostAgentState', $ncState)
+    $bag.AddValue('SlbHostAgentState', $slbState)
+    $bag.AddValue('ComputerName', $ComputerName)
+    $bag
+}
+catch {
+    $bag.AddValue('SdnIntegrationState', 'Critical')
+    $bag.AddValue('SdnIntegrationStateDetail', "SDN integration health probe failed: $($_.Exception.Message)")
+    $bag.AddValue('SdnDetected', 'Unknown')
+    $bag.AddValue('ComputerName', $ComputerName)
+    $bag
+}

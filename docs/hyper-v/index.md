@@ -29,9 +29,10 @@ optional SCVMM management, and configurations that have no Azure dependency.
 
 Network ATC is **not** an Azure Local-only capability. It is supported for eligible Windows Server
 2025 Datacenter failover clusters and is this project's preferred host-networking baseline for such
-Hyper-V clusters. When SCVMM and Windows Server SDN are the selected network-management authority,
-the Management Pack must model that path instead of assuming Network ATC ownership. Older or
-otherwise ineligible Hyper-V environments still require explicit non-ATC coverage.
+Hyper-V clusters. When SCVMM or Windows Server SDN participates in network management, the
+Management Pack must model its actual layer rather than assume one universal authority. Network
+ATC may own host intent while Network Controller owns the overlay. Older or otherwise ineligible
+Hyper-V environments still require explicit non-ATC coverage.
 
 The project will reuse stable authoring patterns and shared health semantics while keeping
 platform-specific discoveries and monitoring independently supportable.

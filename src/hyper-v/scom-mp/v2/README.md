@@ -67,6 +67,12 @@ The first seven optional capabilities are also authored:
   adapter readiness, and global settings; four dependency rollups and seven views expose service
   impact. Missing ATC is Not Applicable unless explicitly required, and the pack never retries or
   changes an intent.
+- `Capability.SDN` requires Microsoft's `Microsoft.Windows.10.SDNMonitoring` `10.0.0.2` MP and
+  leaves Network Controller REST discovery, credentials, topology, leaf health, alerts,
+  performance, and native views with Microsoft. One hosted HCS binding records local HostId and
+  host-agent evidence without fabricating a Microsoft SDN Host identity. Ten relationships, one
+  integration monitor, 11 dependency rollups, and 16 views attach authoritative Microsoft SDN
+  health to the private-cloud Management and Networking branches.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
@@ -100,8 +106,15 @@ The Network ATC capability initially targets supported Windows Server 2025 Hyper
 participating node requires the NetworkATC, Hyper-V, Failover-Clustering, Data-Center-Bridging, and
 FS-SMBBW features with management tools, plus symmetric Up physical adapters. Successful intent
 health requires ConfigurationStatus Success, ProvisioningStatus Completed, and no error. Storage
-intents require RDMA by default. `RequireNetworkATC` remains false for manual, VMM, SDN, and other
-external networking authorities.
+intents require RDMA by default. `RequireNetworkATC` remains false until enabled for the intended
+host groups. Network ATC may coexist with SDN or VMM when they own different networking layers;
+the product prevents duplicate object health paths rather than disabling legitimate coexistence.
+
+The SDN capability requires both Microsoft SDN MPs to be imported and fully configured first,
+including agentless Network Controller nodes, Microsoft's SDN Monitoring Account Run As profile,
+and Network Controller REST certificate trust. The HCS adapter never uses that credential or calls
+Network Controller REST. It reads only the local `NcHostAgent` HostId and `NcHostAgent`/
+`SlbHostAgent` service states and relies on Microsoft for all authoritative SDN objects and alerts.
 
 Build the currently authored artifacts with PowerShell 7:
 

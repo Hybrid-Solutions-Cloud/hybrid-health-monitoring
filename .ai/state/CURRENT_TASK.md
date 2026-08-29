@@ -8,10 +8,10 @@ Library, Discovery, Monitoring, and Presentation MPs are authored. All four pass
 OM2022 VSAE/SDK verification, ordered transient test sealing, and strong-name verification. The
 optional capability MPs are the active implementation work; composable public overrides,
 representative SCOM labs, governed release signing, complete packaging, and public latest-download
-updates remain. `Capability.Cluster`, `Capability.Storage`, `Capability.S2D`, and
-`Capability.PureStorage`, `Capability.FileServices`, and `Capability.PhysicalNetwork` are authored
-and verified; Network ATC is also authored and offline verified, leaving SDN and VMM as the
-remaining capability packs. The PowerShell
+updates remain. `Capability.Cluster`, `Capability.Storage`, `Capability.S2D`,
+`Capability.PureStorage`, `Capability.FileServices`, `Capability.PhysicalNetwork`,
+`Capability.NetworkATC`, and `Capability.SDN` are authored and offline verified, leaving VMM as
+the remaining capability pack. The PowerShell
 execution-host proof remains release-blocking._
 
 <!--

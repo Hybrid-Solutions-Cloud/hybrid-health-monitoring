@@ -122,11 +122,35 @@
       "status": "Approved",
       "optional": true,
       "packageVersion": "10.0.0.2",
+      "publishedDate": "2025-05-12",
       "download": "https://www.microsoft.com/en-us/download/details.aspx?id=54300",
       "managementPacks": [
         "Microsoft.Windows.10.SDNMonitoring.Images",
         "Microsoft.Windows.10.SDNMonitoring"
       ],
+      "publicKeyToken": "31bf3856ad364e35",
+      "supportedWindowsServerVersions": [
+        "2016",
+        "2019",
+        "2022",
+        "2025"
+      ],
+      "supportedScomVersions": [
+        "2016",
+        "2019",
+        "2022",
+        "2025"
+      ],
+      "secureReference": "Microsoft.Windows.10.SDNMonitoring.NCRunAsProfile",
+      "inspectedInventory": {
+        "classes": 22,
+        "relationships": 20,
+        "discoveries": 2,
+        "unitMonitors": 78,
+        "dependencyMonitors": 22,
+        "rules": 45,
+        "views": 15
+      },
       "authoritativeClasses": [
         "SDNMonitoringMP.SDNMonitoring.Stamp",
         "SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNode",
@@ -143,7 +167,33 @@
         "SDNMonitoringMP.SDNMonitoring.Gateway"
       ],
       "identityKey": "Id",
-      "policy": "Reuse Microsoft SDN objects; add only verified correlations, monitoring coverage, and private-cloud service impact."
+      "authoritativeSingletonKeys": {
+        "SDNMonitoringMP.SDNMonitoring.Stamp": "Stamp",
+        "SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNodeGroup": "Network Controller Group",
+        "SDNMonitoringMP.SDNMonitoring.HostGroup": "Host Group",
+        "SDNMonitoringMP.SDNMonitoring.LoadBalancerMuxGroup": "Load Balancer Mux Group",
+        "SDNMonitoringMP.SDNMonitoring.NetworkInterfaceGroup": "Network Interface Group",
+        "SDNMonitoringMP.SDNMonitoring.AccessControlListGroup": "Access Control List Group",
+        "SDNMonitoringMP.SDNMonitoring.VirtualNetworkGroup": "Virtual Network Group",
+        "SDNMonitoringMP.SDNMonitoring.GatewayPoolGroup": "Gateway Pool Group"
+      },
+      "localHostBindingEvidence": {
+        "registry": "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\NcHostAgent\\Parameters\\HostId",
+        "services": [
+          "NcHostAgent",
+          "SlbHostAgent"
+        ],
+        "identityBoundary": "The local HostId matches the Network Controller server InstanceId, not the Microsoft SDN Host ResourceId. It is evidence only and must not be used to synthesize a Microsoft Host object."
+      },
+      "verifiedGaps": [
+        "The Microsoft Network Controller group does not roll member SecurityState into the group.",
+        "The Microsoft stamp rollup does not include the gateway pool group."
+      ],
+      "setupPrerequisites": [
+        "Import both Microsoft.Windows.10.SDNMonitoring and Microsoft.Windows.10.SDNMonitoring.Images.",
+        "Configure the Microsoft SDN Monitoring Account Run As profile and certificate trust exactly as Microsoft documents before importing the HCS adapter."
+      ],
+      "policy": "Reuse Microsoft SDN objects, REST discovery, Run As profile, leaf health, alerts, performance, and views. HCS adds only local read-only host-binding evidence, verified missing rollups, private-cloud relationships, and service impact; it never calls Network Controller REST or creates duplicate leaf alerts."
     },
     {
       "id": "ScaleOutFileServer",

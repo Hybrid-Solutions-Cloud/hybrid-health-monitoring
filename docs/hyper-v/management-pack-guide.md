@@ -167,9 +167,37 @@ default. Override `RequireRdmaForStorage` only for a documented nested or non-RD
 
 `RequireNetworkATC` defaults to `false`. A host with no Network ATC feature or intent is therefore
 Not Applicable and treated as `ManualOrExternal`. Set it to `true` only on groups where Network ATC
-is the declared networking authority; missing capability or intent then becomes Critical. The
+is the declared host-network authority; missing capability or intent then becomes Critical. The
 Management Pack is read-only and never adds, sets, removes, updates, retries, or remediates an
 intent or restarts a service.
+
+Network ATC may coexist with Windows Server SDN: ATC can own host adapters, SET switches, and
+intent while Network Controller owns overlay policy and SDN resources. VMM may orchestrate either
+layer. Do not disable ATC solely because SDN or VMM is installed; prevent only duplicate ownership
+and duplicate health paths for the same resource.
+
+The authored `Capability.SDN` adapter requires Microsoft's Windows Server SDN MP `10.0.0.2`.
+Install and configure the Microsoft product first:
+
+1. Import `Microsoft.Windows.10.SDNMonitoring` and
+   `Microsoft.Windows.10.SDNMonitoring.Images` from the official package.
+2. Add the Network Controller nodes as agentless-managed computers in SCOM.
+3. Create a Run As account whose identity is a member of the Network Controller Clients Kerberos
+   Security Group, then associate it with Microsoft's **SDN Monitoring Account** profile.
+4. Trust the Network Controller REST X.509 public certificate in the Local Computer trusted-root
+   store on the SCOM management server.
+5. Confirm that Microsoft's SDN stamp, controller, host, network, MUX, and gateway objects are
+   discovered before importing the HCS SDN capability.
+
+The HCS adapter does not receive the Run As credential and never calls Network Controller REST.
+It adds read-only host-binding evidence, fills verified service-rollup gaps, attaches Microsoft's
+authoritative SDN groups to the private-cloud Management and Networking branches, and provides 16
+curated views under **Hyper-V Private Cloud > Networking > Software Defined Networking**. The
+local `NcHostAgent` `HostId` is displayed as evidence but is not guessed into a Microsoft SDN Host
+relationship because Microsoft uses a different `ResourceId` key for that class.
+
+Microsoft's setup instructions and supported Windows Server/SCOM matrix are on the
+[Windows Server SDN MP download page](https://www.microsoft.com/en-us/download/details.aspx?id=54300).
 
 ## Before installation
 

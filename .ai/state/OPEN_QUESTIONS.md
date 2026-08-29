@@ -25,6 +25,10 @@
 - Does representative Windows Server 2025 Network ATC discovery preserve intent and per-node
   identity through convergence, drift, adapter changes, RDMA failure/recovery, VMM/SDN authority,
   cluster-node removal, and capability-pack removal without invoking remediation?
+- Does the Microsoft Windows Server SDN `10.0.0.2` prerequisite configure and discover correctly
+  in every claimed SCOM/Windows Server pair, and do HCS controller-security, management/network
+  branch, gateway, local host-binding, Network ATC/VMM coexistence, fault/recovery, and removal
+  behaviors match the authored offline contract?
 - What release signing identity and governed sealing pipeline will produce the first signed bundle?
 - Beyond the verified SCOM 2022 dependency set, which official sealed dependency-MP versions should
   the first Azure Local release support, and does the suite pass VSAE verification against each?

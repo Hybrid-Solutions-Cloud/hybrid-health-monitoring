@@ -2,6 +2,29 @@
 
 ## Current session
 
+- **V2 Windows Server SDN capability authored:** Added `Capability.SDN` as a thin optional adapter
+  over Microsoft's inspected `Microsoft.Windows.10.SDNMonitoring` `10.0.0.2` contract. Microsoft
+  retains Network Controller REST discovery, Run As/certificate handling, its 22-class topology,
+  leaf health, alerts, performance, and native views. HCS adds one hosted local HostBinding
+  evidence class, ten Management/Networking relationships, one non-duplicating integration
+  monitor, 11 dependency rollups including the verified missing controller-node SecurityState
+  rollup, and 16 views. The adapter never calls Network Controller REST, uses the Microsoft Run As
+  credential, fabricates a Microsoft SDN Host from the mismatched local InstanceId, remediates, or
+  duplicates leaf alerts. Deterministic build emits 12 valid XML artifacts; combined Hyper-V
+  Pester passes 85/85; changed PowerShell passes ScriptAnalyzer with no Warning/Error findings;
+  dependency JSON parses; `git diff --check` and the VitePress production build pass. Direct
+  OM2022 VSAE verification, transient sealing, and `sn.exe -vf` passed before the final no-schema
+  cleanup. ADR 0045, the dependency contract, operator guide, source README, plan, and navigation
+  are updated. Microsoft prerequisite setup and representative SDN topology, certificate,
+  controller/gateway fault, ATC/VMM coexistence, lifecycle, and removal labs remain release gates.
+  VMM is next.
+
+- **Network authority corrected to layered coexistence:** Current Microsoft guidance proves
+  Network ATC and Windows Server SDN can coexist: ATC may own host adapters/SET intent while
+  Network Controller owns overlay policy and VMM orchestrates the fabric. Updated current design,
+  DA, discovery, catalog, guide, and plan surfaces to prohibit duplicate object health paths
+  without falsely treating Physical Network, ATC, SDN, and VMM capabilities as globally exclusive.
+
 - **V2 Network ATC capability authored:** Added `Capability.NetworkATC` as a read-only optional
   adapter over Windows Server 2025 Network ATC. Stable intent, per-node status, and global-setting
   projections connect to the Network DA branch, HCS hosts, and exact Windows network adapters.

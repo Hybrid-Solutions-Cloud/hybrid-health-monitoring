@@ -60,7 +60,7 @@ flowchart TB
     COMP --> CLUSTER[Cluster, quorum, nodes, roles, and resources]
     VM --> VMS[Expected-running and actionable VMs]
     STO --> CSV[CSVs, paths, virtual disks, VHD/VHDX, and Replica]
-    NET --> AUTH[Exactly one Network ATC, manual, or SCVMM/SDN authority path]
+    NET --> AUTH[Layered physical, host-intent, virtualization, and SDN authority paths]
     MGMT --> OPTIONAL[Optional SCVMM and Network Controller dependencies]
     PIPE --> TELEMETRY[Agents, discovery freshness, workflow health, and data freshness]
 
@@ -114,7 +114,7 @@ required.
 | Compute and cluster | Host role or cluster, quorum, nodes, clustered roles/resources, and required virtualization services | Availability-critical; redundancy-aware for clustered hosts |
 | Virtual machines | VMs classified as actionable by expected-state policy | Population-aware; intentional Off/Saved/template states do not penalize availability |
 | Storage and Replica | CSVs, approved storage paths, disks, VHD/VHDX dependencies, and Replica relationships | Availability or data-integrity critical where the dependency is required |
-| Networking | Physical-to-virtual topology under exactly one selected authority | Availability-critical for required paths; configuration drift can be lower impact |
+| Networking | Physical-to-virtual topology with explicit authority at each layer | Availability-critical for required paths; configuration drift can be lower impact |
 | Management plane | Optional SCVMM, Network Controller, and authoritative management dependencies | Topology-specific; absent when not selected |
 | Monitoring pipeline | Agent, required discovery freshness, workflow health, and required collection paths | Root-impacting so missing telemetry cannot look Healthy |
 
@@ -133,7 +133,7 @@ sequenceDiagram
 
     T->>R: Create stable boundary, object, and ownership relationships
     M->>R: Query supported typed relationships
-    M->>G: Add current members to exactly one applicable branch
+    M->>G: Add each object to one canonical health path for its layer
     G->>D: Expose dependency rollup path
     Note over M,G: Reconcile membership by stable key
 ```
@@ -143,7 +143,8 @@ Membership rules:
 - Start from the stable DA boundary key, not an estate-wide group or name pattern.
 - Traverse only product-owned or explicitly approved typed relationships.
 - Give every required member exactly one canonical health path to avoid double weighting.
-- Do not put the same networking object under Network ATC and SCVMM/SDN branches.
+- Network ATC, SDN, VMM, and physical-network objects may coexist when they represent different
+  layers; do not put the same object into competing canonical health paths.
 - Retain intentionally non-impacting objects in state/inventory views when useful, without adding
   them to an availability dependency rollup.
 - Treat empty required branches as topology or monitoring-pipeline faults, not Healthy success.
@@ -263,7 +264,7 @@ The DA is authored. Before release, lab evidence must prove:
 1. stable cluster and standalone-host root keys;
 2. deterministic membership and execution placement across HealthServices;
 3. correct VM identity and membership during migration, drain, failover, rename, and removal;
-4. exclusive Network ATC, manual, or SCVMM/SDN authority membership;
+4. layered Network ATC, manual/VMM, and SDN authority membership without duplicate object paths;
 5. actionable expected-state and population rollups for VMs;
 6. redundancy-aware host and cluster rollups;
 7. Unknown/stale-data behavior and recovery;
