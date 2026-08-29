@@ -37,7 +37,7 @@ function ConvertTo-HcsStringList {
     return @($values | ForEach-Object { ([string]$_).Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
 }
 
-function Get-HcsOverrideKinds {
+function Get-HcsOverrideKind {
     param([AllowNull()]$InputObject)
     if ($null -eq $InputObject) { return @() }
     $knownOverrides = @(
@@ -85,12 +85,12 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
     if (-not (Test-HcsCapability -ModuleName 'NetworkATC' -CommandName 'Get-NetIntent')) {
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
     if (-not (Get-Command -Name Get-NetIntentStatus -ErrorAction SilentlyContinue)) {
         $api.LogScriptEvent('HyperVPrivateCloud.NetworkAtc.Discovery.ps1', 8901, 2, 'Get-NetIntentStatus is unavailable even though the NetworkATC module was found.')
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -115,7 +115,7 @@ try {
             ([string](Get-HcsPropertyValue -InputObject $_ -Name @('IntentName', 'Name'))).Equals($intentName, [StringComparison]::OrdinalIgnoreCase)
         } | Select-Object -First 1
         $adapterNames = ConvertTo-HcsStringList (Get-HcsPropertyValue -InputObject $intentRecord -Name @('NetAdapterNamesAsList', 'NetAdapterNames', 'AdapterNames', 'AdapterName', 'NetAdapterNameCsv'))
-        $overrideKinds = Get-HcsOverrideKinds -InputObject $intentRecord
+        $overrideKinds = Get-HcsOverrideKind -InputObject $intentRecord
 
         $intent = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']$")
         Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/BoundaryId$" $BoundaryId
@@ -173,7 +173,7 @@ try {
     $globalStatusRecords = @(Get-NetIntentStatus -ComputerName $ComputerName -GlobalOverrides -ErrorAction SilentlyContinue | Where-Object {
             Test-HcsLocalHost -Value ([string](Get-HcsPropertyValue -InputObject $_ -Name @('Host', 'ComputerName', 'PSComputerName')))
         })
-    $globalOverrideKinds = @($globalOverrides | ForEach-Object { Get-HcsOverrideKinds -InputObject $_ } | Sort-Object -Unique)
+    $globalOverrideKinds = @($globalOverrides | ForEach-Object { Get-HcsOverrideKind -InputObject $_ } | Sort-Object -Unique)
     if ($globalOverrides.Count -gt 0 -or $globalStatusRecords.Count -gt 0) {
         $globalStatus = $globalStatusRecords | Select-Object -First 1
         $global = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']$")
@@ -195,4 +195,4 @@ catch {
     $api.LogScriptEvent('HyperVPrivateCloud.NetworkAtc.Discovery.ps1', 8902, 1, "Network ATC discovery failed on '$ComputerName': $($_.Exception.Message)")
 }
 
-$script:DiscoveryData
+$api.Return($script:DiscoveryData)

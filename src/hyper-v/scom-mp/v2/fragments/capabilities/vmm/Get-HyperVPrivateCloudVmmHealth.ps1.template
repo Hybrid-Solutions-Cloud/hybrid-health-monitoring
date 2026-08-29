@@ -73,4 +73,4 @@ $bag.AddValue('VmmIntegrationStateDetail', $integrationDetail)
 $bag.AddValue('FailedJobState', $failedJobState)
 $bag.AddValue('FailedJobStateDetail', $failedJobDetail)
 $bag.AddValue('FailedJobCount', $failedJobCount)
-$bag
+$api.Return($bag)

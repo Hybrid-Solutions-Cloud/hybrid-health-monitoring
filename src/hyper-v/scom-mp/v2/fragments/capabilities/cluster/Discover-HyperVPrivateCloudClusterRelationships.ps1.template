@@ -25,7 +25,7 @@ function Resolve-HcsPrincipalName {
         $entry = [System.Net.Dns]::GetHostEntry($Name)
         if (-not [string]::IsNullOrWhiteSpace($entry.HostName)) { return $entry.HostName }
     }
-    catch { }
+    catch { return $Name }
     return $Name
 }
 
@@ -47,12 +47,12 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
     if ($BoundaryId -notlike 'cluster:*') {
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
     if (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-Cluster')) {
-        $api.LogScriptEvent('HyperVPrivateCloud.Cluster.RelationshipDiscovery.ps1', 8301, 2, 'FailoverClusters PowerShell is unavailable; cluster relationships were not submitted.')
-        $script:DiscoveryData
+        $api.LogScriptEvent('HyperVPrivateCloud.Cluster.RelationshipDiscovery.ps1', 8301, 2, "FailoverClusters PowerShell is unavailable on '$ComputerName'; cluster relationships were not submitted.")
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -103,7 +103,7 @@ try {
         }
     }
 
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.Cluster.RelationshipDiscovery.ps1', 8302, 1, $_.Exception.Message)

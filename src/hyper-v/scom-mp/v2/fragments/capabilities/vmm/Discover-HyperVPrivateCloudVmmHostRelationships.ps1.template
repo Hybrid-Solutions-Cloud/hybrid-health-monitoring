@@ -33,7 +33,7 @@ function Get-HcsBoundaryId {
             }
         }
     }
-    catch { }
+    catch { return 'host:{0}' -f $HostName.Trim().ToLowerInvariant() }
     return 'host:{0}' -f $HostName.Trim().ToLowerInvariant()
 }
 
@@ -53,7 +53,7 @@ function Complete-HcsFabricComponent {
     return $Component
 }
 
-function New-HcsFabricService {
+function Get-HcsFabricServiceInstance {
     param([string]$ServerName)
     $boundaryId = 'vmm:{0}' -f $ServerName.Trim().ToLowerInvariant()
     $service = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']$")
@@ -77,11 +77,11 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
     if ([string]::IsNullOrWhiteSpace($VMMId) -or [string]::IsNullOrWhiteSpace($VMMServer)) {
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
-    $fabric = New-HcsFabricService -ServerName $VMMServer
+    $fabric = Get-HcsFabricServiceInstance -ServerName $VMMServer
     $localBoundaryId = Get-HcsBoundaryId -HostName $ComputerName
 
     $localManagement = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ManagementComponent']$")
@@ -99,7 +99,7 @@ try {
     Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.ComputeContainsVMMHost']$" $fabric.Compute $vmmHost
     Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.ManagementReferencesVMMHost']$" $localManagement $vmmHost
     Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.HostRoleReferencesVMMHost']$" $hostRole $vmmHost
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.VMM.HostRelationshipDiscovery.ps1', 8511, 1, $_.Exception.Message)

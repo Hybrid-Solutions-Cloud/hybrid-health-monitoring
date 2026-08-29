@@ -34,7 +34,7 @@ function Get-HcsServiceState {
     catch { return 'Unknown' }
 }
 
-function New-HcsSdnGroupInstance {
+function Get-HcsSdnGroupInstance {
     param([string]$Kind, [string]$GroupId)
     switch ($Kind) {
         'NetworkController' {
@@ -89,7 +89,7 @@ try {
     $slbState = Get-HcsServiceState -Name 'SlbHostAgent'
     $sdnDetected = -not [string]::IsNullOrWhiteSpace($hostId) -or $ncState -ne 'NotInstalled' -or $slbState -ne 'NotInstalled'
     if (-not $sdnDetected -or [string]::IsNullOrWhiteSpace($BoundaryId)) {
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -121,7 +121,7 @@ try {
     Add-HcsProperty $stamp "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.Stamp']/Id$" 'Stamp'
     Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkReferencesStamp']$" $network $stamp
 
-    $controllerGroup = New-HcsSdnGroupInstance -Kind 'NetworkController' -GroupId 'Network Controller Group'
+    $controllerGroup = Get-HcsSdnGroupInstance -Kind 'NetworkController' -GroupId 'Network Controller Group'
     Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.ManagementContainsNetworkControllerGroup']$" $management $controllerGroup
 
     $groups = @(
@@ -133,7 +133,7 @@ try {
         @('GatewayPool', 'Gateway Pool Group')
     )
     foreach ($definition in $groups) {
-        $group = New-HcsSdnGroupInstance -Kind $definition[0] -GroupId $definition[1]
+        $group = Get-HcsSdnGroupInstance -Kind $definition[0] -GroupId $definition[1]
         $relationshipType = switch ($definition[0]) {
             'Host' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsHostGroup']$" }
             'VirtualNetwork' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsVirtualNetworkGroup']$" }
@@ -145,7 +145,7 @@ try {
         Add-HcsRelationship $relationshipType $network $group
     }
 
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.SDN.RelationshipDiscovery.ps1', 8508, 1, $_.Exception.Message)

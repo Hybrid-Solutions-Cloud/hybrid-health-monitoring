@@ -22,6 +22,13 @@ monitors, 14 DA dependency rollups, 12 performance rules, a diagnostic task, and
 knowledge for every unit monitor. The runtime projection lets workflows execute on the VM's
 current host while preserving a separate logical VM identity through migration.
 
+All first-party script workflows launch the machine-wide PowerShell 7 MSI executable at
+`%ProgramFiles%\PowerShell\7\pwsh.exe` through public SCOM command-executor modules. PowerShell 7
+at that exact path is a prerequisite on every workflow host. The diagnostic task reports the
+actual process, edition, version, home, automation assembly, and bitness so representative SCOM
+labs can prove the execution boundary. See
+[ADR 0047](../../../../docs/design/decisions/0047-hyper-v-v2-explicit-powershell-7-execution.md).
+
 Core Presentation provides the operator-facing **Hyper-V Private Cloud** console root, eight
 domain folders, 17 localized health, diagram, alert, event, inventory, and performance views, and
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add

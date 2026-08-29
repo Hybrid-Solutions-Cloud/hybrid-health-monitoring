@@ -7,6 +7,9 @@
 
 ### Changed
 
+* Run every Hyper-V Private Cloud v2 first-party script through public SCOM command-executor
+  wrappers that launch the machine-wide PowerShell 7 MSI path explicitly; add operator-visible
+  runtime evidence, the common installation prerequisite, static contract tests, and ADR 0047.
 * Correct both SCOM Distributed Application component class bases to the verified Service Designer
   `ServiceComponentGroup` type and run SDK verification through Visual Studio 2022's
   full-framework VSAE host.

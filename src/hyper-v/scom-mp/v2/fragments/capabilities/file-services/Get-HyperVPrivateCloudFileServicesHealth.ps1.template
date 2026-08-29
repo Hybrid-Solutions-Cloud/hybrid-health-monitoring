@@ -62,4 +62,4 @@ catch {
 
 $bag.AddValue('FileServicesState', $state)
 $bag.AddValue('FileServicesStateDetail', $detail)
-$bag
+$api.Return($bag)

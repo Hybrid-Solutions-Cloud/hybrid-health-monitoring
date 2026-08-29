@@ -79,12 +79,12 @@ try {
     $bag.AddValue('NcHostAgentState', $ncState)
     $bag.AddValue('SlbHostAgentState', $slbState)
     $bag.AddValue('ComputerName', $ComputerName)
-    $bag
+    $api.Return($bag)
 }
 catch {
     $bag.AddValue('SdnIntegrationState', 'Critical')
     $bag.AddValue('SdnIntegrationStateDetail', "SDN integration health probe failed: $($_.Exception.Message)")
     $bag.AddValue('SdnDetected', 'Unknown')
     $bag.AddValue('ComputerName', $ComputerName)
-    $bag
+    $api.Return($bag)
 }

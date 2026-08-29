@@ -31,7 +31,7 @@ try {
         else {
             $mpioDrives = @()
             try { $mpioDrives = @((Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_DISK_INFO' -ErrorAction Stop).DriveInfo) }
-            catch { }
+            catch { $mpioDrives = @() }
             $iscsiDisks = @($sanDisks | Where-Object BusType -eq 'iSCSI')
             $fcDisks = @($sanDisks | Where-Object BusType -eq 'Fibre Channel')
             if ($iscsiDisks.Count -gt 0 -and -not (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession')) {
@@ -56,4 +56,4 @@ catch {
 
 $bag.AddValue('StorageIntegrationState', $state)
 $bag.AddValue('StorageIntegrationStateDetail', $detail)
-$bag
+$api.Return($bag)

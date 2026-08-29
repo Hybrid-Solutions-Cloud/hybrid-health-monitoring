@@ -59,7 +59,7 @@ function Get-HcsMpioDriveMap {
             }
         }
     }
-    catch { }
+    catch { return $result }
     return $result
 }
 
@@ -82,7 +82,7 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 try {
     if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
         $api.LogScriptEvent('HyperVPrivateCloud.Storage.TopologyDiscovery.ps1', 8401, 2, 'The Windows Storage PowerShell module is unavailable; storage topology was not submitted.')
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -179,7 +179,9 @@ try {
             Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ComponentContainsFibreChannelPort']$" $storageComponent $instance
         }
     }
-    catch { }
+    catch {
+        $api.LogScriptEvent('HyperVPrivateCloud.Storage.TopologyDiscovery.ps1', 8401, 2, "Fibre Channel port inventory is unavailable on '$ComputerName'; FC port instances were not submitted. $($_.Exception.Message)")
+    }
 
     if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') {
         foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
@@ -220,7 +222,7 @@ try {
         }
     }
 
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.Storage.TopologyDiscovery.ps1', 8402, 1, $_.Exception.Message)

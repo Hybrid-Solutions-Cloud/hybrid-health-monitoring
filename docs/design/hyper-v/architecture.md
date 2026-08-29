@@ -149,7 +149,7 @@ sequenceDiagram
     participant O as Operator surface
 
     C->>A: Deliver only applicable MP configuration
-    A->>P: Query local or authoritative topology and signals
+    A->>P: Launch explicit PowerShell 7 MSI path and query providers
     P-->>A: Typed discovery or property-bag data
     A->>M: Execute data source and condition detection
     alt Stateful condition
@@ -159,6 +159,12 @@ sequenceDiagram
     end
     D->>O: Present health, alert, trend, report, and DA rollup
 ```
+
+First-party script workflows do not use SCOM's implicit in-process Windows PowerShell host. Public
+`System.Library` command executors launch `%ProgramFiles%\PowerShell\7\pwsh.exe`; discovery and
+property-bag scripts return native SCOM data through `MOM.ScriptAPI.Return`. The machine-wide MSI
+installation and runtime-evidence gate are defined by
+[ADR 0047](../decisions/0047-hyper-v-v2-explicit-powershell-7-execution.md).
 
 ## Document map
 
@@ -189,7 +195,6 @@ sequenceDiagram
 
 ## Decision status
 
-This is a **proposed implementation baseline**. ADRs 0022, 0025, and 0026 are already accepted.
-The package, object/discovery, and health/DA refinements in ADRs 0027–0029 remain proposed until the
-research and lab gates provide supporting evidence. Proposed identifiers may be refined;
-the product boundaries and independent Hyper-V DA requirement may not.
+This is the accepted implementation baseline governed by ADRs 0022, 0025–0029, 0031, and
+0040–0047. Runtime support remains conditional on the representative validation and release gates;
+accepted architecture is not a substitute for lab evidence.

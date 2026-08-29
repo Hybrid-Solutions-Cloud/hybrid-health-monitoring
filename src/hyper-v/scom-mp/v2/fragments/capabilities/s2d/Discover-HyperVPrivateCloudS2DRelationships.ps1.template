@@ -30,7 +30,7 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
     if ([string]::IsNullOrWhiteSpace($UniqueId) -or [string]::IsNullOrWhiteSpace($ComputerName)) {
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -82,7 +82,7 @@ try {
 
     Add-HcsProperty $instance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
     Add-HcsRelationship $relationshipType $storage $instance
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.S2D.RelationshipDiscovery.ps1', 8502, 1, $_.Exception.Message)

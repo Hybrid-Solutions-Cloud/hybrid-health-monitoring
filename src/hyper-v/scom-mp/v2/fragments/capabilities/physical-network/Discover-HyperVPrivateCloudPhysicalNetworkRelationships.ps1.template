@@ -30,12 +30,12 @@ function Add-HcsRelationship {
 try {
     if (-not (Get-Command -Name Get-VMSwitch -ErrorAction SilentlyContinue)) {
         $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.RelationshipDiscovery.ps1', 8801, 2, 'Get-VMSwitch is unavailable. Install the Hyper-V PowerShell management tools.')
-        $discoveryData
+        $api.Return($discoveryData)
         return
     }
     if (-not (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue)) {
         $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.RelationshipDiscovery.ps1', 8801, 2, 'Get-NetAdapter is unavailable. Install the Windows network adapter management tools.')
-        $discoveryData
+        $api.Return($discoveryData)
         return
     }
 
@@ -80,4 +80,4 @@ catch {
     $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.RelationshipDiscovery.ps1', 8802, 1, "Physical-network relationship discovery failed on '$ComputerName': $($_.Exception.Message)")
 }
 
-$discoveryData
+$api.Return($discoveryData)

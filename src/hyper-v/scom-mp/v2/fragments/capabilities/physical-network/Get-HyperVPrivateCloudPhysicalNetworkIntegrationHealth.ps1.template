@@ -64,4 +64,4 @@ catch {
 
 $bag.AddValue('PhysicalNetworkIntegrationState', $state)
 $bag.AddValue('PhysicalNetworkIntegrationStateDetail', $detail)
-$bag
+$api.Return($bag)

@@ -28,7 +28,7 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
     if ([string]::IsNullOrWhiteSpace($VMMId)) {
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -46,7 +46,7 @@ try {
         Add-HcsProperty $clusterManagement "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" ('cluster:{0}' -f $clusterName.ToLowerInvariant())
         Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.ManagementReferencesPrivateCloud']$" $clusterManagement $privateCloud
     }
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.VMM.CloudRelationshipDiscovery.ps1', 8512, 1, $_.Exception.Message)

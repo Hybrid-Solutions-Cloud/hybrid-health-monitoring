@@ -48,19 +48,10 @@
               <DataSource ID="Scheduler" TypeID="System!System.Scheduler">
                 <Scheduler><SimpleReccuringSchedule><Interval Unit="Seconds">$Config/IntervalSeconds$</Interval><SyncTime>$Config/SyncTime$</SyncTime></SimpleReccuringSchedule><ExcludeDates /></Scheduler>
               </DataSource>
-              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellPropertyBagTriggerOnlyProbe">
+              <ProbeAction ID="Probe" TypeID="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.PropertyBagProbe">
                 <ScriptName>HybridSolutionsCloud.HyperVPrivateCloud.HostHealth.Probe.ps1</ScriptName>
                 <ScriptBody><![CDATA[{{HOST_HEALTH_SCRIPT}}]]></ScriptBody>
-                <Parameters>
-                  <Parameter><Name>CpuWarningPercent</Name><Value>$Config/CpuWarningPercent$</Value></Parameter>
-                  <Parameter><Name>CpuCriticalPercent</Name><Value>$Config/CpuCriticalPercent$</Value></Parameter>
-                  <Parameter><Name>MemoryWarningMB</Name><Value>$Config/MemoryWarningMB$</Value></Parameter>
-                  <Parameter><Name>MemoryCriticalMB</Name><Value>$Config/MemoryCriticalMB$</Value></Parameter>
-                  <Parameter><Name>PagesInputWarningPerSecond</Name><Value>$Config/PagesInputWarningPerSecond$</Value></Parameter>
-                  <Parameter><Name>PagesInputCriticalPerSecond</Name><Value>$Config/PagesInputCriticalPerSecond$</Value></Parameter>
-                  <Parameter><Name>CheckpointWarningHours</Name><Value>$Config/CheckpointWarningHours$</Value></Parameter>
-                  <Parameter><Name>CheckpointCriticalHours</Name><Value>$Config/CheckpointCriticalHours$</Value></Parameter>
-                </Parameters>
+                <Arguments>-CpuWarningPercent "$Config/CpuWarningPercent$" -CpuCriticalPercent "$Config/CpuCriticalPercent$" -MemoryWarningMB "$Config/MemoryWarningMB$" -MemoryCriticalMB "$Config/MemoryCriticalMB$" -PagesInputWarningPerSecond "$Config/PagesInputWarningPerSecond$" -PagesInputCriticalPerSecond "$Config/PagesInputCriticalPerSecond$" -CheckpointWarningHours "$Config/CheckpointWarningHours$" -CheckpointCriticalHours "$Config/CheckpointCriticalHours$"</Arguments>
                 <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
               </ProbeAction>
             </MemberModules>
@@ -88,15 +79,10 @@
         </OverrideableParameters>
         <ModuleImplementation Isolation="Any"><Composite><MemberModules>
           <DataSource ID="Scheduler" TypeID="System!System.Scheduler"><Scheduler><SimpleReccuringSchedule><Interval Unit="Seconds">$Config/IntervalSeconds$</Interval><SyncTime>$Config/SyncTime$</SyncTime></SimpleReccuringSchedule><ExcludeDates /></Scheduler></DataSource>
-          <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellPropertyBagTriggerOnlyProbe">
+          <ProbeAction ID="Probe" TypeID="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.PropertyBagProbe">
             <ScriptName>HyperVPrivateCloud.VmHealth.Probe.ps1</ScriptName>
             <ScriptBody><![CDATA[{{VM_HEALTH_SCRIPT}}]]></ScriptBody>
-            <Parameters>
-              <Parameter><Name>VMId</Name><Value>$Config/VMId$</Value></Parameter>
-              <Parameter><Name>ExpectedState</Name><Value>$Config/ExpectedState$</Value></Parameter>
-              <Parameter><Name>CheckpointWarningHours</Name><Value>$Config/CheckpointWarningHours$</Value></Parameter>
-              <Parameter><Name>CheckpointCriticalHours</Name><Value>$Config/CheckpointCriticalHours$</Value></Parameter>
-            </Parameters>
+            <Arguments>-VMId "$Config/VMId$" -ExpectedState "$Config/ExpectedState$" -CheckpointWarningHours "$Config/CheckpointWarningHours$" -CheckpointCriticalHours "$Config/CheckpointCriticalHours$"</Arguments>
             <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
           </ProbeAction>
         </MemberModules><Composition><Node ID="Probe"><Node ID="Scheduler" /></Node></Composition></Composite></ModuleImplementation>
@@ -106,9 +92,9 @@
         <Configuration><xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" /></Configuration>
         <OverrideableParameters><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" /></OverrideableParameters>
         <ModuleImplementation Isolation="Any"><Composite><MemberModules>
-          <WriteAction ID="PowerShell" TypeID="Windows!Microsoft.Windows.PowerShellWriteAction">
+          <WriteAction ID="PowerShell" TypeID="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.WriteAction">
             <ScriptName>HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task.ps1</ScriptName>
-            <ScriptBody><![CDATA[{{DIAGNOSTIC_SCRIPT}}]]></ScriptBody><Parameters /><TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+            <ScriptBody><![CDATA[{{DIAGNOSTIC_SCRIPT}}]]></ScriptBody><Arguments /><TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
           </WriteAction>
         </MemberModules><Composition><Node ID="PowerShell" /></Composition></Composite></ModuleImplementation>
         <OutputType>System!System.BaseData</OutputType><InputType>System!System.BaseData</InputType>
@@ -194,7 +180,7 @@
     <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteLatency.Collection.Rule"><Name>Collect physical disk average write latency</Name></DisplayString>
     <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadQueue.Collection.Rule"><Name>Collect physical disk average read queue length (disabled by default)</Name></DisplayString>
     <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteQueue.Collection.Rule"><Name>Collect physical disk average write queue length (disabled by default)</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task"><Name>Collect Hyper-V diagnostic summary</Name><Description>Returns a read-only summary of host, VM, switch, and replication state.</Description></DisplayString>
+    <DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task"><Name>Collect Hyper-V diagnostic and PowerShell runtime summary</Name><Description>Returns a read-only summary of the executing PowerShell process plus host, VM, switch, and replication state.</Description></DisplayString>
   </DisplayStrings><KnowledgeArticles>{{KNOWLEDGE_ARTICLES}}
   </KnowledgeArticles></LanguagePack></LanguagePacks>
 </ManagementPack>

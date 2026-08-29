@@ -12,11 +12,12 @@
 - Beyond the verified SCOM 2022 dependency set, which exact sealed dependency-MP versions should
   the first release support? Export them from each additional target SCOM release and run
   `Test-HyperVManagementPacksWithSdk.ps1`.
-- **Release blocker:** SCOM's published agent requirement names Windows PowerShell 3.0 for MPs that
-  use PowerShell scripts, while the HCS standard mandates `#Requires -Version 7.0`. Does each
-  selected SCOM module type actually launch a PowerShell 7-compatible host? Prove it immediately
-  in a representative agent lab. If not, author and validate an explicit `pwsh.exe` execution
-  module or obtain a documented governance exception before claiming any v2 runtime support.
+- **Release blocker:** the source now uses public SCOM command-executor wrappers to launch
+  `%ProgramFiles%\PowerShell\7\pwsh.exe` explicitly, and the Library contract validates against the
+  inspected SCOM 2016 and 2022 floors. Run the diagnostic task through HealthService in every
+  claimed lane and retain its process, edition, version, home, automation assembly, and bitness
+  output. Also prove every capability-specific module works in that process; offline SDK evidence
+  alone is insufficient.
 - Do stable VM identity, multi-node topology contributions, DA population/rollup, maintenance,
   migration/failover, recovery, upgrade, and removal behave as designed in SCOM?
 - Does representative SCOM network discovery connect every HCS external-vSwitch Windows adapter

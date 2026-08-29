@@ -43,7 +43,7 @@ test-sealed binaries.
 | Virtual Machine Manager | VMM 2025 adapter authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Microsoft integration, fabric/host/cloud/logical-network/site/job behavior, outage, coexistence, upgrade, and removal labs pass |
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | Authored: 11 profiles, three tiers, 66 generated Discovery/Monitoring examples; semantic resolution, drift, cookdown, version separation, invalid-profile, same-MP group, and VSAE gates pass | Governed release packaging emits import-ready XML with the signed product version/token, then representative import/export/upgrade/removal labs pass |
-| Runtime certification | Blocked on representative SCOM labs and the PowerShell execution-host proof | Every embedded script runs under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
+| Runtime certification | Explicit public command-executor wrappers now launch the PowerShell 7 MSI path; SCOM 2016/2022 library contracts and static workflow tests pass | HealthService task evidence and every embedded/capability script run under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
 | Governed release and public download | Not started; transient test seals are not release artifacts | Governed signing, clean import, checksums, release notes, migration/rollback/removal guidance, GitHub release assets, and stable site download links are published |
 
 Execute the remaining work in this order:
@@ -712,15 +712,14 @@ resolution, test sealing, reference and override resolution, example drift, cook
 fixtures, cardinality/performance budgets, documentation consistency, upgrade compatibility, and
 secret scanning.
 
-**Release-blocking PowerShell host gate:** the HCS scripting standard requires every first-party
-script to declare PowerShell 7, but Microsoft's current SCOM system requirements describe Windows
-PowerShell 3.0 as the agent prerequisite for Management Packs that use PowerShell scripts. VSAE
-validates the MP contract but does not prove the Health Service runtime host. Before any v2 build
-is called usable, a representative SCOM agent must prove that every referenced PowerShell module
-type launches a PowerShell 7-compatible host. If it does not, replace the module path with an
-explicit, supported `pwsh.exe` execution design or obtain and document a narrowly scoped governance
-exception; do not remove `#Requires -Version 7.0` or claim runtime support without one of those
-outcomes.
+**Release-blocking PowerShell host gate:** ADR 0047 replaces the implicit in-process Windows
+PowerShell providers with public `System.Library` command-executor wrappers that launch
+`%ProgramFiles%\PowerShell\7\pwsh.exe` explicitly. The contract validates against inspected SCOM
+2016 and 2022 libraries, and static tests reject legacy PowerShell module types. Before any v2
+build is called usable, run the diagnostic task through HealthService in every claimed lane and
+retain its process path, Core edition, version, `PSHOME`, automation assembly, and bitness. Then
+prove every capability-specific module and failure/recovery path inside that process. VSAE and
+offline execution do not satisfy this runtime gate.
 
 Representative labs must cover standalone Hyper-V; clustered SAN; Pure Storage; S2D; combined SAN
 and S2D; Hyper-V over SMB where supported; Network ATC; VMM; SDN; and configurations where optional

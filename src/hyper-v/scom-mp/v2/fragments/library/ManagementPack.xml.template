@@ -154,6 +154,108 @@
         <RelationshipType ID="HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponentContainsHostRole" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="HostRole" Type="HybridSolutionsCloud.HyperVPrivateCloud.HostRole" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
       </RelationshipTypes>
     </EntityTypes>
+    <ModuleTypes>
+      <DataSourceModuleType ID="HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.DiscoveryProvider" Accessibility="Public" Batching="false">
+        <Configuration>
+          <xsd:element name="IntervalSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="ScriptName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ScriptBody" type="xsd:string" minOccurs="1" />
+          <xsd:element name="Arguments" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <DataSource ID="Pwsh" TypeID="System!System.CommandExecuterDiscoveryDataSource">
+                <IntervalSeconds>$Config/IntervalSeconds$</IntervalSeconds>
+                <ApplicationName>%ProgramFiles%\PowerShell\7\pwsh.exe</ApplicationName>
+                <WorkingDirectory />
+                <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
+                <SecureInput />
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+                <RequireOutput>true</RequireOutput>
+                <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
+                <DefaultEventPolicy>
+                  <StdOutMatches Operator="DoesNotMatchRegularExpression">&lt;DataItem.+/DataItem\b*&gt;|&lt;DataItem.*/&gt;</StdOutMatches>
+                  <StdErrMatches>\a+</StdErrMatches>
+                  <ExitCodeMatches>[^0]+</ExitCodeMatches>
+                </DefaultEventPolicy>
+                <EventPolicy />
+              </DataSource>
+            </MemberModules>
+            <Composition><Node ID="Pwsh" /></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.Discovery.Data</OutputType>
+      </DataSourceModuleType>
+      <ProbeActionModuleType ID="HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.PropertyBagProbe" Accessibility="Public" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element name="ScriptName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ScriptBody" type="xsd:string" minOccurs="1" />
+          <xsd:element name="Arguments" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" /></OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="Pwsh" TypeID="System!System.CommandExecuterProbePropertyBagBase">
+                <ApplicationName>%ProgramFiles%\PowerShell\7\pwsh.exe</ApplicationName>
+                <WorkingDirectory />
+                <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
+                <SecureInput />
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+                <RequireOutput>true</RequireOutput>
+                <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
+                <OutputType>System.PropertyBagData</OutputType>
+                <DefaultEventPolicy>
+                  <StdOutMatches Operator="DoesNotMatchRegularExpression">&lt;DataItem.+/DataItem\b*&gt;|&lt;DataItem.*/&gt;</StdOutMatches>
+                  <StdErrMatches>\a+</StdErrMatches>
+                  <ExitCodeMatches>[^0]+</ExitCodeMatches>
+                </DefaultEventPolicy>
+                <EventPolicy />
+              </ProbeAction>
+            </MemberModules>
+            <Composition><Node ID="Pwsh" /></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+        <InputType>System!System.BaseData</InputType>
+      </ProbeActionModuleType>
+      <WriteActionModuleType ID="HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.WriteAction" Accessibility="Public" Batching="false">
+        <Configuration>
+          <xsd:element name="ScriptName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ScriptBody" type="xsd:string" minOccurs="1" />
+          <xsd:element name="Arguments" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" /></OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <WriteAction ID="Pwsh" TypeID="System!System.CommandExecuter">
+                <ApplicationName>%ProgramFiles%\PowerShell\7\pwsh.exe</ApplicationName>
+                <WorkingDirectory />
+                <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
+                <SecureInput />
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+                <RequireOutput>false</RequireOutput>
+                <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
+                <DefaultEventPolicy><StdOutMatches /><StdErrMatches>\a+</StdErrMatches><ExitCodeMatches>[^0]+</ExitCodeMatches></DefaultEventPolicy>
+                <EventPolicy />
+              </WriteAction>
+            </MemberModules>
+            <Composition><Node ID="Pwsh" /></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.CommandOutput</OutputType>
+        <InputType>System!System.BaseData</InputType>
+      </WriteActionModuleType>
+    </ModuleTypes>
   </TypeDefinitions>
   <LanguagePacks>
     <LanguagePack ID="ENU" IsDefault="true">

@@ -2,6 +2,25 @@
 
 ## Current session
 
+- **Explicit PowerShell 7 SCOM execution authored and offline verified:** Replaced every v2
+  first-party Microsoft in-process PowerShell discovery, property-bag, and write-action reference
+  with three public core-Library wrappers over `System.CommandExecuterDiscoveryDataSource`,
+  `System.CommandExecuterProbePropertyBagBase`, and `System.CommandExecuter`. All workflows launch
+  `%ProgramFiles%\PowerShell\7\pwsh.exe` with a noninteractive no-profile command line; all 31
+  embedded scripts declare PowerShell 7 and strict mode, and discovery/property-bag scripts return
+  native SCOM XML through `MOM.ScriptAPI.Return`. The diagnostic task now reports the actual
+  process path, edition, version, `PSHOME`, automation assembly, and bitness for representative-lab
+  evidence. ScriptAnalyzer found and drove correction of a real `$host`/read-only `$Host`
+  collision in the Pure health probe plus existing analyzer findings. Full Pester passes 111/111;
+  all 27 changed PowerShell sources have zero Warning/Error analyzer findings; `git diff --check`
+  and the VitePress production build pass. All 13 current generated MPs pass OM2022 VSAE: nine
+  directly against the inspected sealed set and FileServices/Pure/S2D/VMM against their exact
+  official inputs or the already documented transient token-remapped inspection copies. Scratch
+  evidence is `D:/tmp/hcs-v2-pwsh-current-20260829/`; transient files are not production signing
+  output. ADR 0047, the guide, architecture, validation, source README, plan, changelog, and open
+  questions are updated. HealthService task output and every capability module still require live
+  proof on each claimed SCOM/Windows Server lane before runtime support or release can be claimed.
+
 - **V2 deployment profiles and public overrides authored and verified:** Added explicit tuning
   catalog schema 2.0, a capability-aware customer/public/example generator, and deterministic
   example updater. All 11 package profiles generate separate Lab/Standard/Strict Discovery and

@@ -1,11 +1,13 @@
+#Requires -Version 7.0
 param($VMId, $ExpectedState, $CheckpointWarningHours, $CheckpointCriticalHours)
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 $statesSet = @{}
 
-function Set-HcsState {
+function Write-HcsState {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
     $bag.AddValue($Name, $State)
     $bag.AddValue($Name + 'Detail', $Detail)
@@ -21,56 +23,56 @@ try {
     $isRunning = [string]$vm.State -eq 'Running'
 
     if ($ExpectedState -eq 'Running') {
-        Set-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vm.State)
+        Write-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vm.State)
     }
     else {
-        Set-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vm.State)
+        Write-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vm.State)
     }
 
     if ($isRunning) {
         $services = @(Get-VMIntegrationService -VM $vm -ErrorAction SilentlyContinue | Where-Object Enabled)
         $heartbeat = $services | Where-Object Name -eq 'Heartbeat' | Select-Object -First 1
         $heartbeatState = if ($null -eq $heartbeat) { 'Warning' } elseif ([string]$heartbeat.PrimaryStatusDescription -match 'OK') { 'Good' } else { 'Critical' }
-        Set-HcsState 'HeartbeatState' $heartbeatState $(if ($heartbeat) { [string]$heartbeat.PrimaryStatusDescription } else { 'Heartbeat integration service is unavailable.' })
+        Write-HcsState 'HeartbeatState' $heartbeatState $(if ($heartbeat) { [string]$heartbeat.PrimaryStatusDescription } else { 'Heartbeat integration service is unavailable.' })
         $unhealthyServices = @($services | Where-Object { [string]$_.PrimaryStatusDescription -notmatch 'OK' })
-        Set-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}" -f $services.Count, $unhealthyServices.Count)
+        Write-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}" -f $services.Count, $unhealthyServices.Count)
     }
     else {
-        Set-HcsState 'HeartbeatState' 'NotApplicable' 'Heartbeat is not applicable while the VM is not running.'
-        Set-HcsState 'IntegrationServicesState' 'NotApplicable' 'Runtime integration-service health is not applicable while the VM is not running.'
+        Write-HcsState 'HeartbeatState' 'NotApplicable' 'Heartbeat is not applicable while the VM is not running.'
+        Write-HcsState 'IntegrationServicesState' 'NotApplicable' 'Runtime integration-service health is not applicable while the VM is not running.'
     }
 
     $checkpoints = @(Get-VMSnapshot -VM $vm -ErrorAction SilentlyContinue)
     $oldestHours = if ($checkpoints.Count) { [math]::Round(([DateTime]::UtcNow - ($checkpoints | Sort-Object CreationTime | Select-Object -First 1).CreationTime.ToUniversalTime()).TotalHours, 1) } else { 0 }
     $checkpointState = if ($oldestHours -ge [double]$CheckpointCriticalHours) { 'Critical' } elseif ($oldestHours -ge [double]$CheckpointWarningHours) { 'Warning' } else { 'Good' }
-    Set-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
+    Write-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
 
     $replications = @(Get-VMReplication -VM $vm -ErrorAction SilentlyContinue)
     $replicationCritical = @($replications | Where-Object { [string]$_.Health -eq 'Critical' }).Count
     $replicationWarning = @($replications | Where-Object { [string]$_.Health -eq 'Warning' }).Count
     $replicationState = if ($replicationCritical) { 'Critical' } elseif ($replicationWarning) { 'Warning' } elseif (-not $replications.Count) { 'NotApplicable' } else { 'Good' }
-    Set-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
+    Write-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
 
     $invalidDisks = 0
     foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue)) {
         if ($drive.Path -and -not (Test-Path -LiteralPath $drive.Path -PathType Leaf)) { $invalidDisks++ }
         elseif ($drive.Path -and -not (Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue)) { $invalidDisks++ }
     }
-    Set-HcsState 'StorageState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable disk attachments: {0}" -f $invalidDisks)
+    Write-HcsState 'StorageState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable disk attachments: {0}" -f $invalidDisks)
 
     $adapters = @(Get-VMNetworkAdapter -VM $vm -ErrorAction SilentlyContinue)
     $disconnected = @($adapters | Where-Object { -not $_.SwitchName -or ([string]$_.Status -notin @('Ok', 'Degraded', '')) })
-    Set-HcsState 'NetworkState' $(if ($disconnected.Count) { 'Warning' } else { 'Good' }) ("Adapters: {0}; disconnected or unhealthy: {1}" -f $adapters.Count, $disconnected.Count)
+    Write-HcsState 'NetworkState' $(if ($disconnected.Count) { 'Warning' } else { 'Good' }) ("Adapters: {0}; disconnected or unhealthy: {1}" -f $adapters.Count, $disconnected.Count)
 
     $memoryState = if (-not $vm.DynamicMemoryEnabled -or -not $isRunning) { 'NotApplicable' } elseif ([string]$vm.MemoryStatus -match 'Low|Warning') { 'Warning' } elseif ([string]$vm.MemoryStatus -match 'Critical') { 'Critical' } else { 'Good' }
-    Set-HcsState 'MemoryPressureState' $memoryState ("Dynamic Memory: {0}; status: {1}; assigned MB: {2}" -f $vm.DynamicMemoryEnabled, $vm.MemoryStatus, [int]($vm.MemoryAssigned / 1MB))
-    Set-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
+    Write-HcsState 'MemoryPressureState' $memoryState ("Dynamic Memory: {0}; status: {1}; assigned MB: {2}" -f $vm.DynamicMemoryEnabled, $vm.MemoryStatus, [int]($vm.MemoryAssigned / 1MB))
+    Write-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
 }
 catch {
     foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState', 'PipelineState')) {
-        if (-not $statesSet.ContainsKey($state)) { Set-HcsState $state 'Critical' $_.Exception.Message }
+        if (-not $statesSet.ContainsKey($state)) { Write-HcsState $state 'Critical' $_.Exception.Message }
     }
     $api.LogScriptEvent('Hyper-V Private Cloud VM Health', 8202, 1, $_.Exception.ToString())
 }
 
-$bag
+$api.Return($bag)

@@ -34,7 +34,7 @@ function Get-HcsPropertyValue {
 }
 
 function Get-HcsStatusState {
-    param([AllowNull()]$Status, [string]$Subject)
+    param([AllowNull()]$Status, [string]$Subject, [int]$TransitionalLimitMinutes)
     if ($null -eq $Status) { return [pscustomobject]@{ State = 'Critical'; Detail = "$Subject status was not returned by Get-NetIntentStatus." } }
     $configuration = [string](Get-HcsPropertyValue -InputObject $Status -Name @('ConfigurationStatus', 'Status'))
     $provisioning = [string](Get-HcsPropertyValue -InputObject $Status -Name @('ProvisioningStatus'))
@@ -58,8 +58,8 @@ function Get-HcsStatusState {
         if ($null -ne $lastUpdatedValue -and [datetime]::TryParse([string]$lastUpdatedValue, [ref]$lastUpdated)) {
             $ageMinutes = [math]::Max(0, ((Get-Date) - $lastUpdated).TotalMinutes)
         }
-        if ($lastUpdated -ne [datetime]::MinValue -and $ageMinutes -ge $MaxTransitionalMinutes) {
-            return [pscustomobject]@{ State = 'Critical'; Detail = "$detail The transitional state has persisted for $([math]::Round($ageMinutes)) minutes; the limit is $MaxTransitionalMinutes." }
+        if ($lastUpdated -ne [datetime]::MinValue -and $ageMinutes -ge $TransitionalLimitMinutes) {
+            return [pscustomobject]@{ State = 'Critical'; Detail = "$detail The transitional state has persisted for $([math]::Round($ageMinutes)) minutes; the limit is $TransitionalLimitMinutes." }
         }
         return [pscustomobject]@{ State = 'Warning'; Detail = "$detail Network ATC is still converging." }
     }
@@ -98,7 +98,7 @@ try {
                 $hostValue = [string](Get-HcsPropertyValue -InputObject $_ -Name @('Host', 'ComputerName', 'PSComputerName'))
                 [string]::IsNullOrWhiteSpace($hostValue) -or $hostValue.Split('.')[0].Equals($ComputerName.Split('.')[0], [StringComparison]::OrdinalIgnoreCase)
             }) | Select-Object -First 1
-        $result = Get-HcsStatusState -Status $status -Subject "Network intent '$IntentName' on '$ComputerName'"
+        $result = Get-HcsStatusState -Status $status -Subject "Network intent '$IntentName' on '$ComputerName'" -TransitionalLimitMinutes $MaxTransitionalMinutes
         $state = $result.State
         $detail = $result.Detail
     }
@@ -112,7 +112,7 @@ try {
             $detail = 'No Network ATC global override status is present on this host.'
         }
         else {
-            $result = Get-HcsStatusState -Status $status -Subject "Network ATC global configuration on '$ComputerName'"
+            $result = Get-HcsStatusState -Status $status -Subject "Network ATC global configuration on '$ComputerName'" -TransitionalLimitMinutes $MaxTransitionalMinutes
             $state = $result.State
             $detail = $result.Detail
         }
@@ -162,4 +162,4 @@ catch {
 
 $bag.AddValue('NetworkAtcState', $state)
 $bag.AddValue('NetworkAtcStateDetail', $detail)
-$bag
+$api.Return($bag)

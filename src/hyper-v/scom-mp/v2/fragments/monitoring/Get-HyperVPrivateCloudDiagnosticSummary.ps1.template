@@ -1,3 +1,5 @@
+#Requires -Version 7.0
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 if (-not (Get-Command -Name 'Get-VMHost' -ErrorAction SilentlyContinue)) {
     if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue }
@@ -9,8 +11,17 @@ $hostData = Get-VMHost
 $vms = @(Get-VM)
 $switches = @(Get-VMSwitch)
 $oldCheckpoints = @($vms | Get-VMSnapshot -ErrorAction SilentlyContinue | Where-Object CreationTime -lt (Get-Date).AddDays(-7))
+$automationAssembly = [System.Management.Automation.PSObject].Assembly
+$process = Get-Process -Id $PID
 [pscustomobject]@{
     Computer = $env:COMPUTERNAME
+    PSEdition = $PSVersionTable.PSEdition
+    PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+    PowerShellProcessPath = $process.Path
+    PowerShellHome = $PSHOME
+    AutomationAssemblyLocation = $automationAssembly.Location
+    AutomationAssemblyVersion = $automationAssembly.GetName().Version.ToString()
+    Is64BitProcess = [Environment]::Is64BitProcess
     HyperVVersion = $hostData.HyperVVersion
     VirtualMachines = $vms.Count
     RunningVirtualMachines = @($vms | Where-Object State -eq 'Running').Count

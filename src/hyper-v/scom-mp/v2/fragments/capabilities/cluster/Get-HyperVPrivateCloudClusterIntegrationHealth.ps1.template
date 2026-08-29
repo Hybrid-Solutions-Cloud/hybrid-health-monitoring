@@ -50,4 +50,4 @@ catch {
 
 $bag.AddValue('ClusterIntegrationState', $state)
 $bag.AddValue('ClusterIntegrationStateDetail', $detail)
-$bag
+$api.Return($bag)

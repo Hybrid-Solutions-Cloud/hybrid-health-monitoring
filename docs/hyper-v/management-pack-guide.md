@@ -34,6 +34,42 @@ Hyper-V Private Cloud Monitoring v2 is still under development and is not the la
 described above. Its four required core MPs have no optional Cluster, CSV, S2D, SAN, Pure, SDN, or
 VMM dependency. Each supported capability is a separate sealed adapter.
 
+### PowerShell 7 execution prerequisite
+
+Every first-party v2 script runs in an explicit PowerShell 7 process. Install a supported
+machine-wide PowerShell 7 MSI on every Hyper-V agent and on any management server that executes a
+server-side capability workflow. The first release requires the normal MSI path:
+`%ProgramFiles%\PowerShell\7\pwsh.exe`.
+
+Use Microsoft's current MSI deployment guidance. For an interactive Windows Server installation
+where `winget` is available:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget --installer-type wix
+```
+
+For controlled server deployment, download the signed x64 MSI from the official PowerShell release
+and deploy it machine-wide without changing the installation directory. Store/MSIX, ZIP,
+user-scoped, and relocated installations do not satisfy this release contract. Keep PowerShell 7
+serviced according to Microsoft's support lifecycle.
+
+After importing the core MPs, run **Collect Hyper-V diagnostic and PowerShell runtime summary**
+against a discovered host. Do not approve the installation unless the result shows:
+
+- `PSEdition : Core`;
+- `PowerShellProcessPath : C:\Program Files\PowerShell\7\pwsh.exe`;
+- a supported `PowerShellVersion`; and
+- `AutomationAssemblyLocation` beneath the same PowerShell 7 installation.
+
+The MP does not fall back to Windows PowerShell. A missing or relocated executable produces a
+workflow failure that must be corrected before monitoring can be considered healthy. See
+[ADR 0047](../design/decisions/0047-hyper-v-v2-explicit-powershell-7-execution.md) for the execution
+and security contract and Microsoft's
+[PowerShell installation guidance](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows).
+
+Each optional capability's PowerShell modules must also load successfully in PowerShell 7. The
+capability prerequisites below are additive to this common prerequisite.
+
 The authored `Capability.Cluster` adapter requires these prerequisites before import:
 
 | Prerequisite | Minimum | Purpose |

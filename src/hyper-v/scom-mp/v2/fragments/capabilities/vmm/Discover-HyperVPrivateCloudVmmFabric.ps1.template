@@ -52,7 +52,7 @@ function Complete-HcsFabricComponent {
     return $Component
 }
 
-function New-HcsFabricService {
+function Get-HcsFabricServiceInstance {
     param([string]$VmmServer)
 
     $boundaryId = Get-HcsFabricBoundaryId -VmmServer $VmmServer
@@ -92,7 +92,7 @@ $api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
 $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
-    $components = New-HcsFabricService -VmmServer $ComputerName
+    $components = Get-HcsFabricServiceInstance -VmmServer $ComputerName
 
     $vmmServerInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='VMMDiscovery!Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMMManagementServer']$")
     Add-HcsProperty $vmmServerInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
@@ -101,7 +101,7 @@ try {
     $module = Get-Module -ListAvailable -Name 'VirtualMachineManager' | Select-Object -First 1
     if ($null -eq $module) {
         $api.LogScriptEvent('HyperVPrivateCloud.VMM.FabricDiscovery.ps1', 8510, 2, 'The VirtualMachineManager PowerShell module is unavailable. Logical-network and network-site discovery was skipped.')
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
         return
     }
 
@@ -157,9 +157,9 @@ try {
         }
     }
 
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.VMM.FabricDiscovery.ps1', 8510, 1, $_.Exception.Message)
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }

@@ -146,7 +146,7 @@ try {
             Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualHardDisk']$" $mapping $disk
         }
     }
-    $script:DiscoveryData
+    $api.Return($script:DiscoveryData)
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Discovery.ps1', 8701, 1, $_.Exception.Message)

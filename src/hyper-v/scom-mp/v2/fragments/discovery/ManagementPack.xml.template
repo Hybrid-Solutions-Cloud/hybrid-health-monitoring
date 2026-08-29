@@ -79,14 +79,10 @@
           <DiscoveryRelationship TypeID="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponentContainsPipeline" />
           <DiscoveryRelationship TypeID="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponentContainsHostRole" />
         </DiscoveryTypes>
-        <DataSource ID="PowerShellDiscovery" TypeID="Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider">
-          <IntervalSeconds>1800</IntervalSeconds><SyncTime /><ScriptName>HybridSolutionsCloud.HyperVPrivateCloud.Topology.Discovery.ps1</ScriptName>
+        <DataSource ID="PowerShellDiscovery" TypeID="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.DiscoveryProvider">
+          <IntervalSeconds>1800</IntervalSeconds><ScriptName>HybridSolutionsCloud.HyperVPrivateCloud.Topology.Discovery.ps1</ScriptName>
           <ScriptBody><![CDATA[{{TOPOLOGY_DISCOVERY_SCRIPT}}]]></ScriptBody>
-          <Parameters>
-            <Parameter><Name>SourceId</Name><Value>$MPElement$</Value></Parameter>
-            <Parameter><Name>ManagedEntityId</Name><Value>$Target/Id$</Value></Parameter>
-            <Parameter><Name>ComputerName</Name><Value>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</Value></Parameter>
-          </Parameters>
+          <Arguments>-SourceId "$MPElement$" -ManagedEntityId "$Target/Id$" -ComputerName "$Target/Host/Property[Type=&quot;Windows!Microsoft.Windows.Computer&quot;]/PrincipalName$"</Arguments>
           <TimeoutSeconds>300</TimeoutSeconds>
         </DataSource>
       </Discovery>

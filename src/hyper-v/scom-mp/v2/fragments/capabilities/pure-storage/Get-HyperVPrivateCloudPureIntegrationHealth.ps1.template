@@ -38,12 +38,12 @@ function Get-HcsParentValue {
     return ''
 }
 
-function Get-HcsClassObjects {
+function Get-HcsClassObject {
     param($ManagementGroup, $ManagementPack, [string]$ClassName)
     return @($ManagementGroup.GetMonitoringObjects($ManagementGroup.GetMonitoringClass($ClassName, $ManagementPack)))
 }
 
-function ConvertTo-HcsIdentifiers {
+function ConvertTo-HcsIdentifier {
     param([string]$Value)
     $result = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach ($match in [regex]::Matches($Value, 'iqn\.[^,;\s]+', 'IgnoreCase')) { [void]$result.Add($match.Value.ToLowerInvariant()) }
@@ -66,25 +66,25 @@ try {
         $storageMp = @($managementGroup.GetManagementPacks('HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
         $hcsIds = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         foreach ($className in @('HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort')) {
-            foreach ($object in (Get-HcsClassObjects $managementGroup $storageMp $className)) {
+            foreach ($object in (Get-HcsClassObject $managementGroup $storageMp $className)) {
                 $property = if ($className.EndsWith('IscsiSession')) { 'InitiatorNodeAddress' } else { 'WWPN' }
-                foreach ($identifier in (ConvertTo-HcsIdentifiers (Get-HcsObjectValue $object $property))) { [void]$hcsIds.Add($identifier) }
+                foreach ($identifier in (ConvertTo-HcsIdentifier (Get-HcsObjectValue $object $property))) { [void]$hcsIds.Add($identifier) }
             }
         }
         $hcsSerials = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-        foreach ($lun in (Get-HcsClassObjects $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit')) {
+        foreach ($lun in (Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit')) {
             $serial = ConvertTo-HcsSerial (Get-HcsObjectValue $lun 'SerialNumber')
             if (-not [string]::IsNullOrWhiteSpace($serial)) { [void]$hcsSerials.Add($serial) }
         }
         $hostMatches = 0
-        foreach ($host in (Get-HcsClassObjects $managementGroup $pureMp 'PureStorage.FlashArray.PureHost')) {
-            if ((Get-HcsParentValue $host 'ArrayId') -ne $ArrayId) { continue }
+        foreach ($pureHost in (Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureHost')) {
+            if ((Get-HcsParentValue $pureHost 'ArrayId') -ne $ArrayId) { continue }
             $matched = $false
-            foreach ($property in @('IQN', 'WWN')) { foreach ($id in (ConvertTo-HcsIdentifiers (Get-HcsObjectValue $host $property))) { if ($hcsIds.Contains($id)) { $matched = $true } } }
+            foreach ($property in @('IQN', 'WWN')) { foreach ($id in (ConvertTo-HcsIdentifier (Get-HcsObjectValue $pureHost $property))) { if ($hcsIds.Contains($id)) { $matched = $true } } }
             if ($matched) { $hostMatches++ }
         }
         $volumeMatches = 0
-        foreach ($volume in (Get-HcsClassObjects $managementGroup $pureMp 'PureStorage.FlashArray.PureVolume')) {
+        foreach ($volume in (Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureVolume')) {
             if ((Get-HcsParentValue $volume 'ArrayId') -ne $ArrayId) { continue }
             if ($hcsSerials.Contains((ConvertTo-HcsSerial (Get-HcsObjectValue $volume 'Serial')))) { $volumeMatches++ }
         }
@@ -106,4 +106,4 @@ catch {
 
 $bag.AddValue('PureIntegrationState', $state)
 $bag.AddValue('PureIntegrationStateDetail', $detail)
-$bag
+$api.Return($bag)

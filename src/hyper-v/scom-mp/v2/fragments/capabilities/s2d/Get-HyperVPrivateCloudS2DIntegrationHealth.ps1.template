@@ -48,4 +48,4 @@ catch {
 
 $bag.AddValue('S2DIntegrationState', $state)
 $bag.AddValue('S2DIntegrationStateDetail', $detail)
-$bag
+$api.Return($bag)

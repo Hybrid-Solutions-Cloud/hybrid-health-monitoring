@@ -39,6 +39,56 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $script:Library.SelectSingleNode("//DisplayString[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Service']/Name").InnerText | Should -Be 'Hyper-V Private Cloud'
     }
 
+    It 'executes every first-party workflow through the public PowerShell 7 command-executor boundary' {
+        $discoveryProvider = $script:Library.SelectSingleNode("//DataSourceModuleType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.DiscoveryProvider']")
+        $propertyBagProbe = $script:Library.SelectSingleNode("//ProbeActionModuleType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.PropertyBagProbe']")
+        $writeAction = $script:Library.SelectSingleNode("//WriteActionModuleType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.WriteAction']")
+        $discoveryProvider.SelectSingleNode('.//DataSource').TypeID | Should -Be 'System!System.CommandExecuterDiscoveryDataSource'
+        $propertyBagProbe.SelectSingleNode('.//ProbeAction').TypeID | Should -Be 'System!System.CommandExecuterProbePropertyBagBase'
+        $writeAction.SelectSingleNode('.//WriteAction').TypeID | Should -Be 'System!System.CommandExecuter'
+        foreach ($module in @($discoveryProvider, $propertyBagProbe, $writeAction)) {
+            $module.SelectSingleNode('.//ApplicationName').InnerText | Should -Be '%ProgramFiles%\PowerShell\7\pwsh.exe'
+            $module.SelectSingleNode('.//CommandLine').InnerText | Should -Match '-NoProfile -NonInteractive.+-File'
+        }
+
+        $artifactText = (Get-ChildItem -LiteralPath $script:Output -Filter '*.xml' | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+        $artifactText | Should -Not -Match 'Microsoft\.Windows\.(TimedPowerShell|PowerShellPropertyBag|PowerShellWriteAction)'
+        foreach ($scriptBody in @($script:Discovery.SelectNodes('//ScriptBody')) + @($script:Monitoring.SelectNodes('//ScriptBody')) + @(
+                $script:ClusterCapability.SelectNodes('//ScriptBody')) + @($script:StorageCapability.SelectNodes('//ScriptBody')) + @(
+                $script:S2DCapability.SelectNodes('//ScriptBody')) + @($script:PureCapability.SelectNodes('//ScriptBody')) + @(
+                $script:FileServicesCapability.SelectNodes('//ScriptBody')) + @($script:PhysicalNetworkCapability.SelectNodes('//ScriptBody')) + @(
+                $script:NetworkAtcCapability.SelectNodes('//ScriptBody')) + @($script:SdnCapability.SelectNodes('//ScriptBody')) + @(
+                $script:VmmCapability.SelectNodes('//ScriptBody'))) {
+            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $scriptBody.InnerText | Should -Match 'Set-StrictMode -Version Latest'
+            if ($scriptBody.ParentNode.ScriptName -notlike '*DiagnosticSummary*') {
+                $scriptBody.InnerText | Should -Match '\$api\.Return\('
+            }
+            $tokens = $null
+            $parseErrors = $null
+            $ast = [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors)
+            @($parseErrors).Count | Should -Be 0
+            $declaredParameters = @($ast.ParamBlock.Parameters.Name.VariablePath.UserPath | Sort-Object -Unique)
+            $argumentText = [string]$scriptBody.ParentNode.Arguments
+            $suppliedParameters = @([regex]::Matches($argumentText, '(?:^|\s)-(?<name>[A-Za-z][A-Za-z0-9_]*)\s+"') | ForEach-Object { $_.Groups['name'].Value } | Sort-Object -Unique)
+            $suppliedParameters | Should -Be $declaredParameters
+        }
+
+        $diagnosticScript = $script:Monitoring.SelectSingleNode("//ScriptBody[contains(../ScriptName,'DiagnosticSummary')]").InnerText
+        foreach ($runtimeField in @(
+                'PSEdition',
+                'PowerShellVersion',
+                'PowerShellProcessPath',
+                'PowerShellHome',
+                'AutomationAssemblyLocation',
+                'AutomationAssemblyVersion',
+                'Is64BitProcess')) {
+            $diagnosticScript | Should -Match ([regex]::Escape($runtimeField))
+        }
+        $script:Monitoring.SelectSingleNode("//DisplayString[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task']/Name").InnerText |
+            Should -Be 'Collect Hyper-V diagnostic and PowerShell runtime summary'
+    }
+
     It 'defines the complete required Distributed Application branch contract' {
         $required = @('ManagementComponent', 'ComputeComponent', 'VirtualMachineComponent', 'AvailabilityComponent', 'StorageComponent', 'NetworkComponent', 'MonitoringComponent')
         $classIds = @($script:Library.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType') | ForEach-Object ID)
@@ -410,11 +460,11 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         @($script:S2DCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 7
         foreach ($discovery in $script:S2DCapability.SelectNodes('//Discovery')) {
             [string]$discovery.Target | Should -BeLike 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.*'
-            $discovery.SelectSingleNode('.//Parameter[Name="ComputerName"]/Value').InnerText | Should -Match 'Microsoft.Windows.Computer'
-            $discovery.SelectSingleNode('.//Parameter[Name="UniqueId"]/Value').InnerText | Should -Match 'UniqueID'
+            $discovery.SelectSingleNode('.//Arguments').InnerText | Should -Match '-ComputerName ".*Microsoft.Windows.Computer'
+            $discovery.SelectSingleNode('.//Arguments').InnerText | Should -Match '-UniqueId ".*UniqueID'
         }
-        $script:S2DCapability.SelectSingleNode("//Discovery[contains(@ID,'Volume.Relationship')]//Parameter[Name='ParentDiskUniqueId']/Value").InnerText | Should -Match 'Windows.Disk'
-        $script:S2DCapability.SelectSingleNode("//Discovery[contains(@ID,'FileShare.Relationship')]//Parameter[Name='ParentVolumeUniqueId']/Value").InnerText | Should -Match 'Windows.Volume'
+        $script:S2DCapability.SelectSingleNode("//Discovery[contains(@ID,'Volume.Relationship')]//Arguments").InnerText | Should -Match '-ParentDiskUniqueId ".*Windows.Disk'
+        $script:S2DCapability.SelectSingleNode("//Discovery[contains(@ID,'FileShare.Relationship')]//Arguments").InnerText | Should -Match '-ParentVolumeUniqueId ".*Windows.Volume'
     }
 
     It 'adds only HCS integration coverage and authoritative Microsoft S2D health rollups' {

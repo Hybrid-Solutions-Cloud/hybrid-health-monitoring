@@ -42,7 +42,7 @@ function Get-HcsParentValue {
     return ''
 }
 
-function Get-HcsClassObjects {
+function Get-HcsClassObject {
     param($ManagementGroup, $ManagementPack, [string]$ClassName)
     $class = $ManagementGroup.GetMonitoringClass($ClassName, $ManagementPack)
     return @($ManagementGroup.GetMonitoringObjects($class))
@@ -88,13 +88,13 @@ try {
         $libraryMp = @($managementGroup.GetManagementPacks('HybridSolutionsCloud.HyperVPrivateCloud.Library') | Sort-Object Version -Descending)[0]
         $storageMp = @($managementGroup.GetManagementPacks('HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
 
-        $hostRoles = Get-HcsClassObjects $managementGroup $libraryMp 'HybridSolutionsCloud.HyperVPrivateCloud.HostRole'
-        $logicalUnits = Get-HcsClassObjects $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit'
-        $iscsiSessions = Get-HcsClassObjects $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession'
-        $fcPorts = Get-HcsClassObjects $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort'
-        $pureHosts = Get-HcsClassObjects $managementGroup $pureMp 'PureStorage.FlashArray.PureHost'
-        $pureVolumes = Get-HcsClassObjects $managementGroup $pureMp 'PureStorage.FlashArray.PureVolume'
-        $purePorts = Get-HcsClassObjects $managementGroup $pureMp 'PureStorage.FlashArray.PurePort'
+        $hostRoles = Get-HcsClassObject $managementGroup $libraryMp 'HybridSolutionsCloud.HyperVPrivateCloud.HostRole'
+        $logicalUnits = Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit'
+        $iscsiSessions = Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession'
+        $fcPorts = Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort'
+        $pureHosts = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureHost'
+        $pureVolumes = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureVolume'
+        $purePorts = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PurePort'
 
         $hostByPrincipal = @{}
         foreach ($hostRole in $hostRoles) {
@@ -179,7 +179,7 @@ try {
                 Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort']$" $storage $portInstance
             }
         }
-        $script:DiscoveryData
+        $api.Return($script:DiscoveryData)
     }
     finally { $managementGroup.Dispose() }
 }

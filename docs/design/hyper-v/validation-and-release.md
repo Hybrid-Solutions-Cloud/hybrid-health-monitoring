@@ -27,6 +27,14 @@ proves configuration parameters or workflow properties exist. It also checks ali
 scoping, shared-data-source cookdown values, independent customer/product versions, schema and
 capability rejection, cross-unsealed-MP group rejection, UTF-8 without BOM, and Default MP absence.
 
+The core Library now defines public command-executor wrappers that launch
+`%ProgramFiles%\PowerShell\7\pwsh.exe` explicitly. Static tests prove that every first-party script
+declares PowerShell 7 and strict mode, every discovery/property-bag workflow returns native SCOM
+data, and no legacy in-process Microsoft PowerShell workflow type remains. This resolves the
+authoring-host design question; it does not prove agent runtime. The diagnostic task must be run
+through HealthService in each claimed lane and its process, edition, version, home, automation
+assembly, and bitness fields retained with the release evidence.
+
 ## Validation layers
 
 ```mermaid
@@ -87,6 +95,7 @@ flowchart LR
 | VM lifecycle | Create, rename, start, stop, save, pause, checkpoint, move, remove, and restore |
 | Cluster lifecycle | Join, drain, pause, failover, node loss, quorum/witness change, and rolling update |
 | Monitoring | Agent loss, workflow timeout, access denied, stale data, bad output, and recovery |
+| PowerShell host | Correct MSI path and Core edition, missing/relocated executable, timeout, malformed output, module compatibility, and recovery |
 | Scale | Empty, typical, supported maximum, and limit-exceeded fixtures |
 
 Research validation defines the exact supported matrix. A topology not represented by a repeatable fixture
@@ -177,6 +186,8 @@ rollback. Microsoft documents dependency and removal constraints in
 - All proposed Hyper-V ADRs required by the release are accepted.
 - The support matrix and monitoring catalog contain evidence for every enabled workflow.
 - No unresolved schema, reference, best-practice, security, or secret-scan findings remain.
+- The diagnostic task proves the explicit PowerShell 7 runtime path and engine in every supported
+  SCOM/Windows Server lane, and every enabled capability module works in that process.
 - Discovery converges correctly for every supported topology and lifecycle transition.
 - Health and alerts open, roll up, suppress, recover, and close as designed.
 - DA membership, branch health, diagram/state views, reports, dashboards, and SLO targets pass.
