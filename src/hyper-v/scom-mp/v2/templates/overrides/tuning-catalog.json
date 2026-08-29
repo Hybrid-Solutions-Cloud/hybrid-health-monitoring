@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "2.0",
+  "product": "Hyper-V Private Cloud Monitoring",
+  "references": [
+    { "alias": "System", "id": "System.Library", "version": "7.5.8501.0", "publicKeyToken": "31bf3856ad364e35" },
+    { "alias": "Windows", "id": "Microsoft.Windows.Library", "version": "7.5.8501.0", "publicKeyToken": "31bf3856ad364e35" },
+    { "alias": "SC", "id": "Microsoft.SystemCenter.Library", "version": "7.0.8433.0", "publicKeyToken": "31bf3856ad364e35" },
+    { "alias": "InstanceGroup", "id": "Microsoft.SystemCenter.InstanceGroup.Library", "version": "7.5.8501.0", "publicKeyToken": "31bf3856ad364e35" },
+    { "alias": "Pure", "id": "PureStorageFlashArray", "version": "2.0.120.0", "publicKeyToken": "a9d994eedb5e7179" },
+    { "alias": "S2D", "id": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect", "version": "1.0.0.0", "publicKeyToken": "31bf3856ad364e35" },
+    { "alias": "VMMDiscovery", "id": "Microsoft.SystemCenter.VirtualMachineManager.Discovery", "version": "11.19.0.3", "publicKeyToken": "31bf3856ad364e35" },
+    { "alias": "HCSV2Library", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Library", "versionSource": "product" },
+    { "alias": "HCSV2Discovery", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Discovery", "versionSource": "product" },
+    { "alias": "HCSV2Monitoring", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring", "versionSource": "product" },
+    { "alias": "HCSV2Cluster", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster", "versionSource": "product" },
+    { "alias": "HCSV2Storage", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage", "versionSource": "product" },
+    { "alias": "HCSV2PureStorage", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage", "versionSource": "product" },
+    { "alias": "HCSV2S2D", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D", "versionSource": "product" },
+    { "alias": "HCSV2FileServices", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices", "versionSource": "product" },
+    { "alias": "HCSV2NetworkATC", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC", "versionSource": "product" },
+    { "alias": "HCSV2PhysicalNetwork", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork", "versionSource": "product" },
+    { "alias": "HCSV2SDN", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN", "versionSource": "product" },
+    { "alias": "HCSV2VMM", "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM", "versionSource": "product" }
+  ],
+  "targetSets": [
+    {
+      "id": "Core.SeedDiscovery", "capability": "Core", "kind": "Discovery",
+      "targets": [
+        { "id": "HostRoleSeed", "workflowRef": "HCSV2Discovery", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole.Seed.Discovery", "contextRef": "Windows", "contextClassId": "Microsoft.Windows.Server.OperatingSystem", "module": "RegistrySeed" }
+      ]
+    },
+    {
+      "id": "Core.TopologyDiscovery", "capability": "Core", "kind": "Discovery",
+      "targets": [
+        { "id": "Topology", "workflowRef": "HCSV2Discovery", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Topology.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }
+      ]
+    },
+    {
+      "id": "Core.HostMonitors", "capability": "Core", "kind": "Monitor",
+      "targets": [
+        { "id": "HostCheckpoints", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Checkpoints.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostCpu", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Cpu.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostHypervisor", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Hypervisor.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostMemory", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Memory.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostPaging", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Paging.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostPipeline", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Pipeline.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostPowerShell", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.PowerShell.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostReplication", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Replication.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostStorageAttachments", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.StorageAttachments.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostVirtualMachines", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualMachines.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostVirtualSwitches", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualSwitches.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostVmCompute", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.VmCompute.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "HostVMMS", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.VMMS.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" }
+      ]
+    },
+    {
+      "id": "Core.VmMonitors", "capability": "Core", "kind": "Monitor",
+      "targets": [
+        { "id": "VmAvailability", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Availability.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmCheckpoints", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Checkpoints.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmHeartbeat", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Heartbeat.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmIntegrationServices", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.IntegrationServices.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmMemoryPressure", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.MemoryPressure.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmNetwork", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Network.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmPipeline", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Pipeline.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmReplication", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Replication.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" },
+        { "id": "VmStorage", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.VmRuntime.Storage.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime" }
+      ]
+    },
+    {
+      "id": "Core.Performance.DefaultOn", "capability": "Core", "kind": "Rule",
+      "targets": [
+        { "id": "AvailableMemory", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.AvailableMemory.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "Cpu", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.Cpu.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "DynamicMemoryAvailable", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.DynamicMemoryAvailable.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "NetworkBytes", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.NetworkBytes.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "PagesInput", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.PagesInput.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "PhysicalDiskReadLatency", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadLatency.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "PhysicalDiskWriteLatency", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteLatency.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "VirtualProcessor", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualProcessor.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" }
+      ]
+    },
+    {
+      "id": "Core.Performance.Optional", "capability": "Core", "kind": "Rule",
+      "targets": [
+        { "id": "PhysicalDiskReadQueue", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskReadQueue.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "PhysicalDiskWriteQueue", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.PhysicalDiskWriteQueue.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "RootVirtualProcessor", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.RootVirtualProcessor.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" },
+        { "id": "VirtualNetworkBytes", "workflowRef": "HCSV2Monitoring", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Host.VirtualNetworkBytes.Collection.Rule", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "Performance" }
+      ]
+    },
+    { "id": "Cluster.Discovery", "capability": "Cluster", "kind": "Discovery", "targets": [{ "id": "Relationships", "workflowRef": "HCSV2Cluster", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.Relationship.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
+    { "id": "Cluster.Monitors", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2Cluster", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.IntegrationHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" }] },
+    { "id": "FileServices.Discovery", "capability": "FileServices", "kind": "Discovery", "targets": [{ "id": "Topology", "workflowRef": "HCSV2FileServices", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
+    { "id": "FileServices.Monitors", "capability": "FileServices", "kind": "Monitor", "targets": [{ "id": "Health", "workflowRef": "HCSV2FileServices", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" }] },
+    { "id": "NetworkATC.Discovery", "capability": "NetworkATC", "kind": "Discovery", "targets": [{ "id": "Topology", "workflowRef": "HCSV2NetworkATC", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
+    {
+      "id": "NetworkATC.Monitors", "capability": "NetworkATC", "kind": "Monitor",
+      "targets": [
+        { "id": "AdapterReadiness", "workflowRef": "HCSV2NetworkATC", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.AdapterReadiness.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
+        { "id": "CapabilityHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.CapabilityHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "GlobalConfigurationHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationHealth.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus" },
+        { "id": "IntentHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.IntentHealth.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" }
+      ]
+    },
+    { "id": "PhysicalNetwork.Discovery", "capability": "PhysicalNetwork", "kind": "Discovery", "targets": [{ "id": "Relationships", "workflowRef": "HCSV2PhysicalNetwork", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.Relationship.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
+    { "id": "PhysicalNetwork.Monitors", "capability": "PhysicalNetwork", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2PhysicalNetwork", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" }] },
+    { "id": "PureStorage.Discovery", "capability": "PureStorage", "kind": "Discovery", "targets": [{ "id": "Correlation", "workflowRef": "HCSV2PureStorage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.Correlation.Discovery", "contextRef": "Pure", "contextClassId": "PureStorage.FlashArray.PureArray", "module": "PowerShellDiscovery" }] },
+    { "id": "PureStorage.Monitors", "capability": "PureStorage", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2PureStorage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor", "contextRef": "Pure", "contextClassId": "PureStorage.FlashArray.PureArray" }] },
+    {
+      "id": "S2D.Discovery", "capability": "S2D", "kind": "Discovery",
+      "targets": [
+        { "id": "FileShare", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.FileShare.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.FileShare", "module": "PowerShellDiscovery" },
+        { "id": "PhysicalDisk", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.PhysicalDisk.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.PhysicalDisk", "module": "PowerShellDiscovery" },
+        { "id": "StorageNode", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageNode.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageNode", "module": "PowerShellDiscovery" },
+        { "id": "StoragePool", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StoragePool.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StoragePool", "module": "PowerShellDiscovery" },
+        { "id": "StorageSubSystem", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageSubSystem.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem", "module": "PowerShellDiscovery" },
+        { "id": "VirtualDisk", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.VirtualDisk.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.VirtualDisk", "module": "PowerShellDiscovery" },
+        { "id": "Volume", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.Volume.Relationship.Discovery", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.Volume", "module": "PowerShellDiscovery" }
+      ]
+    },
+    { "id": "S2D.Monitors", "capability": "S2D", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2S2D", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem" }] },
+    { "id": "SDN.Discovery", "capability": "SDN", "kind": "Discovery", "targets": [{ "id": "Relationships", "workflowRef": "HCSV2SDN", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.Relationship.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
+    { "id": "SDN.Monitors", "capability": "SDN", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2SDN", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" }] },
+    { "id": "Storage.Discovery", "capability": "Storage", "kind": "Discovery", "targets": [{ "id": "Topology", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.Topology.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
+    {
+      "id": "Storage.Monitors", "capability": "Storage", "kind": "Monitor",
+      "targets": [
+        { "id": "AttachmentAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.AttachmentAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment" },
+        { "id": "AttachmentRedundancy", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.AttachmentRedundancy.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment" },
+        { "id": "FibreChannelPortAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPortAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort" },
+        { "id": "IntegrationHealth", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IntegrationHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" },
+        { "id": "IscsiSessionAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSessionAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession" }
+      ]
+    },
+    {
+      "id": "Storage.RedundancyMonitors", "capability": "Storage", "kind": "Monitor",
+      "targets": [
+        { "id": "AttachmentAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.AttachmentAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment" },
+        { "id": "AttachmentRedundancy", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.AttachmentRedundancy.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment" },
+        { "id": "FibreChannelPortAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPortAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort" },
+        { "id": "IscsiSessionAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSessionAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession" }
+      ]
+    },
+    {
+      "id": "VMM.Discovery", "capability": "VMM", "kind": "Discovery",
+      "targets": [
+        { "id": "CloudRelationships", "workflowRef": "HCSV2VMM", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Cloud.Relationship.Discovery", "contextRef": "VMMDiscovery", "contextClassId": "Microsoft.SystemCenter.VirtualMachineManager.Discovery.PrivateCloud", "module": "PowerShellDiscovery" },
+        { "id": "Fabric", "workflowRef": "HCSV2VMM", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Fabric.Discovery", "contextRef": "VMMDiscovery", "contextClassId": "Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMMManagementServer", "module": "PowerShellDiscovery" },
+        { "id": "HostRelationships", "workflowRef": "HCSV2VMM", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Host.Relationship.Discovery", "contextRef": "VMMDiscovery", "contextClassId": "Microsoft.SystemCenter.VirtualMachineManager.Discovery.HyperVHost", "module": "PowerShellDiscovery" }
+      ]
+    },
+    {
+      "id": "VMM.Monitors", "capability": "VMM", "kind": "Monitor",
+      "targets": [
+        { "id": "FailedJobs", "workflowRef": "HCSV2VMM", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor", "contextRef": "VMMDiscovery", "contextClassId": "Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMMManagementServer" },
+        { "id": "IntegrationHealth", "workflowRef": "HCSV2VMM", "workflowId": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor", "contextRef": "VMMDiscovery", "contextClassId": "Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMMManagementServer" }
+      ]
+    }
+  ],
+  "settings": [
+    { "id": "Core.Seed.Frequency", "targetSet": "Core.SeedDiscovery", "type": "Configuration", "parameter": "Frequency", "values": { "Lab": 3600, "Standard": 14400, "Strict": 7200 } },
+    { "id": "Core.Topology.Interval", "targetSet": "Core.TopologyDiscovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "Core.Host.Interval", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "Core.Host.CpuWarning", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "CpuWarningPercent", "values": { "Lab": 85, "Standard": 80, "Strict": 75 } },
+    { "id": "Core.Host.CpuCritical", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "CpuCriticalPercent", "values": { "Lab": 95, "Standard": 90, "Strict": 85 } },
+    { "id": "Core.Host.MemoryWarning", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "MemoryWarningMB", "values": { "Lab": 2048, "Standard": 4096, "Strict": 8192 } },
+    { "id": "Core.Host.MemoryCritical", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "MemoryCriticalMB", "values": { "Lab": 1024, "Standard": 2048, "Strict": 4096 } },
+    { "id": "Core.Host.PagingWarning", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "PagesInputWarningPerSecond", "values": { "Lab": 10, "Standard": 5, "Strict": 2 } },
+    { "id": "Core.Host.PagingCritical", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "PagesInputCriticalPerSecond", "values": { "Lab": 40, "Standard": 20, "Strict": 10 } },
+    { "id": "Core.Host.CheckpointWarning", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "CheckpointWarningHours", "values": { "Lab": 336, "Standard": 168, "Strict": 72 } },
+    { "id": "Core.Host.CheckpointCritical", "targetSet": "Core.HostMonitors", "type": "Configuration", "parameter": "CheckpointCriticalHours", "values": { "Lab": 720, "Standard": 336, "Strict": 168 } },
+    { "id": "Core.Vm.Interval", "targetSet": "Core.VmMonitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "Core.Vm.CheckpointWarning", "targetSet": "Core.VmMonitors", "type": "Configuration", "parameter": "CheckpointWarningHours", "values": { "Lab": 336, "Standard": 168, "Strict": 72 } },
+    { "id": "Core.Vm.CheckpointCritical", "targetSet": "Core.VmMonitors", "type": "Configuration", "parameter": "CheckpointCriticalHours", "values": { "Lab": 720, "Standard": 336, "Strict": 168 } },
+    { "id": "Core.Performance.DefaultOn.Frequency", "targetSet": "Core.Performance.DefaultOn", "type": "Configuration", "parameter": "Frequency", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "Core.Performance.DefaultOn.Enabled", "targetSet": "Core.Performance.DefaultOn", "type": "Property", "property": "Enabled", "values": { "Lab": true, "Standard": true, "Strict": true } },
+    { "id": "Core.Performance.Optional.Frequency", "targetSet": "Core.Performance.Optional", "type": "Configuration", "parameter": "Frequency", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "Core.Performance.Optional.Enabled", "targetSet": "Core.Performance.Optional", "type": "Property", "property": "Enabled", "values": { "Lab": true, "Standard": false, "Strict": false } },
+    { "id": "Cluster.Discovery.Interval", "targetSet": "Cluster.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "Cluster.Monitor.Interval", "targetSet": "Cluster.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "FileServices.Discovery.Interval", "targetSet": "FileServices.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "FileServices.Monitor.Interval", "targetSet": "FileServices.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "FileServices.Monitor.RequireRdma", "targetSet": "FileServices.Monitors", "type": "Configuration", "parameter": "RequireRdma", "values": { "Lab": false, "Standard": true, "Strict": true } },
+    { "id": "NetworkATC.Discovery.Interval", "targetSet": "NetworkATC.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "NetworkATC.Monitor.Interval", "targetSet": "NetworkATC.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "NetworkATC.Monitor.Required", "targetSet": "NetworkATC.Monitors", "type": "Configuration", "parameter": "RequireNetworkATC", "values": { "Lab": true, "Standard": true, "Strict": true } },
+    { "id": "NetworkATC.Monitor.RequireRdma", "targetSet": "NetworkATC.Monitors", "type": "Configuration", "parameter": "RequireRdmaForStorage", "values": { "Lab": false, "Standard": true, "Strict": true } },
+    { "id": "NetworkATC.Monitor.Transition", "targetSet": "NetworkATC.Monitors", "type": "Configuration", "parameter": "MaxTransitionalMinutes", "values": { "Lab": 60, "Standard": 30, "Strict": 15 } },
+    { "id": "PhysicalNetwork.Discovery.Interval", "targetSet": "PhysicalNetwork.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "PhysicalNetwork.Monitor.Interval", "targetSet": "PhysicalNetwork.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "PureStorage.Discovery.Interval", "targetSet": "PureStorage.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "PureStorage.Monitor.Interval", "targetSet": "PureStorage.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 900, "Strict": 600 } },
+    { "id": "S2D.Discovery.Interval", "targetSet": "S2D.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "S2D.Monitor.Interval", "targetSet": "S2D.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "SDN.Discovery.Interval", "targetSet": "SDN.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "SDN.Monitor.Interval", "targetSet": "SDN.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "SDN.Monitor.Required", "targetSet": "SDN.Monitors", "type": "Configuration", "parameter": "RequireSDN", "values": { "Lab": true, "Standard": true, "Strict": true } },
+    { "id": "Storage.Discovery.Interval", "targetSet": "Storage.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "Storage.Monitor.Interval", "targetSet": "Storage.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "Storage.Monitor.MinimumPaths", "targetSet": "Storage.RedundancyMonitors", "type": "Configuration", "parameter": "MinimumPathCount", "values": { "Lab": 1, "Standard": 2, "Strict": 2 } },
+    { "id": "VMM.Discovery.Interval", "targetSet": "VMM.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 300, "Standard": 1800, "Strict": 900 } },
+    { "id": "VMM.Monitor.Interval", "targetSet": "VMM.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
+    { "id": "VMM.Monitor.Lookback", "targetSet": "VMM.Monitors", "type": "Configuration", "parameter": "JobLookbackHours", "values": { "Lab": 4, "Standard": 24, "Strict": 48 } },
+    { "id": "VMM.Monitor.FailedJobCount", "targetSet": "VMM.Monitors", "type": "Configuration", "parameter": "FailedJobCriticalCount", "values": { "Lab": 5, "Standard": 1, "Strict": 1 } }
+  ],
+  "tierDefaults": {
+    "Standard": {
+      "groups": [
+        { "id": "AllHosts", "kind": "Monitoring", "displayName": "All Hyper-V private-cloud hosts", "memberClassRef": "HCSV2Library", "memberClassId": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole" }
+      ],
+      "targeting": [
+        { "targetSet": "Core.HostMonitors", "type": "group", "groupRef": "AllHosts" },
+        { "targetSet": "Core.Performance.DefaultOn", "type": "group", "groupRef": "AllHosts" },
+        { "targetSet": "Core.Performance.Optional", "type": "group", "groupRef": "AllHosts" }
+      ]
+    }
+  }
+}

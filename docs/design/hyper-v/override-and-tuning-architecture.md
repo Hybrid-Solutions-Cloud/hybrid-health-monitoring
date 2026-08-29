@@ -10,8 +10,10 @@ sealed Management Packs after import and never stores customer changes in the De
 Pack. Customers own two unsealed override Management Packs so discovery policy and monitoring
 policy can be serviced independently.
 
-This page is a proposed design contract. Exact workflow IDs, parameter names, defaults, and safe
-ranges remain evidence-gated until ADR 0027 and the monitoring catalog are accepted.
+The preview and v2 products have separate immutable namespaces. The current v2 implementation is
+the `HybridSolutionsCloud.HyperVPrivateCloud` schema described below; preview override sources stay
+available only for compatibility and migration testing. Candidate tuning values remain subject to
+representative-lab evidence before production release.
 
 ## Artifact boundary
 
@@ -23,10 +25,10 @@ ranges remain evidence-gated until ADR 0027 and the monitoring catalog are accep
 | Customer Monitoring Overrides | Customer-owned unsealed `.xml` | Monitor/rule enablement, thresholds, timing, alerts, collection, and monitoring-targeting groups | Discovery overrides |
 | Lab, Standard, and Strict templates | Product-maintained public examples, not imported product dependencies | Reviewed starter values and a manifest of the settings they change | Customer names, credentials, destinations, or undisclosed active policy |
 
-Recommended customer-owned Management Pack IDs are:
+The v2 generator uses these customer-owned Management Pack IDs:
 
-- `<Organization>.HybridSolutionsCloud.HyperV.Discovery.Overrides`; and
-- `<Organization>.HybridSolutionsCloud.HyperV.Monitoring.Overrides`.
+- `<Organization>.HyperVPrivateCloud.Overrides.<DeploymentProfile>.<Tier>.Discovery`; and
+- `<Organization>.HyperVPrivateCloud.Overrides.<DeploymentProfile>.<Tier>.Monitoring`.
 
 The organization prefix makes ownership clear and prevents a customer file from appearing to be a
 signed product artifact. The display name can use the organization's normal naming convention.
@@ -125,18 +127,41 @@ library would have to be sealed and is not part of the initial product design.
 | Standard | Typical production starting point | Evidence-backed product defaults with only documented, broadly applicable adjustments |
 | Strict | Explicitly designated critical services | More sensitive or frequent policy only where evidence, response capacity, and noise testing justify it |
 
-Each profile is delivered as public documentation, a machine-readable setting manifest, generated
-examples, and optional first-party unsealed profile MPs. Customer mode assigns organization-owned
-IDs and display names. Public-profile mode assigns product-owned profile IDs so the reviewed packs
-can be distributed with a release. Import only one profile for a product and environment; later
-adjustments belong in customer-owned overrides.
+Each profile is delivered as public documentation, an explicit machine-readable tuning catalog,
+generated examples, and first-party unsealed profile MPs in the release. Customer mode assigns
+organization-owned IDs and display names. Public-profile mode assigns HCS profile IDs so reviewed
+packs can be packaged with a release. Import exactly one deployment-profile/tier pair for an
+environment; later adjustments belong in customer-owned overrides.
+
+### Deployment profiles
+
+| Profile | Capability composition |
+|---|---|
+| `Standalone` | Core only |
+| `ClusteredSAN` | Cluster and common SAN storage |
+| `ClusteredPure` | Cluster, common SAN storage, and Pure Storage |
+| `ClusteredS2D` | Cluster and S2D |
+| `HybridSANAndS2D` | Cluster, common SAN storage, and S2D |
+| `HybridPureAndS2D` | Cluster, common SAN storage, Pure Storage, and S2D |
+| `HyperVOverSMB` | Cluster and File Services/SMB |
+| `NetworkATC` | Network ATC |
+| `VMMManaged` | VMM |
+| `SDNEnabled` | SDN |
+| `CompletePrivateCloud` | All nine optional capabilities |
+
+The four required core MPs are implicit in every profile. A generated override MP references only
+the core and capability MPs used by that profile, plus exact external context libraries required
+by its override targets. Detecting both SAN and S2D, or multiple networking authorities at
+different layers, does not disable either selected capability.
 
 ### Profile schema
 
-Schema `1.2` makes every monitoring target explicit. Each target declares its complete `monitorId`
-and `contextClassId`; the generator does not construct either value from naming conventions.
-Discovery settings likewise declare their workflow, context class, and module. The generator
-rejects unknown schema versions before producing output.
+Catalog schema `2.0` makes every target explicit. Each target declares its complete `workflowRef`,
+`workflowId`, `contextRef`, `contextClassId`, and—where applicable—local module ID. The generator
+does not construct workflow or class IDs from naming conventions. Settings name an explicit target
+set and supply reviewed Lab, Standard, and Strict values. The generator rejects unknown catalog or
+custom-profile schemas, unknown capabilities, missing tier values, duplicate aliases, and invalid
+targeting before producing output.
 
 The generated override MP has two independent version facts:
 
@@ -154,11 +179,32 @@ settings. Templates never contain credentials, notification endpoints, Run As as
 company-specific groups.
 
 The committed `.xml.example` files are generated artifacts, not hand-maintained samples. Run
-`src/hyper-v/scom-mp/tools/Update-HyperVOverrideExamples.ps1` after changing the generator or a
-profile. CI runs the same tool with `-Check` and rejects any example that is not byte-identical to
-generator output. Generated examples contain complete override elements and documented placeholder
-tokens for the organization identity, override MP version, sealed product version, and public key
-token.
+`src/hyper-v/scom-mp/v2/tools/Update-HyperVPrivateCloudOverrideExamples.ps1` after changing the
+generator, catalog, or package profile. CI regenerates the entire 66-file matrix in a temporary
+directory and rejects any byte difference. It also builds all 13 product MPs and resolves every
+generated workflow, context, module, property, parameter, and reference. Generated examples use
+`{{VERSION}}`, `{{PRODUCT_VERSION}}`, and `{{PUBLIC_KEY_TOKEN}}`; governed release packaging must
+replace them with the real release identities before publishing import-ready `.xml` files.
+
+Generate a customer-owned pair with:
+
+```powershell
+./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+  -DeploymentProfile ClusteredS2D `
+  -TuningTier Standard `
+  -OrganizationId Contoso `
+  -OrganizationName 'Contoso' `
+  -Version 1.0.0.0 `
+  -ProductVersion 2.0.0.0 `
+  -PublicKeyToken 0123456789abcdef `
+  -OutputPath ./out/contoso-overrides
+```
+
+The Standard public examples include a worked dynamic all-hosts group. It is defined and populated
+inside each Standard Monitoring Overrides MP, then used for core host monitor and performance-rule
+overrides. Custom schema-2.0 profiles may define Discovery and Monitoring groups and map target
+sets to them. Generation fails if the mapping would reference a group in the other unsealed MP,
+matching Microsoft's unsealed-MP reference constraint.
 
 ## Lifecycle rules
 

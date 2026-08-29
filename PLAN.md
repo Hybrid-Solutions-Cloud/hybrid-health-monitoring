@@ -1,6 +1,6 @@
 # Implementation plan — Hybrid Infrastructure Health Monitoring
 
-> Last updated: August 28, 2026
+> Last updated: August 29, 2026
 >
 > Status: Azure Local is under development. The published Hyper-V `0.1` lab preview is a
 > superseded host-centric baseline, not the complete private-cloud monitoring product. Active
@@ -42,19 +42,17 @@ test-sealed binaries.
 | Windows Server SDN | Capability pack authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Microsoft prerequisite setup, topology, certificate/security, controller/gateway fault, coexistence, lifecycle, and removal labs pass |
 | Virtual Machine Manager | VMM 2025 adapter authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Microsoft integration, fabric/host/cloud/logical-network/site/job behavior, outage, coexistence, upgrade, and removal labs pass |
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
-| Customer overrides and deployment profiles | V2 implementation pending | Public Lab, Standard, and Strict Discovery/Monitoring override MPs are generated, validated, documented, and packaged per selected capability set |
+| Customer overrides and deployment profiles | Authored: 11 profiles, three tiers, 66 generated Discovery/Monitoring examples; semantic resolution, drift, cookdown, version separation, invalid-profile, same-MP group, and VSAE gates pass | Governed release packaging emits import-ready XML with the signed product version/token, then representative import/export/upgrade/removal labs pass |
 | Runtime certification | Blocked on representative SCOM labs and the PowerShell execution-host proof | Every embedded script runs under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
 | Governed release and public download | Not started; transient test seals are not release artifacts | Governed signing, clean import, checksums, release notes, migration/rollback/removal guidance, GitHub release assets, and stable site download links are published |
 
 Execute the remaining work in this order:
 
-1. Build composable deployment profiles and public customer-owned override MPs for every supported
-   capability combination and Lab, Standard, and Strict tuning tier.
-2. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
+1. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
    upgrade, migration, coexistence, and removal labs, including the PowerShell execution-host gate.
-3. Seal every release artifact with the governed signing identity, assemble deterministic packages,
+2. Seal every release artifact with the governed signing identity, assemble deterministic packages,
    and verify clean imports into supported SCOM versions.
-4. Publish the release and make it directly consumable from both surfaces:
+3. Publish the release and make it directly consumable from both surfaces:
    - GitHub release assets contain the complete sealed MP bundle, individual sealed MPs, public
      override starter bundles, checksums, release notes, and installation/migration documentation;
    - the documentation site exposes an obvious **Download now** action using a stable `latest`
@@ -679,7 +677,14 @@ versions, cost, and required fixture.
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,
     eight folders, 17 localized views, and a native DA diagram; capability-specific views,
     dashboards, and reports remain.**
-12. Implement composable deployment profiles and corrected override generation.
+12. Implement composable deployment profiles and corrected override generation. **Complete for
+    source and offline verification: schema 2.0 explicitly declares every target; 11 capability
+    profiles and three tiers generate 66 Discovery/Monitoring examples; Standard includes a
+    same-MP group pattern; CI resolves workflows, contexts, modules, properties, parameters, and
+    aliases against all 13 built MPs; version separation, drift, cookdown, unknown schema/
+    capability, cross-MP group rejection, UTF-8, and Default MP gates pass. A generated Standard
+    pair also passes OM2022 VSAE. Import/export/upgrade/removal lab evidence and governed
+    release-identity rendering remain under steps 13–14.**
 13. Run automated verification, representative topology labs, fault injection, performance/scale,
     upgrade/migration, security, and removal tests.
 14. Seal with the governed identity, package, publish checksums and guides, and release only after

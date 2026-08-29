@@ -4,6 +4,8 @@
 
 **Date:** 2026-08-28
 
+**Amended:** 2026-08-29 — align generated overrides with the accepted two-file profile boundary
+
 **Decision owners:** Repository owner and maintainers
 
 **Supersedes for v2:** [ADR 0027](0027-hyper-v-scom-management-pack-decomposition.md)
@@ -56,10 +58,10 @@ populate the appropriate existing DA branch. The required Presentation MP never 
 optional external class.
 
 Generate overrides by **tuning tier plus selected capability set**. Every release includes public,
-unsealed Lab, Standard, and Strict base Discovery/Monitoring overrides. For each selected optional
-capability, the generator emits a separate unsealed capability override MP that references only
-that capability and its required HCS/external libraries. Operators import exactly one tuning tier
-and only the capability overrides matching installed packs. No override targets the Default
+unsealed Lab, Standard, and Strict Discovery/Monitoring pairs for every supported deployment
+profile. Each generated pair references only the core, selected capability, and exact external
+context MPs needed by that profile. Operators import exactly one profile/tier pair. Customer mode
+creates the same two-file boundary with organization-owned IDs. No override targets the Default
 Management Pack.
 
 Publish profile manifests for:
@@ -122,6 +124,9 @@ profile-driven packaging make the larger artifact set operable and testable.
   clear which subset applies to each topology.
 - Release automation must build, verify, seal, checksum, and test every supported profile graph.
 - Public override artifacts are real importable MPs, generated from source and drift-tested.
+- The source tree commits 66 placeholder-bearing examples: 11 profiles times three tiers times
+  separate Discovery and Monitoring MPs. Governed release packaging emits corresponding
+  import-ready XML with real product identity values.
 - The website's latest download must provide both the complete bundle and profile-specific import
   instructions; it must not label an incomplete subset as the complete product.
 

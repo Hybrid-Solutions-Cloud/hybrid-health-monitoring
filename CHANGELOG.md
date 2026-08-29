@@ -26,6 +26,10 @@
 
 ### Added
 
+* Add the Hyper-V Private Cloud Monitoring v2 override system: 11 composable deployment profiles,
+  Lab/Standard/Strict tiers, 66 generated Discovery/Monitoring examples, explicit workflow and
+  context schema, independent customer/product versions, same-MP group targeting, semantic and
+  drift tests, cookdown checks, invalid-profile rejection, and Microsoft VSAE verification.
 * Add the Hyper-V v2 VMM 2025 capability against the exact shipped Microsoft VMM MP identities,
   with a VMM-fabric Distributed Application root, exact server/host/cloud relationships, missing
   logical-network and network-site projections, read-only failed-job monitoring, targeted service

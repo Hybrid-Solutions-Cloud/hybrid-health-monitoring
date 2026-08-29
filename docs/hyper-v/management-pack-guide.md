@@ -292,8 +292,8 @@ Create two unsealed Management Packs in the Operations console:
 
 | Customer-owned MP | Stores |
 |---|---|
-| `<Organization>.HybridSolutionsCloud.HyperV.Discovery.Overrides` | Discovery enablement, schedules, timeouts, supported scope settings, and discovery-targeting groups |
-| `<Organization>.HybridSolutionsCloud.HyperV.Monitoring.Overrides` | Monitor/rule enablement, thresholds, timing, alerts, collection settings, and monitoring-targeting groups |
+| `<Organization>.HyperVPrivateCloud.Overrides.<DeploymentProfile>.<Tier>.Discovery` | Discovery schedules, supported scope settings, and discovery-targeting groups |
+| `<Organization>.HyperVPrivateCloud.Overrides.<DeploymentProfile>.<Tier>.Monitoring` | Monitor/rule thresholds, timing, enablement, collection settings, and monitoring-targeting groups |
 
 In the Administration workspace, right-click **Management Packs**, select **Create Management
 Pack**, and assign the organization's approved ID, display name, version, and description. The
@@ -340,32 +340,52 @@ destination MP. Do not use a console shortcut that obscures where the change is 
 
 ## Choose a tuning template
 
+First select the deployment profile whose capabilities exactly match the sealed packs being
+installed. Profiles range from `Standalone` through cluster/SAN/Pure/S2D/SMB, Network ATC, SDN,
+VMM, and `CompletePrivateCloud`; the complete composition table is in the
+[override architecture](../design/hyper-v/override-and-tuning-architecture.md#deployment-profiles).
+Then select one tuning tier:
+
 | Profile | Choose it when | Do not choose it when |
 |---|---|---|
 | Lab | Running bounded functional, fault, transition, or diagnostic tests | The environment is production or representative data volume has not been reviewed |
 | Standard | Establishing the normal production starting point | Local topology or response requirements clearly differ from the documented assumptions |
 | Strict | Protecting explicitly designated critical services with tested response capacity | The goal is simply to generate more alerts or lower every threshold |
 
-Templates are examples, not signed product dependencies. Generate one selected profile with:
+Generate a customer-owned v2 pair with:
 
 ```powershell
-./src/hyper-v/scom-mp/tools/New-HyperVOverrideManagementPacks.ps1 `
-    -TuningProfile Standard `
+./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+    -DeploymentProfile ClusteredS2D `
+    -TuningTier Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
     -Version '1.0.0.0' `
-    -ProductVersion '0.1.0.0' `
-    -PublicKeyToken '<product-public-key-token>' `
+    -ProductVersion '2.0.0.0' `
+    -PublicKeyToken '0123456789abcdef' `
     -OutputPath './out/contoso-overrides'
 ```
 
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
-installed sealed Hyper-V Library, Discovery, and Monitoring MPs. The generator deliberately has no
-default product version because guessing it produces unresolved references at import time.
+installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
+Neither product fact has a default because guessing produces unresolved references at import time.
+The values above demonstrate format only; use the facts from the governed release manifest.
+
+The v2 catalog explicitly names every workflow, target class, local module, property, and
+configuration parameter. It applies shared acquisition settings consistently across every monitor
+using the same data source to preserve cookdown. The Standard generated Monitoring MP also includes
+a worked all-hosts group in that same unsealed MP and uses it for core host monitoring and
+performance collection. A custom profile can define different same-MP Discovery or Monitoring
+groups; generation fails on cross-unsealed-MP group references.
+
+The repository's 66 `.xml.example` files contain release placeholders and are evidence that every
+profile/tier combination is generated and drift-tested. They are not the import-ready download.
+The governed release replaces those placeholders and publishes real `.xml` override MPs alongside
+the sealed product bundle.
 
 Then:
 
-1. Read the profile manifest and change log for the exact product version.
+1. Read the deployment-profile manifest and change log for the exact product version.
 2. Review both generated Discovery and Monitoring files.
 3. Replace the example organization identity with the customer's approved identity.
 4. Remove settings that are not intentionally adopted.
@@ -373,7 +393,8 @@ Then:
 6. Exercise normal, failure, recovery, maintenance, migration, and failover scenarios.
 7. Promote the resulting customer-owned files through the customer's change process.
 
-Never import all three profiles together or treat Lab values as a production shortcut.
+Never import multiple deployment profiles or tuning tiers for the same environment, and never
+treat Lab values as a production shortcut.
 
 ## Review effective configuration
 

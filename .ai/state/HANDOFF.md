@@ -2,6 +2,24 @@
 
 ## Current session
 
+- **V2 deployment profiles and public overrides authored and verified:** Added explicit tuning
+  catalog schema 2.0, a capability-aware customer/public/example generator, and deterministic
+  example updater. All 11 package profiles generate separate Lab/Standard/Strict Discovery and
+  Monitoring MPs (66 committed `.xml.example` files) with independent customer/product versions,
+  only selected capability references, fixed external Pure/S2D/VMM context identities, shared
+  cookdown-safe values, and UTF-8 without BOM. Standard includes a worked dynamic all-hosts group
+  defined in the same unsealed Monitoring Overrides MP. Custom profiles support class and same-MP
+  group targeting and reject unknown schemas/capabilities and cross-MP groups. A new test suite
+  builds all 13 product MPs, regenerates/byte-compares examples, and resolves every workflow,
+  target, module, property, parameter, and alias. Microsoft VSAE caught child-element override
+  syntax inherited from the old generator; v2 now correctly emits `Module` and `Parameter`
+  attributes. A generated Standalone Standard pair passes OM2022 VSAE with only the expected
+  unsealed group type-definition warning. Full Pester passes 110/110; PSScriptAnalyzer, JSON,
+  `git diff --check`, and VitePress production build pass. Scratch VSAE evidence is
+  `D:/tmp/hcs-v2-override-vsae-20260829/`. Documentation, ADR 0043, root plan, README, and changelog
+  are updated. Representative SCOM runtime/import/export/upgrade/removal labs and governed release
+  identity rendering remain; the PowerShell 7 execution-host proof is the next release blocker.
+
 - **V2 VMM 2025 capability authored and offline verified:** Added `Capability.VMM` against the
   exact Microsoft VMM 2025 media identities: Library/Discovery/Monitoring `11.19.0.3` and PRO v2
   Library `10.25.1200.0`. The adapter creates a VMM-fabric DA root, relates exact Microsoft VMM

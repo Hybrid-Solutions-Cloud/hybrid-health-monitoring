@@ -11,11 +11,21 @@ version control and archived releases. See [Management Pack lifecycle](https://l
 
 ## Current authoring-host evidence
 
-All five Hyper-V development projects—Library, Discovery, Monitoring, Presentation, and optional
-Reporting—pass VSAE `VerifyMergedManagementPack` against the installed OM2022 sealed dependency
-set. They also complete ordered test sealing with a transient development key. This proves the
-schema, references, and sealing path on the authoring host; it does not replace release signing,
-clean SCOM import, workflow execution, fault/recovery, scale, upgrade, or removal certification.
+The v2 four-pack core and nine authored capability MPs pass VSAE
+`VerifyMergedManagementPack` against their inspected OM2022/Microsoft/vendor dependency sets and
+complete ordered test sealing with transient development identities. A generated Standard
+Discovery/Monitoring override pair also passes VSAE; the expected unsealed-type warning identifies
+its intentionally same-MP dynamic group. This proves authoring-host schema, reference, and sealing
+paths. It does not replace release signing, clean SCOM import, workflow execution, fault/recovery,
+scale, upgrade, or removal certification.
+
+The v2 override CI gate builds all 13 product MPs, regenerates 11 deployment profiles times three
+tuning tiers times two override kinds, and byte-compares all 66 committed examples. For every
+override, it resolves the referenced product MP and workflow, verifies the context equals the
+workflow target or a valid same-MP group populated from that target, resolves local modules, and
+proves configuration parameters or workflow properties exist. It also checks alias use, capability
+scoping, shared-data-source cookdown values, independent customer/product versions, schema and
+capability rejection, cross-unsealed-MP group rejection, UTF-8 without BOM, and Default MP absence.
 
 ## Validation layers
 
@@ -174,8 +184,9 @@ rollback. Microsoft documents dependency and removal constraints in
 - Side-by-side import proves no runtime dependency on Azure Local or Microsoft Hyper-V 2019 MPs.
 - Upgrade preserves stable identity and representative customer overrides.
 - Separate Discovery and Monitoring override MPs import, export, upgrade, and remove as documented.
-- Lab, Standard, and Strict manifests contain valid references for the matching product version and
-  produce the documented effective configuration.
+- All 11 deployment profiles emit separate Lab, Standard, and Strict Discovery/Monitoring MPs whose
+  references match the selected capability set and product version and whose effective
+  configuration matches the documented catalog in a representative management group.
 - Static and lab checks prove that no product or test workflow writes customization to the Default
   Management Pack.
 - The release bundle is reproducible and signed only after test artifacts are approved.

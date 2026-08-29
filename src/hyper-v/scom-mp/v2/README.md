@@ -7,9 +7,9 @@ Cloud Monitoring**.
 
 The build manifest records an explicit implementation status for every required artifact. Build
 automation refuses to treat a planned artifact as authored, preventing an incomplete source tree
-from being packaged as the complete core. Library, Discovery, Monitoring, and Presentation are
-authored. This four-pack core is not the complete public product: optional capability packs,
-customer override MPs, representative labs, governed signing, packaging, and publication remain.
+from being packaged as the complete core. Library, Discovery, Monitoring, Presentation, all nine
+capability packs, and the profile-aware override generator are authored. This source tree is not a
+public release: representative labs, governed signing, packaging, and publication remain.
 
 Core Discovery includes the VMMS registry seed plus staged topology for stable standalone/cluster
 boundaries, hosts, VMs, VHDs, VM adapters, virtual switches, Replica relationships, monitoring
@@ -129,6 +129,45 @@ public VMM Server Connection Run As profile with a dedicated, scoped VMM Read-On
 account. Build-matched VMM 2019, 2022, future 2025 updates, VMM service failover, logical-network
 and network-site lifecycle, failed-job recovery, cloud-to-cluster mapping, coexistence, and removal
 remain representative-lab certification gates.
+
+## Deployment profiles and overrides
+
+The v2 generator composes the four-pack core with only the capability MPs selected by one of the
+11 deployment profiles in `../contracts/packages.v2.json`. Each profile has separate Lab,
+Standard, and Strict Discovery/Monitoring override MPs, producing 66 committed examples. The
+examples are generated from `templates/overrides/tuning-catalog.json`; they are not hand-edited.
+
+Generate customer-owned overrides with an independent customer version and the exact installed
+sealed-product version and token:
+
+```powershell
+./tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+  -DeploymentProfile ClusteredS2D `
+  -TuningTier Standard `
+  -OrganizationId Contoso `
+  -OrganizationName 'Contoso' `
+  -Version 1.0.0.0 `
+  -ProductVersion 2.0.0.0 `
+  -PublicKeyToken 0123456789abcdef `
+  -OutputPath ./out/contoso-overrides
+```
+
+`ProductVersion` and `PublicKeyToken` have no defaults because guessing either creates an
+unimportable MP. Standard examples include an all-hosts dynamic group in the same unsealed
+Monitoring Overrides MP as the group-targeted core host monitor and performance-rule overrides.
+Custom schema-2.0 profiles may define their own Discovery or Monitoring groups; the generator
+rejects a group reference that crosses the two unsealed MPs.
+
+Regenerate the public example matrix after any catalog, profile, or generator change:
+
+```powershell
+./tools/Update-HyperVPrivateCloudOverrideExamples.ps1
+```
+
+CI builds the 13 product MPs, regenerates all examples, byte-compares them, and resolves every
+override workflow, target, module, property, and parameter against the built product XML. Release
+packaging replaces `{{VERSION}}`, `{{PRODUCT_VERSION}}`, and `{{PUBLIC_KEY_TOKEN}}` with governed
+release facts; `.xml.example` files themselves are not import-ready release assets.
 
 Build the currently authored artifacts with PowerShell 7:
 
