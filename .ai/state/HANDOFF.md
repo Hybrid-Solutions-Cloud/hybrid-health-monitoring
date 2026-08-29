@@ -2,6 +2,15 @@
 
 ## Current session
 
+- **Release direction corrected per operator:** A GitHub Release and pre-publication SCOM lab are no
+  longer prerequisites. The repository/site will host the exact sealed assets under
+  `docs/public/downloads/hyper-v-private-cloud/`. ADR 0048 is accepted and the permanent private key
+  is stored in Key Vault as `hcs-hybrid-health-monitoring-scom-release-private-key`; its immutable
+  public token is `54d0fb1159995c86`. The packager/validator/workflow and public release docs now
+  require permanent signing, clean source provenance, VSAE, dependencies, strong names, safe
+  archives, and checksums but classify SCOM management-group certification as post-install operator
+  validation. The temporary local key file must be deleted immediately after the production build.
+
 - **Representative-lab collection gap closed in source:** Added
   `tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1`, a core standalone
   expectation, public validation/runbook guidance, and five unit contracts. The collector is

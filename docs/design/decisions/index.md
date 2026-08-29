@@ -18,7 +18,7 @@ Hyper-V simply because both products use SCOM or share health terminology.
 | Azure Local platform baseline | ADRs 0001–0003, 0007–0009, and 0014–0018 |
 | Azure Local SCOM | ADRs 0022, 0026, and 0032–0035 supersede or refine the earlier Azure Local SCOM baseline |
 | Azure Local Azure Monitor | ADRs 0006, 0010, 0012, 0013, 0019, and current preview refinement ADR 0036 |
-| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0040–0047 plus proposed ADR 0048 for product boundary, network authority, DA, object/discovery, health/DA, authoring toolchain, external ownership, Pure Storage, SOFS/networking, v2 packaging, Network ATC, SDN, VMM, explicit PowerShell 7 execution, and governed release sealing; ADR 0040 supersedes 0039 and ADR 0043 supersedes 0027 for v2 |
+| Hyper-V platform and SCOM | Accepted ADRs 0022, 0025–0029, 0031, and 0040–0048 for product boundary, network authority, DA, object/discovery, health/DA, authoring toolchain, external ownership, Pure Storage, SOFS/networking, v2 packaging, Network ATC, SDN, VMM, explicit PowerShell 7 execution, and governed release sealing; ADR 0040 supersedes 0039 and ADR 0043 supersedes 0027 for v2 |
 | Hyper-V Azure Monitor | ADR 0023 constrained go and ADR 0037 development architecture |
 
 Cross-cutting lifecycle ADRs can provide reusable patterns, but each platform and delivery lane
@@ -75,7 +75,7 @@ must still validate its applicable topology, dependencies, artifacts, tests, and
 | [0045](./0045-hyper-v-v2-windows-server-sdn-integration-contract.md) | Hyper-V v2 Windows Server SDN integration — Microsoft-owned topology with read-only HCS binding and service impact | Accepted |
 | [0046](./0046-hyper-v-v2-virtual-machine-manager-integration-contract.md) | Hyper-V v2 Virtual Machine Manager integration — build-matched Microsoft fabric with read-only HCS gap coverage and service impact | Accepted |
 | [0047](./0047-hyper-v-v2-explicit-powershell-7-execution.md) | Hyper-V v2 execution host — public SCOM command executors launch the machine-wide PowerShell 7 MSI path explicitly | Accepted |
-| [0048](./0048-hyper-v-v2-governed-sealing-and-release-assets.md) | Hyper-V v2 governed sealing — permanent product identity, fail-closed packaging, checksums, and stable release assets | Proposed |
+| [0048](./0048-hyper-v-v2-governed-sealing-and-release-assets.md) | Hyper-V v2 governed sealing — permanent product identity, fail-closed packaging, checksums, and stable release assets | Accepted |
 
 ## When to write an ADR
 

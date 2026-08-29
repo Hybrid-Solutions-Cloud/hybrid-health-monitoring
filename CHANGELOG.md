@@ -30,10 +30,10 @@
 ### Added
 
 * Add the governed Hyper-V v2 sealing and release-package path: Microsoft VSAE `SealMp`, permanent
-  identity and runtime-evidence gates, compatible dependency preflight, 13 individual sealed MP
+  signing-identity and clean-source gates, compatible dependency preflight, 13 individual sealed MP
   assets, 66 import-ready public override MPs, core/complete/override and 11 profile bundles,
   publisher `.mpb` identity/Authenticode inspection and transitive VSAE dependency remapping, publisher dependency
-  provenance, manifests, SHA-256 checksums, an independent validator, tests, and proposed ADR 0048.
+  provenance, manifests, SHA-256 checksums, an independent validator, tests, and accepted ADR 0048.
 * Add the protected Hyper-V v2 production-release workflow and public runbook: Azure OIDC retrieves
   the permanent key from Key Vault only into runner temp, Release-mode eligibility is enforced,
   exact assets are retained, existing releases cannot be overwritten, and stable latest-download
@@ -42,6 +42,10 @@
   It verifies imported identities, overrides, topology, workflow and view inventory, Distributed
   Application presence, and recent HealthService diagnostic evidence while keeping destructive and
   lifecycle gates explicitly pending for human-reviewed labs.
+* Accept ADR 0048, provision the permanent Hyper-V v2 signing identity with public token
+  `54d0fb1159995c86`, make the repository the canonical binary distribution surface, and move SCOM
+  runtime certification after publication while retaining fail-closed VSAE, strong-name,
+  dependency, source-commit, archive, and checksum gates.
 * Add the Hyper-V Private Cloud Monitoring v2 override system: 11 composable deployment profiles,
   Lab/Standard/Strict tiers, 66 generated Discovery/Monitoring examples, explicit workflow and
   context schema, independent customer/product versions, same-MP group targeting, semantic and

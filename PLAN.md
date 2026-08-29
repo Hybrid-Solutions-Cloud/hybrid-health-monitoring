@@ -44,21 +44,22 @@ test-sealed binaries.
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | Authored: 11 profiles, three tiers, 66 generated Discovery/Monitoring examples; semantic resolution, drift, cookdown, version separation, invalid-profile, same-MP group, and VSAE gates pass | Governed release packaging emits import-ready XML with the signed product version/token, then representative import/export/upgrade/removal labs pass |
 | Runtime certification | Explicit public command-executor wrappers now launch the PowerShell 7 MSI path; SCOM 2016/2022 library contracts and static workflow tests pass; a read-only management-group collector now produces lane-specific identity, topology, workflow, DA/view, alert, and recent diagnostic-task snapshots plus an unapproved evidence draft | HealthService task evidence and every embedded/capability script run under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
-| Governed release and public download | VSAE `SealMp` packager, independent validator, protected Windows publication workflow, and release runbook authored; a full transient end-to-end run authenticates official S2D, Pure, and VMM `.mpb` dependencies through Microsoft's SDK, transitively resolves them through VSAE, and emits 13 sealed MPs, 66 public overrides, 14 bundles, publisher dependency evidence, manifests, and checksums with `releaseEligible=false` | Proposed ADR 0048 is approved, the protected runner/OIDC environment and permanent identity are provisioned, runtime evidence is approved, then the workflow performs governed signing, creates GitHub assets, verifies stable URLs, and the site exposes Download now |
+| Governed release and public download | VSAE `SealMp` packager, independent validator, optional protected publication workflow, and release runbook authored; permanent identity `54d0fb1159995c86` is provisioned; a full transient run authenticates official S2D, Pure, and VMM `.mpb` dependencies and emits the complete asset contract | Build once with the permanent identity, commit versioned/current assets directly to the repository, verify stable site URLs, and expose Download now |
 
 Execute the remaining work in this order:
 
-1. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
-   upgrade, migration, coexistence, and removal labs, including the PowerShell execution-host gate.
-2. Seal every release artifact with the governed signing identity, assemble deterministic packages,
-   and verify clean imports into supported SCOM versions.
-3. Publish the release and make it directly consumable from both surfaces:
-   - GitHub release assets contain the complete sealed MP bundle, individual sealed MPs, public
+1. Seal every release artifact with the governed signing identity and assemble deterministic
+   complete, core, override, and profile packages.
+2. Publish the release and make it directly consumable from both surfaces:
+   - repository-hosted assets contain the complete sealed MP bundle, individual sealed MPs, public
      override starter bundles, checksums, release notes, and installation/migration documentation;
    - the documentation site exposes an obvious **Download now** action using a stable `latest`
-     release URL rather than a version-specific or source-tree link; and
+     repository URL; and
    - every download page clearly distinguishes the supported Hyper-V v2 release from the
      superseded `0.1` lab preview and the Azure Local product that remains under development.
+3. After installation, run the representative SCOM topology, fault, recovery, scale, upgrade,
+   migration, coexistence, and removal checks, including the PowerShell execution-host gate, and
+   correct verified defects in a version-increased patch release.
 
 No transient signing key, locally sealed output, incomplete capability set, hand-edited override,
 or source-only archive satisfies the release requirement.

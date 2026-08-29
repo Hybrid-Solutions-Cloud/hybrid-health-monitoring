@@ -1,6 +1,6 @@
 # ADR 0048 — Hyper-V v2 governed sealing and release assets
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-29
 - **Decision owners:** Hybrid Solutions Cloud maintainers
 
@@ -10,7 +10,7 @@ Hyper-V Private Cloud Monitoring v2 has four required core Management Packs, nin
 capability Management Packs, 11 deployment profiles, and separate Lab, Standard, and Strict
 Discovery/Monitoring starter override MPs. Source XML, schema verification, and transient test
 sealing do not create a public product. A public release needs one permanent strong-name identity,
-approved runtime evidence, sealed binary assets, import-ready override XML, dependency inventory,
+sealed binary assets, import-ready override XML, dependency inventory,
 checksums, and stable download names.
 
 The earlier cross-track signing ADR 0016 proposed Azure Local-specific vaults and identities that
@@ -25,21 +25,22 @@ creation therefore makes a package repeatable for one immutable set of sealed in
 make two independent FASTSEAL compilations byte-identical. Release provenance and published
 SHA-256 hashes are required instead of claiming reproducible binary resealing.
 
-## Proposed decision
+## Decision
 
 ### Permanent product identity
 
 Hyper-V Private Cloud Monitoring v2 receives one permanent strong-name key pair that signs all 13
-authored product MPs and every later compatible release. The proposed Key Vault secret name is
+authored product MPs and every later compatible release. The Key Vault secret name is
 `hcs-hybrid-health-monitoring-scom-release-private-key` in the HCS platform vault. The binary key
 is stored as an encoded secret because VSAE requires an exportable `.snk` file; it is not described
 as HSM-backed. The secret value never enters source control, release assets, workflow logs, or a
-developer workspace.
+persistent workspace path.
 
-Only a Windows release runner in a protected `release` environment may retrieve the key through
-OIDC. The runner writes it beneath its ephemeral temporary directory, seals the approved source,
-validates and publishes the assets, and removes the runner workspace through normal job teardown.
-PR and ordinary `main` builds use transient test identities and can never publish a stable release.
+The permanent identity was provisioned with public key token `54d0fb1159995c86`. An approved
+maintainer or protected Windows release runner may retrieve the key only into a temporary path,
+seal the approved source, validate and publish the assets, and delete the local key immediately.
+PR and ordinary development builds use transient test identities and can never be presented as the
+stable repository-hosted package.
 
 Creating the permanent key and first secret version is a human-approved, one-time release action.
 The public key token produced by that action becomes an immutable product identity. Rotation means
@@ -63,14 +64,16 @@ a new product identity and explicit migration, not a routine credential rollover
 10. records prerequisite identities and SHA-256 hashes and rejects any key material in output.
 
 Test mode may skip VSAE only to exercise packaging. It writes `releaseEligible=false`. Release
-mode cannot skip VSAE and requires both an approved permanent-signing assertion and a version-matched
-runtime evidence receipt. `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` is a
-mandatory publication gate.
+mode cannot skip VSAE and requires an approved permanent-signing assertion and a clean, recorded
+source commit. `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` is a mandatory
+publication gate. SCOM runtime certification occurs after publication in the operator's isolated
+management group; it is not required to produce or host the complete signed package.
 
 ### Stable public assets
 
-The GitHub release uses stable filenames so the documentation site can link through
-`/releases/latest/download/` without hard-coding a version. Required assets are:
+The repository stores versioned public assets under
+`docs/public/downloads/hyper-v-private-cloud/<version>/` and the current public set under
+`docs/public/downloads/hyper-v-private-cloud/latest/`. Required assets are:
 
 - `Hyper-V-Private-Cloud-Monitoring-Complete.zip`;
 - `Hyper-V-Private-Cloud-Monitoring-Core.zip`;
@@ -131,14 +134,13 @@ surface and keeps sealing parameters consistent with Microsoft projects.
 
 ## Acceptance gates
 
-1. Approve and provision the permanent Hyper-V v2 key and protected release environment.
+1. Approve and provision the permanent Hyper-V v2 key.
 2. Supply a curated prerequisite set that satisfies every referenced ID/token/version floor.
-3. Approve a representative runtime evidence receipt for the exact source commit and product
-   version.
-4. Run the Release-mode packager and release-package validator on the protected runner.
-5. Clean-import the exact output, public override pair, and representative capability profiles.
-6. Publish all stable assets and checksums to one GitHub release.
-7. Validate the site's stable **Download now** link against the published asset.
+3. Run the Release-mode packager and release-package validator from an approved Windows host.
+4. Commit the versioned assets, stable current downloads, manifests, and checksums.
+5. Validate the site's stable **Download now** link against the published repository asset.
+6. After publication, clean-import the exact output and selected public override pair, then retain
+   the operator certification snapshot and any defect reports for the next patch release.
 
 ## Sources
 

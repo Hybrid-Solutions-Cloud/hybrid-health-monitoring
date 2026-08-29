@@ -8,8 +8,10 @@ Cloud Monitoring**.
 The build manifest records an explicit implementation status for every required artifact. Build
 automation refuses to treat a planned artifact as authored, preventing an incomplete source tree
 from being packaged as the complete core. Library, Discovery, Monitoring, Presentation, all nine
-capability packs, and the profile-aware override generator are authored. This source tree is not a
-public release: representative labs, governed signing, packaging, and publication remain.
+capability packs, and the profile-aware override generator are authored. This source tree is
+complete for the initial v2 package. Permanent signing and repository publication are performed by
+the governed packager; SCOM runtime validation follows installation in the operator's isolated
+management group.
 
 Core Discovery includes the VMMS registry seed plus staged topology for stable standalone/cluster
 boundaries, hosts, VMs, VHDs, VM adapters, virtual switches, Replica relationships, monitoring
@@ -201,7 +203,7 @@ resolution remain in the working directory and are never published.
 
 Use `BuildMode Test` with a transient key for package engineering. Test output is always marked
 `releaseEligible=false`. `BuildMode Release` cannot skip VSAE and requires an approved permanent
-signing assertion plus a version-matched runtime evidence receipt. Validate final output with:
+signing assertion plus a clean source commit. Validate final output with:
 
 ```powershell
 ./tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
@@ -209,10 +211,11 @@ signing assertion plus a version-matched runtime evidence receipt. Validate fina
   -RequireReleaseEligible
 ```
 
-Public release execution is restricted to `.github/workflows/release-hyper-v-v2.yml` on the
-protected `hyper-v-scom-production-release` environment. See the
-[governed release runbook](../../../../docs/design/hyper-v/release-runbook.md) for runner,
-workload-identity, evidence, Key Vault, and publication requirements.
+The validated assets are committed under `docs/public/downloads/hyper-v-private-cloud/` so the
+repository and documentation site host the same exact bytes. The optional
+`.github/workflows/release-hyper-v-v2.yml` workflow can mirror those assets to GitHub Releases but
+is not required for repository publication. See the
+[governed release runbook](../../../../docs/design/hyper-v/release-runbook.md).
 
 The signing key must remain outside the repository and is never copied into output. See
 [ADR 0048](../../../../docs/design/decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).

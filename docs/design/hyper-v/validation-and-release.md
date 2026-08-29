@@ -200,8 +200,7 @@ Run a non-publishable packaging exercise with a transient key:
 
 This proves package composition only and records `releaseEligible=false`. Release mode cannot skip
 VSAE. It also requires compatible sealed prerequisite directories, an approved permanent signing
-identity, and a version-matched runtime evidence receipt. Publication adds
-`-RequireReleaseEligible` to the validator.
+identity, and a clean source commit. Publication adds `-RequireReleaseEligible` to the validator.
 
 ZIP entry order and timestamps are deterministic for one immutable sealed-input set. Microsoft
 FASTSEAL itself writes new PE/module metadata on every compilation, so independent resealing is not
@@ -209,11 +208,12 @@ byte-reproducible. The release process preserves one approved sealed output set 
 `release-manifest.json`, `release-assets.json`, and `SHA256SUMS.txt`; it does not claim that a later
 FASTSEAL invocation will reproduce the same binary hash. See [ADR 0048](../decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).
 
-Production sealing and publication run only through the protected GitHub environment described in
-the [Hyper-V v2 governed release runbook](./release-runbook.md). The workflow uses Azure OIDC,
-materializes the permanent key only under runner temp, enforces Release-mode eligibility, retains
-the exact validated assets, creates a non-overwriting GitHub release, and verifies the stable
-latest-download URLs before the site can expose **Download now**.
+Production sealing and repository publication follow the
+[Hyper-V v2 governed release runbook](./release-runbook.md). The approved maintainer or protected
+runner materializes the permanent key only under a temporary path, enforces Release-mode
+eligibility, deletes the key, commits the exact validated assets, and verifies the stable site
+downloads. Representative SCOM runtime evidence is collected after installation and drives patch
+releases; it does not prevent the complete offline-verified package from being published.
 
 ## Upgrade and removal sequence
 

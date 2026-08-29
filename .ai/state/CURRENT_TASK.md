@@ -11,11 +11,10 @@ PowerShell 7 MSI path explicitly. Governed release tooling now verifies/seals al
 Microsoft VSAE, handles official Microsoft/Pure `.mpb` dependencies with publisher provenance,
 generates 66 overrides and 14 stable bundles, and passes the 125-test offline suite. A read-only
 management-group collector is ready to capture exact imported identities, topology, workflows,
-views, and recent HealthService diagnostic results. The active
-release blocker is representative HealthService runtime and capability-module proof, followed by
-lifecycle labs and provisioning the documented protected runner/OIDC/permanent-signing environment.
-The production workflow is authored to publish GitHub assets and verify stable latest-download
-URLs once those gates produce an approved evidence receipt._
+views, and recent HealthService diagnostic results. The permanent signing identity exists with
+public token `54d0fb1159995c86`. The active work is the Release-mode build and canonical repository
+publication; SCOM runtime and lifecycle certification follows operator installation and does not
+block the complete offline-verified download._
 
 <!--
   Optional advisory model hint the next tool should honour if available.

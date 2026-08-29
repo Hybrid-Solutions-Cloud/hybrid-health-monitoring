@@ -48,6 +48,7 @@ flowchart TB
 | [Authoring standards](authoring-standards.md) | IDs, display strings, knowledge, overrides, modules, scripts, and definition of done |
 | [Security and operability](security-and-operability.md) | Least privilege, Run As, task safety, monitoring-pipeline health, and diagnostics |
 | [Validation and release](validation-and-release.md) | Static, fixture, lab, fault, scale, lifecycle, signing, and publishing gates |
+| [Governed release runbook](release-runbook.md) | Permanent signing, repository-hosted assets, checksums, publication, and post-install validation |
 
 ## Architecture decisions
 

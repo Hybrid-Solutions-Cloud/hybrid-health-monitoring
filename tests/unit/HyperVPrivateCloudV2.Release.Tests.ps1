@@ -43,19 +43,18 @@ Describe 'Hyper-V Private Cloud v2 release tooling' {
         $script:PackageText | Should -Not -Match '\$\(\$artifact\.id\)\.mpb-remapped\.xml'
     }
 
-    It 'prevents test output or incomplete evidence from becoming a release' {
+    It 'prevents test output or an unapproved identity from becoming a release' {
         $script:PackageText | Should -Match "Release mode cannot skip Microsoft VSAE verification"
         $script:PackageText | Should -Match "Release mode requires -ApprovedReleaseSigningIdentity"
-        $script:PackageText | Should -Match "Release mode requires -ReleaseEvidencePath"
-        $script:PackageText | Should -Match "approved=true"
         $script:PackageText | Should -Match "Release mode requires a clean Git worktree"
-        $script:PackageText | Should -Match "Release evidence sourceCommit"
+        $script:PackageText | Should -Match "Release mode requires a resolvable source commit"
         $script:PackageText | Should -Match "SigningKeyPath must be outside the repository"
         $script:ValidationText | Should -Match 'RequireReleaseEligible'
         $script:ValidationText | Should -Match "Publication requires a Release-mode package"
+        $script:ValidationText | Should -Match 'post-publication SCOM validation contract'
     }
 
-    It 'defines every mandatory representative release-evidence gate' {
+    It 'keeps a complete post-publication representative evidence template' {
         $evidence = Get-Content -LiteralPath $script:EvidenceExample -Raw | ConvertFrom-Json
         $evidence.schemaVersion | Should -Be '1.0'
         $evidence.approved | Should -BeFalse
@@ -66,8 +65,8 @@ Describe 'Hyper-V Private Cloud v2 release tooling' {
                 'UpgradeAndOverrides', 'Removal', 'DefaultManagementPackProtection'
             )) {
             @($evidence.gates.id) | Should -Contain $gateId
-            $script:PackageText | Should -Match ([regex]::Escape("'$gateId'"))
         }
+        $script:PackageText | Should -Not -Match 'ReleaseEvidencePath'
     }
 
     It 'defines the complete public asset contract' {

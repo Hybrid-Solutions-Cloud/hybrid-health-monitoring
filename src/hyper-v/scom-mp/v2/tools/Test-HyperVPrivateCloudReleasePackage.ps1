@@ -12,7 +12,8 @@
     Output root created by New-HyperVPrivateCloudReleasePackage.ps1, or its assets directory.
 
 .PARAMETER RequireReleaseEligible
-    Requires Release mode, VSAE verification, approved runtime evidence, and releaseEligible=true.
+    Requires Release mode, VSAE verification, a source commit, and releaseEligible=true. SCOM
+    runtime certification is a documented post-publication operator activity.
 
 .NOTES
     Author: Kristopher Turner
@@ -187,9 +188,8 @@ if ($RequireReleaseEligible) {
     Assert-HcsCondition -Condition ([string]$manifest.buildMode -eq 'Release') -Message 'Publication requires a Release-mode package.'
     Assert-HcsCondition -Condition ($manifest.releaseEligible -eq $true) -Message 'Publication requires releaseEligible=true.'
     Assert-HcsCondition -Condition ($manifest.verification.vsae -eq $true) -Message 'Publication requires Microsoft VSAE verification.'
-    Assert-HcsCondition -Condition ($manifest.verification.runtimeEvidence -isnot [string]) -Message 'Publication requires approved runtime evidence metadata.'
-    Assert-HcsCondition -Condition ([string]$manifest.verification.runtimeEvidence.receiptSha256 -match '^[0-9a-f]{64}$') -Message 'Publication requires a runtime evidence receipt hash.'
-    Assert-HcsCondition -Condition ([string]$manifest.verification.runtimeEvidence.sourceCommit -match '^[0-9a-f]{40}$') -Message 'Publication requires the certified source commit.'
+    Assert-HcsCondition -Condition ([string]$manifest.sourceCommit -match '^[0-9a-f]{40}$') -Message 'Publication requires the exact source commit.'
+    Assert-HcsCondition -Condition ([string]$manifest.verification.runtimeCertification -eq 'post-publication-operator-validation') -Message 'Publication must declare the post-publication SCOM validation contract.'
 }
 
 Write-Host "Validated $($mpFiles.Count) sealed MPs and $($zipFiles.Count) release bundles in '$assetsPath'."

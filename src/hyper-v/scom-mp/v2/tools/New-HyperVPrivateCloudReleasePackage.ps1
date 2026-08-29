@@ -11,8 +11,9 @@
     ZIP assets.
 
     Test mode produces clearly non-release-eligible evidence. Release mode cannot skip VSAE and
-    requires both an approved signing-identity assertion and an approved runtime evidence receipt.
-    The signing key is never copied into an asset or archive.
+    requires an approved permanent signing-identity assertion plus a clean source commit. SCOM
+    runtime certification is performed by the operator after repository publication and is not a
+    packaging prerequisite. The signing key is never copied into an asset or archive.
 
 .PARAMETER Version
     Four-part version used by every sealed product MP.
@@ -43,10 +44,6 @@
     Required in Release mode. Asserts that the supplied key is the permanent, approved product
     signing identity obtained through the governed release environment.
 
-.PARAMETER ReleaseEvidencePath
-    Required in Release mode. JSON receipt proving representative runtime gates were approved for
-    this exact product version.
-
 .PARAMETER SourceDateEpoch
     Reproducible UTC timestamp applied to every ZIP entry. Defaults to the ZIP epoch.
 
@@ -54,8 +51,7 @@
     ./New-HyperVPrivateCloudReleasePackage.ps1 -Version 2.0.0.0 `
         -SigningKeyPath $env:RUNNER_TEMP/hyper-v-private-cloud-release.snk `
         -DependencyPath D:/scom-dependencies/approved -OutputPath D:/release/hyper-v-v2 `
-        -BuildMode Release -ApprovedReleaseSigningIdentity `
-        -ReleaseEvidencePath D:/release-evidence/hyper-v-v2.json
+        -BuildMode Release -ApprovedReleaseSigningIdentity
 
 .NOTES
     Author: Kristopher Turner
@@ -98,10 +94,6 @@ param(
 
     [Parameter()]
     [switch]$ApprovedReleaseSigningIdentity,
-
-    [Parameter()]
-    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
-    [string]$ReleaseEvidencePath,
 
     [Parameter()]
     [ValidateRange(315532800, 253402300799)]
@@ -413,34 +405,11 @@ $repositoryPrefix = $repositoryRoot.TrimEnd('\') + '\'
 if ($resolvedKeyPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw 'SigningKeyPath must be outside the repository. Signing keys must never be source-controlled or packaged.'
 }
-$releaseEvidence = $null
+$headCommit = (& git -C $repositoryRoot rev-parse HEAD 2>&1 | Select-Object -First 1).ToString().Trim().ToLowerInvariant()
 if ($BuildMode -eq 'Release') {
     if ($SkipSdkVerification) { throw 'Release mode cannot skip Microsoft VSAE verification.' }
     if (-not $ApprovedReleaseSigningIdentity) { throw 'Release mode requires -ApprovedReleaseSigningIdentity.' }
-    if ([string]::IsNullOrWhiteSpace($ReleaseEvidencePath)) { throw 'Release mode requires -ReleaseEvidencePath.' }
-    $releaseEvidence = Get-Content -LiteralPath $ReleaseEvidencePath -Raw | ConvertFrom-Json
-    if ([string]$releaseEvidence.schemaVersion -ne '1.0' -or [string]$releaseEvidence.productVersion -ne $Version -or $releaseEvidence.approved -ne $true) {
-        throw "The release evidence receipt must use schemaVersion 1.0, productVersion '$Version', and approved=true."
-    }
-    if ([string]$releaseEvidence.sourceCommit -notmatch '^[0-9a-fA-F]{40}$') { throw 'The release evidence receipt requires a full 40-character sourceCommit.' }
-    if ([string]::IsNullOrWhiteSpace([string]$releaseEvidence.approvedBy)) { throw 'The release evidence receipt requires approvedBy.' }
-    $approvalTimestamp = [DateTimeOffset]::MinValue
-    if (-not [DateTimeOffset]::TryParse([string]$releaseEvidence.approvedUtc, [ref]$approvalTimestamp)) { throw 'The release evidence receipt requires a valid approvedUtc timestamp.' }
-    $requiredEvidenceGates = @(
-        'PowerShellRuntime', 'CleanImport', 'TopologyDiscovery', 'HealthAndAlerts',
-        'DistributedApplicationAndViews', 'CapabilityIntegrations', 'Scale',
-        'UpgradeAndOverrides', 'Removal', 'DefaultManagementPackProtection'
-    )
-    foreach ($gateId in $requiredEvidenceGates) {
-        $matchingGate = @($releaseEvidence.gates | Where-Object { [string]$_.id -eq $gateId })
-        if ($matchingGate.Count -ne 1 -or [string]$matchingGate[0].status -ne 'Passed' -or [string]::IsNullOrWhiteSpace([string]$matchingGate[0].evidenceLocation)) {
-            throw "Release evidence gate '$gateId' must appear exactly once with status Passed and a nonempty evidenceLocation."
-        }
-    }
-    $headCommit = (& git -C $repositoryRoot rev-parse HEAD 2>&1 | Select-Object -First 1).ToString().Trim()
-    if ($LASTEXITCODE -ne 0 -or $headCommit -ne ([string]$releaseEvidence.sourceCommit).ToLowerInvariant()) {
-        throw "Release evidence sourceCommit '$($releaseEvidence.sourceCommit)' does not match repository HEAD '$headCommit'."
-    }
+    if ($LASTEXITCODE -ne 0 -or $headCommit -notmatch '^[0-9a-f]{40}$') { throw 'Release mode requires a resolvable source commit.' }
     $worktreeStatus = @(& git -C $repositoryRoot status --porcelain 2>&1)
     if ($LASTEXITCODE -ne 0 -or $worktreeStatus.Count -gt 0) { throw 'Release mode requires a clean Git worktree.' }
 }
@@ -737,6 +706,7 @@ $releaseManifest = [ordered]@{
     buildMode = $BuildMode
     releaseEligible = ($BuildMode -eq 'Release' -and -not $SkipSdkVerification)
     publicKeyToken = $publicKeyToken
+    sourceCommit = $headCommit
     sourceDateEpoch = $SourceDateEpoch
     verification = [ordered]@{
         vsae = (-not $SkipSdkVerification)
@@ -745,14 +715,7 @@ $releaseManifest = [ordered]@{
         verificationRemappedDependencies = @($verificationRemapIds | Sort-Object)
         externalStrongNames = (-not $SkipSdkVerification)
         strongName = $true
-        runtimeEvidence = if ($BuildMode -eq 'Release') {
-            [ordered]@{
-                receiptSha256 = Get-HcsFileHashValue -Path $ReleaseEvidencePath
-                sourceCommit = [string]$releaseEvidence.sourceCommit
-                approvedUtc = [string]$releaseEvidence.approvedUtc
-            }
-        }
-        else { 'not-approved-test-build' }
+        runtimeCertification = 'post-publication-operator-validation'
     }
     artifacts = @($sealedArtifacts)
     publicOverrides = @($overrideFiles)

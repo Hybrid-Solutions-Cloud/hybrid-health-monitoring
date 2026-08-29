@@ -7,10 +7,6 @@ on:
         description: Four-part Management Pack version
         required: true
         type: string
-      evidence_path:
-        description: Repository-relative approved runtime evidence receipt
-        required: true
-        type: string
       release_notes_path:
         description: Repository-relative Markdown release notes
         required: true
@@ -46,7 +42,6 @@ jobs:
         shell: pwsh
         env:
           HCS_VERSION: ${{ inputs.version }}
-          HCS_EVIDENCE_INPUT: ${{ inputs.evidence_path }}
           HCS_NOTES_INPUT: ${{ inputs.release_notes_path }}
         run: |
           Set-StrictMode -Version Latest
@@ -81,9 +76,8 @@ jobs:
               }
           }
           $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
-          $evidencePath = [IO.Path]::GetFullPath((Join-Path $workspace $env:HCS_EVIDENCE_INPUT))
           $notesPath = [IO.Path]::GetFullPath((Join-Path $workspace $env:HCS_NOTES_INPUT))
-          foreach ($path in @($evidencePath, $notesPath)) {
+          foreach ($path in @($notesPath)) {
               $relativePath = [IO.Path]::GetRelativePath($workspace, $path)
               $escapesWorkspace = [IO.Path]::IsPathRooted($relativePath) -or
                   $relativePath -eq '..' -or
@@ -99,7 +93,6 @@ jobs:
           if (Test-Path -LiteralPath $signingKeyPath) { throw "Unique signing-key path already exists: $signingKeyPath" }
           "HCS_PACKAGE_ROOT=$packageRoot" | Out-File -LiteralPath $env:GITHUB_ENV -Append -Encoding utf8
           "HCS_SIGNING_KEY_PATH=$signingKeyPath" | Out-File -LiteralPath $env:GITHUB_ENV -Append -Encoding utf8
-          "HCS_EVIDENCE_PATH=$evidencePath" | Out-File -LiteralPath $env:GITHUB_ENV -Append -Encoding utf8
           "HCS_RELEASE_NOTES_PATH=$notesPath" | Out-File -LiteralPath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Authenticate to Azure with OIDC
@@ -143,8 +136,7 @@ jobs:
               -DependencyPath $dependencyPaths `
               -OutputPath $env:HCS_PACKAGE_ROOT `
               -BuildMode Release `
-              -ApprovedReleaseSigningIdentity `
-              -ReleaseEvidencePath $env:HCS_EVIDENCE_PATH
+              -ApprovedReleaseSigningIdentity
 
       - name: Enforce production release eligibility
         shell: pwsh

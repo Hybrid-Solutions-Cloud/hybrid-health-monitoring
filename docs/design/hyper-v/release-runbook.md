@@ -1,91 +1,94 @@
 ---
 title: Hyper-V v2 governed release runbook
-description: Protected-runner procedure for sealing, validating, publishing, and verifying Hyper-V Private Cloud Monitoring v2.
+description: Permanent sealing, repository publication, checksum verification, and post-install SCOM validation for Hyper-V Private Cloud Monitoring v2.
 ---
 
 # Hyper-V v2 governed release runbook
 
-The production release is created only by
-`.github/workflows/release-hyper-v-v2.yml`. Do not seal a public build from a developer workstation,
-publish transient Test-mode output, replace an existing release, or upload assets by hand.
+The repository is the canonical distribution surface. Production assets are committed beneath
+`docs/public/downloads/hyper-v-private-cloud/` so the source repository and public documentation
+site serve the same exact bytes. A GitHub Release may mirror those files, but it is not required.
 
-## Protected environment
+## Permanent signing identity
 
-Create the GitHub environment `hyper-v-scom-production-release` with required reviewers and prevent
-unreviewed branches from deploying. Its self-hosted Windows runner uses the labels `Windows`, `X64`,
-and `scom-mp-release` and requires:
+All 13 product MPs use the permanent public key token `54d0fb1159995c86`. The private key is stored
+as the Key Vault secret `hcs-hybrid-health-monitoring-scom-release-private-key`; it is never
+committed, logged, placed in an artifact, or retained in a developer directory.
 
-- PowerShell 7, Git, GitHub CLI, Azure CLI, Visual Studio 2022 MSBuild, Microsoft VSAE, FASTSEAL,
-  the SCOM SDK assemblies installed with VSAE, and the .NET Framework strong-name utility;
-- GitHub Actions Runner `2.327.1` or later for the Node 24 action runtime;
-- local read access to a curated dependency tree containing the exact Microsoft and vendor `.mp`
-  and `.mpb` inputs approved for the release; and
-- outbound access to Azure Key Vault, GitHub Actions, and GitHub Releases.
+An approved maintainer or protected Windows runner may retrieve the key only to a unique temporary
+file. The release host requires PowerShell 7, Git, Visual Studio 2022 MSBuild, Microsoft VSAE,
+FASTSEAL, the SCOM SDK assemblies installed with VSAE, and the .NET Framework strong-name utility.
+Delete the temporary key in a `finally` block after packaging, whether the build succeeds or fails.
 
-Configure these environment values without committing their contents:
+## Offline production build
 
-| Kind | Name | Purpose |
-|---|---|---|
-| Secret | `AZURE_CLIENT_ID` | OIDC application or managed-identity client ID |
-| Secret | `AZURE_TENANT_ID` | Microsoft Entra tenant used by Azure Login |
-| Secret | `AZURE_SUBSCRIPTION_ID` | Subscription containing the release Key Vault |
-| Variable | `HCS_KEY_VAULT_NAME` | Governed Key Vault name |
-| Variable | `HYPERV_SCOM_SIGNING_SECRET_NAME` | Base64-encoded permanent `.snk` secret name |
-| Variable | `HYPERV_SCOM_RELEASE_DEPENDENCY_PATHS` | Semicolon-separated runner-local dependency directories |
+The release does not require a SCOM management-group connection. It requires the permanent key and
+curated directories containing the exact supported Microsoft and vendor prerequisite `.mp` and
+`.mpb` files.
 
-Use workload-identity federation. Do not store an Azure client secret in GitHub. Grant the identity
-only the Key Vault secret-read permission required for the signing key. The workflow materializes
-the key at a unique path under runner temp, never includes it in an artifact, and deletes it in an
-`always()` cleanup step.
+From a clean `main` worktree, run:
 
-## Evidence receipt
+```powershell
+./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
+  -Version 2.0.0.0 `
+  -SigningKeyPath '<TEMPORARY_KEY_PATH>' `
+  -DependencyPath '<CURATED_DEPENDENCY_DIRECTORY_1>','<CURATED_DEPENDENCY_DIRECTORY_2>' `
+  -OutputPath '<EMPTY_OUTPUT_DIRECTORY>' `
+  -BuildMode Release `
+  -ApprovedReleaseSigningIdentity
 
-Copy `src/hyper-v/scom-mp/v2/release/release-evidence.example.json` to a version-specific tracked
-receipt only after all ten gates have representative evidence. Set `approved=true`, record the
-exact 40-character source commit, version, approval time, evidence locations, and approvers. The
-packager rejects a receipt for another version or commit and rejects a dirty worktree.
+./src/hyper-v/scom-mp/v2/tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
+  -PackagePath '<EMPTY_OUTPUT_DIRECTORY>' `
+  -RequireReleaseEligible
+```
 
-The evidence must cover PowerShell runtime, clean import, topology, health and alerts, Distributed
-Application and views, capability integrations, scale, upgrade and overrides, dependency-safe
-removal, and Default Management Pack protection. VSAE results do not substitute for these labs.
-Run `tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1` with a reviewed expectation
-file in every representative lane to collect the repeatable read-only portion. Its generated draft
-always remains `approved=false`; merge it with fault, recovery, scale, lifecycle, and before/after
-evidence only after a human has reviewed the complete lane.
+Release mode fails closed on a dirty source tree, unknown source commit, absent dependency,
+publisher identity mismatch, invalid loose-MP strong name, VSAE verification failure, incorrect
+product token, missing override, unsafe archive path, checksum mismatch, or signing-key leakage.
 
-## Release execution
+## Repository publication
 
-1. Accept every release-required ADR, including the permanent signing-identity decision.
-2. Provision and back up the permanent key in Key Vault without writing it into the repository or a
-   developer workspace.
-3. Approve and commit the evidence receipt and final release notes on `main`.
-4. Run **Release Hyper-V Private Cloud Monitoring v2** manually from `main`, supplying the
-   four-part product version and repository-relative evidence and release-note paths.
-5. Approve the protected environment deployment.
-6. Retain the workflow run and its 90-day exact-asset artifact with the release record.
+Copy the complete validated `assets` directory without rebuilding it to:
 
-The workflow fails closed if the runner, dependency identities, publisher signatures, loose-MP
-strong names, evidence, source commit, key identity, VSAE verification, sealed artifacts, override
-inventory, checksums, or release eligibility do not match. It refuses to overwrite an existing
-tag. On success it creates `hyper-v-private-cloud-v<version>`, marks it latest, uploads every asset,
-and verifies the stable latest-download URLs.
+```text
+docs/public/downloads/hyper-v-private-cloud/2.0.0.0/
+```
 
-## Publication verification
+Copy the current public entry assets to:
 
-Before changing the public site to **Download now**, independently verify:
+```text
+docs/public/downloads/hyper-v-private-cloud/latest/
+```
+
+The current directory must contain at least:
 
 - `Hyper-V-Private-Cloud-Monitoring-Complete.zip`;
 - `Hyper-V-Private-Cloud-Monitoring-Core.zip`;
 - `Hyper-V-Private-Cloud-Monitoring-Overrides.zip`;
-- `release-manifest.json`; and
-- `SHA256SUMS.txt`
+- `release-manifest.json`;
+- `release-assets.json`; and
+- `SHA256SUMS.txt`.
 
-under `https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/releases/latest/download/`.
-Download the complete bundle on a clean machine, validate its checksum, and repeat the clean SCOM
-import smoke test against the exact published bytes. Only then replace the lab-preview site action
-with the stable v2 **Download now** link.
+The versioned directory retains all 13 individual sealed MPs and all deployment-profile bundles.
+Never regenerate only the `latest` copy: both paths must originate from the same validated output.
 
-Microsoft documents OIDC access to Key Vault in
-[Integrate Azure Key Vault into a GitHub Actions workflow](https://learn.microsoft.com/en-us/azure/developer/github/github-actions-key-vault),
-and GitHub documents the `GH_TOKEN` requirement for
-[using GitHub CLI in workflows](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-github-cli).
+After committing and pushing, require the repository CI build to pass, then download the complete
+ZIP from the public site and compare its SHA-256 value to the committed checksum catalog.
+
+## Post-install operator validation
+
+SCOM validation follows publication. It is not a prerequisite for producing the complete signed
+download. In an isolated management group, import the exact published bytes, select one matching
+Discovery/Monitoring override pair, and run
+`tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1` with a reviewed expectation.
+
+The collector writes an unapproved evidence draft covering repeatable identity, topology,
+workflow, Distributed Application, view, alert, and PowerShell-runtime facts. Operators separately
+exercise fault/recovery, scale, upgrade, override, removal, and Default Management Pack protection.
+Any verified defect is corrected through a version-increased patch release; published sealed
+assemblies are never edited in place.
+
+Microsoft documents the Management Pack lifecycle in
+[Management Pack lifecycle](https://learn.microsoft.com/en-us/system-center/scom/manage-mp-lifecycle)
+and import behavior in
+[Import, export, and remove an Operations Manager Management Pack](https://learn.microsoft.com/en-us/system-center/scom/manage-mp-import-remove-delete).
