@@ -7,10 +7,12 @@ nine optional capability MPs are authored and offline verified. The capability-a
 system is also authored: 11 deployment profiles, three tiers, 66 generated Discovery/Monitoring
 examples, explicit schema, same-MP groups, semantic/drift/cookdown tests, and a VSAE-verified
 Standard pair. Every first-party workflow now uses public SCOM command executors to launch the
-PowerShell 7 MSI path explicitly; current source passes the complete offline suite and VSAE. The
-active release blocker is representative HealthService runtime and capability-module proof,
-followed by lifecycle labs, governed signing, packaging, publication, and stable latest-download
-updates._
+PowerShell 7 MSI path explicitly. Governed release tooling now verifies/seals all 13 MPs through
+Microsoft VSAE, handles official Microsoft/Pure `.mpb` dependencies with publisher provenance,
+generates 66 overrides and 14 stable bundles, and passes the 119-test offline suite. The active
+release blocker is representative HealthService runtime and capability-module proof, followed by
+lifecycle labs, permanent governed signing, GitHub publication, and the stable latest-download
+site update._
 
 <!--
   Optional advisory model hint the next tool should honour if available.

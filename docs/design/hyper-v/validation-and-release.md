@@ -154,6 +154,52 @@ The final support matrix records limits for hosts, clusters, VMs, adapters, disk
 workflow runtime, and collected samples. Crossing a proven limit produces guidance or a pipeline
 health condition rather than uncontrolled discovery.
 
+## Governed sealing and release packaging
+
+The v2 release packager derives the actual public key token before composing any product or
+override reference, verifies source MPs through Microsoft VSAE, seals through VSAE `SealMp`, and
+then verifies every strong name. It emits 13 individual sealed MPs, 66 public unsealed override
+MPs, core/complete/override bundles, and one bundle for each of the 11 deployment profiles.
+
+Publisher dependencies may be supplied as sealed `.mp` assemblies or publisher `.mpb` bundles. The
+packager reads bundle identity through Microsoft's SCOM packaging SDK and records each selected
+source filename, SHA-256 hash, MP ID, version, and publisher token in `dependencyEvidence`.
+Because VSAE does not accept `.mpb` files as reference inputs, the working directory contains a
+temporary sealed dependency graph whose bundle identities and transitive references use one
+throwaway verification token. These files exist only to let VSAE resolve the same source content;
+they are excluded from every asset. Publisher identity evidence and representative clean SCOM
+import of the original prerequisites remain authoritative.
+
+Every selected loose `.mp` also passes `sn.exe -vf`. For `.mpb`, the manifest records Authenticode
+status, signer subject, and certificate thumbprint when present. The inspected Microsoft S2D and
+VMM bundles validate as Microsoft-signed; Pure's official `2.0.120.0` GitHub bundle reports
+`NotSigned`, so its exact source hash and the clean-import evidence must be retained explicitly.
+
+Run a non-publishable packaging exercise with a transient key:
+
+```powershell
+./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
+  -Version 2.0.0.0 `
+  -SigningKeyPath D:/temporary-signing/transient-test.snk `
+  -OutputPath D:/temporary-release/hyper-v-v2 `
+  -BuildMode Test `
+  -SkipSdkVerification
+
+./src/hyper-v/scom-mp/v2/tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
+  -PackagePath D:/temporary-release/hyper-v-v2
+```
+
+This proves package composition only and records `releaseEligible=false`. Release mode cannot skip
+VSAE. It also requires compatible sealed prerequisite directories, an approved permanent signing
+identity, and a version-matched runtime evidence receipt. Publication adds
+`-RequireReleaseEligible` to the validator.
+
+ZIP entry order and timestamps are deterministic for one immutable sealed-input set. Microsoft
+FASTSEAL itself writes new PE/module metadata on every compilation, so independent resealing is not
+byte-reproducible. The release process preserves one approved sealed output set and publishes its
+`release-manifest.json`, `release-assets.json`, and `SHA256SUMS.txt`; it does not claim that a later
+FASTSEAL invocation will reproduce the same binary hash. See [ADR 0048](../decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).
+
 ## Upgrade and removal sequence
 
 ```mermaid

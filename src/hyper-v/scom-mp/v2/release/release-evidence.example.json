@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "productVersion": "2.0.0.0",
+  "sourceCommit": "0000000000000000000000000000000000000000",
+  "approved": false,
+  "approvedBy": "",
+  "approvedUtc": "",
+  "gates": [
+    { "id": "PowerShellRuntime", "status": "Pending", "evidenceLocation": "" },
+    { "id": "CleanImport", "status": "Pending", "evidenceLocation": "" },
+    { "id": "TopologyDiscovery", "status": "Pending", "evidenceLocation": "" },
+    { "id": "HealthAndAlerts", "status": "Pending", "evidenceLocation": "" },
+    { "id": "DistributedApplicationAndViews", "status": "Pending", "evidenceLocation": "" },
+    { "id": "CapabilityIntegrations", "status": "Pending", "evidenceLocation": "" },
+    { "id": "Scale", "status": "Pending", "evidenceLocation": "" },
+    { "id": "UpgradeAndOverrides", "status": "Pending", "evidenceLocation": "" },
+    { "id": "Removal", "status": "Pending", "evidenceLocation": "" },
+    { "id": "DefaultManagementPackProtection", "status": "Pending", "evidenceLocation": "" }
+  ]
+}

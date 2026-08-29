@@ -1,0 +1,24 @@
+<Project DefaultTargets="Seal" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="SealMp" AssemblyFile="$(VsacTasksPath)" />
+
+  <Target Name="Seal">
+    <Error Condition="'$(SourceManagementPack)' == ''" Text="SourceManagementPack is required." />
+    <Error Condition="!Exists('$(SourceManagementPack)')" Text="Management Pack source not found: $(SourceManagementPack)" />
+    <Error Condition="'$(OutputDirectory)' == ''" Text="OutputDirectory is required." />
+    <Error Condition="'$(SigningKeyFile)' == ''" Text="SigningKeyFile is required." />
+    <Error Condition="!Exists('$(SigningKeyFile)')" Text="Signing key not found: $(SigningKeyFile)" />
+    <Error Condition="'$(VsacTasksPath)' == ''" Text="VsacTasksPath is required." />
+    <Error Condition="!Exists('$(VsacTasksPath)')" Text="VSAE build tasks not found: $(VsacTasksPath)" />
+    <Error Condition="'$(FastSealDirectory)' == ''" Text="FastSealDirectory is required." />
+    <Error Condition="!Exists('$(FastSealDirectory)\FASTSEAL.exe')" Text="FASTSEAL.exe not found in: $(FastSealDirectory)" />
+    <MakeDir Directories="$(OutputDirectory)" />
+    <SealMp
+      FastSealDir="$(FastSealDirectory)"
+      UnsealedMpFile="$(SourceManagementPack)"
+      OutputDir="$(OutputDirectory)"
+      KeyFile="$(SigningKeyFile)"
+      DelaySign="false"
+      Company="$(CompanyName)"
+      Copyright="$(CopyrightText)" />
+  </Target>
+</Project>

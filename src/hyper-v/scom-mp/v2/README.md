@@ -186,3 +186,28 @@ Build the currently authored artifacts with PowerShell 7:
 
 Development XML is written to `out/development/`. Release sealing remains a separate governed
 step and requires the repository signing identity.
+
+## Release packaging
+
+`tools/New-HyperVPrivateCloudReleasePackage.ps1` is the only supported v2 sealing and package
+entry point. It derives the product token from the supplied key, builds all 13 authored MPs,
+optionally performs ordered VSAE verification, seals through Microsoft VSAE `SealMp`, verifies the
+strong names, generates all 66 public override MPs, and creates complete, core, override, and
+deployment-profile ZIPs with stable filenames. The output also contains individual sealed MPs,
+the prerequisite/release manifest, publisher dependency filenames/hashes/identities, an asset
+catalog, and SHA-256 checksums. Publisher `.mpb` prerequisite identities are inspected with
+Microsoft's packaging SDK and their Authenticode status is recorded; transient token-remapped copies used only to satisfy VSAE reference
+resolution remain in the working directory and are never published.
+
+Use `BuildMode Test` with a transient key for package engineering. Test output is always marked
+`releaseEligible=false`. `BuildMode Release` cannot skip VSAE and requires an approved permanent
+signing assertion plus a version-matched runtime evidence receipt. Validate final output with:
+
+```powershell
+./tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
+  -PackagePath D:/release/hyper-v-private-cloud-v2 `
+  -RequireReleaseEligible
+```
+
+The signing key must remain outside the repository and is never copied into output. See
+[ADR 0048](../../../../docs/design/decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).

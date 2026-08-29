@@ -2,6 +2,24 @@
 
 ## Current session
 
+- **Governed v2 release packaging is implemented and fully offline verified:** Added Microsoft
+  VSAE/FASTSEAL-based sealing, strong-name/token checks, deterministic bundle construction for
+  fixed inputs, 13 individual MP assets, Complete/Core/Overrides and per-profile ZIPs, SHA-256
+  manifests, release-evidence gating, and a package validator. A full transient Test package
+  already produced 13 sealed MPs, 66 public override XMLs, and 14 ZIP bundles with no signing
+  material. The package script reads publisher `.mpb` identities through Microsoft's packaging
+  SDK and creates a transitively token-remapped dependency graph solely so VSAE can resolve
+  bundle-contained MPs; those copies are never release assets. The final integrated run at
+  `D:/tmp/hcs-v2-release-packager-mpb-20260829-10/` uses the official Microsoft S2D and VMM, Pure
+  Storage, and File Services inputs and passes all 13 VSAE verification/sealing stages plus the
+  independent package validator. It records 21 prerequisite source hashes/identities, verifies
+  every loose `.mp` strong name, records valid Microsoft Authenticode signatures, and accurately
+  records Pure's official 2.0.120.0 bundle as `NotSigned`. Full Pester passes 119/119;
+  ScriptAnalyzer, `git diff --check`, and the VitePress production build pass. Production release
+  still requires representative SCOM/HealthService evidence,
+  permanent governed signing identity approval, a clean release build, GitHub assets, and the
+  stable documentation-site Download now link.
+
 - **Explicit PowerShell 7 SCOM execution authored and offline verified:** Replaced every v2
   first-party Microsoft in-process PowerShell discovery, property-bag, and write-action reference
   with three public core-Library wrappers over `System.CommandExecuterDiscoveryDataSource`,

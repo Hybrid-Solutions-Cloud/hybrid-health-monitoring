@@ -29,6 +29,11 @@
 
 ### Added
 
+* Add the governed Hyper-V v2 sealing and release-package path: Microsoft VSAE `SealMp`, permanent
+  identity and runtime-evidence gates, compatible dependency preflight, 13 individual sealed MP
+  assets, 66 import-ready public override MPs, core/complete/override and 11 profile bundles,
+  publisher `.mpb` identity/Authenticode inspection and transitive VSAE dependency remapping, publisher dependency
+  provenance, manifests, SHA-256 checksums, an independent validator, tests, and proposed ADR 0048.
 * Add the Hyper-V Private Cloud Monitoring v2 override system: 11 composable deployment profiles,
   Lab/Standard/Strict tiers, 66 generated Discovery/Monitoring examples, explicit workflow and
   context schema, independent customer/product versions, same-MP group targeting, semantic and
