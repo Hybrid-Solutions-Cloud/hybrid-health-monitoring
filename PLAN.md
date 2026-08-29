@@ -3,9 +3,9 @@
 > Last updated: August 29, 2026
 >
 > Status: Azure Local is under development. Hyper-V Private Cloud Monitoring v2 `2.0.0.0` is
-> permanently sealed and staged in the repository with direct downloads; the published Hyper-V
-> `0.1` lab preview is superseded. Active completion work is push/site verification followed by
-> operator post-installation SCOM certification.
+> permanently sealed and published in the repository with verified direct downloads; the published
+> Hyper-V `0.1` lab preview is superseded. Remaining product work is operator post-installation SCOM
+> certification and version-increased correction of any verified defects.
 > Published roadmap: <https://labs.hybridsolutions.cloud/hybrid-health-monitoring/project/roadmap>
 
 ## Objective
@@ -44,18 +44,11 @@ test-sealed binaries.
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | Authored: 11 profiles, three tiers, 66 generated Discovery/Monitoring examples; semantic resolution, drift, cookdown, version separation, invalid-profile, same-MP group, and VSAE gates pass | Governed release packaging emits import-ready XML with the signed product version/token, then representative import/export/upgrade/removal labs pass |
 | Runtime certification | Explicit public command-executor wrappers now launch the PowerShell 7 MSI path; SCOM 2016/2022 library contracts and static workflow tests pass; a read-only management-group collector now produces lane-specific identity, topology, workflow, DA/view, alert, and recent diagnostic-task snapshots plus an unapproved evidence draft | HealthService task evidence and every embedded/capability script run under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
-| Governed release and public download | Version `2.0.0.0` built from commit `992ebc5` with permanent identity `54d0fb1159995c86`; 13 MPs, 66 overrides, 14 bundles, manifests, and checksums independently validated and staged in versioned/current repository paths | Commit/push exact assets, verify required Actions, and verify stable site URLs |
+| Governed release and public download | Complete: version `2.0.0.0` built from commit `992ebc5` with permanent identity `54d0fb1159995c86`; 13 MPs, 66 overrides, 14 bundles, manifests, and checksums independently validated, pushed, and verified through the passing Pages workflow and live SHA-256 comparison | Preserve immutable versioned assets and advance `latest` only through a version-increased validated package |
 
 Execute the remaining work in this order:
 
-1. Publish the completed sealed package and make it directly consumable from both surfaces:
-   - repository-hosted assets contain the complete sealed MP bundle, individual sealed MPs, public
-     override starter bundles, checksums, release notes, and installation/migration documentation;
-   - the documentation site exposes an obvious **Download now** action using a stable `latest`
-     repository URL; and
-   - every download page clearly distinguishes the supported Hyper-V v2 release from the
-     superseded `0.1` lab preview and the Azure Local product that remains under development.
-2. After installation, run the representative SCOM topology, fault, recovery, scale, upgrade,
+1. After installation, run the representative SCOM topology, fault, recovery, scale, upgrade,
    migration, coexistence, and removal checks, including the PowerShell execution-host gate, and
    correct verified defects in a version-increased patch release.
 
