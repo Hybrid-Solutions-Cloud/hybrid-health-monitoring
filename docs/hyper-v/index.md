@@ -11,13 +11,15 @@ and Arc-enable each participating Hyper-V host for AMA/DCR telemetry.
 
 | Delivery surface | Commitment | Status |
 |---|---|---|
-| **SCOM Management Pack** | Committed platform track | VSAE-verified and test-sealed development baseline; lab and release certification pending |
+| **SCOM Management Pack** | Committed platform track | Version 2.0.0.0 permanently sealed, offline verified, and repository-published; operator SCOM certification follows installation |
 | **Azure Monitor through Arc-enabled SCVMM** | Constrained track | Development baseline; substantial parity and lab gates remain |
 
 ::: info Two independent solutions
 The SCOM Management Pack and Azure Monitor Health Model have separate design, source,
 deployment, testing, and release boundaries.
 :::
+
+**[Download Hyper-V Private Cloud Monitoring v2](../downloads/hyper-v-private-cloud-v2.md).**
 
 ## Why this is separate from Azure Local
 

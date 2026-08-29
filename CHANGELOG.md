@@ -29,6 +29,9 @@
 
 ### Added
 
+* Publish Hyper-V Private Cloud Monitoring `2.0.0.0` in the repository: 13 permanently sealed MPs,
+  66 import-ready public override MPs, 14 bundles, immutable/current manifests and SHA-256
+  checksums, direct documentation-site downloads, and public key token `54d0fb1159995c86`.
 * Add the governed Hyper-V v2 sealing and release-package path: Microsoft VSAE `SealMp`, permanent
   signing-identity and clean-source gates, compatible dependency preflight, 13 individual sealed MP
   assets, 66 import-ready public override MPs, core/complete/override and 11 profile bundles,

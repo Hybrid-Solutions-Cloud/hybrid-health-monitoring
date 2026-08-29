@@ -93,11 +93,11 @@ ADR 0022 prohibits shared SCOM runtime elements.
 - The Azure Local SCOM design, research catalog, deterministic source build, DA, monitoring,
   presentation, reporting, and customer override baseline are implemented.
 - The platform-first roadmap and Azure DevOps hierarchy are established.
-- The independent Hyper-V SCOM functional development baseline is also implemented.
-- Both five-project SCOM suites pass Microsoft VSAE/SDK verification against the installed SCOM
-  2022 dependencies and complete ordered test sealing with a transient development key. Governed
-  release signing, clean lab import, runtime, fault/recovery, scale, upgrade, coexistence, and
-  removal certification remain before release.
+- Hyper-V Private Cloud Monitoring `2.0.0.0` is implemented and repository-published as four
+  permanently sealed core MPs, nine optional capability MPs, 66 public override MPs, and 14
+  download bundles. SCOM runtime and lifecycle certification follows operator installation.
+- The Azure Local five-project SCOM suite passes Microsoft VSAE/SDK verification and ordered test
+  sealing but remains under development and is not the Hyper-V v2 download.
 - Independent Azure Local and constrained Hyper-V Azure Monitor Health Model development baselines
   compile with Bicep; live API, identity, telemetry, fault, cost, and teardown evidence remains.
 - The optional SCOM-to-ServiceNow integration uses ServiceNow's existing SCOM Events connector. It

@@ -9,9 +9,9 @@ The Hyper-V SCOM Management Pack is the committed delivery surface for this plat
 reuse research and engineering practices, but its runtime health model is authored independently
 for the Hyper-V topology approved by the research and ADR gates.
 
-## Implemented development scope
+## Implemented scope
 
-| Capability | Development implementation |
+| Capability | Implementation |
 |---|---|
 | Topology | Stable classes and relationships for approved standalone, clustered, and SCVMM-managed configurations |
 | Discovery | Supported PowerShell and CIM/WMI discovery workflows with offline fixtures |
@@ -20,27 +20,20 @@ for the Hyper-V topology approved by the research and ADR gates.
 | Distributed Application | A Hyper-V-owned service root for every supported cluster or standalone host, with dynamic component membership, rollup, views, reports, dashboards, and SLO targeting |
 | Customization | Separate customer-owned Discovery and Monitoring override MPs with optional Lab, Standard, and Strict starter templates |
 | Operations | State, alert, performance, and topology views with optional SquaredUp dashboards |
-| Release contract | Five sealed, signed, tested, versioned Management Pack artifacts plus operator documentation after certification |
+| Release contract | Four required core MPs, nine optional capability MPs, 66 public override MPs, manifests, checksums, and profile bundles |
 
 ## Delivery state
 
-The design and functional XML authoring are complete for the initial development baseline. Release
-certification now requires:
+Version `2.0.0.0` is permanently sealed, offline verified, and published in this repository. Its
+public key token is `54d0fb1159995c86`.
 
-1. ~~Verify all generated MPs with Microsoft VSAE/SDK and the installed SCOM 2022 dependency
-   MPs.~~ Complete.
-2. ~~Test-seal the Library, Discovery, Monitoring, Presentation, and optional Reporting MPs in
-   dependency order.~~ Complete with a transient development key; no test artifact is a release.
-3. Clean-import into representative standalone and clustered SCOM labs;
-4. validate discovery, migration/failover identity, monitoring, recovery, DA population and rollup,
-   views, overrides, scale, upgrade, and removal; and
-5. release-seal, sign, version, and publish the certified artifacts with the governed identity.
+**[Download Hyper-V Private Cloud Monitoring v2 now](../downloads/hyper-v-private-cloud-v2.md).**
 
-[Download the sealed Hyper-V SCOM 0.1.0 lab preview](../downloads/scom-lab-preview.md) for
-controlled pre-production evaluation. The preview uses a transient development signing identity;
-read the warning and checksum instructions before import.
+The earlier Hyper-V `0.1.0` lab preview is superseded and must not be mixed with v2 because it has
+a different signing identity and product namespace. Representative SCOM runtime and lifecycle
+certification is performed after the operator installs the exact published bytes.
 
-The comprehensive proposed design is now available in the
+The comprehensive implemented design is available in the
 [Hyper-V SCOM architecture map](../design/hyper-v/scom-mp.md). It covers package decomposition,
 classes and relationships, staged discovery, workflows and cookdown, health and alerts, dynamic DA
 membership and rollup, authoring standards, least privilege, operability, testing, and release.
@@ -76,7 +69,7 @@ validation, final catalog curation, and comprehensive architecture validation.
 - [Management Pack administration guide](management-pack-guide.md)
 
 The research records everything technically observable, but only actionable and supportable signals
-will ship enabled by default.
+ship enabled by default.
 
 ## Why the SCOM design is reusable
 

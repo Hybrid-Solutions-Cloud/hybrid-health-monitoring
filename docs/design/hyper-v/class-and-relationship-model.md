@@ -11,7 +11,8 @@ A host adapter cannot move between computers; its identity can be hosted by the 
 drives class keys, hosting, relationship discovery, workflow placement, and upgrade safety.
 
 ADR 0028 accepts the namespace and identity strategy. The functional development Library MP now
-implements the first-release model; lab migration, scale, and upgrade tests remain release gates.
+implements the first-release model; operator lab migration, scale, and upgrade tests follow
+installation and feed version-increased corrections.
 
 ## Conceptual object model
 

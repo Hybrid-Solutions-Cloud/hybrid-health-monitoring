@@ -5,6 +5,13 @@ description: Download the sealed Azure Local and Hyper-V SCOM Management Pack su
 
 # Download the SCOM Management Pack lab previews
 
+::: warning Hyper-V preview superseded
+The Hyper-V `0.1.0` preview below is retained only for historical lab reproduction. Use the
+[permanently sealed Hyper-V Private Cloud Monitoring v2 download](hyper-v-private-cloud-v2.md) for
+all new Hyper-V installations. The two versions have different namespaces and signing identities
+and must not be mixed.
+:::
+
 The first sealed Azure Local and Hyper-V Management Pack suites are available as version `0.1.0`
 lab previews. Each ZIP contains Library, Discovery, Monitoring, Presentation, and optional
 Reporting Management Packs, all three official override profiles, import order, and SHA-256

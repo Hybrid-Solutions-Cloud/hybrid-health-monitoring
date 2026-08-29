@@ -5,22 +5,20 @@ description: Public operator guide for building, installing, validating, tuning,
 
 # Hyper-V Management Pack administration guide
 
-This guide explains how the Hyper-V SCOM Management Pack is built, installed, tuned, and
-maintained. Functional development XML is available; no governed-release-signed production package
-has been released yet. Microsoft VSAE/SDK verification and ordered transient test sealing pass for the full
-five-project suite. A release remains blocked until clean SCOM lab import, runtime, fault/recovery,
-scale, lifecycle, and governed release-signing gates pass.
+This guide explains how Hyper-V Private Cloud Monitoring v2 is installed, tuned, validated,
+upgraded, and removed. Version `2.0.0.0` is permanently sealed with public key token
+`54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
+manifests, checksums, and profile bundles.
 
-A [sealed lab-preview package](../downloads/scom-lab-preview.md) is available for controlled
-pre-production validation. It uses the transient development signing identity and must not be
-treated as a production release. The ZIP includes official Lab, Standard, and Strict override
-profiles; import exactly one profile's separate Discovery and Monitoring XML files.
+**[Download version 2.0.0.0 now](../downloads/hyper-v-private-cloud-v2.md).** Import exactly one
+deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
+lab preview is superseded and is not compatible with this signing identity.
 
-## What customers will receive
+## What the download contains
 
 | Deliverable | Purpose |
 |---|---|
-| Sealed product MPs | Library, Discovery, Monitoring, Presentation, and optional Reporting content |
+| Sealed product MPs | Four core MPs and nine separately installable capability adapters |
 | Management Pack guide | Prerequisites, import, verification, tuning, upgrade, rollback, removal, and troubleshooting |
 | Monitoring catalog | Workflow IDs, targets, defaults, overrideable parameters, knowledge, and evidence |
 | Override starter files | Generator and separate customer-owned Discovery and Monitoring output for Lab, Standard, and Strict |
@@ -28,11 +26,11 @@ profiles; import exactly one profile's separate Discovery and Monitoring XML fil
 
 The sealed MPs are product-owned. Every active override is stored in customer-owned, unsealed XML.
 
-## V2 development dependency profile
+## V2 dependency profile
 
-Hyper-V Private Cloud Monitoring v2 is still under development and is not the lab-preview download
-described above. Its four required core MPs have no optional Cluster, CSV, S2D, SAN, Pure, SDN, or
-VMM dependency. Each supported capability is a separate sealed adapter.
+The four required core MPs have no optional Cluster, CSV, S2D, SAN, Pure, SDN, or VMM dependency.
+Each supported capability is a separate sealed adapter. Publisher-owned prerequisite MPs are not
+redistributed in the HCS download and must be installed before the corresponding adapter.
 
 ### PowerShell 7 execution prerequisite
 
@@ -271,8 +269,9 @@ VM-network, logical-network, network-site, switch, storage-pool, active-alert, a
 views. Microsoft's richer Fabric, VM, Host, Network, and Storage dashboards remain in the native
 VMM console area and remain Microsoft-owned.
 
-VMM 2025 representative-lab certification remains a release gate. Until it passes, the authored
-adapter is development source—not a supported or governed-sealed public release artifact.
+The VMM adapter is governed-sealed and included in the v2 download. Its representative VMM 2025
+runtime certification remains post-installation operator work; do not enable it in production until
+that topology, health, outage, upgrade, and removal validation is complete in pre-production.
 
 See Microsoft's [VMM and Operations Manager integration guidance](https://learn.microsoft.com/en-us/system-center/vmm/monitors-ops-manager?view=sc-vmm-2025)
 and [VMM role guidance](https://learn.microsoft.com/en-us/system-center/vmm/manage-account?view=sc-vmm-2025).
@@ -291,13 +290,16 @@ Do not use a production management group as the first import target.
 
 ## Install the sealed product MPs
 
-For the first installation, import the sealed artifacts in dependency order:
+For the first installation, import the v2 core in dependency order:
 
-1. Hyper-V Library;
-2. Hyper-V Discovery;
-3. Hyper-V Monitoring;
-4. Hyper-V Presentation; and
-5. optional Hyper-V Reporting.
+1. `HybridSolutionsCloud.HyperVPrivateCloud.Library`;
+2. `HybridSolutionsCloud.HyperVPrivateCloud.Discovery`;
+3. `HybridSolutionsCloud.HyperVPrivateCloud.Monitoring`; and
+4. `HybridSolutionsCloud.HyperVPrivateCloud.Presentation`.
+
+Then import only the capability MPs selected by the deployment profile, after importing each
+capability's Microsoft or vendor prerequisites. The complete ZIP is a distribution archive, not an
+instruction to enable every adapter in every environment.
 
 If a release uses a Management Pack bundle, the release record will state which dependencies remain
 separate prerequisites. Use the Operations Manager import review to resolve every dependency before
@@ -398,14 +400,15 @@ Generate a customer-owned v2 pair with:
     -OrganizationName 'Contoso' `
     -Version '1.0.0.0' `
     -ProductVersion '2.0.0.0' `
-    -PublicKeyToken '0123456789abcdef' `
+    -PublicKeyToken '54d0fb1159995c86' `
     -OutputPath './out/contoso-overrides'
 ```
 
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
 installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
 Neither product fact has a default because guessing produces unresolved references at import time.
-The values above demonstrate format only; use the facts from the governed release manifest.
+The product version and token above are the facts for release `2.0.0.0`; confirm them against the
+governed release manifest before generating files for a later release.
 
 The v2 catalog explicitly names every workflow, target class, local module, property, and
 configuration parameter. It applies shared acquisition settings consistently across every monitor
@@ -414,10 +417,10 @@ a worked all-hosts group in that same unsealed MP and uses it for core host moni
 performance collection. A custom profile can define different same-MP Discovery or Monitoring
 groups; generation fails on cross-unsealed-MP group references.
 
-The repository's 66 `.xml.example` files contain release placeholders and are evidence that every
-profile/tier combination is generated and drift-tested. They are not the import-ready download.
-The governed release replaces those placeholders and publishes real `.xml` override MPs alongside
-the sealed product bundle.
+The repository's 66 `.xml.example` source files remain generator drift evidence. The
+[public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
+contains the 66 import-ready XML files generated for product `2.0.0.0` and token
+`54d0fb1159995c86`.
 
 Then:
 

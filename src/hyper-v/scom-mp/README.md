@@ -1,7 +1,9 @@
 # Hyper-V SCOM Management Pack source
 
 This directory owns every runtime and test artifact for the independent Hyper-V SCOM product and
-its platform-owned Distributed Application.
+its platform-owned Distributed Application. The `v2/` tree is the current Hyper-V Private Cloud
+Monitoring source and produces four core MPs, nine capability MPs, and the public override system.
+The unversioned tree is the earlier five-project baseline and is retained for source history.
 
 ```text
 scom-mp/
@@ -21,10 +23,9 @@ scom-mp/
 The folders implement ADR 0027. The functional development build contains 13 classes, 20
 relationships, staged role/topology discovery, a platform-owned Distributed Application, nine
 health monitors, ten dependency rollups, twelve performance rules, four event-alert rules, one
-read-only diagnostic task, and ten operator views. The Microsoft SDK and SCOM lab gates remain
-separate from source completeness. The current five-project output passes VSAE/SDK verification
-against the installed SCOM 2022 dependencies and ordered transient test sealing; lab and governed
-release-signing evidence remains.
+read-only diagnostic task, and ten operator views. This earlier five-project output passes
+VSAE/SDK verification and ordered transient test sealing but is superseded by the permanently
+sealed v2 repository download.
 
 The release keeps product-authored sealed artifacts separate from customer-owned unsealed
 overrides. Discovery and Monitoring receive independent generated override MPs for each optional

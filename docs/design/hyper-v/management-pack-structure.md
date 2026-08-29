@@ -11,10 +11,25 @@ sealing reusable MPs that other MPs reference, and keeping overrides in separate
 See [Select a Management Pack file](https://learn.microsoft.com/en-us/system-center/scom/select-management-pack-file?view=sc-om-2025)
 and [Create a Management Pack for overrides](https://learn.microsoft.com/en-us/system-center/scom/manage-mp-create-unsealed-mp?view=sc-om-2025).
 
-## Artifact set
+## Current v2 artifact set
 
-`HybridSolutionsCloud.HyperV` is the accepted namespace. The development source implements these
-IDs; sealing and signing turn the validated build into the public release contract.
+Hyper-V Private Cloud Monitoring v2 uses the `HybridSolutionsCloud.HyperVPrivateCloud` namespace.
+It ships four required sealed MPs—Library, Discovery, Monitoring, and Presentation—and nine optional
+sealed capability adapters: Cluster, Storage, S2D, Pure Storage, File Services, Physical Network,
+Network ATC, SDN, and VMM. This decomposition keeps the core importable without optional vendor or
+Microsoft product MPs while allowing both SAN and S2D adapters in a hybrid deployment. Public
+Discovery and Monitoring override MPs are generated separately for 11 deployment profiles and
+three tuning tiers.
+
+The exact v2 dependency and ownership graph is authoritative in the
+[v2 dependency and ownership contract](v2-dependency-and-ownership-contract.md). The artifact table
+below records the earlier `HybridSolutionsCloud.HyperV` baseline and is retained for compatibility
+and design history; it is superseded for new v2 installations.
+
+## Earlier baseline artifact set
+
+`HybridSolutionsCloud.HyperV` is the earlier baseline namespace. Its source implements these IDs;
+the current v2 product uses the namespace and decomposition documented above.
 
 | Artifact | Form | Responsibility | Required dependencies |
 |---|---|---|---|
@@ -171,3 +186,7 @@ ADR 0027 resolves the logical artifact boundary. Each release must still record:
 4. `.mp` versus `.mpb` packaging by artifact;
 5. language-pack strategy; and
 6. release and test signing identities.
+
+For v2 `2.0.0.0`, these facts are resolved by ADRs 0039–0048 and the published
+`release-manifest.json`; Reporting is not a v2 core artifact, the product is distributed as sealed
+`.mp` files, and the permanent public key token is `54d0fb1159995c86`.

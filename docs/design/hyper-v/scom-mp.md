@@ -5,11 +5,10 @@ description: Architecture map, research gates, and implementation contracts for 
 
 # Hyper-V SCOM Management Pack design
 
-This is the active first delivery lane. The Management Pack and platform-owned Distributed
-Application are committed and implemented as functional development XML. The full five-project
-suite passes Microsoft VSAE/SDK verification against the installed SCOM 2022 dependency set and
-ordered transient test sealing. Governed release signing and representative SCOM lab certification
-remain release gates.
+This is the active first delivery lane. Hyper-V Private Cloud Monitoring `2.0.0.0` and its
+platform-owned Distributed Application are implemented as four core and nine capability MPs,
+permanently sealed with token `54d0fb1159995c86`, offline VSAE-verified, and repository-published.
+Representative SCOM runtime and lifecycle certification follows operator installation.
 
 ## Design map
 
@@ -54,10 +53,10 @@ flowchart TB
 
 | ADR | Decision | Status and gate |
 |---|---|---|
-| [0027](../decisions/0027-hyper-v-scom-management-pack-decomposition.md) | Modular sealed artifacts, separate customer Discovery/Monitoring overrides, and optional tuning templates | Accepted; implemented in development source |
-| [0028](../decisions/0028-hyper-v-object-and-discovery-architecture.md) | Stable boundary identity, mobile VM model, staged discovery, execution placement, and cookdown | Accepted; implemented, lab lifecycle validation pending |
+| [0027](../decisions/0027-hyper-v-scom-management-pack-decomposition.md) | Modular sealed artifacts, separate customer Discovery/Monitoring overrides, and optional tuning templates | Accepted; baseline evolved by the v2 capability decomposition |
+| [0028](../decisions/0028-hyper-v-object-and-discovery-architecture.md) | Stable boundary identity, mobile VM model, staged discovery, execution placement, and cookdown | Accepted; implemented, post-install lifecycle validation pending |
 | [0029](../decisions/0029-hyper-v-health-alert-and-da-rollup.md) | Evidence-driven health, actionable alerts, topology-aware rollup, and monitoring-pipeline branch | Accepted; starter defaults remain lab-tunable |
-| [0031](../decisions/0031-hyper-v-mp-authoring-toolchain.md) | Tool-neutral XML/fragments, PowerShell build checks, Microsoft verification/sealing, and lab authority | Accepted; VSAE verification and transient test sealing pass, lab evidence pending |
+| [0031](../decisions/0031-hyper-v-mp-authoring-toolchain.md) | Tool-neutral XML/fragments, PowerShell build checks, Microsoft verification/sealing, and lab authority | Accepted and amended by ADR 0048; permanent sealing published, post-install lab evidence pending |
 
 These refine accepted ADRs [0022](../decisions/0022-scom-management-pack-packaging-boundaries.md),
 [0025](../decisions/0025-hyper-v-network-management-authority.md), and

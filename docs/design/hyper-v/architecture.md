@@ -196,5 +196,5 @@ installation and runtime-evidence gate are defined by
 ## Decision status
 
 This is the accepted implementation baseline governed by ADRs 0022, 0025–0029, 0031, and
-0040–0047. Runtime support remains conditional on the representative validation and release gates;
+0040–0048. Runtime support remains conditional on representative post-installation validation;
 accepted architecture is not a substitute for lab evidence.

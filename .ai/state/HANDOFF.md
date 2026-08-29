@@ -1,5 +1,19 @@
 # Handoff
 
+## 2026-08-29 — Permanent Hyper-V v2 assets built and staged for repository publication
+
+- Release `2.0.0.0` was sealed from clean source commit
+  `992ebc51d5dd09ee4d8807b9daf379efc97ed8c7` with the permanent token
+  `54d0fb1159995c86`.
+- The independent package validator passed: Release mode, `releaseEligible=true`, VSAE verification,
+  13 sealed MPs, 14 bundles, 66 public override XML files, source commit, archives, and checksums.
+- All 13 `.mp` files independently passed `sn.exe -vf`. The temporary private key
+  `D:\tmp\hcs-hyperv-private-cloud-production-20260829.snk` was deleted and confirmed absent.
+- The exact 30 public files were copied with matching SHA-256 hashes into both
+  `docs/public/downloads/hyper-v-private-cloud/2.0.0.0/` and `latest/`.
+- Public product/admin/design/download pages are being updated to v2; SCOM certification remains a
+  post-install operator activity and is not a publication dependency.
+
 ## Current session
 
 - **Release direction corrected per operator:** A GitHub Release and pre-publication SCOM lab are no

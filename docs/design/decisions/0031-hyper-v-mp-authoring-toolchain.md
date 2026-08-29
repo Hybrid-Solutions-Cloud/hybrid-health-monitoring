@@ -6,6 +6,10 @@
 
 **Decision owners:** Repository owner and maintainers
 
+> **Amended by ADR 0048:** SCOM lab import is post-publication operator certification, not an input
+> to offline sealing or repository publication. The source, VSAE, strong-name, dependency, archive,
+> manifest, and checksum gates remain unchanged.
+
 ## Context
 
 The Hyper-V SCOM product needs reviewable source, deterministic builds, schema and dependency
@@ -27,7 +31,7 @@ SCOM authoring environment performs Microsoft SDK verification, test sealing, re
 lab import. Silect MP Author or MP Studio can be used to inspect, compose, and review content, but
 their project database is not the source of truth.
 
-The pipeline is:
+The original pipeline was:
 
 `source templates and fragments → deterministic development XML → static contract checks → Microsoft verification → test sealing → SCOM lab import → release sealing and signing`.
 
@@ -39,8 +43,9 @@ identity is explicitly non-release material.
 The repository-owned verifier now uses Visual Studio 2022 full-framework MSBuild and the VSAE
 `VerifyMergedManagementPack` target against the installed SCOM 2022 sealed dependencies. All five
 Hyper-V projects pass verification, ordered transient test sealing, and strong-name verification.
-Standalone `MPVerify.exe` is not a separate gate. Clean SCOM import, runtime behavior, lifecycle,
-scale, and governed release signing remain outstanding.
+Standalone `MPVerify.exe` is not a separate gate. ADR 0048 subsequently established the permanent
+identity and moved clean SCOM import, runtime behavior, lifecycle, and scale evidence after
+repository publication.
 
 ## Options considered
 

@@ -43,10 +43,11 @@ Four enabled event rules cover Failover Clustering events 5120 and 5142 for CSV 
 task returns host, VM, switch, and Replica summary data. Ten views cover service health, host and
 object inventory, alerts, performance, and events.
 
-::: warning Development defaults
-These values are starter policy, not a signed support contract. They are overrideable and must pass
-representative fault, recovery, noise, data-volume, maintenance, migration, and failover testing
-before release.
+::: warning Earlier baseline defaults
+These values describe the superseded `HybridSolutionsCloud.HyperV` baseline, not the v2 product.
+For Hyper-V Private Cloud Monitoring v2, use the release manifest and the explicit
+`src/hyper-v/scom-mp/v2/templates/overrides/tuning-catalog.json` contract. All defaults remain
+overrideable and require representative operator validation before production enablement.
 :::
 
 ## Required coverage

@@ -12,9 +12,10 @@ Microsoft VSAE, handles official Microsoft/Pure `.mpb` dependencies with publish
 generates 66 overrides and 14 stable bundles, and passes the 125-test offline suite. A read-only
 management-group collector is ready to capture exact imported identities, topology, workflows,
 views, and recent HealthService diagnostic results. The permanent signing identity exists with
-public token `54d0fb1159995c86`. The active work is the Release-mode build and canonical repository
-publication; SCOM runtime and lifecycle certification follows operator installation and does not
-block the complete offline-verified download._
+public token `54d0fb1159995c86`. Release `2.0.0.0` has been built from source commit `992ebc5`,
+validated, and copied into the canonical versioned/current repository paths; the active work is
+documentation, commit/push, Actions and public-download verification. SCOM runtime and lifecycle
+certification follows operator installation._
 
 <!--
   Optional advisory model hint the next tool should honour if available.
