@@ -209,5 +209,10 @@ signing assertion plus a version-matched runtime evidence receipt. Validate fina
   -RequireReleaseEligible
 ```
 
+Public release execution is restricted to `.github/workflows/release-hyper-v-v2.yml` on the
+protected `hyper-v-scom-production-release` environment. See the
+[governed release runbook](../../../../docs/design/hyper-v/release-runbook.md) for runner,
+workload-identity, evidence, Key Vault, and publication requirements.
+
 The signing key must remain outside the repository and is never copied into output. See
 [ADR 0048](../../../../docs/design/decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).

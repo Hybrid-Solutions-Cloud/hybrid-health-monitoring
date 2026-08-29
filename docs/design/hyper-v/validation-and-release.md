@@ -200,6 +200,12 @@ byte-reproducible. The release process preserves one approved sealed output set 
 `release-manifest.json`, `release-assets.json`, and `SHA256SUMS.txt`; it does not claim that a later
 FASTSEAL invocation will reproduce the same binary hash. See [ADR 0048](../decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).
 
+Production sealing and publication run only through the protected GitHub environment described in
+the [Hyper-V v2 governed release runbook](./release-runbook.md). The workflow uses Azure OIDC,
+materializes the permanent key only under runner temp, enforces Release-mode eligibility, retains
+the exact validated assets, creates a non-overwriting GitHub release, and verifies the stable
+latest-download URLs before the site can expose **Download now**.
+
 ## Upgrade and removal sequence
 
 ```mermaid

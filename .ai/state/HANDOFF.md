@@ -2,6 +2,21 @@
 
 ## Current session
 
+- **Protected production publication path authored:** Added
+  `.github/workflows/release-hyper-v-v2.yml`, an actionlint configuration, release-note source, and
+  the public governed release runbook. The manual workflow is restricted to `main`, the protected
+  `hyper-v-scom-production-release` environment, and a labeled self-hosted Windows VSAE runner. It
+  uses Azure OIDC, retrieves the base64 permanent `.snk` only into a unique runner-temp file,
+  enforces Release-mode and `-RequireReleaseEligible`, retains the exact assets, refuses release
+  overwrite, creates the versioned/latest GitHub release, verifies five stable latest-download
+  URLs, and deletes key material in an always-run cleanup step. Actionlint, YAML parsing, all 120
+  unit tests, the targeted credential-pattern scan, diff hygiene, and the VitePress production
+  build pass. This workstation has no SCOM
+  module/HealthService and Key Vault currently has no
+  `hcs-hybrid-health-monitoring-scom-release-private-key`, so representative labs, protected-runner
+  configuration, ADR approval, and permanent-key provisioning remain external release gates; no
+  production release or Download-now site claim has been made.
+
 - **Governed v2 release packaging is implemented and fully offline verified:** Added Microsoft
   VSAE/FASTSEAL-based sealing, strong-name/token checks, deterministic bundle construction for
   fixed inputs, 13 individual MP assets, Complete/Core/Overrides and per-profile ZIPs, SHA-256

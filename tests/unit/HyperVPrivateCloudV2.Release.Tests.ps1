@@ -8,8 +8,10 @@ Describe 'Hyper-V Private Cloud v2 release tooling' {
         $script:ValidationTool = Join-Path $script:V2Root 'tools/Test-HyperVPrivateCloudReleasePackage.ps1'
         $script:SealProject = Join-Path $script:RepositoryRoot 'tools/scom/SealManagementPack.proj'
         $script:EvidenceExample = Join-Path $script:V2Root 'release/release-evidence.example.json'
+        $script:ReleaseWorkflow = Join-Path $script:RepositoryRoot '.github/workflows/release-hyper-v-v2.yml'
         $script:PackageText = Get-Content -LiteralPath $script:PackageTool -Raw
         $script:ValidationText = Get-Content -LiteralPath $script:ValidationTool -Raw
+        $script:WorkflowText = Get-Content -LiteralPath $script:ReleaseWorkflow -Raw
         [xml]$script:SealXml = Get-Content -LiteralPath $script:SealProject -Raw
     }
 
@@ -101,5 +103,20 @@ Describe 'Hyper-V Private Cloud v2 release tooling' {
         $script:PackageText | Should -Match 'Get-AuthenticodeSignature'
         $script:PackageText | Should -Match "Strong-name verification failed for publisher dependency"
         $script:ValidationText | Should -Match 'MPB Authenticode status is unsupported'
+    }
+
+    It 'publishes only through the protected Windows release workflow' {
+        Test-Path -LiteralPath $script:ReleaseWorkflow -PathType Leaf | Should -BeTrue
+        $script:WorkflowText | Should -Match "github\.ref == 'refs/heads/main'"
+        $script:WorkflowText | Should -Match 'runs-on: \[self-hosted, Windows, X64, scom-mp-release\]'
+        $script:WorkflowText | Should -Match 'environment: hyper-v-scom-production-release'
+        $script:WorkflowText | Should -Match 'uses: azure/login@v3'
+        $script:WorkflowText | Should -Match 'az keyvault secret show'
+        $script:WorkflowText | Should -Match '\[IO\.Path\]::GetRelativePath'
+        $script:WorkflowText | Should -Match '-BuildMode Release'
+        $script:WorkflowText | Should -Match '-RequireReleaseEligible'
+        $script:WorkflowText | Should -Match "'release', 'create'"
+        $script:WorkflowText | Should -Match 'releases/latest/download'
+        $script:WorkflowText | Should -Match 'if: always\(\)'
     }
 }
