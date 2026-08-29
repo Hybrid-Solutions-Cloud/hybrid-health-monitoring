@@ -2,6 +2,32 @@
 
 ## Current session
 
+- **V2 Physical Network adapter authored:** Added `Capability.PhysicalNetwork` as a thin adapter
+  over the built-in SCOM network model. Direct inspection of SCOM 2016 `7.2.11719.0`, SCOM 2019
+  `10.19.10050.0`, and SCOM 2022 `10.22.10118.0` confirmed the required public Node, Switch,
+  NetworkAdapter, Port, VLAN, NetworkConnection, and connection relationship contracts. System and
+  Windows libraries also prove that `Microsoft.Windows.ComputerNetworkAdapter` derives from
+  `System.Device.NetworkAdapter`; SCOM's built-in merging workflow matches MAC addresses, writes
+  `System.NetworkManagement.NetworkConnectionConnectedToNetworkAdapter`, and computes peer
+  topology. HCS therefore defines no network-resource class, SNMP workflow, credential, or
+  competing alert. Two relationships attach external vSwitches and the Network DA branch to exact
+  Windows adapters using the exact `Get-NetAdapter` DeviceID and raw MAC representation consumed by
+  Microsoft's Windows Server discovery. One correlation-input monitor, two
+  dependency rollups, and eight Microsoft-object views are authored. Focused v2 Pester passes
+  59/59; combined preview/v2 Pester passes 74/74; ScriptAnalyzer, `git diff --check`, and VitePress
+  production build pass. OM2022 VSAE passes with only expected unsealed type-definition warnings;
+  transient seal and `sn.exe -vf` pass. VSAE scratch evidence is
+  `D:/tmp/hcs-hyperv-v2-physical-network-final-verify-26d193018ab9450a89da5060aeb4d176`;
+  transient sealed evidence is
+  `D:/tmp/hcs-hyperv-v2-physical-network-final-seal-8d3fa740bc684c75bff1188df94a3929`.
+  Representative SCOM network discovery, host-adapter-to-switch-port traversal, device fault,
+  recovery, and removal labs remain. Network ATC is the next capability; SDN and VMM follow.
+
+- **VSAE corrections during Physical Network authoring:** Removed an invalid nonexistent
+  `ComponentId` property from the Network component proxy and corrected capability FolderItems to
+  the immutable `Networking.Folder` ID. Fresh current Library/Presentation test seals were used for
+  verification. The sealed output is transient and not a governed release artifact.
+
 - **V2 SMB/SOFS File Services adapter authored:** Added `Capability.FileServices` against the
   inspected Microsoft File & iSCSI Services `10.1.0.4` contract. It defines three HCS-only classes
   (SMB share, Multichannel/RDMA client path, and VHDX mapping), seven relationships, one Hyper-V

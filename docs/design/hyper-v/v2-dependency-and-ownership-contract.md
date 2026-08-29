@@ -188,6 +188,21 @@ adapters use `Key`. Public topology includes node-to-adapter, VLAN-to-adapter, a
 network-connection-to-`System.NetworkAdapter` relationships. HCS consumes those objects and
 Microsoft's server-port correlation rather than rediscovering devices or handling SNMP secrets.
 
+The authored `Capability.PhysicalNetwork` uses the public contract already present in the SCOM
+2016 `System.NetworkManagement.Library` `7.2.11719.0`; the same required objects and relationship
+were verified in the SCOM 2019 and 2022 libraries. `Microsoft.Windows.ComputerNetworkAdapter`
+derives from `System.Device.NetworkAdapter` and carries the exact `DeviceID` key plus MAC address.
+SCOM's built-in merging workflow matches `System.Device.NetworkAdapter` instances by MAC, writes
+`System.NetworkManagement.NetworkConnectionConnectedToNetworkAdapter`, and computes peer topology.
+
+HCS therefore defines only two relationships: the private-cloud Network branch contains the
+participating Windows physical adapters, and each external Hyper-V virtual switch references its
+Windows physical uplinks. It adds one local correlation-input health monitor, two dependency
+rollups, and eight views. It does not define a network resource class, discover a switch or port,
+read an SNMP credential, or emit a competing network-device alert. The local monitor proves the
+identity inputs, not management-group topology completeness; the resulting SCOM network diagram is
+a representative-lab and deployment verification gate.
+
 ## Preview migration boundary
 
 The `0.1` preview is not upgraded by renaming its public elements. The v2 installer and guide must:

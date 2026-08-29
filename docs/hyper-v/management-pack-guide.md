@@ -126,6 +126,20 @@ SMB design requires SMB Direct; set `RequireRdma` only for a validated RDMA/DCB 
 remains authoritative for File Server, SMB service, witness, resume-key, firewall, and clustered
 continuous-availability alerts.
 
+The authored `Capability.PhysicalNetwork` adapter requires SCOM network monitoring to have already
+discovered the switches that carry Hyper-V traffic. Use the built-in network libraries shipped with
+the installed SCOM release; the HCS MP references only public types present since SCOM 2016. SCOM's
+network discovery account and SNMP credentials remain owned by SCOM and are never copied into an
+HCS Run As profile.
+
+On each host, the adapter relates external Hyper-V virtual switches to the existing
+`Microsoft.Windows.ComputerNetworkAdapter` objects by the exact `Get-NetAdapter` `DeviceID` and MAC
+address representation used by Microsoft's Windows Server discovery.
+The built-in SCOM network merge then owns connection and peer topology to discovered switch ports.
+After import, open the SCOM network diagram and verify every participating host adapter reaches the
+expected switch and port. Missing or ambiguous paths must be fixed in SCOM network discovery; HCS
+does not guess a switch from an IP address, interface name, or partial MAC address.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

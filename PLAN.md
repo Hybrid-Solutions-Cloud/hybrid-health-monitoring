@@ -604,7 +604,13 @@ versions, cost, and required fixture.
    relationships, Microsoft SMB leaf-health reuse, one client dependency monitor, and seven views.
    It passes focused offline and OM2022 VSAE verification plus transient sealing; representative
    standalone SMB and clustered SOFS lifecycle/fault labs remain.**
-10. Implement Networking, Network ATC, SDN, and VMM integration packs.
+10. Implement Networking, Network ATC, SDN, and VMM integration packs. **Capability.PhysicalNetwork
+    is authored against the verified public SCOM 2016/2019/2022 network contract. It defines no
+    duplicate device classes or SNMP workflows; external Hyper-V switches and the Network DA branch
+    attach to exact Windows computer-adapter identities used by SCOM's MAC-based topology merge.
+    One correlation-input monitor, two dependency rollups, and eight Microsoft-object views pass
+    focused offline tests. Representative switch/port topology and fault validation remain;
+    Network ATC, SDN, and VMM packs remain to author.**
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,
     eight folders, 17 localized views, and a native DA diagram; capability-specific views,

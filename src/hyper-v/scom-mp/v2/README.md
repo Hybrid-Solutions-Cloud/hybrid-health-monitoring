@@ -14,7 +14,8 @@ customer override MPs, representative labs, governed signing, packaging, and pub
 Core Discovery includes the VMMS registry seed plus staged topology for stable standalone/cluster
 boundaries, hosts, VMs, VHDs, VM adapters, virtual switches, Replica relationships, monitoring
 pipelines, and all seven Distributed Application branches. Optional Cluster/CSV, SAN/Pure, S2D,
-Network ATC, physical network, SDN, and VMM topology remains isolated in capability MPs.
+File Services, physical network, Network ATC, SDN, and VMM topology remains isolated in capability
+MPs.
 
 Core Monitoring currently provides 13 host unit monitors, nine agent-hosted per-VM runtime unit
 monitors, 14 DA dependency rollups, 12 performance rules, a diagnostic task, and operational
@@ -26,7 +27,7 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first five optional capabilities are also authored:
+The first six optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
@@ -53,6 +54,13 @@ The first five optional capabilities are also authored:
   disks, and the authoritative Microsoft SMB service; one host monitor validates required
   connections and continuous availability, with RDMA opt-in by override. Seven views expose the
   combined HCS/Microsoft topology without duplicating Microsoft file-server alerts.
+- `Capability.PhysicalNetwork` references the SCOM 2016 public network-contract floor and remains
+  compatible with matching later built-in network libraries. It defines no device, switch, port,
+  VLAN, connection, SNMP workflow, or duplicate alert. Two relationships attach external Hyper-V
+  switches and the private-cloud Network branch to the exact Microsoft Windows physical-adapter
+  objects used by SCOM's MAC-based topology merge. One input-health monitor, two dependency
+  rollups, and eight network views expose the integration while SCOM retains authoritative device
+  discovery, topology, leaf health, alerts, and performance.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
@@ -75,6 +83,12 @@ The File Services capability requires the complete Microsoft Windows Server File
 `10.1.0.4` bundle and the Windows `SmbShare` and Hyper-V PowerShell modules on compute hosts. The
 Cluster capability remains independently optional: install it for SOFS cluster/role service impact,
 but a nonclustered Hyper-V-over-SMB deployment does not acquire a hard Cluster MP dependency.
+
+The Physical Network capability requires SCOM network discovery to be configured for the relevant
+switches and the matching built-in `System.NetworkManagement.Library`. HCS never reads or stores
+SNMP community strings. The local probe validates only the stable DeviceID and MAC inputs supplied
+to Microsoft's correlation engine; operators must confirm the resulting computer-adapter-to-port
+path in the SCOM network diagram before treating physical-switch service impact as certified.
 
 Build the currently authored artifacts with PowerShell 7:
 

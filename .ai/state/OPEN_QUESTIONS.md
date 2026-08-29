@@ -19,6 +19,9 @@
   module or obtain a documented governance exception before claiming any v2 runtime support.
 - Do stable VM identity, multi-node topology contributions, DA population/rollup, maintenance,
   migration/failover, recovery, upgrade, and removal behave as designed in SCOM?
+- Does representative SCOM network discovery connect every HCS external-vSwitch Windows adapter
+  to the expected physical switch port, propagate device/port faults through the intended diagram
+  and health path, and remove relationships cleanly when an uplink or capability pack is removed?
 - What release signing identity and governed sealing pipeline will produce the first signed bundle?
 - Beyond the verified SCOM 2022 dependency set, which official sealed dependency-MP versions should
   the first Azure Local release support, and does the suite pass VSAE verification against each?

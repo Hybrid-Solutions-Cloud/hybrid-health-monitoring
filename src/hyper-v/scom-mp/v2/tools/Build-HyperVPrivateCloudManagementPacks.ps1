@@ -406,6 +406,36 @@ function Get-HcsFileServicesCapabilityContent {
     return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
+function Get-HcsPhysicalNetworkCapabilityContent {
+    [CmdletBinding()]
+    param()
+
+    $folderItems = [System.Text.StringBuilder]::new()
+    $displays = [System.Text.StringBuilder]::new()
+    $views = @(
+        @('Node.State', 'Physical network nodes'),
+        @('Switch.State', 'Physical switches'),
+        @('Adapter.State', 'Network interfaces and adapters'),
+        @('Port.State', 'Physical switch ports'),
+        @('Vlan.State', 'Network VLANs'),
+        @('Connection.State', 'Network connections'),
+        @('ActiveAlerts', 'Physical network active alerts'),
+        @('Performance', 'Physical network performance')
+    )
+    foreach ($view in $views) {
+        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.$($view[0]).View"
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Networking.Folder`" />")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[1])</Name></DisplayString>")
+    }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor"><Name>Physical-network correlation input health</Name><Description>Validates the exact Windows adapter identities supplied to SCOM built-in MAC-based network topology correlation.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor.Message"><Name>Physical-network correlation input failed</Name><Description>{0}</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkAdapter.Dependency.Monitor"><Name>Roll up Hyper-V host network-adapter health</Name></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUplink.Dependency.Monitor"><Name>Roll up physical uplink health into virtual switches</Name></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.Relationship.Discovery"><Name>Discover Hyper-V physical-uplink relationships</Name><Description>Relates external Hyper-V switches to Microsoft Windows network-adapter objects. SCOM remains authoritative for device, switch, port, VLAN, and connection discovery.</Description></DisplayString>')
+    return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
+}
+
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -569,6 +599,23 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{FILE_SERVICES_VIEWS}}', $fileServicesContent.Views)
         $content = $content.Replace('{{FILE_SERVICES_FOLDER_ITEMS}}', $fileServicesContent.FolderItems)
         $content = $content.Replace('{{FILE_SERVICES_DISPLAY_STRINGS}}', $fileServicesContent.DisplayStrings)
+    }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            PHYSICAL_NETWORK_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudPhysicalNetworkRelationships.ps1.template'
+            PHYSICAL_NETWORK_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudPhysicalNetworkIntegrationHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "Physical Network capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "Physical Network capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+        $physicalNetworkContent = Get-HcsPhysicalNetworkCapabilityContent
+        $content = $content.Replace('{{PHYSICAL_NETWORK_FOLDER_ITEMS}}', $physicalNetworkContent.FolderItems)
+        $content = $content.Replace('{{PHYSICAL_NETWORK_DISPLAY_STRINGS}}', $physicalNetworkContent.DisplayStrings)
     }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')

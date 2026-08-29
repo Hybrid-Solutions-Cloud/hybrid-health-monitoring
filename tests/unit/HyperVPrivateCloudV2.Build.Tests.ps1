@@ -21,6 +21,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:S2DCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.xml') -Raw
         [xml]$script:PureCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.xml') -Raw
         [xml]$script:FileServicesCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.xml') -Raw
+        [xml]$script:PhysicalNetworkCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.xml') -Raw
     }
 
     AfterAll {
@@ -71,12 +72,13 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 9
+        @($script:Receipt.artifacts).Count | Should -Be 10
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -558,6 +560,47 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             @($parseErrors).Count | Should -Be 0
         }
         $script:FileServicesCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'uses the SCOM 2016 physical-network contract floor and does not duplicate network-device classes' {
+        $networkReference = $script:PhysicalNetworkCapability.SelectSingleNode("/ManagementPack/Manifest/References/Reference[@Alias='Network']")
+        $networkReference.ID | Should -Be 'System.NetworkManagement.Library'
+        $networkReference.Version | Should -Be '7.2.11719.0'
+        @($script:PhysicalNetworkCapability.SelectNodes('//ClassType')).Count | Should -Be 0
+        @($script:PhysicalNetworkCapability.SelectNodes('//Rule')).Count | Should -Be 0
+    }
+
+    It 'relates external virtual switches to exact Windows computer network adapters for built-in MAC correlation' {
+        @($script:PhysicalNetworkCapability.SelectNodes('//RelationshipType')).Count | Should -Be 2
+        $script:PhysicalNetworkCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkComponentContainsComputerNetworkAdapter']") | Should -Not -BeNullOrEmpty
+        $script:PhysicalNetworkCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUsesComputerNetworkAdapter']") | Should -Not -BeNullOrEmpty
+        $scriptText = $script:PhysicalNetworkCapability.SelectSingleNode("//Discovery[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.Relationship.Discovery']//ScriptBody").InnerText
+        $scriptText | Should -Match 'Get-NetAdapter -Physical'
+        $scriptText | Should -Match 'Microsoft\.Windows\.ComputerNetworkAdapter'
+        $scriptText | Should -Match 'System\.Device\.NetworkAdapter.*MACAddress'
+        $scriptText | Should -Not -Match "MacAddress\) -replace|MacAddress\).*ToUpperInvariant"
+        $scriptText | Should -Not -Match 'Invoke-RestMethod|Get-Credential|CommunityString|Import-Module\s+.*SNMP'
+    }
+
+    It 'monitors physical-network correlation inputs and reuses Microsoft health and presentation' {
+        @($script:PhysicalNetworkCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:PhysicalNetworkCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 2
+        @($script:PhysicalNetworkCapability.SelectNodes('//View')).Count | Should -Be 8
+        $script:PhysicalNetworkCapability.OuterXml | Should -Match 'System\.NetworkManagement\.Node'
+        $script:PhysicalNetworkCapability.OuterXml | Should -Match 'System\.NetworkManagement\.Switch'
+        $script:PhysicalNetworkCapability.OuterXml | Should -Match 'System\.NetworkManagement\.Port'
+        $script:PhysicalNetworkCapability.OuterXml | Should -Match 'System\.NetworkManagement\.VLAN'
+        foreach ($item in $script:PhysicalNetworkCapability.SelectNodes('//FolderItem')) { [string]$item.Folder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Networking.Folder' }
+    }
+
+    It 'contains syntactically valid Physical Network scripts and monitor knowledge' {
+        foreach ($scriptBody in $script:PhysicalNetworkCapability.SelectNodes('//ScriptBody')) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
+        $script:PhysicalNetworkCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

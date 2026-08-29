@@ -1,0 +1,67 @@
+#Requires -Version 7.0
+param([Parameter(Mandatory)][string]$ComputerName)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = 'All external Hyper-V switch uplinks have stable Windows network-adapter identities for SCOM network-topology correlation.'
+
+try {
+    if (-not (Get-Command -Name Get-VMSwitch -ErrorAction SilentlyContinue)) {
+        throw 'Get-VMSwitch is unavailable. Install Hyper-V-PowerShell with management tools.'
+    }
+    if (-not (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue)) {
+        throw 'Get-NetAdapter is unavailable. Install the Windows network adapter management tools.'
+    }
+
+    $switches = @(Get-VMSwitch -SwitchType External -ErrorAction Stop)
+    if ($switches.Count -eq 0) {
+        $state = 'NotApplicable'
+        $detail = 'No external Hyper-V virtual switch is present.'
+    }
+    else {
+        $physicalAdapters = @(Get-NetAdapter -Physical -ErrorAction Stop)
+        $lookup = @{}
+        foreach ($adapter in $physicalAdapters) {
+            foreach ($candidate in @([string]$adapter.Name, [string]$adapter.InterfaceDescription)) {
+                if (-not [string]::IsNullOrWhiteSpace($candidate)) { $lookup[$candidate.Trim().ToLowerInvariant()] = $adapter }
+            }
+        }
+
+        $problems = [System.Collections.Generic.List[string]]::new()
+        foreach ($switch in $switches) {
+            $uplinks = @($switch.NetAdapterInterfaceDescriptions)
+            if ($uplinks.Count -eq 0) {
+                $problems.Add("switch '$($switch.Name)' has no physical uplink identity")
+                continue
+            }
+            foreach ($description in $uplinks) {
+                $key = ([string]$description).Trim().ToLowerInvariant()
+                if (-not $lookup.ContainsKey($key)) {
+                    $problems.Add("switch '$($switch.Name)' uplink '$description' did not resolve to Win32_NetworkAdapter")
+                    continue
+                }
+                $adapter = $lookup[$key]
+                if ([string]::IsNullOrWhiteSpace([string]$adapter.DeviceID) -or [string]::IsNullOrWhiteSpace([string]$adapter.MACAddress)) {
+                    $problems.Add("switch '$($switch.Name)' uplink '$description' lacks DeviceID or MACAddress")
+                }
+            }
+        }
+        if ($problems.Count -gt 0) {
+            $state = 'Warning'
+            $detail = $problems -join '; '
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Physical-network integration probe failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.IntegrationHealth.ps1', 8803, 1, $detail)
+}
+
+$bag.AddValue('PhysicalNetworkIntegrationState', $state)
+$bag.AddValue('PhysicalNetworkIntegrationStateDetail', $detail)
+$bag
