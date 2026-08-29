@@ -22,6 +22,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:PureCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.xml') -Raw
         [xml]$script:FileServicesCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.xml') -Raw
         [xml]$script:PhysicalNetworkCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.xml') -Raw
+        [xml]$script:NetworkAtcCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.xml') -Raw
     }
 
     AfterAll {
@@ -72,13 +73,14 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 10
+        @($script:Receipt.artifacts).Count | Should -Be 11
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -601,6 +603,69 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             @($parseErrors).Count | Should -Be 0
         }
         $script:PhysicalNetworkCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'models Network ATC intents, per-host status, global settings, and exact adapter relationships' {
+        $classIds = @($script:NetworkAtcCapability.SelectNodes('//ClassType') | ForEach-Object ID)
+        $classIds | Should -Be @(
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus'
+        )
+        @($script:NetworkAtcCapability.SelectNodes('//RelationshipType')).Count | Should -Be 6
+        @($script:NetworkAtcCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 3
+        @($script:NetworkAtcCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 6
+        $script:NetworkAtcCapability.SelectSingleNode("//RelationshipType[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NodeStatusReferencesComputerNetworkAdapter']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'uses only core HCS dependencies and keeps Network ATC an optional read-only authority' {
+        $references = @($script:NetworkAtcCapability.SelectNodes('/ManagementPack/Manifest/References/Reference') | ForEach-Object { [string]$_.ID })
+        $references | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Library'
+        $references | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Presentation'
+        ($references -join "`n") | Should -Not -Match 'Cluster|SDN|VirtualMachineManager|PureStorage|StorageSpacesDirect'
+        $scriptText = $script:NetworkAtcCapability.SelectSingleNode("//Discovery[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.Discovery']//ScriptBody").InnerText
+        $scriptText | Should -Match 'Get-NetIntentStatus'
+        $scriptText | Should -Match 'NetAdapterNamesAsList|NetAdapterNameCsv'
+        $scriptText | Should -Match 'Microsoft\.Windows\.ComputerNetworkAdapter'
+        $scriptText | Should -Not -Match '(?i)\b(Add|Set|Remove|Update)-NetIntent|Set-NetIntentRetryState|Restart-Service'
+    }
+
+    It 'implements explicit authority, convergence, adapter, and global health without remediation' {
+        @($script:NetworkAtcCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 4
+        @($script:NetworkAtcCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
+        @($script:NetworkAtcCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        $capability = $script:NetworkAtcCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'CapabilityHealth')]")
+        $capability.Configuration.RequireNetworkATC | Should -Be 'false'
+        $adapter = $script:NetworkAtcCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'AdapterReadiness')]")
+        $adapter.Configuration.RequireRdmaForStorage | Should -Be 'true'
+        $healthScript = $script:NetworkAtcCapability.SelectSingleNode("//DataSourceModuleType[contains(@ID,'Health.DataSource')]//ScriptBody").InnerText
+        $healthScript | Should -Match "ConfigurationStatus"
+        $healthScript | Should -Match "configuration -eq 'Success'"
+        $healthScript | Should -Match "ProvisioningStatus"
+        $healthScript | Should -Match "MaxTransitionalMinutes"
+        $healthScript | Should -Match "ManualOrExternal"
+        $healthScript | Should -Not -Match '(?i)\b(Add|Set|Remove|Update)-NetIntent|Set-NetIntentRetryState|Restart-Service'
+    }
+
+    It 'provides localized Network ATC views, alerts, and operational knowledge under Networking' {
+        @($script:NetworkAtcCapability.SelectNodes('//View')).Count | Should -Be 7
+        foreach ($item in $script:NetworkAtcCapability.SelectNodes('//FolderItem')) {
+            [string]$item.Folder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Networking.Folder'
+        }
+        foreach ($monitor in $script:NetworkAtcCapability.SelectNodes('//UnitMonitor')) {
+            $script:NetworkAtcCapability.SelectSingleNode("//StringResource[@ID='$($monitor.AlertSettings.AlertMessage)']") | Should -Not -BeNullOrEmpty
+            $script:NetworkAtcCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='$($monitor.ID)']") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'contains syntactically valid PowerShell 7 Network ATC scripts' {
+        foreach ($scriptBody in $script:NetworkAtcCapability.SelectNodes('//ScriptBody')) {
+            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

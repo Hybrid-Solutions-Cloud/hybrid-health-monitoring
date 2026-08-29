@@ -27,7 +27,7 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first six optional capabilities are also authored:
+The first seven optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
@@ -61,6 +61,12 @@ The first six optional capabilities are also authored:
   objects used by SCOM's MAC-based topology merge. One input-health monitor, two dependency
   rollups, and eight network views expose the integration while SCOM retains authoritative device
   discovery, topology, leaf health, alerts, and performance.
+- `Capability.NetworkATC` models a stable boundary-level intent plus hosted per-node and global
+  configuration status. Six relationships connect intents, hosts, exact Windows adapters, and the
+  Network DA branch. Four read-only unit monitors cover authority/capability presence, convergence,
+  adapter readiness, and global settings; four dependency rollups and seven views expose service
+  impact. Missing ATC is Not Applicable unless explicitly required, and the pack never retries or
+  changes an intent.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
@@ -89,6 +95,13 @@ switches and the matching built-in `System.NetworkManagement.Library`. HCS never
 SNMP community strings. The local probe validates only the stable DeviceID and MAC inputs supplied
 to Microsoft's correlation engine; operators must confirm the resulting computer-adapter-to-port
 path in the SCOM network diagram before treating physical-switch service impact as certified.
+
+The Network ATC capability initially targets supported Windows Server 2025 Hyper-V clusters. Each
+participating node requires the NetworkATC, Hyper-V, Failover-Clustering, Data-Center-Bridging, and
+FS-SMBBW features with management tools, plus symmetric Up physical adapters. Successful intent
+health requires ConfigurationStatus Success, ProvisioningStatus Completed, and no error. Storage
+intents require RDMA by default. `RequireNetworkATC` remains false for manual, VMM, SDN, and other
+external networking authorities.
 
 Build the currently authored artifacts with PowerShell 7:
 

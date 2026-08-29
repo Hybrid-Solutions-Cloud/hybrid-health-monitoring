@@ -23,6 +23,50 @@ tooling. Azure Local and Hyper-V remain completely independent SCOM runtime prod
 share classes, binaries, Distributed Applications, namespaces, dependencies, packages, versions,
 or support lifecycles.
 
+## Execution status and immediate priorities
+
+This file is the authoritative implementation and release plan. Completion means a publicly usable,
+sealed, documented, tested, and downloadable product—not merely generated source XML or locally
+test-sealed binaries.
+
+| Workstream | Current state | Exit condition |
+|---|---|---|
+| Core Library, Discovery, Monitoring, and Presentation | Authored; offline contract, OM2022 VSAE/SDK, transient sealing, and strong-name checks pass | Representative SCOM runtime and lifecycle gates pass |
+| Cluster and CSV | Capability pack authored against Microsoft Cluster/CSV objects | Cluster discovery, failover, CSV fault/recovery, migration, and removal labs pass |
+| Common SAN storage | Capability pack authored | MPIO, path loss/recovery, mapping, capacity, and mixed-storage labs pass |
+| Pure Storage FlashArray | Capability pack authored against the vendor MP contract | Representative FlashArray topology, health, failure, recovery, and removal labs pass |
+| Storage Spaces Direct | Capability pack authored against Microsoft S2D objects | Fault, repair, job, capacity, performance-history, coexistence, and removal labs pass |
+| SMB and Scale-Out File Server | Capability pack authored | Standalone SMB and clustered SOFS/RDMA lifecycle and fault labs pass |
+| Physical network integration | Capability pack authored against built-in SCOM network objects | Adapter-to-switch-port correlation, device fault, recovery, and removal labs pass |
+| Network ATC | Capability pack authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Representative intent convergence, drift, adapter symmetry/RDMA, authority, lifecycle, and removal labs pass |
+| Windows Server SDN | Public Microsoft object contract inventoried; implementation pending | Optional adapter pack, secure discovery, correlations, service impact, views, and SDN fault labs pass |
+| Virtual Machine Manager | Matching-version dependency research and implementation pending | Optional adapter pack works with and without VMM and passes fabric, outage, upgrade, and removal labs |
+| Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
+| Customer overrides and deployment profiles | V2 implementation pending | Public Lab, Standard, and Strict Discovery/Monitoring override MPs are generated, validated, documented, and packaged per selected capability set |
+| Runtime certification | Blocked on representative SCOM labs and the PowerShell execution-host proof | Every embedded script runs under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
+| Governed release and public download | Not started; transient test seals are not release artifacts | Governed signing, clean import, checksums, release notes, migration/rollback/removal guidance, GitHub release assets, and stable site download links are published |
+
+Execute the remaining work in this order:
+
+1. Author and verify the SDN adapter against the inspected Microsoft SDN contract.
+2. Complete matching-version VMM MP inspection, then author and verify the VMM adapter.
+3. Build composable deployment profiles and public customer-owned override MPs for every supported
+   capability combination and Lab, Standard, and Strict tuning tier.
+4. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
+   upgrade, migration, coexistence, and removal labs, including the PowerShell execution-host gate.
+5. Seal every release artifact with the governed signing identity, assemble deterministic packages,
+   and verify clean imports into supported SCOM versions.
+6. Publish the release and make it directly consumable from both surfaces:
+   - GitHub release assets contain the complete sealed MP bundle, individual sealed MPs, public
+     override starter bundles, checksums, release notes, and installation/migration documentation;
+   - the documentation site exposes an obvious **Download now** action using a stable `latest`
+     release URL rather than a version-specific or source-tree link; and
+   - every download page clearly distinguishes the supported Hyper-V v2 release from the
+     superseded `0.1` lab preview and the Azure Local product that remains under development.
+
+No transient signing key, locally sealed output, incomplete capability set, hand-edited override,
+or source-only archive satisfies the release requirement.
+
 ## Product hierarchy
 
 Azure DevOps is the delivery system of record:
@@ -610,7 +654,13 @@ versions, cost, and required fixture.
     attach to exact Windows computer-adapter identities used by SCOM's MAC-based topology merge.
     One correlation-input monitor, two dependency rollups, and eight Microsoft-object views pass
     focused offline tests. Representative switch/port topology and fault validation remain;
-    Network ATC, SDN, and VMM packs remain to author.**
+    The Network ATC capability is also authored with stable intent, per-node, and global-setting
+    projections; six relationships to the Network branch, hosts, and exact Windows adapters; four
+    read-only unit monitors; four dependency rollups; and seven views. It passes focused offline
+    tests, OM2022 VSAE verification, transient sealing, and strong-name verification. Network ATC
+    never changes or retries an intent and treats absent manual/VMM/SDN authority as Not Applicable
+    unless explicitly required. Representative convergence, drift, symmetry/RDMA, authority,
+    lifecycle, and removal labs remain; SDN and VMM packs remain to author.**
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,
     eight folders, 17 localized views, and a native DA diagram; capability-specific views,

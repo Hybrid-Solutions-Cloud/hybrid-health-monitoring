@@ -617,6 +617,20 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{PHYSICAL_NETWORK_FOLDER_ITEMS}}', $physicalNetworkContent.FolderItems)
         $content = $content.Replace('{{PHYSICAL_NETWORK_DISPLAY_STRINGS}}', $physicalNetworkContent.DisplayStrings)
     }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            NETWORK_ATC_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudNetworkAtc.ps1.template'
+            NETWORK_ATC_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudNetworkAtcHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "Network ATC capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "Network ATC capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+    }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')
         $content = $content.Replace(

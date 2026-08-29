@@ -22,6 +22,9 @@
 - Does representative SCOM network discovery connect every HCS external-vSwitch Windows adapter
   to the expected physical switch port, propagate device/port faults through the intended diagram
   and health path, and remove relationships cleanly when an uplink or capability pack is removed?
+- Does representative Windows Server 2025 Network ATC discovery preserve intent and per-node
+  identity through convergence, drift, adapter changes, RDMA failure/recovery, VMM/SDN authority,
+  cluster-node removal, and capability-pack removal without invoking remediation?
 - What release signing identity and governed sealing pipeline will produce the first signed bundle?
 - Beyond the verified SCOM 2022 dependency set, which official sealed dependency-MP versions should
   the first Azure Local release support, and does the suite pass VSAE verification against each?

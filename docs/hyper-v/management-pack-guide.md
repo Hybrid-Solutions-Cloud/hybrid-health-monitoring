@@ -140,6 +140,37 @@ After import, open the SCOM network diagram and verify every participating host 
 expected switch and port. Missing or ambiguous paths must be fixed in SCOM network discovery; HCS
 does not guess a switch from an IP address, interface name, or partial MAC address.
 
+The authored `Capability.NetworkATC` adapter is initially supported for Windows Server 2025
+Hyper-V failover clusters that meet Microsoft's Network ATC requirements. It is a local Windows
+feature integration and has no external Microsoft Management Pack dependency. Import the matching
+HCS v2 Library and Presentation MPs first.
+
+| Prerequisite | Requirement | Purpose |
+|---|---|---|
+| Windows Server | 2025 on every participating cluster node | Supported Hyper-V Network ATC baseline |
+| Physical adapters | Symmetric make, model, speed, configuration, names, and Up state across nodes | Stable cluster-wide intent application |
+| `NetworkATC` | Installed with management tools | `Get-NetIntent` and `Get-NetIntentStatus` discovery and health |
+| `Hyper-V` and `Failover-Clustering` | Installed with management tools | Supported virtualization and cluster topology |
+| `Data-Center-Bridging` and `FS-SMBBW` | Installed where required by the Network ATC design | QoS, RDMA, and SMB Direct support |
+
+Install the supported feature set on each participating node:
+
+```powershell
+Install-WindowsFeature NetworkATC, Hyper-V, Failover-Clustering, Data-Center-Bridging, FS-SMBBW -IncludeManagementTools
+```
+
+The adapter discovers the expected intent request separately from each node's actual status. It
+requires `ConfigurationStatus = Success`, `ProvisioningStatus = Completed`, and no error for
+Healthy state. Active convergence is Warning for up to 30 minutes by default; failed or prolonged
+convergence is Critical. Missing/down adapters are Critical, and storage intents require RDMA by
+default. Override `RequireRdmaForStorage` only for a documented nested or non-RDMA test design.
+
+`RequireNetworkATC` defaults to `false`. A host with no Network ATC feature or intent is therefore
+Not Applicable and treated as `ManualOrExternal`. Set it to `true` only on groups where Network ATC
+is the declared networking authority; missing capability or intent then becomes Critical. The
+Management Pack is read-only and never adds, sets, removes, updates, retries, or remediates an
+intent or restarts a service.
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

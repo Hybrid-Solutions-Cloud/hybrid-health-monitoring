@@ -1,0 +1,165 @@
+#Requires -Version 7.0
+param(
+    [Parameter(Mandatory)][ValidateSet('Capability', 'Intent', 'Adapter', 'Global')][string]$Mode,
+    [Parameter(Mandatory)][string]$ComputerName,
+    [string]$IntentName,
+    [string]$AdapterNames,
+    [bool]$IsStorageIntent = $false,
+    [bool]$RequireNetworkATC = $false,
+    [bool]$RequireRdmaForStorage = $true,
+    [int]$MaxTransitionalMinutes = 30
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([Parameter(Mandatory)][string]$ModuleName, [Parameter(Mandatory)][string]$CommandName)
+    try {
+        if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+        Import-Module -Name $ModuleName -ErrorAction SilentlyContinue
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsPropertyValue {
+    param([AllowNull()]$InputObject, [Parameter(Mandatory)][string[]]$Name)
+    if ($null -eq $InputObject) { return $null }
+    foreach ($candidate in $Name) {
+        $property = $InputObject.PSObject.Properties[$candidate]
+        if ($null -ne $property -and $null -ne $property.Value) { return $property.Value }
+    }
+    return $null
+}
+
+function Get-HcsStatusState {
+    param([AllowNull()]$Status, [string]$Subject)
+    if ($null -eq $Status) { return [pscustomobject]@{ State = 'Critical'; Detail = "$Subject status was not returned by Get-NetIntentStatus." } }
+    $configuration = [string](Get-HcsPropertyValue -InputObject $Status -Name @('ConfigurationStatus', 'Status'))
+    $provisioning = [string](Get-HcsPropertyValue -InputObject $Status -Name @('ProvisioningStatus'))
+    $errorCode = [string](Get-HcsPropertyValue -InputObject $Status -Name @('Error', 'ErrorCode'))
+    $progress = [string](Get-HcsPropertyValue -InputObject $Status -Name @('Progress'))
+    $retryCount = [string](Get-HcsPropertyValue -InputObject $Status -Name @('RetryCount'))
+    $lastUpdatedValue = Get-HcsPropertyValue -InputObject $Status -Name @('LastUpdated')
+    $detail = "$Subject configuration='$configuration', provisioning='$provisioning', error='$errorCode', progress='$progress', retries='$retryCount'."
+
+    if ($configuration -eq 'Success' -and $provisioning -eq 'Completed' -and [string]::IsNullOrWhiteSpace($errorCode)) {
+        return [pscustomobject]@{ State = 'Good'; Detail = $detail }
+    }
+    if ($configuration -in @('Failed', 'Error') -or -not [string]::IsNullOrWhiteSpace($errorCode)) {
+        return [pscustomobject]@{ State = 'Critical'; Detail = $detail }
+    }
+
+    $transitional = $configuration -in @('Validating', 'Provisioning', 'ProvisioningUpdate', 'Retrying', 'Pending', 'InProgress') -or $provisioning -notin @('', 'Completed')
+    if ($transitional) {
+        $ageMinutes = 0
+        $lastUpdated = [datetime]::MinValue
+        if ($null -ne $lastUpdatedValue -and [datetime]::TryParse([string]$lastUpdatedValue, [ref]$lastUpdated)) {
+            $ageMinutes = [math]::Max(0, ((Get-Date) - $lastUpdated).TotalMinutes)
+        }
+        if ($lastUpdated -ne [datetime]::MinValue -and $ageMinutes -ge $MaxTransitionalMinutes) {
+            return [pscustomobject]@{ State = 'Critical'; Detail = "$detail The transitional state has persisted for $([math]::Round($ageMinutes)) minutes; the limit is $MaxTransitionalMinutes." }
+        }
+        return [pscustomobject]@{ State = 'Warning'; Detail = "$detail Network ATC is still converging." }
+    }
+    return [pscustomobject]@{ State = 'Warning'; Detail = "$detail The returned state is not recognized by this Management Pack version." }
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = 'Network ATC is healthy.'
+
+try {
+    $hasIntent = Test-HcsCapability -ModuleName 'NetworkATC' -CommandName 'Get-NetIntent'
+    $hasStatus = $null -ne (Get-Command -Name Get-NetIntentStatus -ErrorAction SilentlyContinue)
+    if (-not $hasIntent -or -not $hasStatus) {
+        if ($RequireNetworkATC -or $Mode -ne 'Capability') {
+            throw 'The NetworkATC module or Get-NetIntentStatus is unavailable. Install the NetworkATC Windows feature with management tools.'
+        }
+        $state = 'NotApplicable'
+        $detail = 'Network ATC is not installed. Host networking is treated as ManualOrExternal because RequireNetworkATC is false.'
+    }
+    elseif ($Mode -eq 'Capability') {
+        $intents = @(Get-NetIntent -ComputerName $ComputerName -ErrorAction Stop)
+        if ($intents.Count -eq 0) {
+            if ($RequireNetworkATC) { throw 'Network ATC is required but no network intent is configured.' }
+            $state = 'NotApplicable'
+            $detail = 'No Network ATC intent is configured. Host networking is treated as ManualOrExternal because RequireNetworkATC is false.'
+        }
+        else {
+            $detail = "Network ATC is installed and returned $($intents.Count) configured intent record(s)."
+        }
+    }
+    elseif ($Mode -eq 'Intent') {
+        if ([string]::IsNullOrWhiteSpace($IntentName)) { throw 'IntentName is required for intent health.' }
+        $status = @(Get-NetIntentStatus -Name $IntentName -ComputerName $ComputerName -ErrorAction Stop | Where-Object {
+                $hostValue = [string](Get-HcsPropertyValue -InputObject $_ -Name @('Host', 'ComputerName', 'PSComputerName'))
+                [string]::IsNullOrWhiteSpace($hostValue) -or $hostValue.Split('.')[0].Equals($ComputerName.Split('.')[0], [StringComparison]::OrdinalIgnoreCase)
+            }) | Select-Object -First 1
+        $result = Get-HcsStatusState -Status $status -Subject "Network intent '$IntentName' on '$ComputerName'"
+        $state = $result.State
+        $detail = $result.Detail
+    }
+    elseif ($Mode -eq 'Global') {
+        $status = @(Get-NetIntentStatus -ComputerName $ComputerName -GlobalOverrides -ErrorAction Stop | Where-Object {
+                $hostValue = [string](Get-HcsPropertyValue -InputObject $_ -Name @('Host', 'ComputerName', 'PSComputerName'))
+                [string]::IsNullOrWhiteSpace($hostValue) -or $hostValue.Split('.')[0].Equals($ComputerName.Split('.')[0], [StringComparison]::OrdinalIgnoreCase)
+            }) | Select-Object -First 1
+        if ($null -eq $status) {
+            $state = 'NotApplicable'
+            $detail = 'No Network ATC global override status is present on this host.'
+        }
+        else {
+            $result = Get-HcsStatusState -Status $status -Subject "Network ATC global configuration on '$ComputerName'"
+            $state = $result.State
+            $detail = $result.Detail
+        }
+    }
+    elseif ($Mode -eq 'Adapter') {
+        $names = @($AdapterNames -split '[,;]' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+        if ($names.Count -eq 0) {
+            $state = 'Warning'
+            $detail = "Network intent '$IntentName' did not expose participating adapter names. Verify the NetworkATC module output contract."
+        }
+        elseif (-not (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue)) {
+            throw 'Get-NetAdapter is unavailable; Network ATC adapter readiness cannot be evaluated.'
+        }
+        else {
+            $problems = [System.Collections.Generic.List[string]]::new()
+            foreach ($name in $names) {
+                $adapter = Get-NetAdapter -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $adapter) { $problems.Add("adapter '$name' was not found"); continue }
+                if ([string]$adapter.Status -ne 'Up') { $problems.Add("adapter '$name' is '$($adapter.Status)'") }
+            }
+            if ($IsStorageIntent -and $RequireRdmaForStorage) {
+                if (-not (Get-Command -Name Get-NetAdapterRdma -ErrorAction SilentlyContinue)) {
+                    $problems.Add('Get-NetAdapterRdma is unavailable; install Data-Center-Bridging and its management tools')
+                }
+                else {
+                    foreach ($name in $names) {
+                        $rdma = Get-NetAdapterRdma -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if ($null -eq $rdma -or -not [bool]$rdma.Enabled) { $problems.Add("storage adapter '$name' does not report RDMA enabled") }
+                    }
+                }
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Network intent '$IntentName' adapter readiness failed: $($problems -join '; ')."
+            }
+            else {
+                $detail = "All participating adapters for network intent '$IntentName' are present and Up" + $(if ($IsStorageIntent -and $RequireRdmaForStorage) { ' with RDMA enabled.' } else { '.' })
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Network ATC $Mode health probe failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.NetworkAtc.Health.ps1', 8903, 1, $detail)
+}
+
+$bag.AddValue('NetworkAtcState', $state)
+$bag.AddValue('NetworkAtcStateDetail', $detail)
+$bag

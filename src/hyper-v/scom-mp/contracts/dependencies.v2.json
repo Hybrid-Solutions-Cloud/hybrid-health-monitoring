@@ -211,6 +211,61 @@
         "System.NetworkManagement.NetworkConnectionConnectedToNetworkAdapter"
       ],
       "policy": "Reuse SCOM network devices, ports/interfaces, VLANs, topology, server-port correlation, health, and performance; HCS adds only private-cloud membership, coverage, and service impact."
+    },
+    {
+      "id": "NetworkATC",
+      "status": "Approved",
+      "optional": true,
+      "supportedWindowsServerVersions": [
+        "2025"
+      ],
+      "windowsFeatures": [
+        "NetworkATC",
+        "Hyper-V",
+        "Failover-Clustering",
+        "Data-Center-Bridging",
+        "FS-SMBBW"
+      ],
+      "powershellModule": "NetworkATC",
+      "readCommands": [
+        "Get-NetIntent",
+        "Get-NetIntentStatus",
+        "Get-NetAdapter",
+        "Get-NetAdapterRdma"
+      ],
+      "statusProperties": [
+        "IntentName",
+        "Host",
+        "ConfigurationStatus",
+        "ProvisioningStatus",
+        "RetryCount",
+        "Error",
+        "Progress",
+        "LastSuccess",
+        "LastUpdated",
+        "LastConfigApplied"
+      ],
+      "successContract": {
+        "ConfigurationStatus": "Success",
+        "ProvisioningStatus": "Completed",
+        "Error": ""
+      },
+      "verifiedIntentTypes": [
+        "Compute",
+        "Storage",
+        "Management",
+        "Stretch",
+        "SDN",
+        "Switchless"
+      ],
+      "verifiedFailureCodes": [
+        "PhysicalAdapterNotFound",
+        "PhysicalAdapterNotSymmetric",
+        "WindowsFeatureNotInstalled",
+        "RdmaNotOperational",
+        "ProvisioningFailed"
+      ],
+      "policy": "Use a read-only local Windows feature adapter with stable intent and per-node status projections. Never mutate, retry, remediate, or restart Network ATC; absent capability is Not Applicable unless explicitly required."
     }
   ]
 }

@@ -63,6 +63,7 @@ suitable relationship endpoints and must not be duplicated by v2.
 | SDN Integration | Microsoft Windows Server SDN MP, minimum package `10.0.0.2` | Never a core dependency; reuse Microsoft SDN objects and add only verified correlations, coverage, and service impact |
 | SMB/SOFS Integration | Microsoft Windows Server File & iSCSI Services package `10.1.0.4` plus matching Cluster MPs for SOFS | Reuse Microsoft File Server, clustered SMB, iSCSI Target, cluster role/resource, and leaf health; HCS owns only missing share/path/VHDX/VM mappings and service impact |
 | Physical Network Integration | Built-in SCOM network libraries matching the installed SCOM version | Reuse nodes, switches, ports/interfaces, VLANs, connections, server-port correlation, health, and performance; HCS adds private-cloud membership, coverage, and service impact |
+| Network ATC | Windows Server NetworkATC feature and PowerShell module; no external MP dependency | HCS owns stable intent and per-node status projections, read-only status/adapter health, override-kind inventory, and Network-branch service impact; manual/VMM/SDN authority remains Not Applicable unless Network ATC is explicitly required |
 
 An optional capability's presentation and Distributed Application population are packaged with or
 behind that capability. The base presentation MP must not take every optional dependency and turn a
@@ -203,6 +204,29 @@ read an SNMP credential, or emit a competing network-device alert. The local mon
 identity inputs, not management-group topology completeness; the resulting SCOM network diagram is
 a representative-lab and deployment verification gate.
 
+## Network ATC contract
+
+[ADR 0044](../decisions/0044-hyper-v-v2-network-atc-monitoring-contract.md) defines the optional,
+read-only Network ATC adapter. A cluster-floating request is represented by one unhosted
+`NetworkIntent`, keyed by `BoundaryId` and `IntentName`; each Windows computer contributes a hosted
+`NetworkIntentNodeStatus` for the actual per-node convergence state. A hosted
+`GlobalConfigurationStatus` records cluster/proxy override kinds and convergence without storing
+proxy values or complete override payloads.
+
+Six relationships attach intents and global settings to the private-cloud Network component,
+connect each logical intent to its node status, connect HCS hosts to their local status objects,
+and connect node status to exact `Microsoft.Windows.ComputerNetworkAdapter` identities. Four unit
+monitors cover selected authority/capability presence, intent convergence, adapter readiness, and
+global-setting convergence. Four dependency monitors roll adapter-to-node-to-intent health and
+then Network-branch service impact without alerts on the aggregate monitors.
+
+Healthy convergence requires `ConfigurationStatus = Success`, `ProvisioningStatus = Completed`,
+and no error. Failed/error states and convergence that exceeds the configurable 30-minute default
+are Critical; active convergence and unrecognized states are Warning. Storage intents require
+RDMA by default. Missing Network ATC or no intent is Not Applicable unless `RequireNetworkATC` is
+overridden to true. The implementation never invokes any Network ATC, adapter, switch, QoS, DCB,
+VLAN, or service mutation command.
+
 ## Preview migration boundary
 
 The `0.1` preview is not upgraded by renaming its public elements. The v2 installer and guide must:
@@ -242,3 +266,7 @@ recorded in this page:
 - [iSCSI PowerShell module](https://learn.microsoft.com/en-us/powershell/module/iscsi/?view=windowsserver2025-ps)
 - [`MSFC_FibrePortHBAAttributes` WMI class](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msfc-fibreporthbaattributes-wmi-class)
 - [Fibre Channel HBA port-state values](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msfc-hbaportattributesresults-wmi-class)
+- [Host networking with Network ATC](https://learn.microsoft.com/en-us/windows-server/networking/network-atc/network-atc)
+- [`Get-NetIntent`](https://learn.microsoft.com/en-us/powershell/module/networkatc/get-netintent?view=windowsserver2025-ps)
+- [`Get-NetIntentStatus`](https://learn.microsoft.com/en-us/powershell/module/networkatc/get-netintentstatus?view=windowsserver2025-ps)
+- [Manage Network ATC](https://learn.microsoft.com/en-us/windows-server/networking/network-atc/manage-network-atc)

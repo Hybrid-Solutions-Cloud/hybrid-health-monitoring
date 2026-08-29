@@ -200,6 +200,7 @@ export default defineConfig({
             { text: '0041 — Hyper-V v2 Pure Storage integration', link: '/design/decisions/0041-hyper-v-v2-pure-storage-integration' },
             { text: '0042 — Hyper-V v2 file and network ownership', link: '/design/decisions/0042-hyper-v-v2-file-services-and-physical-network-ownership' },
             { text: '0043 — Hyper-V v2 package profiles', link: '/design/decisions/0043-hyper-v-v2-package-and-deployment-profile-architecture' },
+            { text: '0044 — Hyper-V v2 Network ATC', link: '/design/decisions/0044-hyper-v-v2-network-atc-monitoring-contract' },
             { text: 'ADR template', link: '/design/decisions/template' },
           ],
         },

@@ -2,6 +2,30 @@
 
 ## Current session
 
+- **V2 Network ATC capability authored:** Added `Capability.NetworkATC` as a read-only optional
+  adapter over Windows Server 2025 Network ATC. Stable intent, per-node status, and global-setting
+  projections connect to the Network DA branch, HCS hosts, and exact Windows network adapters.
+  Four unit monitors cover capability/authority, intent convergence, adapter symmetry/RDMA, and
+  global convergence; four dependency rollups and seven views expose the resulting state. The pack
+  never invokes Network ATC mutation or retry commands. Missing Network ATC remains Not Applicable
+  unless explicitly required. Combined preview/v2 Pester passes 79/79; three changed PowerShell
+  files pass ScriptAnalyzer; JSON contracts parse; `git diff --check` and the VitePress production
+  build pass. OM2022 VSAE, transient sealing, and `sn.exe -vf` passed earlier in this session;
+  representative SCOM lifecycle and fault labs remain release gates. ADR 0044 and the dependency,
+  prerequisite, build, test, package, and navigation surfaces are updated. SDN is next, followed by
+  VMM.
+
+- **Root v2 plan execution summary added:** Updated `PLAN.md`, the existing authoritative root
+  plan, with a current workstream/exit-gate table and an explicit remaining execution
+  order. The release contract now requires governed sealed bundles and individual MPs, public
+  customer-owned Lab/Standard/Strict override bundles, checksums, release and migration guidance,
+  GitHub release assets, and a stable documentation-site **Download now** link. It explicitly
+  rejects transient test seals, incomplete capability sets, hand-edited overrides, and source-only
+  archives as public-release completion. Network ATC remains the immediate implementation
+  priority, followed by SDN, VMM, overrides/profiles, representative labs, governed sealing, and
+  publication. Network ATC is now authored, so the remaining sequence contains six steps beginning
+  with SDN.
+
 - **V2 Physical Network adapter authored:** Added `Capability.PhysicalNetwork` as a thin adapter
   over the built-in SCOM network model. Direct inspection of SCOM 2016 `7.2.11719.0`, SCOM 2019
   `10.19.10050.0`, and SCOM 2022 `10.22.10118.0` confirmed the required public Node, Switch,
