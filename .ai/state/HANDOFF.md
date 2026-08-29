@@ -2,6 +2,24 @@
 
 ## Current session
 
+- **V2 VMM 2025 capability authored and offline verified:** Added `Capability.VMM` against the
+  exact Microsoft VMM 2025 media identities: Library/Discovery/Monitoring `11.19.0.3` and PRO v2
+  Library `10.25.1200.0`. The adapter creates a VMM-fabric DA root, relates exact Microsoft VMM
+  management servers, hosts, clouds, and VM networks, projects only the verified logical-network
+  and network-site gaps, queries failed jobs read-only through Microsoft's VMM Server Connection
+  Run As profile, adds ten nonduplicate rollups, and provides 20 views. Microsoft retains all
+  published VMM objects, leaf health, alerts, performance, dashboards, reports, SDK population,
+  and remediation authority. OM2022 VSAE caught and drove fixes for Run As placement, presentation
+  string-resource placement, dynamic `$MPElement` expressions, and StateView criteria. The final
+  source passes VSAE using transiently re-signed copies extracted from Microsoft's VMM/SQL bundles,
+  transient sealing, and `sn.exe -vf`. Combined Hyper-V Pester passes 93/93; five changed product
+  scripts pass PSScriptAnalyzer; JSON contracts, `git diff --check`, and VitePress production build
+  pass. ADR 0046, the dependency contract, guide, source README, plan, changelog, manifest, and
+  navigation are updated. Scratch verification evidence is under
+  `D:/tmp/hcs-hyperv-v2-vmm-verify-20260829/` and is not release-signed output. Representative VMM
+  integration, Run As, topology, jobs, fault/recovery, coexistence, upgrade, and removal labs
+  remain. Public v2 profiles and override MPs are next.
+
 - **V2 Windows Server SDN capability authored:** Added `Capability.SDN` as a thin optional adapter
   over Microsoft's inspected `Microsoft.Windows.10.SDNMonitoring` `10.0.0.2` contract. Microsoft
   retains Network Controller REST discovery, Run As/certificate handling, its 22-class topology,

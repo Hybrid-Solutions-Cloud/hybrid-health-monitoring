@@ -202,6 +202,7 @@ export default defineConfig({
             { text: '0043 — Hyper-V v2 package profiles', link: '/design/decisions/0043-hyper-v-v2-package-and-deployment-profile-architecture' },
             { text: '0044 — Hyper-V v2 Network ATC', link: '/design/decisions/0044-hyper-v-v2-network-atc-monitoring-contract' },
             { text: '0045 — Hyper-V v2 Windows Server SDN', link: '/design/decisions/0045-hyper-v-v2-windows-server-sdn-integration-contract' },
+            { text: '0046 — Hyper-V v2 Virtual Machine Manager', link: '/design/decisions/0046-hyper-v-v2-virtual-machine-manager-integration-contract' },
             { text: 'ADR template', link: '/design/decisions/template' },
           ],
         },

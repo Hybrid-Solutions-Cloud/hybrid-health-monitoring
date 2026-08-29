@@ -24,6 +24,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         [xml]$script:PhysicalNetworkCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.xml') -Raw
         [xml]$script:NetworkAtcCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.xml') -Raw
         [xml]$script:SdnCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.xml') -Raw
+        [xml]$script:VmmCapability = Get-Content -LiteralPath (Join-Path $script:Output 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.xml') -Raw
     }
 
     AfterAll {
@@ -74,7 +75,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
-        @($script:Receipt.artifacts).Count | Should -Be 12
+        @($script:Receipt.artifacts).Count | Should -Be 13
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D'
@@ -83,6 +84,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC'
         @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN'
+        @($script:Receipt.artifacts.id) | Should -Contain 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM'
         @($script:Receipt.artifacts | Where-Object sealed).Count | Should -Be 0
         { & $script:BuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $script:Output -RequireComplete } | Should -Not -Throw
     }
@@ -737,6 +739,111 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             @($parseErrors).Count | Should -Be 0
         }
         $script:SdnCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'pins the VMM 2025 adapter to the exact shipped Microsoft Management Pack identities' {
+        $expected = [ordered]@{
+            VMMBase = @('Microsoft.SystemCenter.VirtualMachineManager.Library', '11.19.0.3')
+            VMMDiscovery = @('Microsoft.SystemCenter.VirtualMachineManager.Discovery', '11.19.0.3')
+            VMMMonitoring = @('Microsoft.SystemCenter.VirtualMachineManager.Monitoring', '11.19.0.3')
+            VMMProV2 = @('Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library', '10.25.1200.0')
+        }
+        foreach ($entry in $expected.GetEnumerator()) {
+            $reference = $script:VmmCapability.SelectSingleNode("/ManagementPack/Manifest/References/Reference[@Alias='$($entry.Key)']")
+            $reference.ID | Should -Be $entry.Value[0]
+            $reference.Version | Should -Be $entry.Value[1]
+            $reference.PublicKeyToken | Should -Be '31bf3856ad364e35'
+        }
+    }
+
+    It 'reuses Microsoft VMM fabric objects and adds only the verified logical-network gap classes' {
+        $classIds = @($script:VmmCapability.SelectNodes('//ClassType') | ForEach-Object ID)
+        $classIds | Should -Be @(
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork',
+            'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite'
+        )
+        $script:VmmCapability.OuterXml | Should -Not -Match '<ClassType ID="Microsoft\.SystemCenter\.VirtualMachineManager\.'
+        @($script:VmmCapability.SelectNodes('//RelationshipType')).Count | Should -Be 9
+        foreach ($target in @('VMMManagementServer', 'HyperVHost', 'PrivateCloud', 'VMNetwork')) {
+            $script:VmmCapability.SelectSingleNode("//RelationshipType/*[contains(@Type,'$target')]") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'creates a VMM fabric service and maps VMM hosts and clouds into local Hyper-V boundaries' {
+        @($script:VmmCapability.SelectNodes('//Discovery')).Count | Should -Be 3
+        $fabricScript = $script:VmmCapability.SelectSingleNode("//Discovery[contains(@ID,'Fabric.Discovery')]//ScriptBody").InnerText
+        $hostScript = $script:VmmCapability.SelectSingleNode("//Discovery[contains(@ID,'Host.Relationship.Discovery')]//ScriptBody").InnerText
+        $cloudScript = $script:VmmCapability.SelectSingleNode("//Discovery[contains(@ID,'Cloud.Relationship.Discovery')]//ScriptBody").InnerText
+        $fabricScript | Should -Match "VirtualMachineManagerFabric"
+        $fabricScript | Should -Match 'Get-SCLogicalNetwork'
+        $fabricScript | Should -Match 'Get-SCLogicalNetworkDefinition'
+        $fabricScript | Should -Match 'Get-SCVMNetwork'
+        $hostScript | Should -Match "'vmm:\{0\}'"
+        $hostScript | Should -Match "'cluster:\{0\}'"
+        $hostScript | Should -Match 'HostRoleReferencesVMMHost'
+        $cloudScript | Should -Match 'ManagementReferencesPrivateCloud'
+        $cloudScript | Should -Match "-split '\[;,\]'"
+    }
+
+    It 'uses the Microsoft VMM connection Run As profile with read-only queries only' {
+        $runAs = 'VMMProV2!Microsoft.SystemCenter.VirtualMachineManager.2012.VMMServerConnectionRunAsProfile'
+        $script:VmmCapability.SelectSingleNode("//Discovery[contains(@ID,'Fabric.Discovery')]/DataSource").RunAs | Should -Be $runAs
+        @($script:VmmCapability.SelectNodes("//UnitMonitor[contains(@ID,'IntegrationHealth.Monitor') or contains(@ID,'FailedJobs.Monitor')]") | ForEach-Object RunAs) |
+            Should -Be @($runAs, $runAs)
+        $script:VmmCapability.SelectSingleNode("//UnitMonitorType[contains(@ID,'Health.MonitorType')]//DataSource[@ID='DataSource']").RunAs |
+            Should -BeNullOrEmpty
+        $scripts = @($script:VmmCapability.SelectNodes('//ScriptBody') | ForEach-Object InnerText) -join "`n"
+        $scripts | Should -Match 'Get-SCVMMServer'
+        $scripts | Should -Match 'Get-SCJob'
+        $scripts | Should -Not -Match '(?i)\b(New|Set|Remove|Restart|Repair|Start|Stop)-SC|Invoke-Sqlcmd|Restart-Service|Start-Service|Stop-Service'
+    }
+
+    It 'monitors VMM query coverage and recent failed jobs without duplicating Microsoft leaf alerts' {
+        @($script:VmmCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 2
+        @($script:VmmCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 10
+        @($script:VmmCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        $failedJobs = $script:VmmCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'FailedJobs.Monitor')]")
+        $failedJobs.Configuration.JobLookbackHours | Should -Be '24'
+        $failedJobs.Configuration.FailedJobCriticalCount | Should -Be '1'
+        $failedJobs.Configuration.PropertyName | Should -Be 'FailedJobState'
+        $healthScript = $script:VmmCapability.SelectSingleNode("//DataSourceModuleType[contains(@ID,'Health.DataSource')]//ScriptBody").InnerText
+        $healthScript | Should -Match "Status -eq 'Failed'"
+        $healthScript | Should -Match 'Get-SCJob -VMMServer \$vmmServer -Newest \$JobLookbackHours'
+        $knowledge = $script:VmmCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor']").InnerText
+        $knowledge | Should -Match 'Read-Only|read-only' -Because 'operator knowledge must establish least privilege'
+    }
+
+    It 'rolls only VMM-specific host checks plus Microsoft server and cloud health into the DA' {
+        $winRmRollups = @($script:VmmCapability.SelectNodes("//DependencyMonitor[contains(@MemberMonitor,'HostWinRMService.Monitor')]")).Count
+        $agentRollups = @($script:VmmCapability.SelectNodes("//DependencyMonitor[contains(@MemberMonitor,'HostVMMAgentVersionMonitor')]")).Count
+        $winRmRollups | Should -Be 2
+        $agentRollups | Should -Be 2
+        $script:VmmCapability.OuterXml | Should -Not -Match 'HostCPUUtilizationMonitor|HostMemoryUtilizationMonitor|HyperVService.Monitor'
+    }
+
+    It 'provides a dedicated VMM console folder with fabric, topology, alert, and performance views' {
+        @($script:VmmCapability.SelectNodes('//View')).Count | Should -Be 20
+        $folder = $script:VmmCapability.SelectSingleNode("//Folder[@ID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Folder']")
+        $folder.ParentFolder | Should -Be 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Root.Folder'
+        foreach ($item in $script:VmmCapability.SelectNodes('//FolderItem')) {
+            [string]$item.Folder | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Folder'
+        }
+        foreach ($target in @('VMMManagementServer', 'PrivateCloud', 'HostGroup', 'HostCluster', 'HyperVHost', 'VirtualMachine', 'VMNetwork', 'LogicalNetwork', 'NetworkSite', 'VSwitch', 'StoragePool')) {
+            $script:VmmCapability.SelectSingleNode("//View[contains(@Target,'$target')]") | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'contains syntactically valid PowerShell 7 VMM scripts and actionable knowledge' {
+        foreach ($scriptBody in $script:VmmCapability.SelectNodes('//ScriptBody')) {
+            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            @($parseErrors).Count | Should -Be 0
+        }
+        foreach ($monitorId in @('IntegrationHealth', 'FailedJobs')) {
+            $script:VmmCapability.SelectSingleNode("//KnowledgeArticle[@ElementID='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$monitorId.Monitor']") | Should -Not -BeNullOrEmpty
+        }
     }
 
     It 'writes UTF-8 XML without a byte-order mark' {

@@ -263,6 +263,36 @@ Software Defined Networking**. Representative SCOM labs must still prove Microso
 discovery, controller certificate failure/recovery, gateway and overlay faults, service impact,
 coexistence with Network ATC/VMM, and clean adapter removal.
 
+## Virtual Machine Manager adapter contract
+
+[ADR 0046](../decisions/0046-hyper-v-v2-virtual-machine-manager-integration-contract.md) defines
+the optional `Capability.VMM` adapter. Microsoft documents VMM Management Packs as coupled to the
+installed VMM build, so the first support lane is the exact System Center 2025 media contract:
+VMM Library, Discovery, and Monitoring `11.19.0.3`, plus PRO v2 Library `10.25.1200.0`, all signed
+with Microsoft's `31bf3856ad364e35` token. Similar element IDs in another VMM release are not proof
+of compatibility.
+
+Microsoft remains authoritative for VMM management servers, private clouds, host groups, host
+clusters, Hyper-V hosts, VMs, VM networks, switches and ports, storage, SDK population, leaf
+health, alerts, performance, dashboards, reports, maintenance integration, and PRO. HCS creates no
+competing instance or leaf alert. The adapter creates a VMM-fabric service root, attaches exact
+Microsoft objects to its DA branches and matching local Hyper-V boundaries, and rolls up Microsoft
+server/cloud health plus only the VMM-specific host WinRM and agent-version monitors.
+
+Direct inspection verified that VMM 2025 does not publish logical networks, network sites, or jobs
+as SCOM objects or workflows. HCS therefore owns two bounded read-only gap classes—`LogicalNetwork`
+and `NetworkSite`, keyed by VMM server plus VMM GUID—and relates them to Microsoft's VM Network
+objects. A separate monitor queries `Get-SCJob` for `Failed` jobs in an overrideable 24-hour window.
+All VMM queries use Microsoft's public VMM Server Connection Run As profile and require at least a
+VMM Read-Only Administrator account scoped across the monitored fabric. The adapter never reads
+the VMM database directly and performs no remediation.
+
+Representative SCOM/VMM 2025 labs must still prove Microsoft integration, Run As distribution,
+server/host/cloud/logical-network/site topology, failed-job fault and recovery, `ClusterNames`
+correlation, management-server failover, Network ATC/SDN coexistence, upgrade, and removal. Direct
+HCS-to-VMM VM identity merging remains prohibited until a lab proves that the two product keys are
+stable and equal.
+
 ## Preview migration boundary
 
 The `0.1` preview is not upgraded by renaming its public elements. The v2 installer and guide must:
@@ -275,10 +305,9 @@ The `0.1` preview is not upgraded by renaming its public elements. The v2 instal
 
 ## Remaining contract spikes
 
-The following dependencies are not approved until their exact public contracts are inspected and
+The following dependency is not approved until its exact public contract is inspected and
 recorded in this page:
 
-- exact VMM MP IDs, classes, and keys from each supported, build-coupled SCOM/VMM pair; and
 - the SCOM 2025 Pure Storage path, either vendor-certified or a separately approved read-only
   Purity REST 2.x provider.
 
@@ -292,6 +321,11 @@ recorded in this page:
 - [Windows Server SDN MP 10.0.0.2](https://www.microsoft.com/en-us/download/details.aspx?id=54300)
 - [Troubleshoot the Windows Server SDN stack](https://learn.microsoft.com/en-us/troubleshoot/windows-server/software-defined-networking/troubleshoot-windows-server-software-defined-networking-stack)
 - [Deploy an SDN infrastructure in VMM](https://learn.microsoft.com/en-us/system-center/vmm/deploy-sdn?view=sc-vmm-2025)
+- [Integrate VMM with Operations Manager](https://learn.microsoft.com/en-us/system-center/vmm/monitors-ops-manager?view=sc-vmm-2025)
+- [Manage VMM roles and permissions](https://learn.microsoft.com/en-us/system-center/vmm/manage-account?view=sc-vmm-2025)
+- [`Get-SCJob`](https://learn.microsoft.com/en-us/powershell/module/virtualmachinemanager/get-scjob?view=systemcenter-ps-2025)
+- [`Get-SCLogicalNetwork`](https://learn.microsoft.com/en-us/powershell/module/virtualmachinemanager/get-sclogicalnetwork?view=systemcenter-ps-2025)
+- [`Get-SCLogicalNetworkDefinition`](https://learn.microsoft.com/en-us/powershell/module/virtualmachinemanager/get-sclogicalnetworkdefinition?view=systemcenter-ps-2025)
 - [What is in an Operations Manager Management Pack?](https://learn.microsoft.com/en-us/system-center/scom/manage-overview-management-pack?view=sc-om-2025)
 - [Pure Storage FlashArray PowerShell SDK 2](https://github.com/PureStorage-Connect/PowerShellSDK2)
 - [Pure Storage FlashArray SCOM MP 2.0.120.0](https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0)

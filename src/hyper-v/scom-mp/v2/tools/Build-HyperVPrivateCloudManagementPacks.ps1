@@ -436,6 +436,70 @@ function Get-HcsPhysicalNetworkCapabilityContent {
     return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
+function Get-HcsVmmCapabilityContent {
+    [CmdletBinding()]
+    param()
+
+    $viewNames = [ordered]@{
+        'FabricServices.State' = 'VMM fabric services'
+        'ManagementServers.State' = 'VMM management servers'
+        'PrivateClouds.State' = 'VMM private clouds'
+        'HostGroups.State' = 'VMM host groups'
+        'HostClusters.State' = 'VMM host clusters'
+        'HyperVHosts.State' = 'VMM Hyper-V hosts'
+        'VirtualMachines.State' = 'VMM virtual machines'
+        'VMNetworks.State' = 'VMM VM networks'
+        'LogicalNetworks.State' = 'VMM logical networks'
+        'NetworkSites.State' = 'VMM network sites'
+        'VirtualSwitches.State' = 'VMM virtual switches'
+        'StoragePools.State' = 'VMM storage pools'
+        'ManagementServers.Alerts' = 'VMM management-server active alerts'
+        'HyperVHosts.Alerts' = 'VMM Hyper-V host active alerts'
+        'PrivateClouds.Alerts' = 'VMM private-cloud active alerts'
+        'VirtualMachines.Alerts' = 'VMM virtual-machine active alerts'
+        'HyperVHosts.Performance' = 'VMM Hyper-V host performance'
+        'VirtualMachines.Performance' = 'VMM virtual-machine performance'
+        'StoragePools.Performance' = 'VMM storage-pool performance'
+        'PrivateClouds.Performance' = 'VMM private-cloud performance'
+    }
+    $folderItems = [System.Text.StringBuilder]::new()
+    $displayStrings = [System.Text.StringBuilder]::new()
+    foreach ($entry in $viewNames.GetEnumerator()) {
+        $viewId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$($entry.Key).View"
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Folder`" />")
+        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($entry.Value)</Name></DisplayString>")
+    }
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Folder"><Name>Virtual Machine Manager</Name><Description>VMM fabric services, management health, private clouds, hosts, virtual machines, networking, storage, failed jobs, alerts, and performance.</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor"><Name>VMM integration and topology-query health</Name><Description>Validates the VMM module, read-only connection, logical-network, network-site, and VM-network queries.</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor"><Name>Recent failed VMM jobs</Name><Description>Tracks VMM jobs with Failed status during the configured lookback period.</Description></DisplayString>')
+    foreach ($monitorId in @('IntegrationHealth', 'FailedJobs')) {
+        foreach ($state in @('Good', 'Warning', 'Critical')) {
+            [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$monitorId.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>")
+        }
+    }
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor.Message"><Name>VMM integration query failed</Name><Description>{0}</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor.Message"><Name>Recent VMM jobs failed</Name><Description>{0}</Description></DisplayString>')
+    $workflowNames = [ordered]@{
+        'Fabric.Discovery' = 'Discover VMM fabric service, logical networks, and network sites'
+        'Host.Relationship.Discovery' = 'Discover VMM-to-Hyper-V host relationships'
+        'Cloud.Relationship.Discovery' = 'Discover VMM private-cloud relationships'
+        'Management.Server.Availability.Dependency.Monitor' = 'Roll up VMM management-server availability'
+        'Management.Server.Configuration.Dependency.Monitor' = 'Roll up VMM management-server configuration and failed jobs'
+        'Compute.Host.WinRM.Dependency.Monitor' = 'Roll up VMM host WinRM availability into the VMM fabric'
+        'Compute.Host.AgentVersion.Dependency.Monitor' = 'Roll up VMM host agent-version compliance into the VMM fabric'
+        'Management.Host.WinRM.Dependency.Monitor' = 'Roll up VMM host WinRM availability into its Hyper-V boundary'
+        'Management.Host.AgentVersion.Dependency.Monitor' = 'Roll up VMM host agent-version compliance into its Hyper-V boundary'
+        'Management.Cloud.Availability.Dependency.Monitor' = 'Roll up VMM private-cloud availability'
+        'Management.Cloud.Configuration.Dependency.Monitor' = 'Roll up VMM private-cloud configuration'
+        'ClusterManagement.Cloud.Availability.Dependency.Monitor' = 'Roll up mapped VMM private-cloud availability into the cluster boundary'
+        'ClusterManagement.Cloud.Configuration.Dependency.Monitor' = 'Roll up mapped VMM private-cloud configuration into the cluster boundary'
+    }
+    foreach ($entry in $workflowNames.GetEnumerator()) {
+        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$($entry.Key)`"><Name>$($entry.Value)</Name></DisplayString>")
+    }
+    return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displayStrings.ToString() }
+}
+
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -644,6 +708,25 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             if ($capabilityScript.Contains(']]>')) { throw "SDN capability script contains the CDATA terminator: $capabilityScriptPath" }
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
+    }
+    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM') {
+        $capabilityDirectory = Split-Path -Parent $sourcePath
+        $scriptTokens = [ordered]@{
+            VMM_FABRIC_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudVmmFabric.ps1.template'
+            VMM_HOST_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudVmmHostRelationships.ps1.template'
+            VMM_CLOUD_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudVmmCloudRelationships.ps1.template'
+            VMM_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudVmmHealth.ps1.template'
+        }
+        foreach ($entry in $scriptTokens.GetEnumerator()) {
+            $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
+            if (-not (Test-Path -LiteralPath $capabilityScriptPath -PathType Leaf)) { throw "VMM capability script source does not exist: $capabilityScriptPath" }
+            $capabilityScript = Get-Content -LiteralPath $capabilityScriptPath -Raw
+            if ($capabilityScript.Contains(']]>')) { throw "VMM capability script contains the CDATA terminator: $capabilityScriptPath" }
+            $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
+        }
+        $vmmContent = Get-HcsVmmCapabilityContent
+        $content = $content.Replace('{{VMM_FOLDER_ITEMS}}', $vmmContent.FolderItems)
+        $content = $content.Replace('{{VMM_DISPLAY_STRINGS}}', $vmmContent.DisplayStrings)
     }
     if ($content.Contains('{{ELEMENT_DISPLAY_STRINGS}}')) {
         [xml]$librarySource = $content.Replace('{{ELEMENT_DISPLAY_STRINGS}}', '')

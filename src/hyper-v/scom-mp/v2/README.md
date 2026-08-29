@@ -27,7 +27,7 @@ domain folders, 17 localized health, diagram, alert, event, inventory, and perfo
 a native SCOM Distributed Application diagram targeted at the service class. Capability packs add
 their own domain views beneath this public root without modifying the sealed core Presentation MP.
 
-The first seven optional capabilities are also authored:
+The nine optional capabilities are also authored:
 
 - `Capability.Cluster` references Microsoft Failover Cluster `10.1.0.0` and Cluster Shared Volume
   `10.1.2.2` objects rather than rediscovering them. It adds six service-impact relationships, one
@@ -73,6 +73,13 @@ The first seven optional capabilities are also authored:
   host-agent evidence without fabricating a Microsoft SDN Host identity. Ten relationships, one
   integration monitor, 11 dependency rollups, and 16 views attach authoritative Microsoft SDN
   health to the private-cloud Management and Networking branches.
+- `Capability.VMM` is pinned to the exact inspected System Center 2025 VMM contract: Library,
+  Discovery, and Monitoring `11.19.0.3`, plus PRO v2 Library `10.25.1200.0`. It reuses Microsoft's
+  SDK-populated fabric objects, leaf health, alerts, performance, dashboards, and reports. HCS adds
+  only a VMM-fabric DA root, exact server/host/cloud relationships, two missing logical-network and
+  network-site projection classes, a read-only failed-job monitor, ten targeted rollups, and 20
+  views. Queries use Microsoft's VMM Server Connection Run As profile with at least a scoped VMM
+  Read-Only Administrator account and never read SQL or perform remediation.
 
 Storage Core does not model arrays and does not duplicate Microsoft S2D objects. Pure Storage and
 S2D remain independent adapter packs; installing both will populate the same private-cloud Storage
@@ -115,6 +122,13 @@ including agentless Network Controller nodes, Microsoft's SDN Monitoring Account
 and Network Controller REST certificate trust. The HCS adapter never uses that credential or calls
 Network Controller REST. It reads only the local `NcHostAgent` HostId and `NcHostAgent`/
 `SlbHostAgent` service states and relies on Microsoft for all authoritative SDN objects and alerts.
+
+The VMM capability initially supports only the exact inspected System Center 2025 VMM Management
+Pack set. VMM integration and Microsoft object discovery must be healthy first. Configure the
+public VMM Server Connection Run As profile with a dedicated, scoped VMM Read-Only Administrator
+account. Build-matched VMM 2019, 2022, future 2025 updates, VMM service failover, logical-network
+and network-site lifecycle, failed-job recovery, cloud-to-cluster mapping, coexistence, and removal
+remain representative-lab certification gates.
 
 Build the currently authored artifacts with PowerShell 7:
 

@@ -114,8 +114,71 @@
     },
     {
       "id": "VirtualMachineManager",
-      "status": "ContractSpikeRequired",
-      "optional": true
+      "status": "ApprovedForVmm2025",
+      "optional": true,
+      "supportedVmmVersions": [
+        "2025"
+      ],
+      "versionPolicy": "VMM Management Packs are coupled to the installed VMM build. This adapter supports only the inspected System Center 2025 media contract until each older or newer release is separately inspected and certified.",
+      "officialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+      "officialMediaSha256": "223CE90811799223DA635EC66F81302ECBB3AB4842C37002AC29B23D556F5AAF",
+      "managementPacks": [
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.Library",
+          "version": "11.19.0.3",
+          "publicKeyToken": "31bf3856ad364e35"
+        },
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.Discovery",
+          "version": "11.19.0.3",
+          "publicKeyToken": "31bf3856ad364e35"
+        },
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.Monitoring",
+          "version": "11.19.0.3",
+          "publicKeyToken": "31bf3856ad364e35"
+        },
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library",
+          "version": "10.25.1200.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ],
+      "secureReference": "Microsoft.SystemCenter.VirtualMachineManager.2012.VMMServerConnectionRunAsProfile",
+      "minimumRole": "VMM Read-Only Administrator scoped to every monitored host group, cloud, and library server",
+      "inspectedInventory": {
+        "libraryClasses": 50,
+        "libraryRelationships": 21,
+        "discoveryClasses": 46,
+        "discoveryRelationships": 61,
+        "discoveries": 2,
+        "monitoringUnitMonitors": 66,
+        "monitoringDependencyMonitors": 26,
+        "monitoringRules": 1,
+        "monitoringViews": 56
+      },
+      "authoritativeClasses": [
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMMManagementServer",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.PrivateCloud",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.HostGroup",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.HostCluster",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.HyperVHost",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.VirtualMachine",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMNetwork",
+        "Microsoft.SystemCenter.VirtualMachineManager.Network.Discovery.VSwitch",
+        "Microsoft.SystemCenter.VirtualMachineManager.Discovery.StoragePool"
+      ],
+      "verifiedProjectionGaps": [
+        "The VMM SCOM model does not publish logical networks as classes.",
+        "The VMM SCOM model does not publish logical network definitions (network sites) as classes.",
+        "The VMM SCOM model does not publish jobs as classes or workflows."
+      ],
+      "hcsGapOwnership": [
+        "Read-only LogicalNetwork and NetworkSite projections keyed by VMM server and VMM GUID.",
+        "Read-only recent failed-job health through Get-SCJob.",
+        "Private-cloud service relationships and selected VMM-specific health rollups."
+      ],
+      "policy": "Reuse Microsoft VMM SDK-populated objects, topology, leaf health, alerts, performance, dashboards, reporting, maintenance integration, and PRO. HCS adds only verified missing logical-network/network-site projections, failed-job status, exact host/cloud correlations, and private-cloud service impact; it never reads the VMM database directly or performs remediation."
     },
     {
       "id": "SoftwareDefinedNetworking",

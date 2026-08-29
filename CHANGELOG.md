@@ -26,6 +26,11 @@
 
 ### Added
 
+* Add the Hyper-V v2 VMM 2025 capability against the exact shipped Microsoft VMM MP identities,
+  with a VMM-fabric Distributed Application root, exact server/host/cloud relationships, missing
+  logical-network and network-site projections, read-only failed-job monitoring, targeted service
+  rollups, 20 console views, dependency evidence, operator guidance, tests, and ADR 0046.
+
 * Add a preview-gated Azure Local Azure Monitor Health Model baseline with Bicep-defined identity,
   entities, relationships, documented platform metric signals, state alerts, development
   parameters, research KQL, a starter workbook, contract validation, research, and ADR 0036.

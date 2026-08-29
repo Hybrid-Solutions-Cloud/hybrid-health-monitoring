@@ -199,6 +199,48 @@ relationship because Microsoft uses a different `ResourceId` key for that class.
 Microsoft's setup instructions and supported Windows Server/SCOM matrix are on the
 [Windows Server SDN MP download page](https://www.microsoft.com/en-us/download/details.aspx?id=54300).
 
+### Virtual Machine Manager capability
+
+The initial `Capability.VMM` support lane is System Center 2025 VMM using the exact Management
+Packs shipped with the installed product. Microsoft couples these packs to the VMM build; do not
+substitute a VMM 2019/2022 package or assume a later update is compatible merely because its IDs
+look similar.
+
+Before importing the HCS VMM capability:
+
+1. Integrate VMM 2025 with a supported Operations Manager management group by using Microsoft's
+   VMM integration wizard.
+2. Confirm that the matching VMM Library, Discovery, Monitoring, and PRO v2 Library MPs are
+   imported and that Microsoft VMM management servers, hosts, clouds, and VMs are discovered.
+3. Confirm that the VMM console installed on each VMM management server matches the VMM service
+   build and that the `VirtualMachineManager` PowerShell module is available.
+4. Configure Microsoft's **VMM Server Connection Run As Profile** with a dedicated account that
+   has at least the VMM Read-Only Administrator role across every monitored host group, cloud, and
+   library server. Distribute that account only to the VMM management-server targets.
+5. Import the sealed HCS `Capability.VMM` MP after the four HCS core MPs.
+
+The adapter creates a **VMM fabric** Distributed Application root, relates Microsoft's authoritative
+servers, hosts, and private clouds to the HCS service graph, and adds the VMM-specific WinRM and
+agent-version health path without duplicating Microsoft's CPU, memory, Hyper-V service, VM, cloud,
+storage, alert, performance, dashboard, or report workflows. It also fills three verified gaps:
+logical networks, network sites, and recent failed-job health.
+
+The failed-job monitor queries `Get-SCJob` every five minutes. Its default lookback is 24 hours and
+one failed job is Critical; override `JobLookbackHours` and `FailedJobCriticalCount` through a
+customer Monitoring Overrides MP when a different operational policy is required. Review failed
+steps and error codes in the VMM Jobs workspace. HCS never retries or repairs a job.
+
+The VMM folder provides fabric-service, server, cloud, host-group, host-cluster, Hyper-V host, VM,
+VM-network, logical-network, network-site, switch, storage-pool, active-alert, and performance
+views. Microsoft's richer Fabric, VM, Host, Network, and Storage dashboards remain in the native
+VMM console area and remain Microsoft-owned.
+
+VMM 2025 representative-lab certification remains a release gate. Until it passes, the authored
+adapter is development source—not a supported or governed-sealed public release artifact.
+
+See Microsoft's [VMM and Operations Manager integration guidance](https://learn.microsoft.com/en-us/system-center/vmm/monitors-ops-manager?view=sc-vmm-2025)
+and [VMM role guidance](https://learn.microsoft.com/en-us/system-center/vmm/manage-account?view=sc-vmm-2025).
+
 ## Before installation
 
 1. Confirm that the SCOM, Windows Server, Hyper-V, Failover Clustering, networking, storage, and

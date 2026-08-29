@@ -111,6 +111,15 @@
       "kind": "Capability",
       "required": false,
       "implementationStatus": "Authored"
+    },
+    {
+      "id": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM",
+      "source": "fragments/capabilities/vmm/ManagementPack.xml.template",
+      "output": "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
     }
   ]
 }

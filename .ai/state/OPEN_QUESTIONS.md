@@ -25,6 +25,10 @@
 - Does representative Windows Server 2025 Network ATC discovery preserve intent and per-node
   identity through convergence, drift, adapter changes, RDMA failure/recovery, VMM/SDN authority,
   cluster-node removal, and capability-pack removal without invoking remediation?
+- Does the exact VMM 2025 integration populate the authored fabric, server, host, private-cloud,
+  logical-network, network-site, and VM-network relationships under the scoped Microsoft Run As
+  profile, and do failed-job detection/recovery, management-server failover, `ClusterNames`
+  mapping, Network ATC/SDN coexistence, upgrade, and removal behave as designed?
 - Does the Microsoft Windows Server SDN `10.0.0.2` prerequisite configure and discover correctly
   in every claimed SCOM/Windows Server pair, and do HCS controller-security, management/network
   branch, gateway, local host-binding, Network ATC/VMM coexistence, fault/recovery, and removal

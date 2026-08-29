@@ -40,7 +40,7 @@ test-sealed binaries.
 | Physical network integration | Capability pack authored against built-in SCOM network objects | Adapter-to-switch-port correlation, device fault, recovery, and removal labs pass |
 | Network ATC | Capability pack authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Representative intent convergence, drift, adapter symmetry/RDMA, authority, lifecycle, and removal labs pass |
 | Windows Server SDN | Capability pack authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Microsoft prerequisite setup, topology, certificate/security, controller/gateway fault, coexistence, lifecycle, and removal labs pass |
-| Virtual Machine Manager | Matching-version dependency research and implementation pending | Optional adapter pack works with and without VMM and passes fabric, outage, upgrade, and removal labs |
+| Virtual Machine Manager | VMM 2025 adapter authored; offline contracts, OM2022 VSAE, transient sealing, and strong-name checks pass | Microsoft integration, fabric/host/cloud/logical-network/site/job behavior, outage, coexistence, upgrade, and removal labs pass |
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | V2 implementation pending | Public Lab, Standard, and Strict Discovery/Monitoring override MPs are generated, validated, documented, and packaged per selected capability set |
 | Runtime certification | Blocked on representative SCOM labs and the PowerShell execution-host proof | Every embedded script runs under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
@@ -48,14 +48,13 @@ test-sealed binaries.
 
 Execute the remaining work in this order:
 
-1. Complete matching-version VMM MP inspection, then author and verify the VMM adapter.
-2. Build composable deployment profiles and public customer-owned override MPs for every supported
+1. Build composable deployment profiles and public customer-owned override MPs for every supported
    capability combination and Lab, Standard, and Strict tuning tier.
-3. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
+2. Run the complete automated suite and representative SCOM topology, fault, recovery, scale,
    upgrade, migration, coexistence, and removal labs, including the PowerShell execution-host gate.
-4. Seal every release artifact with the governed signing identity, assemble deterministic packages,
+3. Seal every release artifact with the governed signing identity, assemble deterministic packages,
    and verify clean imports into supported SCOM versions.
-5. Publish the release and make it directly consumable from both surfaces:
+4. Publish the release and make it directly consumable from both surfaces:
    - GitHub release assets contain the complete sealed MP bundle, individual sealed MPs, public
      override starter bundles, checksums, release notes, and installation/migration documentation;
    - the documentation site exposes an obvious **Download now** action using a stable `latest`
@@ -599,8 +598,11 @@ offline-verification level; representative lab behavior remains open.
    remains REST/credential/topology/leaf-alert authority; HCS adds local binding evidence, verified
    missing rollups, private-cloud service impact, and views. Certificate, controller/gateway fault,
    scale, Network ATC/VMM coexistence, lifecycle, and removal labs remain.
-9. **VMM spike** — official MP model, supported integration, clouds, fabric networks/storage,
-   compliance, jobs, and coexistence without duplicate objects or alerts.
+9. **VMM spike** — System Center 2025 official MP model, build-coupled integration, clouds, fabric
+   networks/storage, logical-network/network-site gaps, scoped Run As, and failed-job cmdlets are
+   inspected; `Capability.VMM` is authored against Library/Discovery/Monitoring `11.19.0.3` and
+   PRO v2 Library `10.25.1200.0`. VMM 2025 representative topology, failure, coexistence,
+   upgrade, and removal labs remain. Older/newer VMM lanes require separate contract inspection.
 10. **DA and presentation spike** — stable boundaries, membership, rollup, diagram/dashboard
     behavior, maintenance, migration, and operator usability.
 
@@ -654,8 +656,8 @@ versions, cost, and required fixture.
     duplicate device classes or SNMP workflows; external Hyper-V switches and the Network DA branch
     attach to exact Windows computer-adapter identities used by SCOM's MAC-based topology merge.
     One correlation-input monitor, two dependency rollups, and eight Microsoft-object views pass
-    focused offline tests. Representative switch/port topology and fault validation remain;
-    The Network ATC capability is also authored with stable intent, per-node, and global-setting
+    focused offline tests. Representative switch/port topology and fault validation remain. The
+    Network ATC capability is also authored with stable intent, per-node, and global-setting
     projections; six relationships to the Network branch, hosts, and exact Windows adapters; four
     read-only unit monitors; four dependency rollups; and seven views. It passes focused offline
     tests, OM2022 VSAE verification, transient sealing, and strong-name verification. Network ATC
@@ -667,7 +669,12 @@ versions, cost, and required fixture.
     calling Network Controller REST, fabricating Host identity, or duplicating leaf alerts. OM2022
     VSAE verification, transient sealing, strong-name verification, and focused offline tests pass;
     Microsoft prerequisite setup, topology, controller/certificate/gateway faults, ATC/VMM
-    coexistence, lifecycle, and removal labs remain. VMM is the remaining capability pack.**
+    coexistence, lifecycle, and removal labs remain. `Capability.VMM` is also authored against the
+    exact System Center 2025 VMM MP identities, with VMM-fabric DA membership, exact server/host/
+    cloud relationships, logical-network and network-site gap projections, read-only failed-job
+    monitoring, selected non-duplicate rollups, and 20 views. The complete 93-test Hyper-V suite,
+    OM2022 VSAE verification, transient sealing, strong-name verification, PowerShell analysis, and
+    documentation build pass; representative VMM labs remain.**
 11. Implement the complete DA, console hierarchy, diagrams, tasks, knowledge, dashboards, and
     reports. **Core Presentation is authored and OM2022-verified with the operator-facing root,
     eight folders, 17 localized views, and a native DA diagram; capability-specific views,
