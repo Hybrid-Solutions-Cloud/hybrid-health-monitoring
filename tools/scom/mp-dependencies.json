@@ -1,0 +1,180 @@
+[
+  {
+    "Solution": "azure-local",
+    "Namespace": "HybridSolutionsCloud.AzureLocal",
+    "PackCount": 5,
+    "External": [],
+    "ImportOrder": [
+      "HybridSolutionsCloud.AzureLocal.Library",
+      "HybridSolutionsCloud.AzureLocal.Discovery",
+      "HybridSolutionsCloud.AzureLocal.Monitoring",
+      "HybridSolutionsCloud.AzureLocal.Presentation",
+      "HybridSolutionsCloud.AzureLocal.Reporting"
+    ]
+  },
+  {
+    "Solution": "hyper-v",
+    "Namespace": "HybridSolutionsCloud.HyperVPrivateCloud",
+    "PackCount": 13,
+    "External": [
+      {
+        "Id": "Microsoft.Storage.Library",
+        "Version": "1.0.0.0",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=100782",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D"
+        ]
+      },
+      {
+        "Id": "Microsoft.SystemCenter.VirtualMachineManager.Discovery",
+        "Version": "11.19.0.3",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": null,
+        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+        ]
+      },
+      {
+        "Id": "Microsoft.SystemCenter.VirtualMachineManager.Library",
+        "Version": "11.19.0.3",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": null,
+        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+        ]
+      },
+      {
+        "Id": "Microsoft.SystemCenter.VirtualMachineManager.Monitoring",
+        "Version": "11.19.0.3",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": null,
+        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+        ]
+      },
+      {
+        "Id": "Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library",
+        "Version": "10.25.1200.0",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": null,
+        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.10.SDNMonitoring",
+        "Version": "10.0.0.2",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54300",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.Cluster.Library",
+        "Version": "6.0.6278.0",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54701",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.Cluster.Management.Library",
+        "Version": "10.1.0.0",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54701",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.FileServices",
+        "Version": "10.1.0.3",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=57594",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.FileServices.SMB.2016",
+        "Version": "10.1.0.4",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=57594",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect",
+        "Version": "1.0.0.0",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=100782",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D"
+        ]
+      },
+      {
+        "Id": "Microsoft.Windows.Server.ClusterSharedVolumeMonitoring",
+        "Version": "10.1.2.2",
+        "Token": "31bf3856ad364e35",
+        "Class": "MicrosoftDownload",
+        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54303",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster"
+        ]
+      },
+      {
+        "Id": "PureStorageFlashArray",
+        "Version": "2.0.120.0",
+        "Token": "a9d994eedb5e7179",
+        "Class": "ThirdParty",
+        "Download": "https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0",
+        "OfficialMedia": null,
+        "RequiredBy": [
+          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage"
+        ]
+      }
+    ],
+    "ImportOrder": [
+      "HybridSolutionsCloud.HyperVPrivateCloud.Library",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Discovery",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Presentation",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM",
+      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage"
+    ]
+  }
+]
