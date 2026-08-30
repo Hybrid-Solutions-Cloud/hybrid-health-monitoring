@@ -63,16 +63,16 @@ try {
     $managementGroup = [Microsoft.EnterpriseManagement.ManagementGroup]::new($env:COMPUTERNAME)
     try {
         $pureMp = @($managementGroup.GetManagementPacks('PureStorageFlashArray') | Sort-Object Version -Descending)[0]
-        $storageMp = @($managementGroup.GetManagementPacks('HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
+        $storageMp = @($managementGroup.GetManagementPacks('HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
         $hcsIds = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-        foreach ($className in @('HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort')) {
+        foreach ($className in @('HyperVPrivateCloud.Capability.Storage.IscsiSession', 'HyperVPrivateCloud.Capability.Storage.FibreChannelPort')) {
             foreach ($object in (Get-HcsClassObject $managementGroup $storageMp $className)) {
                 $property = if ($className.EndsWith('IscsiSession')) { 'InitiatorNodeAddress' } else { 'WWPN' }
                 foreach ($identifier in (ConvertTo-HcsIdentifier (Get-HcsObjectValue $object $property))) { [void]$hcsIds.Add($identifier) }
             }
         }
         $hcsSerials = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-        foreach ($lun in (Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit')) {
+        foreach ($lun in (Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.LogicalUnit')) {
             $serial = ConvertTo-HcsSerial (Get-HcsObjectValue $lun 'SerialNumber')
             if (-not [string]::IsNullOrWhiteSpace($serial)) { [void]$hcsSerials.Add($serial) }
         }

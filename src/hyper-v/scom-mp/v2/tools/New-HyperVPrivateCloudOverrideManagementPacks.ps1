@@ -306,8 +306,12 @@ foreach ($target in $targeting) {
     $targetingByTargetSet[[string]$target.targetSet] = $target
 }
 
-$organizationIdValue = if ($PublicProfile -or $EmitExample) { 'HybridSolutionsCloud' } else { $OrganizationId }
-$organizationNameValue = if ($PublicProfile -or $EmitExample) { 'Hybrid Solutions Cloud' } else { $OrganizationName }
+# Public and example override packs carry no organisation prefix: they are named for the product
+# they override, not for their author. A customer generating their own passes -OrganizationId and
+# gets the conventional "<Org>.HyperVPrivateCloud.Overrides.*" identity.
+$isPublicArtifact = $PublicProfile -or $EmitExample
+$organizationIdValue = if ($isPublicArtifact) { '' } else { $OrganizationId }
+$organizationNameValue = if ($isPublicArtifact) { 'Hybrid Solutions Cloud' } else { $OrganizationName }
 $customerVersion = if ($EmitExample) { '{{VERSION}}' } else { $Version }
 $productVersionValue = if ($EmitExample) { '{{PRODUCT_VERSION}}' } else { $ProductVersion }
 $productTokenValue = if ($EmitExample) { '{{PUBLIC_KEY_TOKEN}}' } else { $PublicKeyToken.ToLowerInvariant() }
@@ -315,8 +319,9 @@ $outputDirectory = [System.IO.Path]::GetFullPath($OutputPath)
 [System.IO.Directory]::CreateDirectory($outputDirectory) | Out-Null
 
 foreach ($documentKind in @('Discovery', 'Monitoring')) {
-    $managementPackId = "$organizationIdValue.HyperVPrivateCloud.Overrides.$DeploymentProfile.$TuningTier.$documentKind"
-    $displayName = if ($organizationIdValue -eq 'HybridSolutionsCloud') {
+    $idPrefix = if ([string]::IsNullOrWhiteSpace($organizationIdValue)) { '' } else { "$organizationIdValue." }
+    $managementPackId = "${idPrefix}HyperVPrivateCloud.Overrides.$DeploymentProfile.$TuningTier.$documentKind"
+    $displayName = if ($isPublicArtifact) {
         "Hyper-V Private Cloud Monitoring - $DeploymentProfile $TuningTier $documentKind Overrides"
     }
     else {

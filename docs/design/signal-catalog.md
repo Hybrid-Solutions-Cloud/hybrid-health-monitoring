@@ -346,7 +346,7 @@ Every signal has a stable cross-track name. See [ADR 0007](decisions/0007-naming
 ## Layer 3 — Azure-side signals
 
 > All L3 signals leverage **Resource Health** (free) + **Activity Log** (free) +
-> **Resource Graph** queries. See [Prerequisites](../azure-monitor/prerequisites.md).
+> **Resource Graph** queries. See [Prerequisites](../azure-local/azure-monitor/prerequisites.md).
 
 ### HCI Cluster resource
 

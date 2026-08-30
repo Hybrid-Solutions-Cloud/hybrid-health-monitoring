@@ -94,12 +94,12 @@ try {
         return
     }
 
-    $networkComponent = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponent']$")
-    Add-HcsProperty $networkComponent "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $networkComponent = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")
+    Add-HcsProperty $networkComponent "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
-    $hostRole = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']$")
+    $hostRole = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
     Add-HcsProperty $hostRole "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/HostId$" $HostId
+    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" $HostId
 
     $statusRecords = @(Get-NetIntentStatus -ComputerName $ComputerName -ErrorAction Stop | Where-Object {
             Test-HcsLocalHost -Value ([string](Get-HcsPropertyValue -InputObject $_ -Name @('Host', 'ComputerName', 'PSComputerName')))
@@ -117,44 +117,44 @@ try {
         $adapterNames = ConvertTo-HcsStringList (Get-HcsPropertyValue -InputObject $intentRecord -Name @('NetAdapterNamesAsList', 'NetAdapterNames', 'AdapterNames', 'AdapterName', 'NetAdapterNameCsv'))
         $overrideKinds = Get-HcsOverrideKind -InputObject $intentRecord
 
-        $intent = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']$")
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/BoundaryId$" $BoundaryId
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IntentName$" $intentName
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/Scope$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('Scope'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IntentType$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IntentType', 'Type'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/AdapterNames$" ($adapterNames -join ',')
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsCompute$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsComputeIntentSet'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsManagement$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsManagementIntentSet'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsStorage$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStorageIntentSet'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsStretch$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStretchIntentSet'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsSwitchless$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsSwitchlessIntentSet'))
-        Add-HcsProperty $intent "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/OverrideKinds$" ($overrideKinds -join ',')
+        $intent = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']$")
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IntentName$" $intentName
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/Scope$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('Scope'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IntentType$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IntentType', 'Type'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/AdapterNames$" ($adapterNames -join ',')
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsCompute$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsComputeIntentSet'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsManagement$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsManagementIntentSet'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsStorage$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStorageIntentSet'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsStretch$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStretchIntentSet'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/IsSwitchless$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsSwitchlessIntentSet'))
+        Add-HcsProperty $intent "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntent']/OverrideKinds$" ($overrideKinds -join ',')
         Add-HcsProperty $intent "$MPElement[Name='System!System.Entity']/DisplayName$" $intentName
         $script:DiscoveryData.AddInstance($intent)
 
-        $node = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']$")
+        $node = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']$")
         Add-HcsProperty $node "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/IntentName$" $intentName
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/IntentName$" $intentName
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/BoundaryId$" $BoundaryId
         $statusHostName = [string](Get-HcsPropertyValue -InputObject $status -Name @('Host', 'ComputerName', 'PSComputerName'))
         if ([string]::IsNullOrWhiteSpace($statusHostName)) { $statusHostName = $ComputerName }
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/HostName$" $statusHostName
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/AdapterNames$" ($adapterNames -join ',')
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/IsStorage$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStorageIntentSet'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/ProvisioningStatus$" (Get-HcsPropertyValue -InputObject $status -Name @('ProvisioningStatus'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/ConfigurationStatus$" (Get-HcsPropertyValue -InputObject $status -Name @('ConfigurationStatus', 'Status'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/ErrorCode$" (Get-HcsPropertyValue -InputObject $status -Name @('Error', 'ErrorCode'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/RetryCount$" (Get-HcsPropertyValue -InputObject $status -Name @('RetryCount'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/Progress$" (Get-HcsPropertyValue -InputObject $status -Name @('Progress'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/LastSuccess$" (Get-HcsPropertyValue -InputObject $status -Name @('LastSuccess'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/LastUpdated$" (Get-HcsPropertyValue -InputObject $status -Name @('LastUpdated'))
-        Add-HcsProperty $node "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/LastConfigApplied$" (Get-HcsPropertyValue -InputObject $status -Name @('LastConfigApplied'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/HostName$" $statusHostName
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/AdapterNames$" ($adapterNames -join ',')
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/IsStorage$" (Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStorageIntentSet'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/ProvisioningStatus$" (Get-HcsPropertyValue -InputObject $status -Name @('ProvisioningStatus'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/ConfigurationStatus$" (Get-HcsPropertyValue -InputObject $status -Name @('ConfigurationStatus', 'Status'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/ErrorCode$" (Get-HcsPropertyValue -InputObject $status -Name @('Error', 'ErrorCode'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/RetryCount$" (Get-HcsPropertyValue -InputObject $status -Name @('RetryCount'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/Progress$" (Get-HcsPropertyValue -InputObject $status -Name @('Progress'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/LastSuccess$" (Get-HcsPropertyValue -InputObject $status -Name @('LastSuccess'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/LastUpdated$" (Get-HcsPropertyValue -InputObject $status -Name @('LastUpdated'))
+        Add-HcsProperty $node "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus']/LastConfigApplied$" (Get-HcsPropertyValue -InputObject $status -Name @('LastConfigApplied'))
         Add-HcsProperty $node "$MPElement[Name='System!System.Entity']/DisplayName$" "$intentName on $ComputerName"
         $script:DiscoveryData.AddInstance($node)
 
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkComponentContainsNetworkIntent']$" $networkComponent $intent
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentContainsNodeStatus']$" $intent $node
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.HostRoleReferencesNodeStatus']$" $hostRole $node
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkComponentContainsNetworkIntent']$" $networkComponent $intent
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentContainsNodeStatus']$" $intent $node
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.HostRoleReferencesNodeStatus']$" $hostRole $node
 
         if (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue) {
             foreach ($adapterName in $adapterNames) {
@@ -164,7 +164,7 @@ try {
                 Add-HcsProperty $windowsAdapter "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
                 Add-HcsProperty $windowsAdapter "$MPElement[Name='Windows!Microsoft.Windows.ComputerNetworkAdapter']/DeviceID$" ([string]$adapter.DeviceID)
                 Add-HcsProperty $windowsAdapter "$MPElement[Name='System!System.Device.NetworkAdapter']/MACAddress$" ([string]$adapter.MacAddress)
-                Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NodeStatusReferencesComputerNetworkAdapter']$" $node $windowsAdapter
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NodeStatusReferencesComputerNetworkAdapter']$" $node $windowsAdapter
             }
         }
     }
@@ -176,19 +176,19 @@ try {
     $globalOverrideKinds = @($globalOverrides | ForEach-Object { Get-HcsOverrideKind -InputObject $_ } | Sort-Object -Unique)
     if ($globalOverrides.Count -gt 0 -or $globalStatusRecords.Count -gt 0) {
         $globalStatus = $globalStatusRecords | Select-Object -First 1
-        $global = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']$")
+        $global = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']$")
         Add-HcsProperty $global "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/BoundaryId$" $BoundaryId
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/HostName$" $ComputerName
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/OverrideKinds$" ($globalOverrideKinds -join ',')
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/ProvisioningStatus$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('ProvisioningStatus'))
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/ConfigurationStatus$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('ConfigurationStatus', 'Status'))
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/ErrorCode$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('Error', 'ErrorCode'))
-        Add-HcsProperty $global "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/LastUpdated$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('LastUpdated'))
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/HostName$" $ComputerName
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/OverrideKinds$" ($globalOverrideKinds -join ',')
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/ProvisioningStatus$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('ProvisioningStatus'))
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/ConfigurationStatus$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('ConfigurationStatus', 'Status'))
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/ErrorCode$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('Error', 'ErrorCode'))
+        Add-HcsProperty $global "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']/LastUpdated$" (Get-HcsPropertyValue -InputObject $globalStatus -Name @('LastUpdated'))
         Add-HcsProperty $global "$MPElement[Name='System!System.Entity']/DisplayName$" "Network ATC global settings on $ComputerName"
         $script:DiscoveryData.AddInstance($global)
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.NetworkComponentContainsGlobalStatus']$" $networkComponent $global
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC.HostRoleReferencesGlobalStatus']$" $hostRole $global
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.NetworkComponentContainsGlobalStatus']$" $networkComponent $global
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.HostRoleReferencesGlobalStatus']$" $hostRole $global
     }
 }
 catch {

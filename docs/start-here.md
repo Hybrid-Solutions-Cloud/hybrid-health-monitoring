@@ -55,11 +55,11 @@ and configure Run As profiles for VMM, SDN, or Pure Storage.
 These packs are published as a lab preview and are not sealed for production use.
 :::
 
-1. **[Read the prerequisites](/scom-mp/prerequisites)** — shorter than the Hyper-V list; these packs
+1. **[Read the prerequisites](/azure-local/scom/prerequisites)** — shorter than the Hyper-V list; these packs
    reference only management packs that ship with SCOM.
 2. **[Download the lab preview](/downloads/scom-lab-preview)** — verify the checksums.
-3. **[Follow the management pack guide](/scom-mp/management-pack-guide)** — import and verify.
-4. **[Review the monitoring catalog](/scom-mp/monitoring-catalog)**.
+3. **[Follow the management pack guide](/azure-local/scom/management-pack-guide)** — import and verify.
+4. **[Review the monitoring catalog](/azure-local/scom/monitoring-catalog)**.
 
 ---
 
@@ -68,10 +68,10 @@ These packs are published as a lab preview and are not sealed for production use
 Cloud-native. No management packs — this is Azure-side configuration, and the prerequisites are
 substantial.
 
-1. **[Read the prerequisites](/azure-monitor/prerequisites)** — sixteen items, most of them blocking.
+1. **[Read the prerequisites](/azure-local/azure-monitor/prerequisites)** — sixteen items, most of them blocking.
    Budget real time for Arc registration, Insights enablement, and RBAC.
-2. **[Understand the entity model](/azure-monitor/diagrams/entity-graph)**.
-3. **[Read the health model overview](/azure-monitor/)**.
+2. **[Understand the entity model](/azure-local/azure-monitor/diagrams/entity-graph)**.
+3. **[Read the health model overview](/azure-local/azure-monitor/)**.
 
 ---
 

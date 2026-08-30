@@ -68,4 +68,4 @@ tables or guessed metrics.
 - preview API change review.
 
 See [ADR 0036](../decisions/0036-azure-local-azure-monitor-health-model-v1.md) and the
-[research record](../../azure-monitor/research.md).
+[research record](../../azure-local/azure-monitor/research.md).

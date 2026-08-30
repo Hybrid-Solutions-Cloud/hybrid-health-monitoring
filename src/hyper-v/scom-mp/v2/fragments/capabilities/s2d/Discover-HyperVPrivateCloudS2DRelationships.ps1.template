@@ -36,47 +36,47 @@ try {
 
     $clusterName = $ComputerName.Split('.')[0].ToLowerInvariant()
     $boundaryId = "cluster:$clusterName"
-    $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent']$")
-    Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
+    $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
+    Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
 
     switch ($ObjectKind) {
         'StorageSubSystem' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.StorageArray']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsStorageSubSystem']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsStorageSubSystem']$"
         }
         'StorageNode' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageNode']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Node']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsStorageNode']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsStorageNode']$"
         }
         'StoragePool' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StoragePool']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Pool']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsStoragePool']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsStoragePool']$"
         }
         'PhysicalDisk' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.PhysicalDisk']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Disk']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsPhysicalDisk']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsPhysicalDisk']$"
         }
         'VirtualDisk' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.VirtualDisk']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Disk']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsVirtualDisk']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsVirtualDisk']$"
         }
         'Volume' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.Volume']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Disk']/UniqueID$" $ParentDiskUniqueId
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Volume']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsVolume']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsVolume']$"
         }
         'FileShare' {
             $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.FileShare']$")
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Disk']/UniqueID$" $ParentDiskUniqueId
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.Volume']/UniqueID$" $ParentVolumeUniqueId
             Add-HcsProperty $instance "$MPElement[Name='StorageLibrary!Microsoft.Storage.Library.Windows.FileShare']/UniqueID$" $UniqueId
-            $relationshipType = "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContainsFileShare']$"
+            $relationshipType = "$MPElement[Name='HyperVPrivateCloud.Capability.S2D.StorageContainsFileShare']$"
         }
     }
 

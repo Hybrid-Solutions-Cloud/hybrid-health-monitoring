@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity><ID>HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery</ID><Version>{{VERSION}}</Version></Identity>
+    <Name>Hyper-V Private Cloud Monitoring - ClusteredPure Standard Discovery Overrides</Name>
+    <References>
+      <Reference Alias="Windows"><ID>Microsoft.Windows.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="Pure"><ID>PureStorageFlashArray</ID><Version>2.0.120.0</Version><PublicKeyToken>a9d994eedb5e7179</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Library"><ID>HyperVPrivateCloud.Library</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Discovery"><ID>HyperVPrivateCloud.Discovery</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Cluster"><ID>HyperVPrivateCloud.Capability.Cluster</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Storage"><ID>HyperVPrivateCloud.Capability.Storage</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2PureStorage"><ID>HyperVPrivateCloud.Capability.PureStorage</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+    </References>
+  </Manifest>
+  <Monitoring>
+    <Overrides>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.Core.Seed.Frequency.HostRoleSeed.Override" Context="Windows!Microsoft.Windows.Server.OperatingSystem" Enforced="false" Discovery="HCSV2Discovery!HyperVPrivateCloud.HostRole.Seed.Discovery" Module="RegistrySeed" Parameter="Frequency"><Value>14400</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.Core.Topology.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2Discovery!HyperVPrivateCloud.Topology.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>1800</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.Cluster.Discovery.Interval.Relationships.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2Cluster!HyperVPrivateCloud.Capability.Cluster.Relationship.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>1800</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.PureStorage.Discovery.Interval.Correlation.Override" Context="Pure!PureStorage.FlashArray.PureArray" Enforced="false" Discovery="HCSV2PureStorage!HyperVPrivateCloud.Capability.PureStorage.Correlation.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>1800</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.Storage.Discovery.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2Storage!HyperVPrivateCloud.Capability.Storage.Topology.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>1800</Value></DiscoveryConfigurationOverride>
+    </Overrides>
+  </Monitoring>
+  <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings>
+        <DisplayString ElementID="HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery"><Name>Hyper-V Private Cloud Monitoring - ClusteredPure Standard Discovery Overrides</Name><Description>Unsealed, customer-owned Standard starter overrides for the ClusteredPure deployment profile. Review in a test management group, customize locally, and export after every change.</Description></DisplayString>
+      </DisplayStrings></LanguagePack></LanguagePacks>
+</ManagementPack>

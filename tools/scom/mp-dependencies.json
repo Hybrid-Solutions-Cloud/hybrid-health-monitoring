@@ -14,7 +14,7 @@
   },
   {
     "Solution": "hyper-v",
-    "Namespace": "HybridSolutionsCloud.HyperVPrivateCloud",
+    "Namespace": "HyperVPrivateCloud",
     "PackCount": 13,
     "External": [
       {
@@ -25,7 +25,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=100782",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D"
+          "HyperVPrivateCloud.Capability.S2D"
         ]
       },
       {
@@ -36,7 +36,7 @@
         "Download": null,
         "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+          "HyperVPrivateCloud.Capability.VMM"
         ]
       },
       {
@@ -47,7 +47,7 @@
         "Download": null,
         "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+          "HyperVPrivateCloud.Capability.VMM"
         ]
       },
       {
@@ -58,7 +58,7 @@
         "Download": null,
         "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+          "HyperVPrivateCloud.Capability.VMM"
         ]
       },
       {
@@ -69,7 +69,7 @@
         "Download": null,
         "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM"
+          "HyperVPrivateCloud.Capability.VMM"
         ]
       },
       {
@@ -80,7 +80,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54300",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN"
+          "HyperVPrivateCloud.Capability.SDN"
         ]
       },
       {
@@ -91,7 +91,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54701",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster"
+          "HyperVPrivateCloud.Capability.Cluster"
         ]
       },
       {
@@ -102,7 +102,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54701",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster"
+          "HyperVPrivateCloud.Capability.Cluster"
         ]
       },
       {
@@ -113,7 +113,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=57594",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices"
+          "HyperVPrivateCloud.Capability.FileServices"
         ]
       },
       {
@@ -124,7 +124,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=57594",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices"
+          "HyperVPrivateCloud.Capability.FileServices"
         ]
       },
       {
@@ -135,7 +135,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=100782",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D"
+          "HyperVPrivateCloud.Capability.S2D"
         ]
       },
       {
@@ -146,7 +146,7 @@
         "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54303",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster"
+          "HyperVPrivateCloud.Capability.Cluster"
         ]
       },
       {
@@ -157,24 +157,24 @@
         "Download": "https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0",
         "OfficialMedia": null,
         "RequiredBy": [
-          "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage"
+          "HyperVPrivateCloud.Capability.PureStorage"
         ]
       }
     ],
     "ImportOrder": [
-      "HybridSolutionsCloud.HyperVPrivateCloud.Library",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Discovery",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Presentation",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage"
+      "HyperVPrivateCloud.Library",
+      "HyperVPrivateCloud.Discovery",
+      "HyperVPrivateCloud.Monitoring",
+      "HyperVPrivateCloud.Presentation",
+      "HyperVPrivateCloud.Capability.Cluster",
+      "HyperVPrivateCloud.Capability.FileServices",
+      "HyperVPrivateCloud.Capability.NetworkATC",
+      "HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "HyperVPrivateCloud.Capability.S2D",
+      "HyperVPrivateCloud.Capability.SDN",
+      "HyperVPrivateCloud.Capability.Storage",
+      "HyperVPrivateCloud.Capability.VMM",
+      "HyperVPrivateCloud.Capability.PureStorage"
     ]
   }
 ]

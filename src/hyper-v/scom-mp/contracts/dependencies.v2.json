@@ -3,7 +3,7 @@
   "product": {
     "displayName": "Hyper-V Private Cloud Monitoring",
     "consoleRoot": "Hyper-V Private Cloud",
-    "namespace": "HybridSolutionsCloud.HyperVPrivateCloud"
+    "namespace": "HyperVPrivateCloud"
   },
   "capabilities": [
     {

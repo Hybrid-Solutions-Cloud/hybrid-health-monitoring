@@ -206,7 +206,7 @@ foreach ($kind in $requiredWorkflowMap.Keys) {
     }
 }
 
-$taskId = 'HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task'
+$taskId = 'HyperVPrivateCloud.DiagnosticSummary.Task'
 $diagnosticTask = @(Get-SCOMTask -Name $taskId -SCSession $scSession | Where-Object { [string]$_.Name -eq $taskId } | Select-Object -First 1)
 $diagnosticEvidence = $null
 if ($diagnosticTask.Count -eq 1) {
@@ -238,10 +238,10 @@ else {
 }
 
 $presentationPassed = @($workflowEvidence.views).Count -gt 0 -and
-    @($classEvidence | Where-Object { $_.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Service' -and $_.instances -ge 1 }).Count -eq 1
+    @($classEvidence | Where-Object { $_.id -eq 'HyperVPrivateCloud.Service' -and $_.instances -ge 1 }).Count -eq 1
 Add-HcsCheck -List $checks -Category 'DistributedApplicationAndViews' -Name 'Service topology and views' `
     -Status $(if ($presentationPassed) { 'Passed' } else { 'Failed' }) `
-    -Evidence "views=$(@($workflowEvidence.views).Count); serviceInstances=$(@($classEvidence | Where-Object id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Service' | Select-Object -ExpandProperty instances -ErrorAction SilentlyContinue) -join ',')"
+    -Evidence "views=$(@($workflowEvidence.views).Count); serviceInstances=$(@($classEvidence | Where-Object id -eq 'HyperVPrivateCloud.Service' | Select-Object -ExpandProperty instances -ErrorAction SilentlyContinue) -join ',')"
 
 $recentAlertCutoff = [DateTime]::UtcNow.AddHours(-24).ToString('yyyy-MM-dd HH:mm:ss')
 $recentAlerts = @(Get-SCOMAlert -Criteria "LastModified > '$recentAlertCutoff'" -SCSession $scSession -ErrorAction SilentlyContinue | Where-Object {

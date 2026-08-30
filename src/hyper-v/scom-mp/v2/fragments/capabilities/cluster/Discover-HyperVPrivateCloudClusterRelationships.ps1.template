@@ -60,38 +60,38 @@ try {
     $clusterName = [string]$cluster.Name
     $clusterPrincipalName = Resolve-HcsPrincipalName -Name $clusterName
 
-    $boundary = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']$")
-    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']/BoundaryId$" $BoundaryId
+    $boundary = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']$")
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']/BoundaryId$" $BoundaryId
 
-    $availability = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.AvailabilityComponent']$")
-    Add-HcsProperty $availability "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $availability = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponent']$")
+    Add-HcsProperty $availability "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
-    $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent']$")
-    Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
+    Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
     $clusterInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Cluster!Microsoft.Windows.Cluster']$")
     Add-HcsProperty $clusterInstance "$MPElement[Name='Cluster!Microsoft.Windows.Cluster']/Name$" $clusterName
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.BoundaryContainsMicrosoftCluster']$" $boundary $clusterInstance
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftCluster']$" $availability $clusterInstance
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.BoundaryContainsMicrosoftCluster']$" $boundary $clusterInstance
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftCluster']$" $availability $clusterInstance
 
     foreach ($node in @(Get-ClusterNode -Cluster $cluster -ErrorAction Stop)) {
         $nodeInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Node']$")
         Add-HcsProperty $nodeInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" (Resolve-HcsPrincipalName -Name ([string]$node.Name))
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterNode']$" $availability $nodeInstance
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterNode']$" $availability $nodeInstance
     }
 
     foreach ($group in @(Get-ClusterGroup -Cluster $cluster -ErrorAction Stop)) {
         $groupInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Group']$")
         Add-HcsProperty $groupInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ClusterName$" $clusterName
         Add-HcsProperty $groupInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ObjectName$" ([string]$group.Name)
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterGroup']$" $availability $groupInstance
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterGroup']$" $availability $groupInstance
     }
 
     foreach ($network in @(Get-ClusterNetwork -Cluster $cluster -ErrorAction Stop)) {
         $networkInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Network']$")
         Add-HcsProperty $networkInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ClusterName$" $clusterName
         Add-HcsProperty $networkInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ObjectName$" ([string]$network.Name)
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterNetwork']$" $availability $networkInstance
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterNetwork']$" $availability $networkInstance
     }
 
     if (Get-Command -Name 'Get-ClusterSharedVolume' -ErrorAction SilentlyContinue) {
@@ -99,7 +99,7 @@ try {
             $csvInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']$")
             Add-HcsProperty $csvInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $clusterPrincipalName
             Add-HcsProperty $csvInstance "$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']/ClusterSharedVolumeName$" ([string]$csv.Name)
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster.StorageContainsMicrosoftClusterSharedVolume']$" $storage $csvInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.StorageContainsMicrosoftClusterSharedVolume']$" $storage $csvInstance
         }
     }
 

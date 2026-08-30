@@ -2,45 +2,45 @@
   "schemaVersion": "1.0",
   "lane": "CoreStandalone",
   "productManagementPacks": [
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Library" },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Discovery" },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Monitoring" },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Presentation" }
+    { "id": "HyperVPrivateCloud.Library" },
+    { "id": "HyperVPrivateCloud.Discovery" },
+    { "id": "HyperVPrivateCloud.Monitoring" },
+    { "id": "HyperVPrivateCloud.Presentation" }
   ],
   "overrideManagementPacks": [
-    "HybridSolutionsCloud.HyperVPrivateCloud.Overrides.Standalone.Standard.Discovery",
-    "HybridSolutionsCloud.HyperVPrivateCloud.Overrides.Standalone.Standard.Monitoring"
+    "HyperVPrivateCloud.Overrides.Standalone.Standard.Discovery",
+    "HyperVPrivateCloud.Overrides.Standalone.Standard.Monitoring"
   ],
   "classes": [
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.Service", "category": "Core", "minimumInstances": 1 },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.HostRole", "category": "Core", "minimumInstances": 1 },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine", "category": "Core", "minimumInstances": 1 },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime", "category": "Core", "minimumInstances": 1 },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch", "category": "Core", "minimumInstances": 1 },
-    { "id": "HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline", "category": "Core", "minimumInstances": 1 }
+    { "id": "HyperVPrivateCloud.Service", "category": "Core", "minimumInstances": 1 },
+    { "id": "HyperVPrivateCloud.HostRole", "category": "Core", "minimumInstances": 1 },
+    { "id": "HyperVPrivateCloud.VirtualMachine", "category": "Core", "minimumInstances": 1 },
+    { "id": "HyperVPrivateCloud.VirtualMachineRuntime", "category": "Core", "minimumInstances": 1 },
+    { "id": "HyperVPrivateCloud.VirtualSwitch", "category": "Core", "minimumInstances": 1 },
+    { "id": "HyperVPrivateCloud.MonitoringPipeline", "category": "Core", "minimumInstances": 1 }
   ],
   "requiredWorkflows": {
     "discoveries": [
-      "HybridSolutionsCloud.HyperVPrivateCloud.HostRole.Seed.Discovery",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Topology.Discovery"
+      "HyperVPrivateCloud.HostRole.Seed.Discovery",
+      "HyperVPrivateCloud.Topology.Discovery"
     ],
     "monitors": [
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.PowerShell.Monitor",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.VMMS.Monitor",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.VmCompute.Monitor",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.Cpu.Monitor"
+      "HyperVPrivateCloud.Host.PowerShell.Monitor",
+      "HyperVPrivateCloud.Host.VMMS.Monitor",
+      "HyperVPrivateCloud.Host.VmCompute.Monitor",
+      "HyperVPrivateCloud.Host.Cpu.Monitor"
     ],
     "rules": [
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.Cpu.Collection.Rule",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.AvailableMemory.Collection.Rule"
+      "HyperVPrivateCloud.Host.Cpu.Collection.Rule",
+      "HyperVPrivateCloud.Host.AvailableMemory.Collection.Rule"
     ],
     "tasks": [
-      "HybridSolutionsCloud.HyperVPrivateCloud.DiagnosticSummary.Task"
+      "HyperVPrivateCloud.DiagnosticSummary.Task"
     ],
     "views": [
-      "HybridSolutionsCloud.HyperVPrivateCloud.Service.Diagram.View",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.State.View",
-      "HybridSolutionsCloud.HyperVPrivateCloud.Host.ActiveAlerts.View"
+      "HyperVPrivateCloud.Service.Diagram.View",
+      "HyperVPrivateCloud.Host.State.View",
+      "HyperVPrivateCloud.Host.ActiveAlerts.View"
     ]
   }
 }

@@ -93,36 +93,36 @@ try {
         return
     }
 
-    $network = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponent']$")
-    Add-HcsProperty $network "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $network = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")
+    Add-HcsProperty $network "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
-    $management = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ManagementComponent']$")
-    Add-HcsProperty $management "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $management = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponent']$")
+    Add-HcsProperty $management "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
-    $hostRole = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']$")
+    $hostRole = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
     Add-HcsProperty $hostRole "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/HostId$" $ComputerName
-    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/BoundaryId$" $BoundaryId
+    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" $ComputerName
+    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/BoundaryId$" $BoundaryId
 
-    $binding = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding']$")
+    $binding = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']$")
     Add-HcsProperty $binding "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-    Add-HcsProperty $binding "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding']/BindingId$" 'sdn-host-binding'
-    Add-HcsProperty $binding "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding']/BoundaryId$" $BoundaryId
-    Add-HcsProperty $binding "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding']/NetworkControllerHostId$" $hostId
-    Add-HcsProperty $binding "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding']/NcHostAgentState$" $ncState
-    Add-HcsProperty $binding "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostBinding']/SlbHostAgentState$" $slbState
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/BindingId$" 'sdn-host-binding'
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/BoundaryId$" $BoundaryId
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/NetworkControllerHostId$" $hostId
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/NcHostAgentState$" $ncState
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/SlbHostAgentState$" $slbState
     Add-HcsProperty $binding "$MPElement[Name='System!System.Entity']/DisplayName$" ("SDN host binding - {0}" -f $ComputerName)
     $script:DiscoveryData.AddInstance($binding)
 
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsHostBinding']$" $network $binding
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.HostRoleReferencesHostBinding']$" $hostRole $binding
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsHostBinding']$" $network $binding
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostRoleReferencesHostBinding']$" $hostRole $binding
 
     $stamp = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.Stamp']$")
     Add-HcsProperty $stamp "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.Stamp']/Id$" 'Stamp'
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkReferencesStamp']$" $network $stamp
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkReferencesStamp']$" $network $stamp
 
     $controllerGroup = Get-HcsSdnGroupInstance -Kind 'NetworkController' -GroupId 'Network Controller Group'
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.ManagementContainsNetworkControllerGroup']$" $management $controllerGroup
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.ManagementContainsNetworkControllerGroup']$" $management $controllerGroup
 
     $groups = @(
         @('Host', 'Host Group'),
@@ -135,12 +135,12 @@ try {
     foreach ($definition in $groups) {
         $group = Get-HcsSdnGroupInstance -Kind $definition[0] -GroupId $definition[1]
         $relationshipType = switch ($definition[0]) {
-            'Host' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsHostGroup']$" }
-            'VirtualNetwork' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsVirtualNetworkGroup']$" }
-            'AccessControlList' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsAccessControlListGroup']$" }
-            'NetworkInterface' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsNetworkInterfaceGroup']$" }
-            'LoadBalancerMux' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsLoadBalancerMuxGroup']$" }
-            'GatewayPool' { "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN.NetworkContainsGatewayPoolGroup']$" }
+            'Host' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsHostGroup']$" }
+            'VirtualNetwork' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsVirtualNetworkGroup']$" }
+            'AccessControlList' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsAccessControlListGroup']$" }
+            'NetworkInterface' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsNetworkInterfaceGroup']$" }
+            'LoadBalancerMux' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsLoadBalancerMuxGroup']$" }
+            'GatewayPool' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsGatewayPoolGroup']$" }
         }
         Add-HcsRelationship $relationshipType $network $group
     }

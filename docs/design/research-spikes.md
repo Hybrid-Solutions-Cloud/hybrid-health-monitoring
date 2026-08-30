@@ -61,8 +61,8 @@ Their evidence validates and refines the accepted
 ## Azure Local SCOM research program
 
 The first desk-research pass and design synthesis are complete. The resulting
-[research record](../scom-mp/monitoring-research.md) separates everything observable from the
-curated [monitoring catalog](../scom-mp/monitoring-catalog.md), and ADRs 0032–0035 record the
+[research record](../azure-local/scom/monitoring-research.md) separates everything observable from the
+curated [monitoring catalog](../azure-local/scom/monitoring-catalog.md), and ADRs 0032–0035 record the
 implemented local-runtime, packaging, topology/DA, and health/alert decisions.
 
 Lab evidence is still required for multi-node discovery reconciliation, Health Service fault and

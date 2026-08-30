@@ -58,7 +58,7 @@ $Solutions = @{
         DisplayName  = 'Azure Local Monitoring'
         FragmentRoot = 'src/azure-local/scom-mp/fragments'
         Contract     = $null
-        DocPage      = 'docs/scom-mp/prerequisites.md'
+        DocPage      = 'docs/azure-local/scom/prerequisites.md'
     }
 }
 
@@ -90,6 +90,31 @@ function Get-MpManifest {
         SourcePath   = [IO.Path]::GetRelativePath($RepoRoot, $TemplatePath).Replace('\', '/')
         References   = @($references)
     }
+}
+
+function Get-CommonNamespace {
+    param([string[]]$Ids)
+
+    if ($Ids.Count -eq 0) { throw 'Cannot derive a namespace from an empty pack list.' }
+
+    $segmentLists = @($Ids | ForEach-Object { , ($_ -split '\.') })
+    $common = [System.Collections.Generic.List[string]]::new()
+
+    for ($i = 0; $i -lt $segmentLists[0].Count; $i++) {
+        $candidate = $segmentLists[0][$i]
+        foreach ($segments in $segmentLists) {
+            if ($i -ge $segments.Count -or $segments[$i] -ne $candidate) { $candidate = $null; break }
+        }
+        if ($null -eq $candidate) { break }
+        $common.Add($candidate)
+    }
+
+    # Never consume the final segment; "HyperVPrivateCloud.Library" alone must still yield the
+    # namespace "HyperVPrivateCloud" rather than the whole ID.
+    if ($common.Count -ge $segmentLists[0].Count) { $common.RemoveAt($common.Count - 1) }
+    if ($common.Count -eq 0) { throw "Could not derive a common namespace from: $($Ids -join ', ')" }
+
+    return ($common -join '.')
 }
 
 function Get-ReferenceClass {
@@ -304,7 +329,9 @@ foreach ($name in $Solution) {
         continue
     }
 
-    $namespace = ($packs[0].Id -split '\.')[0..1] -join '.'
+    # Longest common dotted prefix across the solution's pack IDs. Derived rather than assumed a
+    # fixed segment count, so it survives a namespace rename that changes the number of segments.
+    $namespace = Get-CommonNamespace -Ids @($packs | ForEach-Object Id)
 
     $contract = $null
     if ($config.Contract) {

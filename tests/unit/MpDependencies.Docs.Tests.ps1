@@ -19,7 +19,7 @@ $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSComman
 $Exporter = Join-Path $RepoRoot 'tools/scom/Export-MpDependencies.ps1'
 $Pages = @(
     'docs/hyper-v/prerequisites.md'
-    'docs/scom-mp/prerequisites.md'
+    'docs/azure-local/scom/prerequisites.md'
 )
 $Blocks = @('external-dependencies', 'per-pack-dependencies', 'import-order')
 

@@ -85,13 +85,13 @@ try {
     $managementGroup = [Microsoft.EnterpriseManagement.ManagementGroup]::new($env:COMPUTERNAME)
     try {
         $pureMp = @($managementGroup.GetManagementPacks('PureStorageFlashArray') | Sort-Object Version -Descending)[0]
-        $libraryMp = @($managementGroup.GetManagementPacks('HybridSolutionsCloud.HyperVPrivateCloud.Library') | Sort-Object Version -Descending)[0]
-        $storageMp = @($managementGroup.GetManagementPacks('HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
+        $libraryMp = @($managementGroup.GetManagementPacks('HyperVPrivateCloud.Library') | Sort-Object Version -Descending)[0]
+        $storageMp = @($managementGroup.GetManagementPacks('HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
 
-        $hostRoles = Get-HcsClassObject $managementGroup $libraryMp 'HybridSolutionsCloud.HyperVPrivateCloud.HostRole'
-        $logicalUnits = Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit'
-        $iscsiSessions = Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession'
-        $fcPorts = Get-HcsClassObject $managementGroup $storageMp 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort'
+        $hostRoles = Get-HcsClassObject $managementGroup $libraryMp 'HyperVPrivateCloud.HostRole'
+        $logicalUnits = Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.LogicalUnit'
+        $iscsiSessions = Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.IscsiSession'
+        $fcPorts = Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.FibreChannelPort'
         $pureHosts = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureHost'
         $pureVolumes = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureVolume'
         $purePorts = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PurePort'
@@ -140,13 +140,13 @@ try {
             $boundaryId = Get-HcsObjectValue $hostRole 'BoundaryId'
             [void]$boundaries.Add($boundaryId)
 
-            $hostInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']$")
+            $hostInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
             Add-HcsProperty $hostInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $principal
-            Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/HostId$" (Get-HcsObjectValue $hostRole 'HostId')
+            Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" (Get-HcsObjectValue $hostRole 'HostId')
             $pureHostInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PureHost']$")
             Add-HcsProperty $pureHostInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
             Add-HcsProperty $pureHostInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureHost']/Name$" (Get-HcsObjectValue $pureHost 'Name')
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost']$" $hostInstance $pureHostInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost']$" $hostInstance $pureHostInstance
         }
 
         foreach ($pureVolume in $pureVolumes) {
@@ -156,27 +156,27 @@ try {
             $lun = $lunBySerial[$serial][0]
             $boundaryId = Get-HcsObjectValue $lun 'BoundaryId'
             [void]$boundaries.Add($boundaryId)
-            $lunInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Storage!HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']$")
-            Add-HcsProperty $lunInstance "$MPElement[Name='HCSV2Storage!HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/BoundaryId$" $boundaryId
-            Add-HcsProperty $lunInstance "$MPElement[Name='HCSV2Storage!HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit']/StorageId$" (Get-HcsObjectValue $lun 'StorageId')
+            $lunInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit']$")
+            Add-HcsProperty $lunInstance "$MPElement[Name='HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit']/BoundaryId$" $boundaryId
+            Add-HcsProperty $lunInstance "$MPElement[Name='HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit']/StorageId$" (Get-HcsObjectValue $lun 'StorageId')
             $pureVolumeInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PureVolume']$")
             Add-HcsProperty $pureVolumeInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
             Add-HcsProperty $pureVolumeInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureVolume']/Name$" (Get-HcsObjectValue $pureVolume 'Name')
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume']$" $lunInstance $pureVolumeInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume']$" $lunInstance $pureVolumeInstance
         }
 
         foreach ($boundaryId in $boundaries) {
-            $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent']$")
-            Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
+            $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
+            Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
             $arrayInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']$")
             Add-HcsProperty $arrayInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray']$" $storage $arrayInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray']$" $storage $arrayInstance
             foreach ($purePort in $purePorts) {
                 if ((Get-HcsParentValue $purePort 'ArrayId') -ne $ArrayId) { continue }
                 $portInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PurePort']$")
                 Add-HcsProperty $portInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
                 Add-HcsProperty $portInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PurePort']/Name$" (Get-HcsObjectValue $purePort 'Name')
-                Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort']$" $storage $portInstance
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort']$" $storage $portInstance
             }
         }
         $api.Return($script:DiscoveryData)

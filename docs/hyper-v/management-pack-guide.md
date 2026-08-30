@@ -292,10 +292,10 @@ Do not use a production management group as the first import target.
 
 For the first installation, import the v2 core in dependency order:
 
-1. `HybridSolutionsCloud.HyperVPrivateCloud.Library`;
-2. `HybridSolutionsCloud.HyperVPrivateCloud.Discovery`;
-3. `HybridSolutionsCloud.HyperVPrivateCloud.Monitoring`; and
-4. `HybridSolutionsCloud.HyperVPrivateCloud.Presentation`.
+1. `HyperVPrivateCloud.Library`;
+2. `HyperVPrivateCloud.Discovery`;
+3. `HyperVPrivateCloud.Monitoring`; and
+4. `HyperVPrivateCloud.Presentation`.
 
 Then import only the capability MPs selected by the deployment profile, after importing each
 capability's Microsoft or vendor prerequisites. The complete ZIP is a distribution archive, not an
@@ -341,6 +341,26 @@ Never select the Default Management Pack. Microsoft states that installed unseal
 should not be used for customer settings and recommends a dedicated unsealed override MP for each
 sealed MP being customized. See
 [Create a Management Pack for overrides](https://learn.microsoft.com/en-us/system-center/scom/manage-mp-create-unsealed-mp?view=sc-om-2025).
+
+::: warning Your overrides carry your organization's prefix — the shipped ones do not
+The override packs in `Hyper-V-Private-Cloud-Monitoring-Overrides.zip` are named
+`HyperVPrivateCloud.Overrides.<Profile>.<Tier>.<Kind>` with **no organization prefix**. They are
+starting points published alongside the product, not your production overrides.
+
+**Do not edit them in place.** They are unsealed, so the console will let you — but a later release
+republishes the same pack IDs and your changes are lost. Instead, either create your own packs as
+described above, or generate a customer-owned set:
+
+```powershell
+./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+    -OrganizationId 'Contoso' -OrganizationName 'Contoso Ltd' `
+    -DeploymentProfile ClusteredS2D -TuningTier Standard `
+    -OutputPath 'D:\overrides'
+```
+
+That produces `Contoso.HyperVPrivateCloud.Overrides.ClusteredS2D.Standard.Discovery` and its
+Monitoring pair — owned by you, upgrade-safe, and unambiguous next to the shipped packs.
+:::
 
 ## Create a discovery override
 

@@ -18,7 +18,7 @@ relationships. It does not create a second cluster, cluster node, cluster networ
 or Cluster Shared Volume identity merely to place that object in an HCS view.
 
 The console product name is **Hyper-V Private Cloud Monitoring** and its monitoring root is
-**Hyper-V Private Cloud**. Internal IDs use the new `HybridSolutionsCloud.HyperVPrivateCloud`
+**Hyper-V Private Cloud**. Internal IDs use the new `HyperVPrivateCloud`
 namespace. The public `HybridSolutionsCloud.HyperV` preview remains a separate compatibility
 surface; v2 does not rename or repurpose its released element IDs.
 

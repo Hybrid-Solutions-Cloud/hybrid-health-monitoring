@@ -772,7 +772,7 @@ foreach ($deploymentProfile in $contract.profiles) {
     [System.IO.Directory]::CreateDirectory($profileStage) | Out-Null
     $profileArtifactIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     foreach ($id in $coreIds) { [void]$profileArtifactIds.Add([string]$id) }
-    foreach ($capability in $deploymentProfile.capabilities) { [void]$profileArtifactIds.Add("HybridSolutionsCloud.HyperVPrivateCloud.Capability.$capability") }
+    foreach ($capability in $deploymentProfile.capabilities) { [void]$profileArtifactIds.Add("HyperVPrivateCloud.Capability.$capability") }
     foreach ($id in $profileArtifactIds) {
         $mpPath = Join-Path $assetsPath "$id.mp"
         if (-not (Test-Path -LiteralPath $mpPath -PathType Leaf)) { throw "Deployment profile '$($deploymentProfile.id)' requires unavailable artifact '$id'." }

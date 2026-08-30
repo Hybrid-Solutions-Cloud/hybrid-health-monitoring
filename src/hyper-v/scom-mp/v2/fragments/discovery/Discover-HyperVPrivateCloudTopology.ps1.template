@@ -97,137 +97,137 @@ try {
     $managementAuthority = if (Get-Service -Name 'SCVMMAgent' -ErrorAction SilentlyContinue) { 'VirtualMachineManager' } else { 'LocalOrExternal' }
     $vms = @(Get-VM)
 
-    $hostInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']$")
+    $hostInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
     Add-HcsProperty $hostInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/HostId$" $ComputerName
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/BoundaryId$" $boundaryId
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/RoleVersion$" $vmHost.HyperVVersion
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/RoleState$" 'Enabled'
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/LogicalProcessorCount$" $computer.NumberOfLogicalProcessors
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/MemoryBytes$" $computer.TotalPhysicalMemory
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/VirtualMachineCount$" $vms.Count
-    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole']/DiscoveryVersion$" '2.0'
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" $ComputerName
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/BoundaryId$" $boundaryId
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/RoleVersion$" $vmHost.HyperVVersion
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/RoleState$" 'Enabled'
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/LogicalProcessorCount$" $computer.NumberOfLogicalProcessors
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/MemoryBytes$" $computer.TotalPhysicalMemory
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/VirtualMachineCount$" $vms.Count
+    Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/DiscoveryVersion$" '2.0'
     Add-HcsProperty $hostInstance "$MPElement[Name='System!System.Entity']/DisplayName$" ('Hyper-V Host - ' + $ComputerName)
     $discoveryData.AddInstance($hostInstance)
 
-    $boundary = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']$")
-    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']/BoundaryId$" $boundaryId
-    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']/BoundaryType$" $boundaryType
-    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']/BoundaryName$" $boundaryName
-    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Boundary']/ManagementAuthority$" $managementAuthority
+    $boundary = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']$")
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']/BoundaryId$" $boundaryId
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']/BoundaryType$" $boundaryType
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']/BoundaryName$" $boundaryName
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']/ManagementAuthority$" $managementAuthority
     Add-HcsProperty $boundary "$MPElement[Name='System!System.Entity']/DisplayName$" $boundaryName
     $discoveryData.AddInstance($boundary)
-    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.BoundaryContainsHostRole']$" $boundary $hostInstance
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.BoundaryContainsHostRole']$" $boundary $hostInstance
 
-    $service = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']$")
-    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']/BoundaryId$" $boundaryId
-    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']/BoundaryType$" $boundaryType
+    $service = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Service']$")
+    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Service']/BoundaryId$" $boundaryId
+    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Service']/BoundaryType$" $boundaryType
     Add-HcsProperty $service "$MPElement[Name='System!System.Entity']/DisplayName$" ('Hyper-V Private Cloud - ' + $boundaryName)
     $discoveryData.AddInstance($service)
 
     $componentDefinitions = @(
-        @('Management', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ManagementComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsManagementComponent']$"),
-        @('Compute', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComputeComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsComputeComponent']$"),
-        @('Virtual Machines', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsVirtualMachineComponent']$"),
-        @('Availability and Clustering', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.AvailabilityComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsAvailabilityComponent']$"),
-        @('Storage', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsStorageComponent']$"),
-        @('Networking', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsNetworkComponent']$"),
-        @('Monitoring Pipeline', "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponent']$", "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsMonitoringComponent']$")
+        @('Management', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsManagementComponent']$"),
+        @('Compute', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComputeComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsComputeComponent']$"),
+        @('Virtual Machines', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsVirtualMachineComponent']$"),
+        @('Availability and Clustering', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsAvailabilityComponent']$"),
+        @('Storage', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsStorageComponent']$"),
+        @('Networking', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsNetworkComponent']$"),
+        @('Monitoring Pipeline', "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponent']$", "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsMonitoringComponent']$")
     )
     $components = @{}
     foreach ($definition in $componentDefinitions) {
         $label = $definition[0]
         $component = $discoveryData.CreateClassInstance($definition[1])
-        Add-HcsProperty $component "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
+        Add-HcsProperty $component "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
         Add-HcsProperty $component "$MPElement[Name='System!System.Entity']/DisplayName$" $label
         $discoveryData.AddInstance($component)
         Add-HcsRelationship $definition[2] $service $component
         $components[$label] = $component
     }
-    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ManagementComponentContainsHostRole']$" $components['Management'] $hostInstance
-    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComputeComponentContainsHostRole']$" $components['Compute'] $hostInstance
-    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponentContainsHostRole']$" $components['Monitoring Pipeline'] $hostInstance
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsHostRole']$" $components['Management'] $hostInstance
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComputeComponentContainsHostRole']$" $components['Compute'] $hostInstance
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponentContainsHostRole']$" $components['Monitoring Pipeline'] $hostInstance
 
     $switchesById = @{}
     foreach ($switch in @(Get-VMSwitch -ErrorAction SilentlyContinue)) {
         $switchId = [string]$switch.Id
-        $switchInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']$")
+        $switchInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']$")
         Add-HcsProperty $switchInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/SwitchId$" $switchId
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/Name$" $switch.Name
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/SwitchType$" $switch.SwitchType
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/EmbeddedTeamingEnabled$" $switch.EmbeddedTeamingEnabled
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/IovEnabled$" $switch.IovEnabled
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/NetAdapterInterfaceDescriptions$" ($switch.NetAdapterInterfaceDescriptions -join '; ')
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/SwitchId$" $switchId
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/Name$" $switch.Name
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/SwitchType$" $switch.SwitchType
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/EmbeddedTeamingEnabled$" $switch.EmbeddedTeamingEnabled
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/IovEnabled$" $switch.IovEnabled
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/NetAdapterInterfaceDescriptions$" ($switch.NetAdapterInterfaceDescriptions -join '; ')
         Add-HcsProperty $switchInstance "$MPElement[Name='System!System.Entity']/DisplayName$" $switch.Name
         $discoveryData.AddInstance($switchInstance)
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.BoundaryContainsVirtualSwitch']$" $boundary $switchInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponentContainsVirtualSwitch']$" $components['Networking'] $switchInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.BoundaryContainsVirtualSwitch']$" $boundary $switchInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsVirtualSwitch']$" $components['Networking'] $switchInstance
         $switchesById[$switchId.ToLowerInvariant()] = $switchInstance
     }
 
     $topologyObjectCount = 3 + $componentDefinitions.Count + $switchesById.Count
     foreach ($vm in $vms) {
         $vmId = [string]$vm.VMId
-        $vmInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']$")
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/BoundaryId$" $boundaryId
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/VMId$" $vmId
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/Name$" $vm.Name
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/State$" $vm.State
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/Status$" $vm.Status
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/ExpectedState$" $(if ($vm.AutomaticStartAction -eq 'Start') { 'Running' } else { 'PolicyDependent' })
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/CurrentHost$" $ComputerName
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/Generation$" $vm.Generation
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/ConfigurationVersion$" $vm.Version
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/ProcessorCount$" $vm.ProcessorCount
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/DynamicMemoryEnabled$" $vm.DynamicMemoryEnabled
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/AssignedMemoryMB$" ([int]($vm.MemoryAssigned / 1MB))
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/CheckpointType$" $vm.CheckpointType
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/AutomaticStartAction$" $vm.AutomaticStartAction
-        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachine']/AutomaticStopAction$" $vm.AutomaticStopAction
+        $vmInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']$")
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/BoundaryId$" $boundaryId
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/VMId$" $vmId
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/Name$" $vm.Name
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/State$" $vm.State
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/Status$" $vm.Status
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/ExpectedState$" $(if ($vm.AutomaticStartAction -eq 'Start') { 'Running' } else { 'PolicyDependent' })
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/CurrentHost$" $ComputerName
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/Generation$" $vm.Generation
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/ConfigurationVersion$" $vm.Version
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/ProcessorCount$" $vm.ProcessorCount
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/DynamicMemoryEnabled$" $vm.DynamicMemoryEnabled
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/AssignedMemoryMB$" ([int]($vm.MemoryAssigned / 1MB))
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/CheckpointType$" $vm.CheckpointType
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/AutomaticStartAction$" $vm.AutomaticStartAction
+        Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/AutomaticStopAction$" $vm.AutomaticStopAction
         Add-HcsProperty $vmInstance "$MPElement[Name='System!System.Entity']/DisplayName$" $vm.Name
         $discoveryData.AddInstance($vmInstance)
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.BoundaryContainsVirtualMachine']$" $boundary $vmInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRoleRunsVirtualMachine']$" $hostInstance $vmInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineComponentContainsVirtualMachine']$" $components['Virtual Machines'] $vmInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.BoundaryContainsVirtualMachine']$" $boundary $vmInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRoleRunsVirtualMachine']$" $hostInstance $vmInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineComponentContainsVirtualMachine']$" $components['Virtual Machines'] $vmInstance
         $topologyObjectCount++
 
-        $runtimeInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']$")
+        $runtimeInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']$")
         Add-HcsProperty $runtimeInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']/RuntimeId$" $vmId
-        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']/BoundaryId$" $boundaryId
-        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']/VMId$" $vmId
-        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']/Name$" $vm.Name
-        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']/ExpectedState$" $(if ($vm.AutomaticStartAction -eq 'Start') { 'Running' } else { 'PolicyDependent' })
-        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime']/CurrentHost$" $ComputerName
+        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']/RuntimeId$" $vmId
+        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']/BoundaryId$" $boundaryId
+        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']/VMId$" $vmId
+        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']/Name$" $vm.Name
+        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']/ExpectedState$" $(if ($vm.AutomaticStartAction -eq 'Start') { 'Running' } else { 'PolicyDependent' })
+        Add-HcsProperty $runtimeInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime']/CurrentHost$" $ComputerName
         Add-HcsProperty $runtimeInstance "$MPElement[Name='System!System.Entity']/DisplayName$" ($vm.Name + ' on ' + $ComputerName)
         $discoveryData.AddInstance($runtimeInstance)
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineHasRuntime']$" $vmInstance $runtimeInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineComponentContainsRuntime']$" $components['Virtual Machines'] $runtimeInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.AvailabilityComponentContainsRuntime']$" $components['Availability and Clustering'] $runtimeInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponentContainsRuntime']$" $components['Storage'] $runtimeInstance
-        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponentContainsRuntime']$" $components['Networking'] $runtimeInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineHasRuntime']$" $vmInstance $runtimeInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineComponentContainsRuntime']$" $components['Virtual Machines'] $runtimeInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponentContainsRuntime']$" $components['Availability and Clustering'] $runtimeInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponentContainsRuntime']$" $components['Storage'] $runtimeInstance
+        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsRuntime']$" $components['Networking'] $runtimeInstance
         $topologyObjectCount++
 
         foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue)) {
             $diskId = if ($drive.PSObject.Properties['Id'] -and $drive.Id) { [string]$drive.Id } elseif ($drive.Path) { [string]$drive.Path } else { "$($drive.ControllerType):$($drive.ControllerNumber):$($drive.ControllerLocation)" }
             $vhd = if ($drive.Path -and (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VHD')) { Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue } else { $null }
-            $diskInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']$")
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/BoundaryId$" $boundaryId
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/VMId$" $vmId
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/DiskId$" $diskId
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/Path$" $drive.Path
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/Format$" $vhd.VhdFormat
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/DiskType$" $vhd.VhdType
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/FileSizeBytes$" $vhd.FileSize
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/MaximumSizeBytes$" $vhd.Size
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/ControllerType$" $drive.ControllerType
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/ControllerNumber$" $drive.ControllerNumber
-            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualHardDisk']/ControllerLocation$" $drive.ControllerLocation
+            $diskInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']$")
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/BoundaryId$" $boundaryId
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/VMId$" $vmId
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/DiskId$" $diskId
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/Path$" $drive.Path
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/Format$" $vhd.VhdFormat
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/DiskType$" $vhd.VhdType
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/FileSizeBytes$" $vhd.FileSize
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/MaximumSizeBytes$" $vhd.Size
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/ControllerType$" $drive.ControllerType
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/ControllerNumber$" $drive.ControllerNumber
+            Add-HcsProperty $diskInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/ControllerLocation$" $drive.ControllerLocation
             Add-HcsProperty $diskInstance "$MPElement[Name='System!System.Entity']/DisplayName$" $(if ($drive.Path) { Split-Path -Leaf $drive.Path } else { $diskId })
             $discoveryData.AddInstance($diskInstance)
-            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineContainsVirtualHardDisk']$" $vmInstance $diskInstance
-            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponentContainsVirtualHardDisk']$" $components['Storage'] $diskInstance
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineContainsVirtualHardDisk']$" $vmInstance $diskInstance
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponentContainsVirtualHardDisk']$" $components['Storage'] $diskInstance
             $topologyObjectCount++
         }
 
@@ -236,56 +236,56 @@ try {
             $switchId = [string]$adapter.SwitchId
             $vlan = Get-VMNetworkAdapterVlan -VMNetworkAdapter $adapter -ErrorAction SilentlyContinue
             $vlanSetting = if ($null -ne $vlan) { (($vlan | Out-String).Trim() -replace '\s+', ' ') } else { '' }
-            $adapterInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']$")
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/BoundaryId$" $boundaryId
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/VMId$" $vmId
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/AdapterId$" $adapterId
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/Name$" $adapter.Name
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/SwitchId$" $switchId
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/SwitchName$" $adapter.SwitchName
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/MacAddress$" $adapter.MacAddress
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/Status$" $adapter.Status
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/VlanSetting$" $vlanSetting
-            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapter']/IpAddresses$" ($adapter.IPAddresses -join '; ')
+            $adapterInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']$")
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/BoundaryId$" $boundaryId
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/VMId$" $vmId
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/AdapterId$" $adapterId
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/Name$" $adapter.Name
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/SwitchId$" $switchId
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/SwitchName$" $adapter.SwitchName
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/MacAddress$" $adapter.MacAddress
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/Status$" $adapter.Status
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/VlanSetting$" $vlanSetting
+            Add-HcsProperty $adapterInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter']/IpAddresses$" ($adapter.IPAddresses -join '; ')
             Add-HcsProperty $adapterInstance "$MPElement[Name='System!System.Entity']/DisplayName$" ($vm.Name + ' - ' + $adapter.Name)
             $discoveryData.AddInstance($adapterInstance)
-            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineContainsVirtualNetworkAdapter']$" $vmInstance $adapterInstance
-            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponentContainsVirtualNetworkAdapter']$" $components['Networking'] $adapterInstance
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineContainsVirtualNetworkAdapter']$" $vmInstance $adapterInstance
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsVirtualNetworkAdapter']$" $components['Networking'] $adapterInstance
             if ($switchId -and $switchesById.ContainsKey($switchId.ToLowerInvariant())) {
-                Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualNetworkAdapterConnectsVirtualSwitch']$" $adapterInstance $switchesById[$switchId.ToLowerInvariant()]
+                Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapterConnectsVirtualSwitch']$" $adapterInstance $switchesById[$switchId.ToLowerInvariant()]
             }
             $topologyObjectCount++
         }
 
         foreach ($replication in @(Get-VMReplication -VM $vm -ErrorAction SilentlyContinue)) {
             $relationshipId = if ($replication.PSObject.Properties['Id'] -and $replication.Id) { [string]$replication.Id } else { Get-HcsStableId -Value "$vmId|$($replication.Mode)|$($replication.PrimaryServer)|$($replication.ReplicaServer)" }
-            $replicaInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']$")
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/BoundaryId$" $boundaryId
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/VMId$" $vmId
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/RelationshipId$" $relationshipId
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/Mode$" $replication.Mode
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/State$" $replication.State
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/Health$" $replication.Health
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/PrimaryServer$" $replication.PrimaryServer
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/ReplicaServer$" $replication.ReplicaServer
-            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ReplicationRelationship']/LastReplicationUtc$" $replication.LastReplicationTime
+            $replicaInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']$")
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/BoundaryId$" $boundaryId
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/VMId$" $vmId
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/RelationshipId$" $relationshipId
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/Mode$" $replication.Mode
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/State$" $replication.State
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/Health$" $replication.Health
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/PrimaryServer$" $replication.PrimaryServer
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/ReplicaServer$" $replication.ReplicaServer
+            Add-HcsProperty $replicaInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ReplicationRelationship']/LastReplicationUtc$" $replication.LastReplicationTime
             Add-HcsProperty $replicaInstance "$MPElement[Name='System!System.Entity']/DisplayName$" ($vm.Name + ' Replica')
             $discoveryData.AddInstance($replicaInstance)
-            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineContainsReplicationRelationship']$" $vmInstance $replicaInstance
-            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.AvailabilityComponentContainsReplicationRelationship']$" $components['Availability and Clustering'] $replicaInstance
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineContainsReplicationRelationship']$" $vmInstance $replicaInstance
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponentContainsReplicationRelationship']$" $components['Availability and Clustering'] $replicaInstance
             $topologyObjectCount++
         }
     }
 
-    $pipeline = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline']$")
+    $pipeline = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringPipeline']$")
     Add-HcsProperty $pipeline "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline']/PipelineId$" 'CoreTopology'
-    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline']/DiscoveryStatus$" 'Healthy'
-    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline']/LastDiscoveryUtc$" ([DateTime]::UtcNow.ToString('o'))
-    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringPipeline']/ErrorSummary$" ''
+    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringPipeline']/PipelineId$" 'CoreTopology'
+    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringPipeline']/DiscoveryStatus$" 'Healthy'
+    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringPipeline']/LastDiscoveryUtc$" ([DateTime]::UtcNow.ToString('o'))
+    Add-HcsProperty $pipeline "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringPipeline']/ErrorSummary$" ''
     Add-HcsProperty $pipeline "$MPElement[Name='System!System.Entity']/DisplayName$" ('Core topology pipeline - ' + $ComputerName)
     $discoveryData.AddInstance($pipeline)
-    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponentContainsPipeline']$" $components['Monitoring Pipeline'] $pipeline
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponentContainsPipeline']$" $components['Monitoring Pipeline'] $pipeline
 
     $api.Return($discoveryData)
 }

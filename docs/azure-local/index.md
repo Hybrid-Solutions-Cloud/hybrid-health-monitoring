@@ -39,7 +39,7 @@ companion packs can depend on this platform health model.
 1. Choose the [Azure Local SCOM design](../design/azure-local/scom-mp.md) or
    [Azure Monitor Health Models design](../design/azure-local/azure-monitor.md).
 2. Read [Scope and topology](../design/scope-topology.md).
-3. Explore the [Azure Local SCOM Management Pack](../scom-mp/index.md).
-4. Review the [Azure Local Azure Monitor Health Model](../azure-monitor/index.md) and its
-   [prerequisites](../azure-monitor/prerequisites.md).
+3. Explore the [Azure Local SCOM Management Pack](../azure-local/scom/index.md).
+4. Review the [Azure Local Azure Monitor Health Model](../azure-local/azure-monitor/index.md) and its
+   [prerequisites](../azure-local/azure-monitor/prerequisites.md).
 5. Follow delivery status on the [Roadmap](../project/roadmap.md).

@@ -107,30 +107,30 @@ const azureLocalSidebar = [
   {
     text: 'SCOM management pack',
     items: [
-      { text: 'Overview', link: '/scom-mp/' },
-      { text: 'Prerequisites', link: '/scom-mp/prerequisites' },
+      { text: 'Overview', link: '/azure-local/scom/' },
+      { text: 'Prerequisites', link: '/azure-local/scom/prerequisites' },
       { text: 'Download lab preview', link: '/downloads/scom-lab-preview' },
-      { text: 'Administration guide', link: '/scom-mp/management-pack-guide' },
-      { text: 'Monitoring catalog', link: '/scom-mp/monitoring-catalog' },
-      { text: 'Health-rollup tree', link: '/scom-mp/diagrams/health-tree' },
-      { text: 'SquaredUp Dashboard Server', link: '/scom-mp/squaredup/' },
+      { text: 'Administration guide', link: '/azure-local/scom/management-pack-guide' },
+      { text: 'Monitoring catalog', link: '/azure-local/scom/monitoring-catalog' },
+      { text: 'Health-rollup tree', link: '/azure-local/scom/diagrams/health-tree' },
+      { text: 'SquaredUp Dashboard Server', link: '/azure-local/scom/squaredup/' },
     ],
   },
   {
     text: 'Azure Monitor health model',
     items: [
-      { text: 'Overview', link: '/azure-monitor/' },
-      { text: 'Prerequisites', link: '/azure-monitor/prerequisites' },
-      { text: 'Entity graph', link: '/azure-monitor/diagrams/entity-graph' },
-      { text: 'SquaredUp Cloud', link: '/azure-monitor/squaredup/' },
+      { text: 'Overview', link: '/azure-local/azure-monitor/' },
+      { text: 'Prerequisites', link: '/azure-local/azure-monitor/prerequisites' },
+      { text: 'Entity graph', link: '/azure-local/azure-monitor/diagrams/entity-graph' },
+      { text: 'SquaredUp Cloud', link: '/azure-local/azure-monitor/squaredup/' },
     ],
   },
   {
     text: 'Reference',
     collapsed: true,
     items: [
-      { text: 'SCOM monitoring research', link: '/scom-mp/monitoring-research' },
-      { text: 'Azure Monitor research', link: '/azure-monitor/research' },
+      { text: 'SCOM monitoring research', link: '/azure-local/scom/monitoring-research' },
+      { text: 'Azure Monitor research', link: '/azure-local/azure-monitor/research' },
       { text: 'Research spikes', link: '/design/research-spikes' },
     ],
   },
@@ -187,6 +187,7 @@ const decisionsSidebar = [
       { text: '0021 — Platform and delivery tracks', link: '/design/decisions/0021-platform-and-delivery-track-architecture' },
       { text: '0024 — Repository and publishing identity', link: '/design/decisions/0024-repository-and-publishing-identity' },
       { text: '0030 — Platform-first source tree', link: '/design/decisions/0030-platform-first-source-tree' },
+      { text: '0049 — Product-named MP identity', link: '/design/decisions/0049-product-named-management-pack-identity' },
     ],
   },
   {
@@ -284,8 +285,8 @@ const downloadsSidebar = [
     text: 'Before you import',
     items: [
       { text: 'Hyper-V prerequisites', link: '/hyper-v/prerequisites' },
-      { text: 'Azure Local SCOM prerequisites', link: '/scom-mp/prerequisites' },
-      { text: 'Azure Local Azure Monitor prerequisites', link: '/azure-monitor/prerequisites' },
+      { text: 'Azure Local SCOM prerequisites', link: '/azure-local/scom/prerequisites' },
+      { text: 'Azure Local Azure Monitor prerequisites', link: '/azure-local/azure-monitor/prerequisites' },
     ],
   },
 ]
@@ -363,8 +364,8 @@ export default defineConfig({
       // is served for all three prefixes — a reader never sees a different
       // sidebar depending on which door they came through.
       '/azure-local/': azureLocalSidebar,
-      '/scom-mp/': azureLocalSidebar,
-      '/azure-monitor/': azureLocalSidebar,
+      '/azure-local/scom/': azureLocalSidebar,
+      '/azure-local/azure-monitor/': azureLocalSidebar,
 
       '/downloads/': downloadsSidebar,
 
@@ -384,8 +385,8 @@ export default defineConfig({
         {
           text: 'Compare the tracks',
           items: [
-            { text: 'Azure Local SCOM prerequisites', link: '/scom-mp/prerequisites' },
-            { text: 'Azure Local Azure Monitor prerequisites', link: '/azure-monitor/prerequisites' },
+            { text: 'Azure Local SCOM prerequisites', link: '/azure-local/scom/prerequisites' },
+            { text: 'Azure Local Azure Monitor prerequisites', link: '/azure-local/azure-monitor/prerequisites' },
           ],
         },
       ],

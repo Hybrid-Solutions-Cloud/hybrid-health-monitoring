@@ -33,7 +33,7 @@ Describe 'Hyper-V Management Pack development build' {
         $contract.schemaVersion | Should -Be '1.0'
         $contract.product.displayName | Should -Be 'Hyper-V Private Cloud Monitoring'
         $contract.product.consoleRoot | Should -Be 'Hyper-V Private Cloud'
-        $contract.product.namespace | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud'
+        $contract.product.namespace | Should -Be 'HyperVPrivateCloud'
 
         $cluster = $contract.capabilities | Where-Object id -eq 'FailoverCluster'
         $cluster.status | Should -Be 'Approved'
@@ -88,17 +88,17 @@ Describe 'Hyper-V Management Pack development build' {
         $dependencies = Get-Content -LiteralPath $script:V2DependencyContract -Raw | ConvertFrom-Json
         $packages = Get-Content -LiteralPath $script:V2PackageContract -Raw | ConvertFrom-Json
         $packages.schemaVersion | Should -Be '1.0'
-        $packages.namespace | Should -Be 'HybridSolutionsCloud.HyperVPrivateCloud'
+        $packages.namespace | Should -Be 'HyperVPrivateCloud'
         $packages.sourceRoot | Should -Be 'src/hyper-v/scom-mp/v2'
 
         $artifactIds = @($packages.artifacts.id)
         @($artifactIds | Sort-Object -Unique).Count | Should -Be $artifactIds.Count
         @($packages.artifacts | Where-Object required).Count | Should -Be 4
         @($packages.artifacts | Where-Object required).id | Should -Be @(
-            'HybridSolutionsCloud.HyperVPrivateCloud.Library',
-            'HybridSolutionsCloud.HyperVPrivateCloud.Discovery',
-            'HybridSolutionsCloud.HyperVPrivateCloud.Monitoring',
-            'HybridSolutionsCloud.HyperVPrivateCloud.Presentation'
+            'HyperVPrivateCloud.Library',
+            'HyperVPrivateCloud.Discovery',
+            'HyperVPrivateCloud.Monitoring',
+            'HyperVPrivateCloud.Presentation'
         )
 
         $externalIds = @($dependencies.capabilities.id)
@@ -112,7 +112,7 @@ Describe 'Hyper-V Management Pack development build' {
         $capabilityNames = @(
             $packages.artifacts |
                 Where-Object kind -eq 'Capability' |
-                ForEach-Object { $_.id -replace '^HybridSolutionsCloud\.HyperVPrivateCloud\.Capability\.', '' }
+                ForEach-Object { $_.id -replace '^HyperVPrivateCloud\.Capability\.', '' }
         )
         foreach ($profile in $packages.profiles) {
             foreach ($capability in @($profile.capabilities)) {

@@ -62,5 +62,5 @@ Then import the Discovery and Monitoring override XML files from exactly one sel
 Confirm that the required Microsoft SCOM dependencies are already installed. Read the notice and
 verify the checksums included in the ZIP before import.
 
-For detailed procedures, see the [Azure Local administration guide](../scom-mp/management-pack-guide.md)
+For detailed procedures, see the [Azure Local administration guide](../azure-local/scom/management-pack-guide.md)
 or [Hyper-V administration guide](../hyper-v/management-pack-guide.md).

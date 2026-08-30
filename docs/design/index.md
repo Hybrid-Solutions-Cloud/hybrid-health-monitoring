@@ -33,8 +33,8 @@ must not become a shared runtime product dependency.
 
 | Solution type | Optional visualization deliverable |
 |---|---|
-| Azure Local SCOM MP | [SquaredUp Dashboard Server](../scom-mp/squaredup/index.md) |
-| Azure Local Azure Monitor | [SquaredUp Cloud](../azure-monitor/squaredup/index.md) |
+| Azure Local SCOM MP | [SquaredUp Dashboard Server](../azure-local/scom/squaredup/index.md) |
+| Azure Local Azure Monitor | [SquaredUp Cloud](../azure-local/azure-monitor/squaredup/index.md) |
 | Hyper-V SCOM MP | [SquaredUp Dashboard Server](../hyper-v/squaredup-dashboard-server.md) |
 | Hyper-V Azure Monitor | [SquaredUp Cloud](../hyper-v/squaredup-cloud.md), conditional with the solution |
 
