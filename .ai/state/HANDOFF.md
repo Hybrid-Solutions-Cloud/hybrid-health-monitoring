@@ -1,5 +1,70 @@
 # Handoff
 
+## 2026-08-30 — Generated dependency docs, navigation restructure, product-named MP identity
+
+**Branch:** `refactor/hyperv-mp-namespace` (3 commits, not pushed). `main` carries the first two;
+the rename commit is branch-only and deliberately unmerged.
+
+### What changed
+
+- `d2c6da3` on `main` — `.claude/settings.json` had five permission rules escaping a single quote as
+  `\'`, which is not valid JSON. The whole file failed to parse and was being discarded, silently
+  disabling the env block, all 26 permission rules, and all four hooks.
+- `ca68c2f` on `main` — new `tools/scom/Export-MpDependencies.ps1` parses every `<References>` block,
+  classifies each reference, enriches from `contracts/dependencies.v2.json`, and renders
+  marker-delimited blocks into prerequisite pages. `-Check` fails on drift and runs in CI via the
+  existing `Invoke-Pester -Path tests/unit` step. New pages: `docs/hyper-v/prerequisites.md`,
+  `docs/scom-mp/prerequisites.md`, `docs/start-here.md`. Navigation rewritten task-first; duplicate
+  nav entries cut from 194/118 pages to 142/122; the 48 ADRs moved to a themed section.
+- `c704910` on the branch — namespace `HybridSolutionsCloud.HyperVPrivateCloud.*` →
+  `HyperVPrivateCloud.*`; 66 override examples regenerated without an org prefix;
+  `developmentVersion` → `3.0.0.0`; ADR 0049 added.
+
+### Findings worth keeping
+
+- The reported "MP doesn't document dependencies" was **partly wrong**. The content existed in
+  `management-pack-guide.md` but started at line 279 of 503, and
+  `design/hyper-v/v2-dependency-and-ownership-contract.md` was not linked from the Hyper-V sidebar at
+  all. It was a findability problem, not an absence.
+- Genuine gaps confirmed and now documented: `Microsoft.Windows.Cluster.Library` **6.0.6278.0** was
+  referenced but named nowhere; File Services pins two packs at two versions (`10.1.0.3` /
+  `10.1.0.4`); Pure Storage needs publisher token `a9d994eedb5e7179` and is **unsupported on SCOM
+  2025**.
+- `src/hyper-v/scom-mp/v2/out/development/` holds a stale partial build — 3 of 13 packs,
+  `"complete": false`, missing `Presentation`, which all nine capability packs reference. It is
+  gitignored, so it is local to this machine only, but importing from it reproduces the reported
+  failure exactly. Documented as a danger callout in the prerequisites page.
+
+### Blocked — needs an operator decision
+
+`git mv docs/scom-mp docs/azure-local/scom` (and the same for `docs/azure-monitor`) was **blocked by
+the Claude Code auto-mode classifier**. Nothing partially applied; the tree is clean. This is the
+last piece of the agreed restructure: `docs/scom-mp/` is Azure Local-specific despite a generic name,
+and `scom-mp/index.md` has to disambiguate itself in prose because of it. The move needs 96 link
+rewrites across 31 files plus redirect stubs under `docs/public/`.
+
+Mitigation already in place: all three URL prefixes (`/azure-local/`, `/scom-mp/`, `/azure-monitor/`)
+now serve the same sidebar, so a reader no longer experiences the collision even though the URLs
+still show it.
+
+### Next steps
+
+1. Decide on the directory move above.
+2. Cut `3.0.0.0` through the `release-hyper-v-v2` workflow — sealing needs VSAE and the signing key
+   on the self-hosted runner and cannot be done locally. Until then the download page correctly
+   states that `2.0.0.0` carries the previous identities.
+3. Merge `refactor/hyperv-mp-namespace` only together with that release, so docs and downloads stay
+   consistent.
+4. Open question: published override examples are now `HyperVPrivateCloud.Overrides.*` with no
+   publisher prefix. Confirm that is wanted, or restore an org prefix for the shipped examples.
+
+### Verification
+
+133/133 Pester tests pass on the CI-pinned Pester 5.7.1. Dependency drift check exits 0, and was
+proven to exit 1 on an injected hand-edit. Site builds clean; 122/122 nav targets resolve; zero
+orphaned pages. `docs/public/downloads/**` was deliberately not touched by the rename — confirmed via
+`git status`.
+
 ## 2026-08-29 — Permanent Hyper-V v2 assets published and live-verified
 
 - Release `2.0.0.0` was sealed from clean source commit
