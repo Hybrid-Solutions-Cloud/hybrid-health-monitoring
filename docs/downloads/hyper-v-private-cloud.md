@@ -1,29 +1,42 @@
 ---
-title: Download Hyper-V Private Cloud Monitoring v2
-description: Permanently sealed SCOM Management Packs, public override packs, manifests, and checksums for Hyper-V Private Cloud Monitoring 2.0.0.0.
+title: Download Hyper-V Private Cloud Monitoring
+description: Sealed SCOM Management Packs, public override packs, manifests, and checksums for Hyper-V Private Cloud Monitoring.
 ---
 
-# Download Hyper-V Private Cloud Monitoring v2
+# Download Hyper-V Private Cloud Monitoring
 
-Version `2.0.0.0` is the current repository-hosted package. All 13 product Management Packs are
-sealed with the permanent public key token `54d0fb1159995c86`. The downloads were built offline
-from source commit `992ebc51d5dd09ee4d8807b9daf379efc97ed8c7`, verified by Microsoft VSAE,
-strong-name checked, and covered by the published SHA-256 manifest.
+Sealed SCOM Management Packs for Hyper-V private cloud infrastructure — four required core packs,
+nine optional capability packs, and public override starters for 11 deployment profiles.
 
-::: warning Management pack identities change in 1.0.0.0
-The packs on this page use the `HybridSolutionsCloud.HyperVPrivateCloud.*` identities. From
-`1.0.0.0` onward they are named for the product instead — `HyperVPrivateCloud.*` — with publisher
-attribution carried in the sealed pack metadata and on this page rather than in the pack ID.
+::: warning A renamed release is being prepared
+The package currently hosted here is `2.0.0.0`, which uses the older
+`HybridSolutionsCloud.HyperVPrivateCloud.*` Management Pack identities.
 
-SCOM treats a renamed management pack as an unrelated pack, so there is no in-place upgrade between
-`2.0.0.0` and `1.0.0.0`: the old packs must be removed and the new ones imported, which discards
-stored overrides and accumulated health state. Reasoning and migration detail are in
+The next release, `1.0.0.0`, names the packs for the product instead — `HyperVPrivateCloud.*` — with
+publisher attribution carried in the sealed pack metadata rather than in the pack ID. The version
+line restarts because that is a new pack identity with no prior release.
+
+SCOM treats a renamed Management Pack as an unrelated pack, so there is **no in-place upgrade**: the
+old packs must be removed and the new ones imported, which discards stored overrides and accumulated
+health state. Reasoning and migration detail are in
 [ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
 
-**Before you import either version, work through the
-[prerequisites](../hyper-v/prerequisites.md)** — the Microsoft and vendor packs each capability
-requires are not redistributed here, and a missing one is the most common cause of a failed import.
+If you are deploying for the first time, wait for `1.0.0.0` rather than importing `2.0.0.0` and
+migrating later.
 :::
+
+::: tip Read the prerequisites first
+The Microsoft and vendor Management Packs each capability requires are **not** redistributed here,
+and a missing one is the most common cause of a failed import. Work through the
+[prerequisites](../hyper-v/prerequisites.md) before downloading anything.
+:::
+
+## Currently published: 2.0.0.0
+
+All 13 product Management Packs are sealed with the permanent public key token
+`54d0fb1159995c86`. The downloads were built offline from source commit
+`992ebc51d5dd09ee4d8807b9daf379efc97ed8c7`, verified by Microsoft VSAE, strong-name checked, and
+covered by the published SHA-256 manifest.
 
 ## Download now
 

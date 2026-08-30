@@ -7,7 +7,7 @@ description: Download the sealed Azure Local and Hyper-V SCOM Management Pack su
 
 ::: warning Hyper-V preview superseded
 The Hyper-V `0.1.0` preview below is retained only for historical lab reproduction. Use the
-[permanently sealed Hyper-V Private Cloud Monitoring v2 download](hyper-v-private-cloud-v2.md) for
+[permanently sealed Hyper-V Private Cloud Monitoring download](hyper-v-private-cloud.md) for
 all new Hyper-V installations. The two versions have different namespaces and signing identities
 and must not be mixed.
 :::

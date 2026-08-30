@@ -1,9 +1,9 @@
 ---
-title: Hyper-V Private Cloud v2 dependency and ownership contract
-description: Evidence-backed ownership and dependency rules for Microsoft, vendor, and HCS objects in the Hyper-V Private Cloud Monitoring v2 Management Pack suite.
+title: Hyper-V Private Cloud dependency and ownership contract
+description: Evidence-backed ownership and dependency rules for Microsoft, vendor, and HCS objects in the Hyper-V Private Cloud Monitoring Management Pack suite.
 ---
 
-# Hyper-V Private Cloud v2 dependency and ownership contract
+# Hyper-V Private Cloud dependency and ownership contract
 
 This contract implements
 [ADR 0040](../decisions/0040-hyper-v-v2-microsoft-s2d-and-sdn-ownership.md), which supersedes the
@@ -11,7 +11,7 @@ pre-inspection assumptions in ADR 0039.
 
 ## Decision summary
 
-Hyper-V Private Cloud Monitoring v2 reuses stable, public objects from supported sealed Microsoft
+Hyper-V Private Cloud Monitoring reuses stable, public objects from supported sealed Microsoft
 and vendor Management Packs when those packs already own the resource. HCS owns the private-cloud
 service projection, missing domain objects, cross-domain correlations, and service-impact
 relationships. It does not create a second cluster, cluster node, cluster network, cluster resource,

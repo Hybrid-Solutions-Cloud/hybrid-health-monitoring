@@ -27,9 +27,9 @@ for the Hyper-V topology approved by the research and ADR gates.
 Version `2.0.0.0` is permanently sealed, offline verified, and published in this repository. Its
 public key token is `54d0fb1159995c86`.
 
-**[Download Hyper-V Private Cloud Monitoring v2 now](../downloads/hyper-v-private-cloud-v2.md).**
+**[Download Hyper-V Private Cloud Monitoring now](../downloads/hyper-v-private-cloud.md).**
 
-The earlier Hyper-V `0.1.0` lab preview is superseded and must not be mixed with v2 because it has
+The earlier Hyper-V `0.1.0` lab preview is superseded and must not be mixed with the current product because it has
 a different signing identity and product namespace. Representative SCOM runtime and lifecycle
 certification is performed after the operator installs the exact published bytes.
 

@@ -24,7 +24,7 @@ then obtain only the prerequisites on that list.
 
 ## Before anything else: get the packs from the right place
 
-Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud-v2.md) or
+Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
 from `docs/public/downloads/hyper-v-private-cloud/2.0.0.0/`.
 
 ::: warning Management pack identities changed in 1.0.0.0
@@ -286,6 +286,6 @@ steps.
 
 ## References
 
-- [Download Hyper-V Private Cloud Monitoring v2](../downloads/hyper-v-private-cloud-v2.md)
+- [Download Hyper-V Private Cloud Monitoring](../downloads/hyper-v-private-cloud.md)
 - [Management pack administration guide](management-pack-guide.md)
-- [V2 dependency and ownership contract](../design/hyper-v/v2-dependency-and-ownership-contract.md) — design rationale for every dependency above
+- [Dependency and ownership contract](../design/hyper-v/v2-dependency-and-ownership-contract.md) — design rationale for every dependency above

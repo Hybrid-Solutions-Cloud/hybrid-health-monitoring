@@ -209,7 +209,7 @@ byte-reproducible. The release process preserves one approved sealed output set 
 FASTSEAL invocation will reproduce the same binary hash. See [ADR 0048](../decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md).
 
 Production sealing and repository publication follow the
-[Hyper-V v2 governed release runbook](./release-runbook.md). The approved maintainer or protected
+[Hyper-V governed release runbook](./release-runbook.md). The approved maintainer or protected
 runner materializes the permanent key only under a temporary path, enforces Release-mode
 eligibility, deletes the key, commits the exact validated assets, and verifies the stable site
 downloads. Representative SCOM runtime evidence is collected after installation and drives patch

@@ -5,12 +5,12 @@ description: Public operator guide for building, installing, validating, tuning,
 
 # Hyper-V Management Pack administration guide
 
-This guide explains how Hyper-V Private Cloud Monitoring v2 is installed, tuned, validated,
+This guide explains how Hyper-V Private Cloud Monitoring is installed, tuned, validated,
 upgraded, and removed. Version `2.0.0.0` is permanently sealed with public key token
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 2.0.0.0 now](../downloads/hyper-v-private-cloud-v2.md).** Import exactly one
+**[Download version 2.0.0.0 now](../downloads/hyper-v-private-cloud.md).** Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
 lab preview is superseded and is not compatible with this signing identity.
 
@@ -26,7 +26,7 @@ lab preview is superseded and is not compatible with this signing identity.
 
 The sealed MPs are product-owned. Every active override is stored in customer-owned, unsealed XML.
 
-## V2 dependency profile
+## Dependency profile
 
 The four required core MPs have no optional Cluster, CSV, S2D, SAN, Pure, SDN, or VMM dependency.
 Each supported capability is a separate sealed adapter. Publisher-owned prerequisite MPs are not
@@ -34,7 +34,7 @@ redistributed in the HCS download and must be installed before the corresponding
 
 ### PowerShell 7 execution prerequisite
 
-Every first-party v2 script runs in an explicit PowerShell 7 process. Install a supported
+Every first-party script runs in an explicit PowerShell 7 process. Install a supported
 machine-wide PowerShell 7 MSI on every Hyper-V agent and on any management server that executes a
 server-side capability workflow. The first release requires the normal MSI path:
 `%ProgramFiles%\PowerShell\7\pwsh.exe`.
@@ -74,7 +74,7 @@ The authored `Capability.Cluster` adapter requires these prerequisites before im
 |---|---:|---|
 | Microsoft Windows Server Cluster 2016 and above MPs | `10.1.0.0` | Authoritative cluster, node, role/group, network, and leaf health |
 | Microsoft Windows Server OS/CSV MPs | `10.1.2.2` | Authoritative Cluster Shared Volume objects, health, and performance |
-| HCS v2 Library and Presentation | Matching product version | DA relationships, rollup targets, and common console folders |
+| Library and Presentation | Matching product version | DA relationships, rollup targets, and common console folders |
 | Failover Clustering management tools | Matching Windows Server | Local, read-only topology queries used by the HCS relationship adapter |
 
 Install the Hyper-V and Failover Clustering roles with their management tools on participating
@@ -134,7 +134,7 @@ The authored `Capability.PureStorage` adapter has these prerequisites and suppor
 |---|---:|---|
 | Pure Storage FlashArray MP | `2.0.120.0` | Authoritative array, controller, host, port, volume, pod, health, alert, and performance objects |
 | SCOM | 2016, 2019, or 2022 | Vendor-documented support lane for the inspected Pure MP release |
-| HCS v2 Library, Presentation, and Storage | Matching product version | Private-cloud relationships, common folders, and Windows SAN identities |
+| Library, Presentation, and Storage | Matching product version | Private-cloud relationships, common folders, and Windows SAN identities |
 | Pure host IQN/WWN and volume serial inventory | Exact values | Deterministic correlation to Windows iSCSI/FC initiators and HCS logical units |
 
 Import and configure the vendor MP first, then verify that it discovers the FlashArray. The HCS
@@ -177,7 +177,7 @@ does not guess a switch from an IP address, interface name, or partial MAC addre
 The authored `Capability.NetworkATC` adapter is initially supported for Windows Server 2025
 Hyper-V failover clusters that meet Microsoft's Network ATC requirements. It is a local Windows
 feature integration and has no external Microsoft Management Pack dependency. Import the matching
-HCS v2 Library and Presentation MPs first.
+Library and Presentation MPs first.
 
 | Prerequisite | Requirement | Purpose |
 |---|---|---|
@@ -269,7 +269,7 @@ VM-network, logical-network, network-site, switch, storage-pool, active-alert, a
 views. Microsoft's richer Fabric, VM, Host, Network, and Storage dashboards remain in the native
 VMM console area and remain Microsoft-owned.
 
-The VMM adapter is governed-sealed and included in the v2 download. Its representative VMM 2025
+The VMM adapter is governed-sealed and included in the download. Its representative VMM 2025
 runtime certification remains post-installation operator work; do not enable it in production until
 that topology, health, outage, upgrade, and removal validation is complete in pre-production.
 
@@ -290,7 +290,7 @@ Do not use a production management group as the first import target.
 
 ## Install the sealed product MPs
 
-For the first installation, import the v2 core in dependency order:
+For the first installation, import the core packs in dependency order:
 
 1. `HyperVPrivateCloud.Library`;
 2. `HyperVPrivateCloud.Discovery`;
@@ -410,7 +410,7 @@ Then select one tuning tier:
 | Standard | Establishing the normal production starting point | Local topology or response requirements clearly differ from the documented assumptions |
 | Strict | Protecting explicitly designated critical services with tested response capacity | The goal is simply to generate more alerts or lower every threshold |
 
-Generate a customer-owned v2 pair with:
+Generate a customer-owned pair with:
 
 ```powershell
 ./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
@@ -430,7 +430,7 @@ Neither product fact has a default because guessing produces unresolved referenc
 The product version and token above are the facts for release `2.0.0.0`; confirm them against the
 governed release manifest before generating files for a later release.
 
-The v2 catalog explicitly names every workflow, target class, local module, property, and
+The catalog explicitly names every workflow, target class, local module, property, and
 configuration parameter. It applies shared acquisition settings consistently across every monitor
 using the same data source to preserve cookdown. The Standard generated Monitoring MP also includes
 a worked all-hosts group in that same unsealed MP and uses it for core host monitoring and

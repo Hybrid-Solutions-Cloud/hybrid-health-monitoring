@@ -19,7 +19,7 @@ The SCOM Management Pack and Azure Monitor Health Model have separate design, so
 deployment, testing, and release boundaries.
 :::
 
-**[Download Hyper-V Private Cloud Monitoring v2](../downloads/hyper-v-private-cloud-v2.md).**
+**[Download Hyper-V Private Cloud Monitoring](../downloads/hyper-v-private-cloud.md).**
 
 ## Why this is separate from Azure Local
 

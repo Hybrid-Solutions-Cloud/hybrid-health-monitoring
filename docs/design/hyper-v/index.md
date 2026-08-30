@@ -19,7 +19,7 @@ Hyper-V research without creating a product dependency.
 
 The SCOM lane now has implementation-grade design contracts for the
 [end-to-end architecture](architecture.md), [Management Pack structure](management-pack-structure.md),
-[v2 dependency and ownership contract](v2-dependency-and-ownership-contract.md),
+[dependency and ownership contract](v2-dependency-and-ownership-contract.md),
 [class and relationship model](class-and-relationship-model.md),
 [discovery and workflows](discovery-and-workflow-architecture.md),
 [health and alerts](health-and-alert-architecture.md),

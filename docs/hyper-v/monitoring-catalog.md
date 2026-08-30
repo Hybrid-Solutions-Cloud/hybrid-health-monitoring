@@ -44,8 +44,8 @@ task returns host, VM, switch, and Replica summary data. Ten views cover service
 object inventory, alerts, performance, and events.
 
 ::: warning Earlier baseline defaults
-These values describe the superseded `HybridSolutionsCloud.HyperV` baseline, not the v2 product.
-For Hyper-V Private Cloud Monitoring v2, use the release manifest and the explicit
+These values describe the superseded `HybridSolutionsCloud.HyperV` baseline, not the current product.
+For Hyper-V Private Cloud Monitoring, use the release manifest and the explicit
 `src/hyper-v/scom-mp/v2/templates/overrides/tuning-catalog.json` contract. All defaults remain
 overrideable and require representative operator validation before production enablement.
 :::

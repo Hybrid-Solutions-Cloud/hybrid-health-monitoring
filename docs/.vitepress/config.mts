@@ -40,7 +40,7 @@ const hyperVSidebar = [
     items: [
       { text: 'Overview', link: '/hyper-v/' },
       { text: 'Prerequisites', link: '/hyper-v/prerequisites' },
-      { text: 'Download', link: '/downloads/hyper-v-private-cloud-v2' },
+      { text: 'Download', link: '/downloads/hyper-v-private-cloud' },
     ],
   },
   {
@@ -277,7 +277,7 @@ const downloadsSidebar = [
   {
     text: 'Downloads',
     items: [
-      { text: 'Hyper-V Private Cloud Monitoring v2', link: '/downloads/hyper-v-private-cloud-v2' },
+      { text: 'Hyper-V Private Cloud Monitoring v2', link: '/downloads/hyper-v-private-cloud' },
       { text: 'Azure Local SCOM lab preview', link: '/downloads/scom-lab-preview' },
     ],
   },
@@ -342,7 +342,7 @@ export default defineConfig({
       { text: 'Start here', link: '/start-here' },
       { text: 'Hyper-V', link: '/hyper-v/' },
       { text: 'Azure Local', link: '/azure-local/' },
-      { text: 'Downloads', link: '/downloads/hyper-v-private-cloud-v2' },
+      { text: 'Downloads', link: '/downloads/hyper-v-private-cloud' },
       {
         text: 'Reference',
         items: [

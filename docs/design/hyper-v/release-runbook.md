@@ -1,9 +1,9 @@
 ---
-title: Hyper-V v2 governed release runbook
-description: Permanent sealing, repository publication, checksum verification, and post-install SCOM validation for Hyper-V Private Cloud Monitoring v2.
+title: Hyper-V governed release runbook
+description: Permanent sealing, repository publication, checksum verification, and post-install SCOM validation for Hyper-V Private Cloud Monitoring.
 ---
 
-# Hyper-V v2 governed release runbook
+# Hyper-V governed release runbook
 
 The repository is the canonical distribution surface. Production assets are committed beneath
 `docs/public/downloads/hyper-v-private-cloud/` so the source repository and public documentation

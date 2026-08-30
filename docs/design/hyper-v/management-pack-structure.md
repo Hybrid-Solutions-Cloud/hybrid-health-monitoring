@@ -11,9 +11,9 @@ sealing reusable MPs that other MPs reference, and keeping overrides in separate
 See [Select a Management Pack file](https://learn.microsoft.com/en-us/system-center/scom/select-management-pack-file?view=sc-om-2025)
 and [Create a Management Pack for overrides](https://learn.microsoft.com/en-us/system-center/scom/manage-mp-create-unsealed-mp?view=sc-om-2025).
 
-## Current v2 artifact set
+## Current artifact set
 
-Hyper-V Private Cloud Monitoring v2 uses the `HyperVPrivateCloud` namespace.
+Hyper-V Private Cloud Monitoring uses the `HyperVPrivateCloud` namespace.
 It ships four required sealed MPs—Library, Discovery, Monitoring, and Presentation—and nine optional
 sealed capability adapters: Cluster, Storage, S2D, Pure Storage, File Services, Physical Network,
 Network ATC, SDN, and VMM. This decomposition keeps the core importable without optional vendor or
@@ -21,8 +21,8 @@ Microsoft product MPs while allowing both SAN and S2D adapters in a hybrid deplo
 Discovery and Monitoring override MPs are generated separately for 11 deployment profiles and
 three tuning tiers.
 
-The exact v2 dependency and ownership graph is authoritative in the
-[v2 dependency and ownership contract](v2-dependency-and-ownership-contract.md). The artifact table
+The exact dependency and ownership graph is authoritative in the
+[dependency and ownership contract](v2-dependency-and-ownership-contract.md). The artifact table
 below records the earlier `HybridSolutionsCloud.HyperV` baseline and is retained for compatibility
 and design history; it is superseded for new v2 installations.
 

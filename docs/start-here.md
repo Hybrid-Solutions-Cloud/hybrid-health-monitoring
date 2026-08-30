@@ -38,7 +38,7 @@ choose from based on what your environment actually runs.
    versions and download links.
 2. **[Choose your capabilities](/hyper-v/prerequisites#choose-your-capabilities)** — decide which of
    the nine optional packs apply so you only obtain the prerequisites you actually need.
-3. **[Download the release](/downloads/hyper-v-private-cloud-v2)** — take the sealed bundle that
+3. **[Download the release](/downloads/hyper-v-private-cloud)** — take the sealed bundle that
    matches your deployment profile.
 4. **[Follow the administration guide](/hyper-v/management-pack-guide)** — import, verify, and tune.
 5. **[Review the monitoring catalog policy](/hyper-v/monitoring-catalog)** — understand what is
