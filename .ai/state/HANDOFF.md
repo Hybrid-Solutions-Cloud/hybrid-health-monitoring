@@ -18,7 +18,7 @@ the rename commit is branch-only and deliberately unmerged.
   nav entries cut from 194/118 pages to 142/122; the 48 ADRs moved to a themed section.
 - `c704910` on the branch — namespace `HybridSolutionsCloud.HyperVPrivateCloud.*` →
   `HyperVPrivateCloud.*`; 66 override examples regenerated without an org prefix;
-  `developmentVersion` → `3.0.0.0`; ADR 0049 added.
+  `developmentVersion` → `1.0.0.0`; ADR 0049 added.
 
 ### Findings worth keeping
 
@@ -50,7 +50,7 @@ still show it.
 ### Next steps
 
 1. Decide on the directory move above.
-2. Cut `3.0.0.0` through the `release-hyper-v-v2` workflow — sealing needs VSAE and the signing key
+2. Cut `1.0.0.0` through the `release-hyper-v-v2` workflow — sealing needs VSAE and the signing key
    on the self-hosted runner and cannot be done locally. Until then the download page correctly
    states that `2.0.0.0` carries the previous identities.
 3. Merge `refactor/hyperv-mp-namespace` only together with that release, so docs and downloads stay

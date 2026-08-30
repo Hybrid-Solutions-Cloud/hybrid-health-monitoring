@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "namespace": "HyperVPrivateCloud",
-  "developmentVersion": "3.0.0.0",
+  "developmentVersion": "1.0.0.0",
   "productName": "Hyper-V Private Cloud Monitoring",
   "artifacts": [
     {

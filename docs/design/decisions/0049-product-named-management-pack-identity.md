@@ -43,8 +43,10 @@ Management pack identities are named for the product they monitor.
   a customer's override pack genuinely is authored by that customer.
 - Publisher attribution moves to where it belongs — the sealed pack's `Company` and `Copyright`
   fields, the documentation byline, and the download page.
-- The version line continues rather than restarting. The first release under the new identity is
-  `3.0.0.0`; the major bump signals the identity break.
+- **The version line restarts at `1.0.0.0`.** `HyperVPrivateCloud.*` is a new pack identity with no
+  prior release, so continuing from `2.0.0.0` would imply a lineage SCOM does not recognise. The
+  `2.x` numbering was itself an artefact — no `1.0` was ever officially released — so the rename is
+  the natural point to correct it. `1.0.0.0` is the first release of this product under its own name.
 
 ## Options considered
 
@@ -68,11 +70,11 @@ unlikely to collide, and requires no change to the already-correct display names
 
 **Breaking.** `HyperVPrivateCloud.Library` and `HybridSolutionsCloud.HyperVPrivateCloud.Library` are
 unrelated management packs as far as SCOM is concerned. Anyone who imported `2.0.0.0` must remove
-those packs and import `3.0.0.0`, losing stored overrides and accumulated health state. This is
+those packs and import `1.0.0.0`, losing stored overrides and accumulated health state. This is
 acceptable only because no such deployment exists; it will not be acceptable again.
 
 **Release `2.0.0.0` stays published as-is.** Its sealed artifacts, manifest, and checksums are
-immutable release evidence and were deliberately not rewritten by the rename. Until `3.0.0.0` is
+immutable release evidence and were deliberately not rewritten by the rename. Until `1.0.0.0` is
 sealed and published, the download page must state which identity each release carries.
 
 **All 66 override examples were regenerated**, and the generator now composes the pack ID from an
@@ -82,8 +84,13 @@ optional organisation prefix rather than hardcoding one.
 pack IDs rather than assuming a fixed segment count, so it survived this rename and will survive the
 next one.
 
-**Sealing requires CI.** The signing key and VSAE live on the self-hosted release runner, so
-`3.0.0.0` must be cut through the `release-hyper-v-v2` workflow.
+**Sealing is possible on an authoring workstation, but a published release still goes through CI.**
+VSAE 2022, `FASTSEAL.exe`, the VSAC MSBuild tasks, `sn.exe`, and MSBuild are all present on a
+configured authoring box, so a sealed build can be produced and verified locally for validation. The
+governed release still runs through `release-hyper-v-v2`, because that workflow is what supplies the
+protected environment, OIDC-scoped Key Vault access to the permanent signing key, immutable run
+provenance, and the published asset manifest. A locally sealed pack is for verification, never for
+publication.
 
 ## References
 

@@ -27,8 +27,8 @@ then obtain only the prerequisites on that list.
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud-v2.md) or
 from `docs/public/downloads/hyper-v-private-cloud/2.0.0.0/`.
 
-::: warning Management pack identities changed in 3.0.0.0
-This page documents the **`HyperVPrivateCloud.*`** identities introduced in `3.0.0.0`. The currently
+::: warning Management pack identities changed in 1.0.0.0
+This page documents the **`HyperVPrivateCloud.*`** identities introduced in `1.0.0.0`. The currently
 published release `2.0.0.0` uses the previous `HybridSolutionsCloud.HyperVPrivateCloud.*` identities.
 
 The prerequisite packs, versions, and import order are the same either way — only the HCS pack names
