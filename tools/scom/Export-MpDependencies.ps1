@@ -58,7 +58,7 @@ $Solutions = @{
         DisplayName  = 'Azure Local Monitoring'
         FragmentRoot = 'src/azure-local/scom-mp/fragments'
         Contract     = $null
-        DocPage      = 'docs/scom-mp/prerequisites.md'
+        DocPage      = 'docs/azure-local/scom/prerequisites.md'
     }
 }
 

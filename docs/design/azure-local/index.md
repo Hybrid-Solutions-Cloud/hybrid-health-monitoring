@@ -20,7 +20,7 @@ The [Azure Local SCOM Management Pack design](scom-mp.md) owns SCOM discoveries,
 relationships, monitors, rules, overrides, views, packaging, and the
 [Azure Local Distributed Application](distributed-application.md). The Distributed Application is
 not part of the Azure Monitor solution. Optional
-[SquaredUp Dashboard Server](../../scom-mp/squaredup/index.md) content is packaged with this
+[SquaredUp Dashboard Server](../../azure-local/scom/squaredup/index.md) content is packaged with this
 solution, not with Azure Monitor.
 
 ## Azure Monitor Health Models solution
@@ -28,7 +28,7 @@ solution, not with Azure Monitor.
 The [Azure Local Azure Monitor Health Models design](azure-monitor.md) owns Azure resource and
 entity modeling, signal ingestion, Azure Monitor health evaluation, alerting, deployment, and its
 cloud visualization artifacts. It does not depend on or extend the Azure Local SCOM Management Pack.
-Optional [SquaredUp Cloud](../../azure-monitor/squaredup/index.md) content is packaged with this
+Optional [SquaredUp Cloud](../../azure-local/azure-monitor/squaredup/index.md) content is packaged with this
 solution, not with the SCOM Management Pack.
 
 ## Platform baseline

@@ -9,7 +9,7 @@ Work through this page before importing the Azure Local management packs.
 
 ::: warning Lab preview
 The Azure Local SCOM management packs are currently published as a **lab preview** and are not
-sealed for production use. See the [downloads page](../downloads/scom-lab-preview.md) for the
+sealed for production use. See the [downloads page](../../downloads/scom-lab-preview.md) for the
 current status and checksums. Treat everything below as preview guidance.
 :::
 
@@ -37,7 +37,7 @@ _No external management pack prerequisites. The packs in this solution depend on
 <!-- END GENERATED: external-dependencies -->
 
 ::: tip Nothing to download
-Unlike the [Hyper-V solution](../hyper-v/prerequisites.md), the Azure Local packs reference only
+Unlike the [Hyper-V solution](../../hyper-v/prerequisites.md), the Azure Local packs reference only
 management packs that ship with SCOM. There are no Microsoft or vendor packs to obtain separately —
 provided your management group is a standard installation with the Data Warehouse role.
 :::
@@ -82,7 +82,7 @@ Insights, and a range of Azure-side configuration.
 
 If you have not yet decided which track to use, read the
 [Azure Monitor prerequisites](../azure-monitor/prerequisites.md) as well, then see the
-[comparison](../comparison/index.md).
+[comparison](../../comparison/index.md).
 
 ---
 
@@ -92,7 +92,7 @@ If you have not yet decided which track to use, read the
 - [ ] Agents deployed and healthy on all Azure Local nodes
 - [ ] Azure Local cluster deployed and operational
 - [ ] Lab-preview status understood — not for production management groups
-- [ ] Checksums verified against the [downloads page](../downloads/scom-lab-preview.md)
+- [ ] Checksums verified against the [downloads page](../../downloads/scom-lab-preview.md)
 
 ---
 
@@ -102,6 +102,6 @@ Continue to the [management pack guide](management-pack-guide.md) for the import
 
 ## References
 
-- [Download the SCOM management pack lab previews](../downloads/scom-lab-preview.md)
+- [Download the SCOM management pack lab previews](../../downloads/scom-lab-preview.md)
 - [Azure Local management pack guide](management-pack-guide.md)
 - [Azure Monitor prerequisites for Azure Local](../azure-monitor/prerequisites.md)

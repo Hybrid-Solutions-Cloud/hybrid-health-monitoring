@@ -8,7 +8,7 @@ description: SCOM Management Pack for Azure Local infrastructure.
 > **Azure Local / SCOM** — the committed SCOM delivery surface for Azure Local.
 
 This section covers **how the Azure Local design is implemented** as a SCOM Management Pack. Read
-the [Azure Local SCOM design lane](../design/azure-local/scom-mp.md) first. Shared principles do not
+the [Azure Local SCOM design lane](../../design/azure-local/scom-mp.md) first. Shared principles do not
 make this platform's entity model, signals, or discoveries applicable to the Hyper-V MP.
 
 ::: warning Development baseline, not a production release
@@ -19,12 +19,12 @@ the installed SCOM 2022 dependencies. Governed release signing and SCOM lab cert
 still required before release.
 :::
 
-[Download the sealed Azure Local SCOM 0.1.0 lab preview](../downloads/scom-lab-preview.md) for
+[Download the sealed Azure Local SCOM 0.1.0 lab preview](../../downloads/scom-lab-preview.md) for
 controlled pre-production evaluation. The preview uses a transient development signing identity;
 read the warning and checksum instructions before import.
 
 Looking for the other SCOM product? See the independent
-[Hyper-V SCOM Management Pack](../hyper-v/scom-mp.md).
+[Hyper-V SCOM Management Pack](../../hyper-v/scom-mp.md).
 
 ## Implemented product
 
@@ -41,23 +41,23 @@ Looking for the other SCOM product? See the independent
 
 ## Documentation
 
-- [Architecture](../design/azure-local/architecture.md)
-- [Management Pack structure](../design/azure-local/management-pack-structure.md)
-- [Class and relationship model](../design/azure-local/class-and-relationship-model.md)
-- [Discovery and workflow architecture](../design/azure-local/discovery-and-workflow-architecture.md)
-- [Health and alert architecture](../design/azure-local/health-and-alert-architecture.md)
-- [Override and tuning architecture](../design/azure-local/override-and-tuning-architecture.md)
-- [Validation and release gates](../design/azure-local/validation-and-release.md)
+- [Architecture](../../design/azure-local/architecture.md)
+- [Management Pack structure](../../design/azure-local/management-pack-structure.md)
+- [Class and relationship model](../../design/azure-local/class-and-relationship-model.md)
+- [Discovery and workflow architecture](../../design/azure-local/discovery-and-workflow-architecture.md)
+- [Health and alert architecture](../../design/azure-local/health-and-alert-architecture.md)
+- [Override and tuning architecture](../../design/azure-local/override-and-tuning-architecture.md)
+- [Validation and release gates](../../design/azure-local/validation-and-release.md)
 - [Monitoring research](monitoring-research.md) and [catalog](monitoring-catalog.md)
 - [Management Pack administration guide](management-pack-guide.md)
 
 ## Where to start
 
-1. [Azure Local SCOM design](../design/azure-local/scom-mp.md) — the governing design lane
-2. [Architecture](../design/azure-local/architecture.md) — the product and runtime boundary
+1. [Azure Local SCOM design](../../design/azure-local/scom-mp.md) — the governing design lane
+2. [Architecture](../../design/azure-local/architecture.md) — the product and runtime boundary
 3. [Monitoring catalog](monitoring-catalog.md) — what is monitored, collected, or deferred
 4. [Management Pack guide](management-pack-guide.md) — build, import, tune, upgrade, and remove
-5. [Validation and release](../design/azure-local/validation-and-release.md) — completed authoring
+5. [Validation and release](../../design/azure-local/validation-and-release.md) — completed authoring
    evidence and remaining lab/release gates
 
 ## Track-specific upstream references

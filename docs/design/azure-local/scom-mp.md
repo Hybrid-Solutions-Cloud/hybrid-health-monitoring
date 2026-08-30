@@ -32,7 +32,7 @@ scale, upgrade, coexistence, and removal evidence remain release gates.
 
 ## Implementation section
 
-Continue to the [Azure Local SCOM Management Pack](../../scom-mp/index.md) for the implementation
+Continue to the [Azure Local SCOM Management Pack](../../azure-local/scom/index.md) for the implementation
 inventory, monitoring research, catalog, administration guide, and validation status.
 
 The Azure Local DA is a required product artifact, not an optional dashboard convenience. It is the

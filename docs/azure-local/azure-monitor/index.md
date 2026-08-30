@@ -8,7 +8,7 @@ description: Azure Monitor Health Models for Azure Local infrastructure.
 > **Azure Local / Azure Monitor** — the committed Azure Monitor delivery surface for Azure Local.
 
 This section covers **how the Azure Local design is implemented** as an Azure Monitor Health Model.
-Read the [Azure Local Azure Monitor design lane](../design/azure-local/azure-monitor.md) first. Its
+Read the [Azure Local Azure Monitor design lane](../../design/azure-local/azure-monitor.md) first. Its
 entity graph, DCMA signals, cloud prerequisites, and deployment model do not govern Hyper-V.
 
 ::: tip Start with the prerequisites
@@ -24,7 +24,7 @@ implemented. The service and APIs remain preview. Live deployment and fault evid
 before release.
 :::
 
-Hyper-V has a separate, conditional [Azure Monitor roadmap track](../hyper-v/azure-monitor.md)
+Hyper-V has a separate, conditional [Azure Monitor roadmap track](../../hyper-v/azure-monitor.md)
 through Arc-enabled SCVMM. It is not covered by the Azure Local prerequisites on this page.
 
 ## What lives here
@@ -32,7 +32,7 @@ through Arc-enabled SCVMM. It is not covered by the Azure Local prerequisites on
 | Page | Content |
 |---|---|
 | [Prerequisites](prerequisites.md) | Cloud-side setup contract (HCI Insights, AMA, DCMA, RBAC, networking) |
-| [Architecture](../design/azure-local/azure-monitor-architecture.md) | Current resource, entity, signal, identity, and validation architecture |
+| [Architecture](../../design/azure-local/azure-monitor-architecture.md) | Current resource, entity, signal, identity, and validation architecture |
 | [Research](research.md) | Revalidated API/signal evidence and remaining spikes |
 | Entities | Deployment, six domain entities, cluster Azure-resource entity, and dependency relationships |
 | Signals | Two documented Azure Local metric definitions; KQL remains research-only until schemas are proven |
@@ -44,10 +44,10 @@ through Arc-enabled SCVMM. It is not covered by the Azure Local prerequisites on
 ## Where to start
 
 1. **[Prerequisites](prerequisites.md)** — make sure your cloud side is wired up
-2. [Azure Local Azure Monitor design](../design/azure-local/azure-monitor.md) — the governing lane
-3. [Azure Monitor entity model ADR](../design/decisions/0006-azmon-entity-model.md)
-4. [Cloud prerequisites contract ADR](../design/decisions/0010-cloud-prerequisites-contract.md)
-5. [Customization](../design/customization.md) — how operators tune the Azure Monitor track
+2. [Azure Local Azure Monitor design](../../design/azure-local/azure-monitor.md) — the governing lane
+3. [Azure Monitor entity model ADR](../../design/decisions/0006-azmon-entity-model.md)
+4. [Cloud prerequisites contract ADR](../../design/decisions/0010-cloud-prerequisites-contract.md)
+5. [Customization](../../design/customization.md) — how operators tune the Azure Monitor track
 
 ## Development and release boundary
 

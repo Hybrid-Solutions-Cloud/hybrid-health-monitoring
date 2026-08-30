@@ -24,14 +24,14 @@ cost, and teardown validation remain release gates.
 | Platform entities and signal meaning | [Scope and topology](../scope-topology.md), [signal catalog](../signal-catalog.md), and [concept mapping](../concept-mapping.md) |
 | Entity graph | [ADR 0006](../decisions/0006-azmon-entity-model.md) |
 | Health and alert separation | [Health model](../health-model.md), [ADR 0003](../decisions/0003-health-rollup-policy.md), and [ADR 0009](../decisions/0009-alert-vs-health-state.md) |
-| Cloud prerequisites | [ADR 0010](../decisions/0010-cloud-prerequisites-contract.md) and [prerequisites](../../azure-monitor/prerequisites.md) |
+| Cloud prerequisites | [ADR 0010](../decisions/0010-cloud-prerequisites-contract.md) and [prerequisites](../../azure-local/azure-monitor/prerequisites.md) |
 | Metrics and logs | [ADR 0012](../decisions/0012-azure-monitor-workspace-vs-law-metrics.md) |
 | Deployment | [ADR 0013](../decisions/0013-azmon-deployment-strategy.md) |
 | Cost, scale, and retention | [ADR 0019](../decisions/0019-cost-scale-retention.md) |
 | Customization and lifecycle | [Customization](../customization.md) and supporting ADRs 0007–0008 and 0014–0018 |
-| Current implementation | [Architecture](azure-monitor-architecture.md), [research](../../azure-monitor/research.md), and [ADR 0036](../decisions/0036-azure-local-azure-monitor-health-model-v1.md) |
+| Current implementation | [Architecture](azure-monitor-architecture.md), [research](../../azure-local/azure-monitor/research.md), and [ADR 0036](../decisions/0036-azure-local-azure-monitor-health-model-v1.md) |
 
 ## Implementation section
 
-Continue to [Azure Monitor Health Models for Azure Local](../../azure-monitor/index.md) for the
+Continue to [Azure Monitor Health Models for Azure Local](../../azure-local/azure-monitor/index.md) for the
 implementation plan, prerequisites, entity graph, signals, alerts, workbooks, and Bicep artifacts.

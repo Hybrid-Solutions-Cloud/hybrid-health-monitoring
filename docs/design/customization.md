@@ -177,7 +177,7 @@ customization strategy.
 
 ## Documentation per signal
 
-Every signal documented in [SCOM MP — Monitors](../scom-mp/index.md) and [Azure Monitor — Signals](../azure-monitor/index.md)
+Every signal documented in [SCOM MP — Monitors](../azure-local/scom/index.md) and [Azure Monitor — Signals](../azure-local/azure-monitor/index.md)
 includes:
 
 - The shipped default threshold value

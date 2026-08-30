@@ -13,7 +13,7 @@ Authoritative prerequisites for building an Azure Monitor **Health Model** (prev
 > signals about Azure Local **infrastructure** — the cluster resource, its Arc-enabled machine nodes,
 > the Arc Resource Bridge, and the related platform-side Azure resources (Key Vault, Storage Account,
 > deployment SPN). It does **not** cover tenant VM workloads running on the cluster — those are the
-> domain of future workload-companion MPs ([Roadmap](../project/roadmap.md)).
+> domain of future workload-companion MPs ([Roadmap](../../project/roadmap.md)).
 
 ---
 
@@ -36,7 +36,7 @@ Authoritative prerequisites for building an Azure Monitor **Health Model** (prev
 | 13 | **Activity Log + Resource Health** (auto, no setup) | Free Azure-resource-level signals — useful as health-model signals on the cluster, Key Vault, Storage Account, etc. | Auto / no action | [Activity log](https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log) |
 | 14 | **Azure Resource Graph access** (Reader on the SG/subscription) | The model's discovery and many operator queries (inventory of nodes, extensions, Arc state) rely on ARG. | Blocking for discovery queries | [Service Groups / Health Model discovery](https://learn.microsoft.com/en-us/azure/azure-monitor/health-models/concepts#azure-resource-entity) |
 | 15 | **Azure Update Manager onboarding** for the cluster | Provides update-status signals (assessment age, missing critical updates) you can wire into the health model. | Recommended | [Monitoring capabilities](https://learn.microsoft.com/en-us/azure/azure-local/concepts/monitoring-overview?view=azloc-2604) |
-| 16 | **Azure Monitor Workspace (AMW)** with a supplementary DCR routing AMA performance counter metrics to `monitoringAccounts` destination | Preferred target for performance metrics (PromQL, lower cost). **Not required** — the health model auto-detects topology and falls back to `Perf` table queries on the LAW when no AMW DCR destination is found. Most current Azure Local deployments are still on the LAW-only (legacy) topology. | Recommended | [Azure Monitor Workspace overview](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview), [ADR 0012](../design/decisions/0012-azure-monitor-workspace-vs-law-metrics.md) |
+| 16 | **Azure Monitor Workspace (AMW)** with a supplementary DCR routing AMA performance counter metrics to `monitoringAccounts` destination | Preferred target for performance metrics (PromQL, lower cost). **Not required** — the health model auto-detects topology and falls back to `Perf` table queries on the LAW when no AMW DCR destination is found. Most current Azure Local deployments are still on the LAW-only (legacy) topology. | Recommended | [Azure Monitor Workspace overview](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview), [ADR 0012](../../design/decisions/0012-azure-monitor-workspace-vs-law-metrics.md) |
 
 ---
 

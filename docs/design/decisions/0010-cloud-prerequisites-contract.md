@@ -12,7 +12,7 @@ DCMA. If those upstream signals aren't flowing, the model is empty regardless of
 good its design is.
 
 The full prerequisites discovery is captured in
-[docs/azure-monitor/prerequisites.md](../../azure-monitor/prerequisites.md). This ADR
+[docs/azure-monitor/prerequisites.md](../../azure-local/azure-monitor/prerequisites.md). This ADR
 **locks the prerequisites as a project contract**: a deployment that does not satisfy
 this contract will not deploy. The Bicep module fails the dry-run with an actionable
 error rather than silently producing a degraded model.
@@ -38,7 +38,7 @@ time. Every prerequisite is in one of two tiers:
 
 ### Blocking prerequisites (deployment refuses to proceed)
 
-Per [prerequisites.md](../../azure-monitor/prerequisites.md):
+Per [prerequisites.md](../../azure-local/azure-monitor/prerequisites.md):
 
 1. **Azure subscription registered for required Resource Providers** —
    `Microsoft.AzureStackHCI`, `Microsoft.HybridCompute`, `Microsoft.Insights`,
@@ -129,7 +129,7 @@ The contract is versioned with the project:
 
 ## References
 
-- [Prerequisites page](../../azure-monitor/prerequisites.md)
+- [Prerequisites page](../../azure-local/azure-monitor/prerequisites.md)
 - ADR 0001 — [Scope & topology](0001-scope-and-topology.md)
 - ADR 0006 — [Azure Monitor entity model alignment](0006-azmon-entity-model.md)
 - [Azure Local — monitoring overview](https://learn.microsoft.com/en-us/azure/azure-local/concepts/monitoring-overview?view=azloc-2604)
