@@ -45,7 +45,7 @@ function Complete-HcsFabricComponent {
         [string]$DisplayName
     )
 
-    Add-HcsProperty $Component "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    Add-HcsProperty $Component "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
     Add-HcsProperty $Component "$MPElement[Name='System!System.Entity']/DisplayName$" $DisplayName
     $script:DiscoveryData.AddInstance($Component)
     Add-HcsRelationship $RelationshipType $Service $Component
@@ -56,20 +56,20 @@ function Get-HcsFabricServiceInstance {
     param([string]$VmmServer)
 
     $boundaryId = Get-HcsFabricBoundaryId -VmmServer $VmmServer
-    $service = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']$")
-    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']/BoundaryId$" $boundaryId
-    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service']/BoundaryType$" 'VirtualMachineManagerFabric'
+    $service = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Service']$")
+    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Service']/BoundaryId$" $boundaryId
+    Add-HcsProperty $service "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Service']/BoundaryType$" 'VirtualMachineManagerFabric'
     Add-HcsProperty $service "$MPElement[Name='System!System.Entity']/DisplayName$" ("VMM fabric - {0}" -f $VmmServer)
     $script:DiscoveryData.AddInstance($service)
 
     $components = @{}
-    $components.Management = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ManagementComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsManagementComponent']$" -BoundaryId $boundaryId -DisplayName "Management - $VmmServer"
-    $components.Compute = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComputeComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsComputeComponent']$" -BoundaryId $boundaryId -DisplayName "Compute - $VmmServer"
-    $components.VirtualMachines = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsVirtualMachineComponent']$" -BoundaryId $boundaryId -DisplayName "Virtual Machines - $VmmServer"
-    $components.Availability = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.AvailabilityComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsAvailabilityComponent']$" -BoundaryId $boundaryId -DisplayName "Availability - $VmmServer"
-    $components.Storage = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsStorageComponent']$" -BoundaryId $boundaryId -DisplayName "Storage - $VmmServer"
-    $components.Network = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsNetworkComponent']$" -BoundaryId $boundaryId -DisplayName "Networking - $VmmServer"
-    $components.Monitoring = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.MonitoringComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContainsMonitoringComponent']$" -BoundaryId $boundaryId -DisplayName "Monitoring - $VmmServer"
+    $components.Management = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsManagementComponent']$" -BoundaryId $boundaryId -DisplayName "Management - $VmmServer"
+    $components.Compute = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComputeComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsComputeComponent']$" -BoundaryId $boundaryId -DisplayName "Compute - $VmmServer"
+    $components.VirtualMachines = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachineComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsVirtualMachineComponent']$" -BoundaryId $boundaryId -DisplayName "Virtual Machines - $VmmServer"
+    $components.Availability = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsAvailabilityComponent']$" -BoundaryId $boundaryId -DisplayName "Availability - $VmmServer"
+    $components.Storage = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsStorageComponent']$" -BoundaryId $boundaryId -DisplayName "Storage - $VmmServer"
+    $components.Network = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsNetworkComponent']$" -BoundaryId $boundaryId -DisplayName "Networking - $VmmServer"
+    $components.Monitoring = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsMonitoringComponent']$" -BoundaryId $boundaryId -DisplayName "Monitoring - $VmmServer"
     return $components
 }
 
@@ -96,7 +96,7 @@ try {
 
     $vmmServerInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='VMMDiscovery!Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMMManagementServer']$")
     Add-HcsProperty $vmmServerInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-    Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.ManagementContainsVMMManagementServer']$" $components.Management $vmmServerInstance
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.ManagementContainsVMMManagementServer']$" $components.Management $vmmServerInstance
 
     $module = Get-Module -ListAvailable -Name 'VirtualMachineManager' | Select-Object -First 1
     if ($null -eq $module) {
@@ -118,15 +118,15 @@ try {
         $logicalNetworkId = [string](Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'ID')
         if ([string]::IsNullOrWhiteSpace($logicalNetworkId)) { continue }
 
-        $logicalNetworkInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork']$")
-        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/VMMServer$" $ComputerName
-        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/LogicalNetworkId$" $logicalNetworkId
-        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/Name$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'Name')
-        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/Description$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'Description')
-        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/NetworkVirtualizationEnabled$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'NetworkVirtualizationEnabled')
+        $logicalNetworkInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetwork']$")
+        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/VMMServer$" $ComputerName
+        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/LogicalNetworkId$" $logicalNetworkId
+        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/Name$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'Name')
+        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/Description$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'Description')
+        Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetwork']/NetworkVirtualizationEnabled$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'NetworkVirtualizationEnabled')
         Add-HcsProperty $logicalNetworkInstance "$MPElement[Name='System!System.Entity']/DisplayName$" (Get-HcsObjectProperty -InputObject $logicalNetwork -Name 'Name' -DefaultValue $logicalNetworkId)
         $script:DiscoveryData.AddInstance($logicalNetworkInstance)
-        Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkContainsLogicalNetwork']$" $components.Network $logicalNetworkInstance
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkContainsLogicalNetwork']$" $components.Network $logicalNetworkInstance
 
         $networkSites = @(Get-SCLogicalNetworkDefinition -VMMServer $vmmConnection -LogicalNetwork $logicalNetwork -ReturnAllTypes)
         foreach ($networkSite in $networkSites) {
@@ -134,16 +134,16 @@ try {
             if ([string]::IsNullOrWhiteSpace($networkSiteId)) { continue }
             $hostGroups = @(Get-HcsObjectProperty -InputObject $networkSite -Name 'VMHostGroups' -DefaultValue @()) | ForEach-Object { [string](Get-HcsObjectProperty -InputObject $_ -Name 'Path' -DefaultValue (Get-HcsObjectProperty -InputObject $_ -Name 'Name')) }
 
-            $networkSiteInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']$")
-            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']/VMMServer$" $ComputerName
-            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']/NetworkSiteId$" $networkSiteId
-            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']/LogicalNetworkId$" $logicalNetworkId
-            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']/Name$" (Get-HcsObjectProperty -InputObject $networkSite -Name 'Name')
-            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']/HostGroupSummary$" ($hostGroups -join '; ')
-            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.NetworkSite']/SubnetVlanSummary$" (Get-HcsSubnetVlanSummary -NetworkSite $networkSite)
+            $networkSiteInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']$")
+            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']/VMMServer$" $ComputerName
+            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']/NetworkSiteId$" $networkSiteId
+            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']/LogicalNetworkId$" $logicalNetworkId
+            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']/Name$" (Get-HcsObjectProperty -InputObject $networkSite -Name 'Name')
+            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']/HostGroupSummary$" ($hostGroups -join '; ')
+            Add-HcsProperty $networkSiteInstance "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.NetworkSite']/SubnetVlanSummary$" (Get-HcsSubnetVlanSummary -NetworkSite $networkSite)
             Add-HcsProperty $networkSiteInstance "$MPElement[Name='System!System.Entity']/DisplayName$" (Get-HcsObjectProperty -InputObject $networkSite -Name 'Name' -DefaultValue $networkSiteId)
             $script:DiscoveryData.AddInstance($networkSiteInstance)
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetworkContainsNetworkSite']$" $logicalNetworkInstance $networkSiteInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetworkContainsNetworkSite']$" $logicalNetworkInstance $networkSiteInstance
         }
 
         $vmNetworks = @(Get-SCVMNetwork -VMMServer $vmmConnection -LogicalNetwork $logicalNetwork)
@@ -153,7 +153,7 @@ try {
             $vmNetworkInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='VMMDiscovery!Microsoft.SystemCenter.VirtualMachineManager.Discovery.VMNetwork']$")
             Add-HcsProperty $vmNetworkInstance "$MPElement[Name='VMMBase!Microsoft.SystemCenter.VirtualMachineManager.VMNetwork']/VMNetworkId$" $vmNetworkId
             Add-HcsProperty $vmNetworkInstance "$MPElement[Name='VMMBase!Microsoft.SystemCenter.VirtualMachineManager.VMNetwork']/VMMServer$" $ComputerName
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.LogicalNetworkReferencesVMNetwork']$" $logicalNetworkInstance $vmNetworkInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.LogicalNetworkReferencesVMNetwork']$" $logicalNetworkInstance $vmNetworkInstance
         }
     }
 

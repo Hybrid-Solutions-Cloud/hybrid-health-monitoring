@@ -27,6 +27,17 @@ then obtain only the prerequisites on that list.
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud-v2.md) or
 from `docs/public/downloads/hyper-v-private-cloud/2.0.0.0/`.
 
+::: warning Management pack identities changed in 3.0.0.0
+This page documents the **`HyperVPrivateCloud.*`** identities introduced in `3.0.0.0`. The currently
+published release `2.0.0.0` uses the previous `HybridSolutionsCloud.HyperVPrivateCloud.*` identities.
+
+The prerequisite packs, versions, and import order are the same either way — only the HCS pack names
+differ. If you are importing `2.0.0.0`, prefix each pack name below with `HybridSolutionsCloud.`.
+
+SCOM treats the two as unrelated management packs, so there is no in-place upgrade between them. See
+[ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
+:::
+
 ::: danger Do not import from a local build directory
 If you build from source, `src/hyper-v/scom-mp/v2/out/development/` may contain a **partial** build.
 A partial build is missing `Presentation`, which all nine capability packs reference — so every
@@ -129,19 +140,19 @@ external pack that specific import was waiting on.
 <!-- BEGIN GENERATED: per-pack-dependencies -->
 | # | Management pack | External prerequisites |
 |---:|---|---|
-| 1 | `HybridSolutionsCloud.HyperVPrivateCloud.Library` | _none beyond the SCOM base packs_ |
-| 2 | `HybridSolutionsCloud.HyperVPrivateCloud.Discovery` | _none beyond the SCOM base packs_ |
-| 3 | `HybridSolutionsCloud.HyperVPrivateCloud.Monitoring` | _none beyond the SCOM base packs_ |
-| 4 | `HybridSolutionsCloud.HyperVPrivateCloud.Presentation` | _none beyond the SCOM base packs_ |
-| 5 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster` | `Microsoft.Windows.Cluster.Library` 6.0.6278.0<br>`Microsoft.Windows.Cluster.Management.Library` 10.1.0.0<br>`Microsoft.Windows.Server.ClusterSharedVolumeMonitoring` 10.1.2.2 |
-| 6 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices` | `Microsoft.Windows.FileServices` 10.1.0.3<br>`Microsoft.Windows.FileServices.SMB.2016` 10.1.0.4 |
-| 7 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC` | _none beyond the SCOM base packs_ |
-| 8 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork` | _none beyond the SCOM base packs_ |
-| 9 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D` | `Microsoft.Storage.Library` 1.0.0.0<br>`Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect` 1.0.0.0 |
-| 10 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN` | `Microsoft.Windows.10.SDNMonitoring` 10.0.0.2 |
-| 11 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage` | _none beyond the SCOM base packs_ |
-| 12 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM` | `Microsoft.SystemCenter.VirtualMachineManager.Library` 11.19.0.3<br>`Microsoft.SystemCenter.VirtualMachineManager.Discovery` 11.19.0.3<br>`Microsoft.SystemCenter.VirtualMachineManager.Monitoring` 11.19.0.3<br>`Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library` 10.25.1200.0 |
-| 13 | `HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage` | `PureStorageFlashArray` 2.0.120.0 |
+| 1 | `HyperVPrivateCloud.Library` | _none beyond the SCOM base packs_ |
+| 2 | `HyperVPrivateCloud.Discovery` | _none beyond the SCOM base packs_ |
+| 3 | `HyperVPrivateCloud.Monitoring` | _none beyond the SCOM base packs_ |
+| 4 | `HyperVPrivateCloud.Presentation` | _none beyond the SCOM base packs_ |
+| 5 | `HyperVPrivateCloud.Capability.Cluster` | `Microsoft.Windows.Cluster.Library` 6.0.6278.0<br>`Microsoft.Windows.Cluster.Management.Library` 10.1.0.0<br>`Microsoft.Windows.Server.ClusterSharedVolumeMonitoring` 10.1.2.2 |
+| 6 | `HyperVPrivateCloud.Capability.FileServices` | `Microsoft.Windows.FileServices` 10.1.0.3<br>`Microsoft.Windows.FileServices.SMB.2016` 10.1.0.4 |
+| 7 | `HyperVPrivateCloud.Capability.NetworkATC` | _none beyond the SCOM base packs_ |
+| 8 | `HyperVPrivateCloud.Capability.PhysicalNetwork` | _none beyond the SCOM base packs_ |
+| 9 | `HyperVPrivateCloud.Capability.S2D` | `Microsoft.Storage.Library` 1.0.0.0<br>`Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect` 1.0.0.0 |
+| 10 | `HyperVPrivateCloud.Capability.SDN` | `Microsoft.Windows.10.SDNMonitoring` 10.0.0.2 |
+| 11 | `HyperVPrivateCloud.Capability.Storage` | _none beyond the SCOM base packs_ |
+| 12 | `HyperVPrivateCloud.Capability.VMM` | `Microsoft.SystemCenter.VirtualMachineManager.Library` 11.19.0.3<br>`Microsoft.SystemCenter.VirtualMachineManager.Discovery` 11.19.0.3<br>`Microsoft.SystemCenter.VirtualMachineManager.Monitoring` 11.19.0.3<br>`Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library` 10.25.1200.0 |
+| 13 | `HyperVPrivateCloud.Capability.PureStorage` | `PureStorageFlashArray` 2.0.120.0 |
 <!-- END GENERATED: per-pack-dependencies -->
 
 ---
@@ -157,19 +168,19 @@ Import all external prerequisite packs from the table above **before** starting 
 
 <!-- BEGIN GENERATED: import-order -->
 ```text
- 1. HybridSolutionsCloud.HyperVPrivateCloud.Library
- 2. HybridSolutionsCloud.HyperVPrivateCloud.Discovery
- 3. HybridSolutionsCloud.HyperVPrivateCloud.Monitoring
- 4. HybridSolutionsCloud.HyperVPrivateCloud.Presentation
- 5. HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster
- 6. HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices
- 7. HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC
- 8. HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork
- 9. HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D
-10. HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN
-11. HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage
-12. HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM
-13. HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage
+ 1. HyperVPrivateCloud.Library
+ 2. HyperVPrivateCloud.Discovery
+ 3. HyperVPrivateCloud.Monitoring
+ 4. HyperVPrivateCloud.Presentation
+ 5. HyperVPrivateCloud.Capability.Cluster
+ 6. HyperVPrivateCloud.Capability.FileServices
+ 7. HyperVPrivateCloud.Capability.NetworkATC
+ 8. HyperVPrivateCloud.Capability.PhysicalNetwork
+ 9. HyperVPrivateCloud.Capability.S2D
+10. HyperVPrivateCloud.Capability.SDN
+11. HyperVPrivateCloud.Capability.Storage
+12. HyperVPrivateCloud.Capability.VMM
+13. HyperVPrivateCloud.Capability.PureStorage
 ```
 <!-- END GENERATED: import-order -->
 
@@ -254,8 +265,8 @@ imports and discovers nothing.
 
 | SCOM error mentions | Cause | Fix |
 |---|---|---|
-| `HybridSolutionsCloud.HyperVPrivateCloud.Presentation` | You imported from a partial local build, or skipped a core pack | Import the four core packs in order from the sealed release |
-| `HybridSolutionsCloud.HyperVPrivateCloud.Library` | Core library not imported first | Import `Library` before anything else |
+| `HyperVPrivateCloud.Presentation` | You imported from a partial local build, or skipped a core pack | Import the four core packs in order from the sealed release |
+| `HyperVPrivateCloud.Library` | Core library not imported first | Import `Library` before anything else |
 | `Microsoft.Windows.Cluster.*` | Windows Server Cluster MPs missing | Download and import [id=54701](https://www.microsoft.com/en-us/download/details.aspx?id=54701) |
 | `Microsoft.Windows.Server.ClusterSharedVolumeMonitoring` | CSV monitoring MP missing | Download and import [id=54303](https://www.microsoft.com/en-us/download/details.aspx?id=54303) |
 | `Microsoft.Storage.Library` or `...StorageSpacesDirect` | S2D MP missing | Download and import [id=100782](https://www.microsoft.com/en-us/download/details.aspx?id=100782) |

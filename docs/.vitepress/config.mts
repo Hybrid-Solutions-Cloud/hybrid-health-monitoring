@@ -187,6 +187,7 @@ const decisionsSidebar = [
       { text: '0021 — Platform and delivery tracks', link: '/design/decisions/0021-platform-and-delivery-track-architecture' },
       { text: '0024 — Repository and publishing identity', link: '/design/decisions/0024-repository-and-publishing-identity' },
       { text: '0030 — Platform-first source tree', link: '/design/decisions/0030-platform-first-source-tree' },
+      { text: '0049 — Product-named MP identity', link: '/design/decisions/0049-product-named-management-pack-identity' },
     ],
   },
   {

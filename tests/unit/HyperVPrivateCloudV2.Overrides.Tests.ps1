@@ -77,7 +77,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 override generation' {
         foreach ($file in Get-ChildItem -LiteralPath $script:VersionOutput -Filter '*.xml' -File) {
             [xml]$managementPack = Get-Content -LiteralPath $file.FullName -Raw
             $managementPack.ManagementPack.Manifest.Identity.Version | Should -Be '2.0.0.0'
-            foreach ($reference in $managementPack.SelectNodes("/ManagementPack/Manifest/References/Reference[starts-with(ID,'HybridSolutionsCloud.HyperVPrivateCloud')]") ) {
+            foreach ($reference in $managementPack.SelectNodes("/ManagementPack/Manifest/References/Reference[starts-with(ID,'HyperVPrivateCloud')]") ) {
                 $reference.Version | Should -Be '0.2.0.0'
                 $reference.PublicKeyToken | Should -Be '0123456789abcdef'
             }
@@ -170,7 +170,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 override generation' {
     }
 
     It 'preserves cookdown by applying shared acquisition values to every shared monitor' {
-        $path = Join-Path $script:RegeneratedExamples 'CompletePrivateCloud/strict/HybridSolutionsCloud.HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Monitoring.xml.example'
+        $path = Join-Path $script:RegeneratedExamples 'CompletePrivateCloud/strict/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Monitoring.xml.example'
         [xml]$managementPack = Get-Content -LiteralPath $path -Raw
         foreach ($parameter in @('IntervalSeconds', 'CpuWarningPercent', 'CpuCriticalPercent', 'MemoryWarningMB', 'MemoryCriticalMB', 'PagesInputWarningPerSecond', 'PagesInputCriticalPerSecond', 'CheckpointWarningHours', 'CheckpointCriticalHours')) {
             $nodes = @($managementPack.SelectNodes("//MonitorConfigurationOverride[contains(@Monitor,'.Host.') and @Parameter='$parameter']"))
@@ -186,7 +186,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 override generation' {
 
     It 'ships the Standard worked group in the same unsealed MP as its overrides' {
         foreach ($profile in $script:Contract.profiles) {
-            $path = Join-Path $script:RegeneratedExamples "$($profile.id)/standard/HybridSolutionsCloud.HyperVPrivateCloud.Overrides.$($profile.id).Standard.Monitoring.xml.example"
+            $path = Join-Path $script:RegeneratedExamples "$($profile.id)/standard/HyperVPrivateCloud.Overrides.$($profile.id).Standard.Monitoring.xml.example"
             [xml]$managementPack = Get-Content -LiteralPath $path -Raw
             $group = $managementPack.SelectSingleNode('//ClassType[contains(@ID,".Group.AllHosts")]')
             $group | Should -Not -BeNullOrEmpty
@@ -213,7 +213,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 override generation' {
         $crossMpPath = Join-Path $script:Scratch 'cross-mp.json'
         $crossMp = @{
             schemaVersion = '2.0'; id = 'Custom'; capabilities = @()
-            groups = @(@{ id = 'WrongPack'; kind = 'Discovery'; displayName = 'Wrong pack'; memberClassRef = 'HCSV2Library'; memberClassId = 'HybridSolutionsCloud.HyperVPrivateCloud.HostRole' })
+            groups = @(@{ id = 'WrongPack'; kind = 'Discovery'; displayName = 'Wrong pack'; memberClassRef = 'HCSV2Library'; memberClassId = 'HyperVPrivateCloud.HostRole' })
             targeting = @(@{ targetSet = 'Core.HostMonitors'; type = 'group'; groupRef = 'WrongPack' })
         } | ConvertTo-Json -Depth 6
         [System.IO.File]::WriteAllText($crossMpPath, $crossMp, [System.Text.UTF8Encoding]::new($false))

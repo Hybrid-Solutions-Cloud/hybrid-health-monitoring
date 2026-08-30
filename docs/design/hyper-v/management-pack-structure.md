@@ -13,7 +13,7 @@ and [Create a Management Pack for overrides](https://learn.microsoft.com/en-us/s
 
 ## Current v2 artifact set
 
-Hyper-V Private Cloud Monitoring v2 uses the `HybridSolutionsCloud.HyperVPrivateCloud` namespace.
+Hyper-V Private Cloud Monitoring v2 uses the `HyperVPrivateCloud` namespace.
 It ships four required sealed MPs—Library, Discovery, Monitoring, and Presentation—and nine optional
 sealed capability adapters: Cluster, Storage, S2D, Pure Storage, File Services, Physical Network,
 Network ATC, SDN, and VMM. This decomposition keeps the core importable without optional vendor or

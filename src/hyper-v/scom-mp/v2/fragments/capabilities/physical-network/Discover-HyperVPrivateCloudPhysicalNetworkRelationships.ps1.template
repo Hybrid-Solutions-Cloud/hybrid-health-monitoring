@@ -42,8 +42,8 @@ try {
     $computer = $discoveryData.CreateClassInstance("$MPElement[Name='Windows!Microsoft.Windows.Computer']$")
     Add-HcsProperty $computer "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
 
-    $networkComponent = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.NetworkComponent']$")
-    Add-HcsProperty $networkComponent "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $networkComponent = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")
+    Add-HcsProperty $networkComponent "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
     $physicalAdapters = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.MacAddress) })
     $adaptersByDescription = @{}
@@ -56,9 +56,9 @@ try {
     }
 
     foreach ($switch in @(Get-VMSwitch -SwitchType External -ErrorAction Stop)) {
-        $switchInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']$")
+        $switchInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']$")
         Add-HcsProperty $switchInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
-        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualSwitch']/SwitchId$" ([string]$switch.Id)
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/SwitchId$" ([string]$switch.Id)
 
         foreach ($description in @($switch.NetAdapterInterfaceDescriptions)) {
             if ([string]::IsNullOrWhiteSpace([string]$description)) { continue }
@@ -71,8 +71,8 @@ try {
             Add-HcsProperty $windowsAdapter "$MPElement[Name='Windows!Microsoft.Windows.ComputerNetworkAdapter']/DeviceID$" ([string]$adapter.DeviceID)
             Add-HcsProperty $windowsAdapter "$MPElement[Name='System!System.Device.NetworkAdapter']/MACAddress$" ([string]$adapter.MacAddress)
 
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkComponentContainsComputerNetworkAdapter']$" $networkComponent $windowsAdapter
-            Add-HcsRelationship "$MPElement[Name='HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUsesComputerNetworkAdapter']$" $switchInstance $windowsAdapter
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkComponentContainsComputerNetworkAdapter']$" $networkComponent $windowsAdapter
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUsesComputerNetworkAdapter']$" $switchInstance $windowsAdapter
         }
     }
 }

@@ -11,7 +11,7 @@ Pack. Customers own two unsealed override Management Packs so discovery policy a
 policy can be serviced independently.
 
 The preview and v2 products have separate immutable namespaces. The current v2 implementation is
-the `HybridSolutionsCloud.HyperVPrivateCloud` schema described below; preview override sources stay
+the `HyperVPrivateCloud` schema described below; preview override sources stay
 available only for compatibility and migration testing. Candidate tuning values remain subject to
 representative-lab evidence before production release.
 

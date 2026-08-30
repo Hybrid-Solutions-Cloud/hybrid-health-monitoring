@@ -10,6 +10,21 @@ sealed with the permanent public key token `54d0fb1159995c86`. The downloads wer
 from source commit `992ebc51d5dd09ee4d8807b9daf379efc97ed8c7`, verified by Microsoft VSAE,
 strong-name checked, and covered by the published SHA-256 manifest.
 
+::: warning Management pack identities change in 3.0.0.0
+The packs on this page use the `HybridSolutionsCloud.HyperVPrivateCloud.*` identities. From
+`3.0.0.0` onward they are named for the product instead — `HyperVPrivateCloud.*` — with publisher
+attribution carried in the sealed pack metadata and on this page rather than in the pack ID.
+
+SCOM treats a renamed management pack as an unrelated pack, so there is no in-place upgrade between
+`2.0.0.0` and `3.0.0.0`: the old packs must be removed and the new ones imported, which discards
+stored overrides and accumulated health state. Reasoning and migration detail are in
+[ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
+
+**Before you import either version, work through the
+[prerequisites](../hyper-v/prerequisites.md)** — the Microsoft and vendor packs each capability
+requires are not redistributed here, and a missing one is the most common cause of a failed import.
+:::
+
 ## Download now
 
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — all four core MPs, all nine capability MPs, and all 66 public override MPs.

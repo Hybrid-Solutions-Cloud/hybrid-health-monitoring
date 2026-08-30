@@ -292,10 +292,10 @@ Do not use a production management group as the first import target.
 
 For the first installation, import the v2 core in dependency order:
 
-1. `HybridSolutionsCloud.HyperVPrivateCloud.Library`;
-2. `HybridSolutionsCloud.HyperVPrivateCloud.Discovery`;
-3. `HybridSolutionsCloud.HyperVPrivateCloud.Monitoring`; and
-4. `HybridSolutionsCloud.HyperVPrivateCloud.Presentation`.
+1. `HyperVPrivateCloud.Library`;
+2. `HyperVPrivateCloud.Discovery`;
+3. `HyperVPrivateCloud.Monitoring`; and
+4. `HyperVPrivateCloud.Presentation`.
 
 Then import only the capability MPs selected by the deployment profile, after importing each
 capability's Microsoft or vendor prerequisites. The complete ZIP is a distribution archive, not an

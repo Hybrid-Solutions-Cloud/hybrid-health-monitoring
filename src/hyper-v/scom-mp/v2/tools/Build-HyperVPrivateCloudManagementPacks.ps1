@@ -54,7 +54,7 @@ function ConvertTo-HcsDisplayName {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Value)
 
-    $leaf = $Value -replace '^HybridSolutionsCloud\.HyperVPrivateCloud\.', ''
+    $leaf = $Value -replace '^HyperVPrivateCloud\.', ''
     $leaf = $leaf -replace '([a-z0-9])([A-Z])', '$1 $2'
     return ($leaf -replace '\.', ' ')
 }
@@ -132,16 +132,16 @@ function Get-HcsTargetMonitorContent {
     $knowledge = [System.Text.StringBuilder]::new()
     foreach ($definition in $Definitions) {
         $prefix = if ($Kind -eq 'Host') { 'Host' } else { 'VmRuntime' }
-        $monitorId = "HybridSolutionsCloud.HyperVPrivateCloud.$prefix.$($definition[0]).Monitor"
+        $monitorId = "HyperVPrivateCloud.$prefix.$($definition[0]).Monitor"
         $messageId = "$monitorId.Message"
-        $target = if ($Kind -eq 'Host') { 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole' } else { 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime' }
-        $typeId = if ($Kind -eq 'Host') { 'HybridSolutionsCloud.HyperVPrivateCloud.PropertyBag.ThreeState.MonitorType' } else { 'HybridSolutionsCloud.HyperVPrivateCloud.VmPropertyBag.ThreeState.MonitorType' }
+        $target = if ($Kind -eq 'Host') { 'HCSV2Library!HyperVPrivateCloud.HostRole' } else { 'HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime' }
+        $typeId = if ($Kind -eq 'Host') { 'HyperVPrivateCloud.PropertyBag.ThreeState.MonitorType' } else { 'HyperVPrivateCloud.VmPropertyBag.ThreeState.MonitorType' }
         $alertState = if ($definition[5] -eq 'Warning') { 'Warning' } else { 'Error' }
         $configuration = if ($Kind -eq 'Host') {
             "<PropertyName>$($definition[1])</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds><CpuWarningPercent>80</CpuWarningPercent><CpuCriticalPercent>90</CpuCriticalPercent><MemoryWarningMB>4096</MemoryWarningMB><MemoryCriticalMB>2048</MemoryCriticalMB><PagesInputWarningPerSecond>5</PagesInputWarningPerSecond><PagesInputCriticalPerSecond>20</PagesInputCriticalPerSecond><CheckpointWarningHours>168</CheckpointWarningHours><CheckpointCriticalHours>336</CheckpointCriticalHours>"
         }
         else {
-            '<PropertyName>{0}</PropertyName><VMId>$Target/Property[Type="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime"]/VMId$</VMId><ExpectedState>$Target/Property[Type="HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.VirtualMachineRuntime"]/ExpectedState$</ExpectedState><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds><CheckpointWarningHours>168</CheckpointWarningHours><CheckpointCriticalHours>336</CheckpointCriticalHours>' -f $definition[1]
+            '<PropertyName>{0}</PropertyName><VMId>$Target/Property[Type="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime"]/VMId$</VMId><ExpectedState>$Target/Property[Type="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime"]/ExpectedState$</ExpectedState><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds><CheckpointWarningHours>168</CheckpointWarningHours><CheckpointCriticalHours>336</CheckpointCriticalHours>' -f $definition[1]
         }
         [void]$monitors.AppendLine("      <UnitMonitor ID=`"$monitorId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$target`" ParentMonitorID=`"Health!System.Health.$($definition[3])`" Remotable=`"true`" Priority=`"Normal`" TypeID=`"$typeId`" ConfirmDelivery=`"true`"><Category>$($definition[4])</Category><AlertSettings AlertMessage=`"$messageId`"><AlertOnState>$alertState</AlertOnState><AutoResolve>true</AutoResolve><AlertPriority>Normal</AlertPriority><AlertSeverity>MatchMonitorHealth</AlertSeverity><AlertParameters><AlertParameter1>`$Data/Context/Property[@Name='$($definition[1])Detail']`$</AlertParameter1></AlertParameters></AlertSettings><OperationalStates><OperationalState ID=`"Good`" MonitorTypeStateID=`"Good`" HealthState=`"Success`" /><OperationalState ID=`"Warning`" MonitorTypeStateID=`"Warning`" HealthState=`"Warning`" /><OperationalState ID=`"Critical`" MonitorTypeStateID=`"Critical`" HealthState=`"Error`" /></OperationalStates><Configuration>$configuration</Configuration></UnitMonitor>")
         [void]$resources.AppendLine("<StringResource ID=`"$messageId`" />")
@@ -163,9 +163,9 @@ function Get-HcsRollupContent {
         @('Management', 'ManagementComponent'), @('Compute', 'ComputeComponent'), @('VirtualMachines', 'VirtualMachineComponent'), @('Availability', 'AvailabilityComponent'), @('Storage', 'StorageComponent'), @('Network', 'NetworkComponent'), @('Monitoring', 'MonitoringComponent')
     )
     foreach ($branch in $serviceBranches) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Service.$($branch[0]).Availability.Dependency.Monitor"
-        $relationship = "HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.ServiceContains$($branch[1])"
-        [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Service`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$relationship`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Error</MemberUnAvailable></DependencyMonitor>")
+        $id = "HyperVPrivateCloud.Service.$($branch[0]).Availability.Dependency.Monitor"
+        $relationship = "HCSV2Library!HyperVPrivateCloud.ServiceContains$($branch[1])"
+        [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HyperVPrivateCloud.Service`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$relationship`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Error</MemberUnAvailable></DependencyMonitor>")
         [void]$displays.AppendLine("    <DisplayString ElementID=`"$id`"><Name>Roll up $($branch[0]) availability</Name></DisplayString>")
     }
     $componentRollups = @(
@@ -178,8 +178,8 @@ function Get-HcsRollupContent {
         @('Monitoring', 'MonitoringComponent', 'MonitoringComponentContainsHostRole')
     )
     foreach ($rollup in $componentRollups) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.$($rollup[0]).Members.Availability.Dependency.Monitor"
-        [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.$($rollup[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.$($rollup[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Error</MemberUnAvailable></DependencyMonitor>")
+        $id = "HyperVPrivateCloud.$($rollup[0]).Members.Availability.Dependency.Monitor"
+        [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HyperVPrivateCloud.$($rollup[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"HCSV2Library!HyperVPrivateCloud.$($rollup[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Error</MemberUnAvailable></DependencyMonitor>")
         [void]$displays.AppendLine("    <DisplayString ElementID=`"$id`"><Name>Roll up $($rollup[0]) member availability</Name></DisplayString>")
     }
     return [pscustomobject]@{ Monitors = $monitors.ToString(); DisplayStrings = $displays.ToString() }
@@ -204,24 +204,24 @@ function Get-HcsStorageCapabilityContent {
     $classIds = @('LogicalUnit', 'HostAttachment', 'IscsiSession', 'FibreChannelPort', 'VirtualDiskMapping')
     $relationshipIds = @('BoundaryContainsLogicalUnit', 'HostContainsAttachment', 'LogicalUnitContainsAttachment', 'HostContainsIscsiSession', 'HostContainsFibreChannelPort', 'ComponentContainsLogicalUnit', 'ComponentContainsAttachment', 'ComponentContainsIscsiSession', 'ComponentContainsFibreChannelPort', 'ComponentContainsVirtualDiskMapping', 'VirtualDiskMappingReferencesVirtualHardDisk', 'VirtualDiskMappingReferencesLogicalUnit', 'VirtualHardDiskUsesLogicalUnit')
     $discoveryTypes = [System.Text.StringBuilder]::new()
-    foreach ($id in $classIds) { [void]$discoveryTypes.AppendLine("<DiscoveryClass TypeID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$id`" />") }
-    foreach ($id in $relationshipIds) { [void]$discoveryTypes.AppendLine("<DiscoveryRelationship TypeID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$id`" />") }
+    foreach ($id in $classIds) { [void]$discoveryTypes.AppendLine("<DiscoveryClass TypeID=`"HyperVPrivateCloud.Capability.Storage.$id`" />") }
+    foreach ($id in $relationshipIds) { [void]$discoveryTypes.AppendLine("<DiscoveryRelationship TypeID=`"HyperVPrivateCloud.Capability.Storage.$id`" />") }
 
     $definitions = @(
-        [pscustomobject]@{ Leaf = 'IntegrationHealth'; Target = 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole'; Type = 'Integration'; Title = 'Windows SAN integration health'; Description = 'Verifies Windows Storage, iSCSI, Fibre Channel, and MPIO query coverage.'; Response = 'Install the required management tools, validate DSM claims and redundant paths, then review Operations Manager event 8403.'; Parent = 'ConfigurationState'; Category = 'ConfigurationHealth'; Alert = 'Error'; Configuration = '<ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</ComputerName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
-        [pscustomobject]@{ Leaf = 'AttachmentAvailability'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment'; Type = 'Object'; Title = 'SAN disk attachment availability'; Description = 'Tracks Windows-visible SAN disk state and writability.'; Response = 'Validate the array presentation, fabric, Windows disk state, DSM, and recent storage events before returning the disk to service.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>Attachment</ObjectKind><Identity /><DiskNumber>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/DiskNumber$</DiskNumber><StorageId>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/StorageId$</StorageId><BusType>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/BusType$</BusType><MinimumPathCount>2</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
-        [pscustomobject]@{ Leaf = 'AttachmentRedundancy'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment'; Type = 'Object'; Title = 'SAN MPIO path redundancy'; Description = 'Tracks MPIO path count for iSCSI and Fibre Channel disks.'; Response = 'Inspect HBA or NIC links, switches, target ports, MPIO policy, and vendor DSM state. Do not change claiming policy without vendor guidance.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Warning'; Configuration = '<ObjectKind>Attachment</ObjectKind><Identity /><DiskNumber>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/DiskNumber$</DiskNumber><StorageId>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/StorageId$</StorageId><BusType>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment"]/BusType$</BusType><MinimumPathCount>2</MinimumPathCount><PropertyName>RedundancyState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
-        [pscustomobject]@{ Leaf = 'IscsiSessionAvailability'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession'; Type = 'Object'; Title = 'iSCSI session availability'; Description = 'Tracks established iSCSI sessions and active connections.'; Response = 'Check initiator service state, target reachability, VLAN and MPIO design, authentication, and persistent-target configuration.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>IscsiSession</ObjectKind><Identity>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.IscsiSession"]/SessionId$</Identity><DiskNumber>0</DiskNumber><StorageId /><BusType>iSCSI</BusType><MinimumPathCount>1</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
-        [pscustomobject]@{ Leaf = 'FibreChannelPortAvailability'; Target = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort'; Type = 'Object'; Title = 'Fibre Channel port availability'; Description = 'Tracks HBA provider and Fibre Channel port operational state.'; Response = 'Inspect HBA, driver, firmware, optic, cable, switch port, zoning, and array target-port state.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>FibreChannelPort</ObjectKind><Identity>$Target/Property[Type="HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.FibreChannelPort"]/PortId$</Identity><DiskNumber>0</DiskNumber><StorageId /><BusType>Fibre Channel</BusType><MinimumPathCount>1</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' }
+        [pscustomobject]@{ Leaf = 'IntegrationHealth'; Target = 'HCSV2Library!HyperVPrivateCloud.HostRole'; Type = 'Integration'; Title = 'Windows SAN integration health'; Description = 'Verifies Windows Storage, iSCSI, Fibre Channel, and MPIO query coverage.'; Response = 'Install the required management tools, validate DSM claims and redundant paths, then review Operations Manager event 8403.'; Parent = 'ConfigurationState'; Category = 'ConfigurationHealth'; Alert = 'Error'; Configuration = '<ComputerName>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</ComputerName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'AttachmentAvailability'; Target = 'HyperVPrivateCloud.Capability.Storage.HostAttachment'; Type = 'Object'; Title = 'SAN disk attachment availability'; Description = 'Tracks Windows-visible SAN disk state and writability.'; Response = 'Validate the array presentation, fabric, Windows disk state, DSM, and recent storage events before returning the disk to service.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>Attachment</ObjectKind><Identity /><DiskNumber>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.HostAttachment"]/DiskNumber$</DiskNumber><StorageId>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.HostAttachment"]/StorageId$</StorageId><BusType>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.HostAttachment"]/BusType$</BusType><MinimumPathCount>2</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'AttachmentRedundancy'; Target = 'HyperVPrivateCloud.Capability.Storage.HostAttachment'; Type = 'Object'; Title = 'SAN MPIO path redundancy'; Description = 'Tracks MPIO path count for iSCSI and Fibre Channel disks.'; Response = 'Inspect HBA or NIC links, switches, target ports, MPIO policy, and vendor DSM state. Do not change claiming policy without vendor guidance.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Warning'; Configuration = '<ObjectKind>Attachment</ObjectKind><Identity /><DiskNumber>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.HostAttachment"]/DiskNumber$</DiskNumber><StorageId>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.HostAttachment"]/StorageId$</StorageId><BusType>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.HostAttachment"]/BusType$</BusType><MinimumPathCount>2</MinimumPathCount><PropertyName>RedundancyState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'IscsiSessionAvailability'; Target = 'HyperVPrivateCloud.Capability.Storage.IscsiSession'; Type = 'Object'; Title = 'iSCSI session availability'; Description = 'Tracks established iSCSI sessions and active connections.'; Response = 'Check initiator service state, target reachability, VLAN and MPIO design, authentication, and persistent-target configuration.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>IscsiSession</ObjectKind><Identity>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.IscsiSession"]/SessionId$</Identity><DiskNumber>0</DiskNumber><StorageId /><BusType>iSCSI</BusType><MinimumPathCount>1</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' },
+        [pscustomobject]@{ Leaf = 'FibreChannelPortAvailability'; Target = 'HyperVPrivateCloud.Capability.Storage.FibreChannelPort'; Type = 'Object'; Title = 'Fibre Channel port availability'; Description = 'Tracks HBA provider and Fibre Channel port operational state.'; Response = 'Inspect HBA, driver, firmware, optic, cable, switch port, zoning, and array target-port state.'; Parent = 'AvailabilityState'; Category = 'AvailabilityHealth'; Alert = 'Error'; Configuration = '<ObjectKind>FibreChannelPort</ObjectKind><Identity>$Target/Property[Type="HyperVPrivateCloud.Capability.Storage.FibreChannelPort"]/PortId$</Identity><DiskNumber>0</DiskNumber><StorageId /><BusType>Fibre Channel</BusType><MinimumPathCount>1</MinimumPathCount><PropertyName>ObjectState</PropertyName><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>' }
     )
     $monitors = [System.Text.StringBuilder]::new()
     $resources = [System.Text.StringBuilder]::new()
     $displays = [System.Text.StringBuilder]::new()
     $knowledge = [System.Text.StringBuilder]::new()
     foreach ($definition in $definitions) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($definition.Leaf).Monitor"
+        $id = "HyperVPrivateCloud.Capability.Storage.$($definition.Leaf).Monitor"
         $messageId = "$id.Message"
-        $typeId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($definition.Type)Health.MonitorType"
+        $typeId = "HyperVPrivateCloud.Capability.Storage.$($definition.Type)Health.MonitorType"
         $detailProperty = if ($definition.Leaf -eq 'AttachmentRedundancy') { 'RedundancyStateDetail' } elseif ($definition.Type -eq 'Integration') { 'StorageIntegrationStateDetail' } else { 'ObjectStateDetail' }
         [void]$monitors.AppendLine("<UnitMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition.Target)`" ParentMonitorID=`"Health!System.Health.$($definition.Parent)`" Remotable=`"true`" Priority=`"Normal`" TypeID=`"$typeId`" ConfirmDelivery=`"true`"><Category>$($definition.Category)</Category><AlertSettings AlertMessage=`"$messageId`"><AlertOnState>$($definition.Alert)</AlertOnState><AutoResolve>true</AutoResolve><AlertPriority>Normal</AlertPriority><AlertSeverity>MatchMonitorHealth</AlertSeverity><AlertParameters><AlertParameter1>`$Data/Context/Property[@Name='$detailProperty']`$</AlertParameter1></AlertParameters></AlertSettings><OperationalStates><OperationalState ID=`"Good`" MonitorTypeStateID=`"Good`" HealthState=`"Success`" /><OperationalState ID=`"Warning`" MonitorTypeStateID=`"Warning`" HealthState=`"Warning`" /><OperationalState ID=`"Critical`" MonitorTypeStateID=`"Critical`" HealthState=`"Error`" /></OperationalStates><Configuration>$($definition.Configuration)</Configuration></UnitMonitor>")
         [void]$resources.AppendLine("<StringResource ID=`"$messageId`" />")
@@ -232,23 +232,23 @@ function Get-HcsStorageCapabilityContent {
     }
 
     $viewDefinitions = @(
-        @('LogicalUnit', 'LogicalUnit', 'SAN logical units', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
-        @('HostAttachment', 'HostAttachment', 'Host SAN attachments', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
-        @('IscsiSession', 'IscsiSession', 'iSCSI sessions', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
-        @('FibreChannelPort', 'FibreChannelPort', 'Fibre Channel ports', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder'),
-        @('VirtualDiskMapping', 'VirtualDiskMapping', 'VHDX to SAN mappings', 'HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder')
+        @('LogicalUnit', 'LogicalUnit', 'SAN logical units', 'HCSV2Presentation!HyperVPrivateCloud.Storage.Folder'),
+        @('HostAttachment', 'HostAttachment', 'Host SAN attachments', 'HCSV2Presentation!HyperVPrivateCloud.Storage.Folder'),
+        @('IscsiSession', 'IscsiSession', 'iSCSI sessions', 'HCSV2Presentation!HyperVPrivateCloud.Storage.Folder'),
+        @('FibreChannelPort', 'FibreChannelPort', 'Fibre Channel ports', 'HCSV2Presentation!HyperVPrivateCloud.Storage.Folder'),
+        @('VirtualDiskMapping', 'VirtualDiskMapping', 'VHDX to SAN mappings', 'HCSV2Presentation!HyperVPrivateCloud.Storage.Folder')
     )
     $views = [System.Text.StringBuilder]::new()
     $folderItems = [System.Text.StringBuilder]::new()
     foreach ($view in $viewDefinitions) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($view[0]).State.View"
-        [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.$($view[1])`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
+        $id = "HyperVPrivateCloud.Capability.Storage.$($view[0]).State.View"
+        [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HyperVPrivateCloud.Capability.Storage.$($view[1])`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"$($view[3])`" />")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[2])</Name></DisplayString>")
     }
-    $alertViewId = 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.ActiveAlerts.View'
-    [void]$views.AppendLine("<View ID=`"$alertViewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.HostAttachment`" TypeID=`"SC!Microsoft.SystemCenter.AlertViewType`" Visible=`"true`"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator=`"NotEquals`">255</StateRange></ResolutionState></Criteria></View>")
-    [void]$folderItems.AppendLine("<FolderItem ElementID=`"$alertViewId`" ID=`"$alertViewId.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Operations.Folder`" />")
+    $alertViewId = 'HyperVPrivateCloud.Capability.Storage.ActiveAlerts.View'
+    [void]$views.AppendLine("<View ID=`"$alertViewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HyperVPrivateCloud.Capability.Storage.HostAttachment`" TypeID=`"SC!Microsoft.SystemCenter.AlertViewType`" Visible=`"true`"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator=`"NotEquals`">255</StateRange></ResolutionState></Criteria></View>")
+    [void]$folderItems.AppendLine("<FolderItem ElementID=`"$alertViewId`" ID=`"$alertViewId.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Operations.Folder`" />")
     [void]$displays.AppendLine("<DisplayString ElementID=`"$alertViewId`"><Name>SAN and storage active alerts</Name></DisplayString>")
 
     return [pscustomobject]@{
@@ -285,17 +285,17 @@ function Get-HcsS2DCapabilityContent {
     $displays = [System.Text.StringBuilder]::new()
     foreach ($definition in $definitions) {
         $classId = "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.$($definition.Kind)"
-        $discoveryId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($definition.Kind).Relationship.Discovery"
-        $relationshipId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.StorageContains$($definition.Kind)"
+        $discoveryId = "HyperVPrivateCloud.Capability.S2D.$($definition.Kind).Relationship.Discovery"
+        $relationshipId = "HyperVPrivateCloud.Capability.S2D.StorageContains$($definition.Kind)"
         $computerName = if ($definition.Kind -eq 'Volume') { '$Target/Host/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$' } elseif ($definition.Kind -eq 'FileShare') { '$Target/Host/Host/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$' } else { '$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$' }
         $parentDisk = if ($definition.Kind -eq 'Volume') { '$Target/Host/Property[Type="StorageLibrary!Microsoft.Storage.Library.Windows.Disk"]/UniqueID$' } elseif ($definition.Kind -eq 'FileShare') { '$Target/Host/Host/Property[Type="StorageLibrary!Microsoft.Storage.Library.Windows.Disk"]/UniqueID$' } else { '' }
         $parentVolume = if ($definition.Kind -eq 'FileShare') { '$Target/Host/Property[Type="StorageLibrary!Microsoft.Storage.Library.Windows.Volume"]/UniqueID$' } else { '' }
-        [void]$discoveries.AppendLine("<Discovery ID=`"$discoveryId`" Enabled=`"true`" Target=`"S2D!$classId`" ConfirmDelivery=`"false`" Remotable=`"true`" Priority=`"Normal`"><Category>Discovery</Category><DiscoveryTypes><DiscoveryRelationship TypeID=`"$relationshipId`" /></DiscoveryTypes><DataSource ID=`"PowerShellDiscovery`" TypeID=`"HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.Pwsh.DiscoveryProvider`"><IntervalSeconds>1800</IntervalSeconds><ScriptName>HyperVPrivateCloud.S2D.RelationshipDiscovery.ps1</ScriptName><ScriptBody><![CDATA[{{S2D_RELATIONSHIP_DISCOVERY_SCRIPT}}]]></ScriptBody><Arguments>-SourceId `"`$MPElement`$`" -ManagedEntityId `"`$Target/Id`$`" -ObjectKind `"$($definition.Kind)`" -ComputerName `"$computerName`" -UniqueId `"`$Target/Property[Type=`"$($definition.KeyType)`"]`/UniqueID`$`" -ParentDiskUniqueId `"$parentDisk`" -ParentVolumeUniqueId `"$parentVolume`"</Arguments><TimeoutSeconds>120</TimeoutSeconds></DataSource></Discovery>")
-        $rollupId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($definition.Kind).Dependency.Monitor"
-        [void]$rollups.AppendLine("<DependencyMonitor ID=`"$rollupId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$relationshipId`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
-        $viewId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($definition.Kind).State.View"
+        [void]$discoveries.AppendLine("<Discovery ID=`"$discoveryId`" Enabled=`"true`" Target=`"S2D!$classId`" ConfirmDelivery=`"false`" Remotable=`"true`" Priority=`"Normal`"><Category>Discovery</Category><DiscoveryTypes><DiscoveryRelationship TypeID=`"$relationshipId`" /></DiscoveryTypes><DataSource ID=`"PowerShellDiscovery`" TypeID=`"HCSV2Library!HyperVPrivateCloud.Pwsh.DiscoveryProvider`"><IntervalSeconds>1800</IntervalSeconds><ScriptName>HyperVPrivateCloud.S2D.RelationshipDiscovery.ps1</ScriptName><ScriptBody><![CDATA[{{S2D_RELATIONSHIP_DISCOVERY_SCRIPT}}]]></ScriptBody><Arguments>-SourceId `"`$MPElement`$`" -ManagedEntityId `"`$Target/Id`$`" -ObjectKind `"$($definition.Kind)`" -ComputerName `"$computerName`" -UniqueId `"`$Target/Property[Type=`"$($definition.KeyType)`"]`/UniqueID`$`" -ParentDiskUniqueId `"$parentDisk`" -ParentVolumeUniqueId `"$parentVolume`"</Arguments><TimeoutSeconds>120</TimeoutSeconds></DataSource></Discovery>")
+        $rollupId = "HyperVPrivateCloud.Capability.S2D.$($definition.Kind).Dependency.Monitor"
+        [void]$rollups.AppendLine("<DependencyMonitor ID=`"$rollupId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HyperVPrivateCloud.StorageComponent`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$relationshipId`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
+        $viewId = "HyperVPrivateCloud.Capability.S2D.$($definition.Kind).State.View"
         [void]$views.AppendLine("<View ID=`"$viewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"S2D!$classId`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
-        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$rollupId`"><Name>Roll up $($definition.Name) health</Name></DisplayString>")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($definition.Name)</Name></DisplayString>")
     }
@@ -307,15 +307,15 @@ function Get-HcsS2DCapabilityContent {
         @('OngoingJobs', 'S2D!Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageObject.Group', 'SC!Microsoft.SystemCenter.AlertViewType', 'S2D ongoing jobs')
     )
     foreach ($view in $extraViews) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.$($view[0]).View"
+        $id = "HyperVPrivateCloud.Capability.S2D.$($view[0]).View"
         $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($view[1])`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
-        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
     }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor"><Name>S2D integration pipeline health</Name><Description>Verifies the HCS query path without duplicating Microsoft S2D leaf monitoring.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor.Message"><Name>S2D integration pipeline health</Name><Description>{0}</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor"><Name>S2D integration pipeline health</Name><Description>Verifies the HCS query path without duplicating Microsoft S2D leaf monitoring.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor.Message"><Name>S2D integration pipeline health</Name><Description>{0}</Description></DisplayString>')
 
     return [pscustomobject]@{ Discoveries = $discoveries.ToString(); Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
@@ -325,17 +325,17 @@ function Get-HcsPureStorageCapabilityContent {
     param()
 
     $rollupDefinitions = @(
-        @('Array', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray', 'Pure array health'),
-        @('Port', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort', 'Pure port health'),
-        @('Host', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost', 'Pure host health'),
-        @('Volume', 'HCSV2Storage!HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage.LogicalUnit', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume', 'Pure volume health')
+        @('Array', 'HCSV2Library!HyperVPrivateCloud.StorageComponent', 'HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray', 'Pure array health'),
+        @('Port', 'HCSV2Library!HyperVPrivateCloud.StorageComponent', 'HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort', 'Pure port health'),
+        @('Host', 'HCSV2Library!HyperVPrivateCloud.HostRole', 'HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost', 'Pure host health'),
+        @('Volume', 'HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit', 'HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume', 'Pure volume health')
     )
     $rollups = [System.Text.StringBuilder]::new()
     $views = [System.Text.StringBuilder]::new()
     $folderItems = [System.Text.StringBuilder]::new()
     $displays = [System.Text.StringBuilder]::new()
     foreach ($definition in $rollupDefinitions) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.$($definition[0]).Dependency.Monitor"
+        $id = "HyperVPrivateCloud.Capability.PureStorage.$($definition[0]).Dependency.Monitor"
         [void]$rollups.AppendLine("<DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$($definition[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name></DisplayString>")
     }
@@ -353,15 +353,15 @@ function Get-HcsPureStorageCapabilityContent {
         @('VolumePerformance', 'PureStorage.FlashArray.PureVolume', 'SC!Microsoft.SystemCenter.PerformanceViewType', 'Pure volume performance')
     )
     foreach ($view in $viewDefinitions) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.$($view[0]).View"
+        $id = "HyperVPrivateCloud.Capability.PureStorage.$($view[0]).View"
         $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"Pure!$($view[1])`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
-        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
     }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor"><Name>Pure Storage correlation health</Name><Description>Verifies exact IQN, WWPN, and serial correlations without duplicating array monitoring.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor.Message"><Name>Pure Storage correlation health</Name><Description>{0}</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor"><Name>Pure Storage correlation health</Name><Description>Verifies exact IQN, WWPN, and serial correlations without duplicating array monitoring.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor.Message"><Name>Pure Storage correlation health</Name><Description>{0}</Description></DisplayString>')
     return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
@@ -370,39 +370,39 @@ function Get-HcsFileServicesCapabilityContent {
     param()
 
     $rollupDefinitions = @(
-        @('StorageShare', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.StorageComponent', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.StorageContainsSmbShare', 'SMB share health into Storage'),
-        @('HostShare', 'HCSV2Library!HybridSolutionsCloud.HyperVPrivateCloud.HostRole', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.HostRoleUsesSmbShare', 'SMB share health into Hyper-V hosts'),
-        @('MicrosoftSmb', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShare', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService', 'Microsoft SMB service health into shares')
+        @('StorageShare', 'HCSV2Library!HyperVPrivateCloud.StorageComponent', 'HyperVPrivateCloud.Capability.FileServices.StorageContainsSmbShare', 'SMB share health into Storage'),
+        @('HostShare', 'HCSV2Library!HyperVPrivateCloud.HostRole', 'HyperVPrivateCloud.Capability.FileServices.HostRoleUsesSmbShare', 'SMB share health into Hyper-V hosts'),
+        @('MicrosoftSmb', 'HyperVPrivateCloud.Capability.FileServices.SmbShare', 'HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService', 'Microsoft SMB service health into shares')
     )
     $rollups = [System.Text.StringBuilder]::new()
     $views = [System.Text.StringBuilder]::new()
     $folderItems = [System.Text.StringBuilder]::new()
     $displays = [System.Text.StringBuilder]::new()
     foreach ($definition in $rollupDefinitions) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.$($definition[0]).Dependency.Monitor"
+        $id = "HyperVPrivateCloud.Capability.FileServices.$($definition[0]).Dependency.Monitor"
         [void]$rollups.AppendLine("<DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$($definition[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name></DisplayString>")
     }
     $viewDefinitions = @(
-        @('Share', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.StateViewType', 'Hyper-V SMB shares'),
-        @('ClientPath', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbClientPath', 'SC!Microsoft.SystemCenter.StateViewType', 'SMB Multichannel and RDMA paths'),
-        @('VhdxMapping', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping', 'SC!Microsoft.SystemCenter.StateViewType', 'SMB VHDX mappings'),
+        @('Share', 'HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.StateViewType', 'Hyper-V SMB shares'),
+        @('ClientPath', 'HyperVPrivateCloud.Capability.FileServices.SmbClientPath', 'SC!Microsoft.SystemCenter.StateViewType', 'SMB Multichannel and RDMA paths'),
+        @('VhdxMapping', 'HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping', 'SC!Microsoft.SystemCenter.StateViewType', 'SMB VHDX mappings'),
         @('FileServer', 'FileServices!Microsoft.Windows.FileServer', 'SC!Microsoft.SystemCenter.StateViewType', 'Microsoft file servers'),
         @('SmbService', 'FileSMB!Microsoft.Windows.FileServices.Service.SMB.10.0', 'SC!Microsoft.SystemCenter.StateViewType', 'Microsoft SMB services'),
-        @('ActiveAlerts', 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.AlertViewType', 'SMB and SOFS active alerts'),
+        @('ActiveAlerts', 'HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.AlertViewType', 'SMB and SOFS active alerts'),
         @('Performance', 'FileSMB!Microsoft.Windows.FileServices.Service.SMB.10.0', 'SC!Microsoft.SystemCenter.PerformanceViewType', 'SMB service performance')
     )
     foreach ($view in $viewDefinitions) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.$($view[0]).View"
+        $id = "HyperVPrivateCloud.Capability.FileServices.$($view[0]).View"
         $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
         $target = if ($view[1] -like '*!*') { $view[1] } elseif ($view[1] -like 'Microsoft.*') { "FileServices!$($view[1])" } else { $view[1] }
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$target`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
-        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Storage.Folder`" />")
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
     }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor"><Name>Hyper-V over SMB health</Name><Description>Validates required SMB connections, continuous availability, and optional RDMA paths.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices.Health.Monitor.Message"><Name>Hyper-V over SMB health</Name><Description>{0}</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.FileServices.Health.Monitor"><Name>Hyper-V over SMB health</Name><Description>Validates required SMB connections, continuous availability, and optional RDMA paths.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.FileServices.Health.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.FileServices.Health.Monitor.Message"><Name>Hyper-V over SMB health</Name><Description>{0}</Description></DisplayString>')
     return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
@@ -423,16 +423,16 @@ function Get-HcsPhysicalNetworkCapabilityContent {
         @('Performance', 'Physical network performance')
     )
     foreach ($view in $views) {
-        $id = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.$($view[0]).View"
-        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HybridSolutionsCloud.HyperVPrivateCloud.Networking.Folder`" />")
+        $id = "HyperVPrivateCloud.Capability.PhysicalNetwork.$($view[0]).View"
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Networking.Folder`" />")
         [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[1])</Name></DisplayString>")
     }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor"><Name>Physical-network correlation input health</Name><Description>Validates the exact Windows adapter identities supplied to SCOM built-in MAC-based network topology correlation.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor.Message"><Name>Physical-network correlation input failed</Name><Description>{0}</Description></DisplayString>')
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkAdapter.Dependency.Monitor"><Name>Roll up Hyper-V host network-adapter health</Name></DisplayString>')
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUplink.Dependency.Monitor"><Name>Roll up physical uplink health into virtual switches</Name></DisplayString>')
-    [void]$displays.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork.Relationship.Discovery"><Name>Discover Hyper-V physical-uplink relationships</Name><Description>Relates external Hyper-V switches to Microsoft Windows network-adapter objects. SCOM remains authoritative for device, switch, port, VLAN, and connection discovery.</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor"><Name>Physical-network correlation input health</Name><Description>Validates the exact Windows adapter identities supplied to SCOM built-in MAC-based network topology correlation.</Description></DisplayString>')
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor.Message"><Name>Physical-network correlation input failed</Name><Description>{0}</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkAdapter.Dependency.Monitor"><Name>Roll up Hyper-V host network-adapter health</Name></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUplink.Dependency.Monitor"><Name>Roll up physical uplink health into virtual switches</Name></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.Relationship.Discovery"><Name>Discover Hyper-V physical-uplink relationships</Name><Description>Relates external Hyper-V switches to Microsoft Windows network-adapter objects. SCOM remains authoritative for device, switch, port, VLAN, and connection discovery.</Description></DisplayString>')
     return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
 
@@ -465,20 +465,20 @@ function Get-HcsVmmCapabilityContent {
     $folderItems = [System.Text.StringBuilder]::new()
     $displayStrings = [System.Text.StringBuilder]::new()
     foreach ($entry in $viewNames.GetEnumerator()) {
-        $viewId = "HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$($entry.Key).View"
-        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Folder`" />")
+        $viewId = "HyperVPrivateCloud.Capability.VMM.$($entry.Key).View"
+        [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HyperVPrivateCloud.Capability.VMM.Folder`" />")
         [void]$displayStrings.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($entry.Value)</Name></DisplayString>")
     }
-    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.Folder"><Name>Virtual Machine Manager</Name><Description>VMM fabric services, management health, private clouds, hosts, virtual machines, networking, storage, failed jobs, alerts, and performance.</Description></DisplayString>')
-    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor"><Name>VMM integration and topology-query health</Name><Description>Validates the VMM module, read-only connection, logical-network, network-site, and VM-network queries.</Description></DisplayString>')
-    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor"><Name>Recent failed VMM jobs</Name><Description>Tracks VMM jobs with Failed status during the configured lookback period.</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.Folder"><Name>Virtual Machine Manager</Name><Description>VMM fabric services, management health, private clouds, hosts, virtual machines, networking, storage, failed jobs, alerts, and performance.</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor"><Name>VMM integration and topology-query health</Name><Description>Validates the VMM module, read-only connection, logical-network, network-site, and VM-network queries.</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor"><Name>Recent failed VMM jobs</Name><Description>Tracks VMM jobs with Failed status during the configured lookback period.</Description></DisplayString>')
     foreach ($monitorId in @('IntegrationHealth', 'FailedJobs')) {
         foreach ($state in @('Good', 'Warning', 'Critical')) {
-            [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$monitorId.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>")
+            [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.VMM.$monitorId.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>")
         }
     }
-    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor.Message"><Name>VMM integration query failed</Name><Description>{0}</Description></DisplayString>')
-    [void]$displayStrings.AppendLine('<DisplayString ElementID="HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor.Message"><Name>Recent VMM jobs failed</Name><Description>{0}</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor.Message"><Name>VMM integration query failed</Name><Description>{0}</Description></DisplayString>')
+    [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor.Message"><Name>Recent VMM jobs failed</Name><Description>{0}</Description></DisplayString>')
     $workflowNames = [ordered]@{
         'Fabric.Discovery' = 'Discover VMM fabric service, logical networks, and network sites'
         'Host.Relationship.Discovery' = 'Discover VMM-to-Hyper-V host relationships'
@@ -495,7 +495,7 @@ function Get-HcsVmmCapabilityContent {
         'ClusterManagement.Cloud.Configuration.Dependency.Monitor' = 'Roll up mapped VMM private-cloud configuration into the cluster boundary'
     }
     foreach ($entry in $workflowNames.GetEnumerator()) {
-        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM.$($entry.Key)`"><Name>$($entry.Value)</Name></DisplayString>")
+        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.VMM.$($entry.Key)`"><Name>$($entry.Value)</Name></DisplayString>")
     }
     return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displayStrings.ToString() }
 }
@@ -504,7 +504,7 @@ $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manifestPath = Join-Path $sourceRoot 'build/build-manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 
-if ($manifest.namespace -ne 'HybridSolutionsCloud.HyperVPrivateCloud') {
+if ($manifest.namespace -ne 'HyperVPrivateCloud') {
     throw "Unexpected v2 namespace '$($manifest.namespace)'."
 }
 
@@ -565,7 +565,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{ROLLUP_DISPLAY_STRINGS}}', $monitorContent.RollupDisplayStrings)
         $content = $content.Replace('{{KNOWLEDGE_ARTICLES}}', $monitorContent.KnowledgeArticles)
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Cluster') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.Cluster') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             CLUSTER_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudClusterRelationships.ps1.template'
@@ -579,7 +579,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.Storage') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.Storage') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             STORAGE_TOPOLOGY_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudStorageTopology.ps1.template'
@@ -606,7 +606,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{STORAGE_DISPLAY_STRINGS}}', $storageContent.DisplayStrings)
         $content = $content.Replace('{{STORAGE_KNOWLEDGE}}', $storageContent.Knowledge)
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.S2D') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.S2D') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $s2dContent = Get-HcsS2DCapabilityContent
         $content = $content.Replace('{{S2D_DISCOVERIES}}', $s2dContent.Discoveries)
@@ -626,7 +626,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PureStorage') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.PureStorage') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             PURE_CORRELATION_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudPureCorrelations.ps1.template'
@@ -645,7 +645,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{PURE_FOLDER_ITEMS}}', $pureContent.FolderItems)
         $content = $content.Replace('{{PURE_DISPLAY_STRINGS}}', $pureContent.DisplayStrings)
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.FileServices') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.FileServices') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             FILE_SERVICES_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudFileServices.ps1.template'
@@ -664,7 +664,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{FILE_SERVICES_FOLDER_ITEMS}}', $fileServicesContent.FolderItems)
         $content = $content.Replace('{{FILE_SERVICES_DISPLAY_STRINGS}}', $fileServicesContent.DisplayStrings)
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.PhysicalNetwork') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.PhysicalNetwork') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             PHYSICAL_NETWORK_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudPhysicalNetworkRelationships.ps1.template'
@@ -681,7 +681,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $content = $content.Replace('{{PHYSICAL_NETWORK_FOLDER_ITEMS}}', $physicalNetworkContent.FolderItems)
         $content = $content.Replace('{{PHYSICAL_NETWORK_DISPLAY_STRINGS}}', $physicalNetworkContent.DisplayStrings)
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.NetworkATC') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.NetworkATC') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             NETWORK_ATC_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudNetworkAtc.ps1.template'
@@ -695,7 +695,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.SDN') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.SDN') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             SDN_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudSdnRelationships.ps1.template'
@@ -709,7 +709,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             $content = $content.Replace("{{$($entry.Key)}}", $capabilityScript.TrimEnd())
         }
     }
-    if ($artifact.id -eq 'HybridSolutionsCloud.HyperVPrivateCloud.Capability.VMM') {
+    if ($artifact.id -eq 'HyperVPrivateCloud.Capability.VMM') {
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             VMM_FABRIC_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudVmmFabric.ps1.template'
