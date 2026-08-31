@@ -254,6 +254,7 @@ const decisionsSidebar = [
       { text: '0046 — Virtual Machine Manager contract', link: '/design/decisions/0046-hyper-v-v2-virtual-machine-manager-integration-contract' },
       { text: '0047 — Explicit PowerShell 7 execution', link: '/design/decisions/0047-hyper-v-v2-explicit-powershell-7-execution' },
       { text: '0048 — Governed sealing and release assets', link: '/design/decisions/0048-hyper-v-v2-governed-sealing-and-release-assets' },
+      { text: '0050 — Prerequisite acquisition and preflight', link: '/design/decisions/0050-prerequisite-acquisition-and-preflight' },
     ],
   },
   {

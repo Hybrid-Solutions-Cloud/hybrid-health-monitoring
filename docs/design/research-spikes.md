@@ -9,6 +9,7 @@ when it merely collects links.
 | Spike | Platform / solution | Required evidence |
 |---|---|---|
 | Independent SCOM packaging contract | Both SCOM products | Separate artifact/namespace ownership, no-dependency reference graphs, signing, coexistence, upgrade, and removal evidence |
+| Prerequisite redistribution rights and acquisition | Both SCOM products | Actual licence terms for every referenced Microsoft and vendor Management Pack, evidence of what comparable SCOM vendors ship, supported acquisition and preflight patterns, and the operator cost of the current link-only stance |
 | Hyper-V SCOM monitoring catalog and DA refinement | Hyper-V / SCOM | Complete raw signal inventory, prior-MP research, SCOM workflow mapping, DA boundary/membership/rollup inputs, threshold evidence, lab validation, curated defaults, and successor ADR inputs |
 | Azure Local SCOM local monitoring catalog | Azure Local / SCOM | Local API, Health Service, cluster, storage, Network ATC, registration, lifecycle, event, and performance inventory; curation and threshold evidence |
 | Azure Local Health Models API and signal revalidation | Azure Local / Azure Monitor | Current API versions, preview limits, identity and RBAC contract, signal-source delta report |
@@ -31,7 +32,41 @@ flowchart LR
     P --> S3[Arc-enabled SCVMM spike]
     S3 --> S4[Telemetry proof]
     S4 --> Arc[Go / defer / no-go<br/>ADR 0023]
+    Pkg --> Redist[Prerequisite redistribution<br/>and acquisition spike]
+    Redist --> Pre[Acquisition and preflight<br/>ADR 0050 proposed]
 ```
+
+## Prerequisite redistribution rights and acquisition
+
+The optional Hyper-V capability Management Packs take hard references on Microsoft and vendor
+Management Packs that this product does not redistribute
+([ADR 0043](decisions/0043-hyper-v-v2-package-and-deployment-profile-architecture.md),
+[ADR 0048](decisions/0048-hyper-v-v2-governed-sealing-and-release-assets.md)). On the first real
+`1.0.0.0` import, four of nine capability packs — Cluster, File Services, SDN, and Pure Storage —
+failed with *"The dependencies for this management pack cannot be located."* The behaviour is
+correct; the operator experience is not.
+
+ADR 0043 permits redistribution *"unless their license explicitly permits it"*. That conditional has
+never been evaluated. This spike exists to evaluate it and to establish what comparable products do.
+
+### Required evidence
+
+| # | Question | Evidence that closes it |
+|---|---|---|
+| 1 | May we redistribute each referenced **Microsoft** MP? | The actual licence terms shipped inside each download (ids 54701, 54303, 57594, 54300, 100782), quoted, with the redistribution clause identified. A download-page summary is not sufficient — read the EULA in the package. |
+| 2 | May we redistribute the **VMM** MPs? | These ship on System Center installation media rather than a public download. Licence position stated with a citation, including whether media-sourced packs differ from Download Center packs. |
+| 3 | May we redistribute the **Pure Storage FlashArray** MP? | The `LICENSE` file from the vendor repository, quoted, and whether it permits third-party redistribution. |
+| 4 | What do comparable SCOM vendors actually ship? | Concrete observed examples — do any redistribute Microsoft MPs inside their installer, or do all document prerequisites? Name the products and cite what was observed. |
+| 5 | Is auto-import of prerequisites a supported pattern? | Whether SCOM can resolve a missing reference at import (expected: no), what `Import-SCOMManagementPack`-based deployment implies, and the documented risks of importing a publisher MP into a customer management group — version overwrite, support posture, and monitoring change. |
+| 6 | What does authoring guidance say? | Position from the curated sources in [`REFERENCES.md`](https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/blob/main/REFERENCES.md) — Kevin Holman, Brian Wren / MPAuthor, and the System Center authoring guide — on dependencies an author does not own. |
+| 7 | What does the current stance actually cost an operator? | Measured: number of external sources to visit, packs to identify, and failed imports observed before prerequisites are satisfied. Partially answered already — four failed imports, three Microsoft download pages, one GitHub release. |
+
+### Outcome
+
+Evidence feeds [ADR 0050](decisions/0050-prerequisite-acquisition-and-preflight.md), which currently
+proposes keeping the link-only stance and closing the gap with a read-only preflight command. If
+items 1–3 find that redistribution is permitted for a given pack, raise a successor ADR to revisit
+bundling for that pack specifically — do not reopen the decision globally on a partial finding.
 
 ## Hyper-V SCOM phase-one child spikes
 
