@@ -1,0 +1,190 @@
+#Requires -Version 7.0
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ArrayId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Import-HcsOperationsManagerSdk {
+    $roots = @(
+        (Join-Path $env:ProgramFiles 'Microsoft System Center\Operations Manager\Server\SDK Binaries'),
+        (Join-Path $env:ProgramFiles 'Microsoft System Center\Management Pack Tools'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Microsoft System Center\Operations Manager\Console\SDK Binaries')
+    )
+    foreach ($root in $roots) {
+        $core = Join-Path $root 'Microsoft.EnterpriseManagement.Core.dll'
+        $operations = Join-Path $root 'Microsoft.EnterpriseManagement.OperationsManager.dll'
+        if ((Test-Path -LiteralPath $core -PathType Leaf) -and (Test-Path -LiteralPath $operations -PathType Leaf)) {
+            [void][Reflection.Assembly]::LoadFrom($core)
+            [void][Reflection.Assembly]::LoadFrom($operations)
+            return $true
+        }
+    }
+    return $false
+}
+
+function Get-HcsObjectValue {
+    param($Object, [string]$PropertyName)
+    $value = $Object.Values | Where-Object { $_.Type.Name -eq $PropertyName } | Select-Object -First 1
+    if ($null -eq $value -or $null -eq $value.Value) { return '' }
+    return [string]$value.Value
+}
+
+function Get-HcsParentValue {
+    param($Object, [string]$PropertyName)
+    foreach ($parent in $Object.GetParentMonitoringObjects()) {
+        $value = Get-HcsObjectValue -Object $parent -PropertyName $PropertyName
+        if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+    }
+    return ''
+}
+
+function Get-HcsClassObject {
+    param($ManagementGroup, $ManagementPack, [string]$ClassName)
+    $class = $ManagementGroup.GetMonitoringClass($ClassName, $ManagementPack)
+    return @($ManagementGroup.GetMonitoringObjects($class))
+}
+
+function ConvertTo-HcsIdentifierSet {
+    param([string]$Value)
+    $result = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($match in [regex]::Matches($Value, 'iqn\.[^,;\s]+', 'IgnoreCase')) { [void]$result.Add($match.Value.ToLowerInvariant()) }
+    foreach ($part in @($Value -split '[,;\s]+')) {
+        $hex = ($part -replace '[^0-9a-fA-F]', '').ToLowerInvariant()
+        if ($hex.Length -ge 16) { [void]$result.Add($hex) }
+    }
+    return $result
+}
+
+function ConvertTo-HcsSerial {
+    param([string]$Value)
+    return ($Value -replace '[^0-9a-zA-Z]', '').ToLowerInvariant()
+}
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if (-not [string]::IsNullOrWhiteSpace([string]$Value)) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    if (-not (Import-HcsOperationsManagerSdk)) { throw 'Operations Manager SDK assemblies were not found on the Pure Array managing Health Service.' }
+    $managementGroup = [Microsoft.EnterpriseManagement.ManagementGroup]::new($env:COMPUTERNAME)
+    try {
+        $pureMp = @($managementGroup.GetManagementPacks('PureStorageFlashArray') | Sort-Object Version -Descending)[0]
+        $libraryMp = @($managementGroup.GetManagementPacks('HyperVPrivateCloud.Library') | Sort-Object Version -Descending)[0]
+        $storageMp = @($managementGroup.GetManagementPacks('HyperVPrivateCloud.Capability.Storage') | Sort-Object Version -Descending)[0]
+
+        $hostRoles = Get-HcsClassObject $managementGroup $libraryMp 'HyperVPrivateCloud.HostRole'
+        $logicalUnits = Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.LogicalUnit'
+        $iscsiSessions = Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.IscsiSession'
+        $fcPorts = Get-HcsClassObject $managementGroup $storageMp 'HyperVPrivateCloud.Capability.Storage.FibreChannelPort'
+        $pureHosts = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureHost'
+        $pureVolumes = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PureVolume'
+        $purePorts = Get-HcsClassObject $managementGroup $pureMp 'PureStorage.FlashArray.PurePort'
+
+        $hostByPrincipal = @{}
+        foreach ($hostRole in $hostRoles) {
+            $principal = Get-HcsParentValue $hostRole 'PrincipalName'
+            if (-not [string]::IsNullOrWhiteSpace($principal)) { $hostByPrincipal[$principal.ToLowerInvariant()] = $hostRole }
+        }
+        $principalByInitiator = @{}
+        foreach ($session in $iscsiSessions) {
+            $principal = (Get-HcsParentValue $session 'PrincipalName').ToLowerInvariant()
+            foreach ($identifier in (ConvertTo-HcsIdentifierSet (Get-HcsObjectValue $session 'InitiatorNodeAddress'))) {
+                if (-not $principalByInitiator.ContainsKey($identifier)) { $principalByInitiator[$identifier] = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase) }
+                [void]$principalByInitiator[$identifier].Add($principal)
+            }
+        }
+        foreach ($port in $fcPorts) {
+            $principal = (Get-HcsParentValue $port 'PrincipalName').ToLowerInvariant()
+            foreach ($identifier in (ConvertTo-HcsIdentifierSet (Get-HcsObjectValue $port 'WWPN'))) {
+                if (-not $principalByInitiator.ContainsKey($identifier)) { $principalByInitiator[$identifier] = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase) }
+                [void]$principalByInitiator[$identifier].Add($principal)
+            }
+        }
+        $lunBySerial = @{}
+        foreach ($lun in $logicalUnits) {
+            $serial = ConvertTo-HcsSerial (Get-HcsObjectValue $lun 'SerialNumber')
+            if ([string]::IsNullOrWhiteSpace($serial)) { continue }
+            if (-not $lunBySerial.ContainsKey($serial)) { $lunBySerial[$serial] = [System.Collections.Generic.List[object]]::new() }
+            $lunBySerial[$serial].Add($lun)
+        }
+
+        $boundaries = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        foreach ($pureHost in $pureHosts) {
+            if ((Get-HcsParentValue $pureHost 'ArrayId') -ne $ArrayId) { continue }
+            $principals = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+            foreach ($raw in @((Get-HcsObjectValue $pureHost 'IQN'), (Get-HcsObjectValue $pureHost 'WWN'))) {
+                foreach ($identifier in (ConvertTo-HcsIdentifierSet $raw)) {
+                    if ($principalByInitiator.ContainsKey($identifier)) { foreach ($principal in $principalByInitiator[$identifier]) { [void]$principals.Add($principal) } }
+                }
+            }
+            if ($principals.Count -ne 1) { continue }
+            $principal = @($principals)[0]
+            if (-not $hostByPrincipal.ContainsKey($principal)) { continue }
+            $hostRole = $hostByPrincipal[$principal]
+            $boundaryId = Get-HcsObjectValue $hostRole 'BoundaryId'
+            [void]$boundaries.Add($boundaryId)
+
+            $hostInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
+            Add-HcsProperty $hostInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $principal
+            Add-HcsProperty $hostInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" (Get-HcsObjectValue $hostRole 'HostId')
+            $pureHostInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PureHost']$")
+            Add-HcsProperty $pureHostInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
+            Add-HcsProperty $pureHostInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureHost']/Name$" (Get-HcsObjectValue $pureHost 'Name')
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.HostRoleReferencesPureHost']$" $hostInstance $pureHostInstance
+        }
+
+        foreach ($pureVolume in $pureVolumes) {
+            if ((Get-HcsParentValue $pureVolume 'ArrayId') -ne $ArrayId) { continue }
+            $serial = ConvertTo-HcsSerial (Get-HcsObjectValue $pureVolume 'Serial')
+            if (-not $lunBySerial.ContainsKey($serial) -or $lunBySerial[$serial].Count -ne 1) { continue }
+            $lun = $lunBySerial[$serial][0]
+            $boundaryId = Get-HcsObjectValue $lun 'BoundaryId'
+            [void]$boundaries.Add($boundaryId)
+            $lunInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit']$")
+            Add-HcsProperty $lunInstance "$MPElement[Name='HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit']/BoundaryId$" $boundaryId
+            Add-HcsProperty $lunInstance "$MPElement[Name='HCSV2Storage!HyperVPrivateCloud.Capability.Storage.LogicalUnit']/StorageId$" (Get-HcsObjectValue $lun 'StorageId')
+            $pureVolumeInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PureVolume']$")
+            Add-HcsProperty $pureVolumeInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
+            Add-HcsProperty $pureVolumeInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureVolume']/Name$" (Get-HcsObjectValue $pureVolume 'Name')
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.LogicalUnitReferencesPureVolume']$" $lunInstance $pureVolumeInstance
+        }
+
+        foreach ($boundaryId in $boundaries) {
+            $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
+            Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $boundaryId
+            $arrayInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']$")
+            Add-HcsProperty $arrayInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.StorageContainsPureArray']$" $storage $arrayInstance
+            foreach ($purePort in $purePorts) {
+                if ((Get-HcsParentValue $purePort 'ArrayId') -ne $ArrayId) { continue }
+                $portInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Pure!PureStorage.FlashArray.PurePort']$")
+                Add-HcsProperty $portInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PureArray']/ArrayId$" $ArrayId
+                Add-HcsProperty $portInstance "$MPElement[Name='Pure!PureStorage.FlashArray.PurePort']/Name$" (Get-HcsObjectValue $purePort 'Name')
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PureStorage.StorageContainsPurePort']$" $storage $portInstance
+            }
+        }
+        $api.Return($script:DiscoveryData)
+    }
+    finally { $managementGroup.Dispose() }
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.PureStorage.CorrelationDiscovery.ps1', 8602, 1, $_.Exception.Message)
+    throw
+}

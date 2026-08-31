@@ -1,0 +1,154 @@
+#Requires -Version 7.0
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$BoundaryId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if (-not [string]::IsNullOrWhiteSpace([string]$Value)) {
+        $Instance.AddProperty($Property, [string]$Value)
+    }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+function Get-HcsServiceState {
+    param([string]$Name)
+    try {
+        $service = Get-Service -Name $Name -ErrorAction SilentlyContinue
+        if ($null -eq $service) { return 'NotInstalled' }
+        return [string]$service.Status
+    }
+    catch { return 'Unknown' }
+}
+
+function Get-HcsSdnGroupInstance {
+    param([string]$Kind, [string]$GroupId)
+    switch ($Kind) {
+        'NetworkController' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNodeGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNodeGroup']/Id$"
+        }
+        'Host' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.HostGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.HostGroup']/Id$"
+        }
+        'VirtualNetwork' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.VirtualNetworkGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.VirtualNetworkGroup']/Id$"
+        }
+        'AccessControlList' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.AccessControlListGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.AccessControlListGroup']/Id$"
+        }
+        'NetworkInterface' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.NetworkInterfaceGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.NetworkInterfaceGroup']/Id$"
+        }
+        'LoadBalancerMux' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.LoadBalancerMuxGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.LoadBalancerMuxGroup']/Id$"
+        }
+        'GatewayPool' {
+            $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.GatewayPoolGroup']$")
+            $propertyId = "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.GatewayPoolGroup']/Id$"
+        }
+        default { throw "Unknown SDN group kind '$Kind'." }
+    }
+    Add-HcsProperty $instance "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.Stamp']/Id$" 'Stamp'
+    Add-HcsProperty $instance $propertyId $GroupId
+    return $instance
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    $hostId = ''
+    try {
+        $parameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -Name HostId -ErrorAction SilentlyContinue
+        if ($null -ne $parameters -and $parameters.PSObject.Properties['HostId']) {
+            $hostId = [string]$parameters.HostId
+        }
+    }
+    catch { $hostId = '' }
+
+    $ncState = Get-HcsServiceState -Name 'NcHostAgent'
+    $slbState = Get-HcsServiceState -Name 'SlbHostAgent'
+    $sdnDetected = -not [string]::IsNullOrWhiteSpace($hostId) -or $ncState -ne 'NotInstalled' -or $slbState -ne 'NotInstalled'
+    if (-not $sdnDetected -or [string]::IsNullOrWhiteSpace($BoundaryId)) {
+        $api.Return($script:DiscoveryData)
+        return
+    }
+
+    $network = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")
+    Add-HcsProperty $network "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+
+    $management = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponent']$")
+    Add-HcsProperty $management "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+
+    $hostRole = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
+    Add-HcsProperty $hostRole "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" $ComputerName
+    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/BoundaryId$" $BoundaryId
+
+    $binding = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']$")
+    Add-HcsProperty $binding "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/BindingId$" 'sdn-host-binding'
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/BoundaryId$" $BoundaryId
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/NetworkControllerHostId$" $hostId
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/NcHostAgentState$" $ncState
+    Add-HcsProperty $binding "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostBinding']/SlbHostAgentState$" $slbState
+    Add-HcsProperty $binding "$MPElement[Name='System!System.Entity']/DisplayName$" ("SDN host binding - {0}" -f $ComputerName)
+    $script:DiscoveryData.AddInstance($binding)
+
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsHostBinding']$" $network $binding
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.HostRoleReferencesHostBinding']$" $hostRole $binding
+
+    $stamp = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.Stamp']$")
+    Add-HcsProperty $stamp "$MPElement[Name='SDN!SDNMonitoringMP.SDNMonitoring.Stamp']/Id$" 'Stamp'
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkReferencesStamp']$" $network $stamp
+
+    $controllerGroup = Get-HcsSdnGroupInstance -Kind 'NetworkController' -GroupId 'Network Controller Group'
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.ManagementContainsNetworkControllerGroup']$" $management $controllerGroup
+
+    $groups = @(
+        @('Host', 'Host Group'),
+        @('VirtualNetwork', 'Virtual Network Group'),
+        @('AccessControlList', 'Access Control List Group'),
+        @('NetworkInterface', 'Network Interface Group'),
+        @('LoadBalancerMux', 'Load Balancer Mux Group'),
+        @('GatewayPool', 'Gateway Pool Group')
+    )
+    foreach ($definition in $groups) {
+        $group = Get-HcsSdnGroupInstance -Kind $definition[0] -GroupId $definition[1]
+        $relationshipType = switch ($definition[0]) {
+            'Host' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsHostGroup']$" }
+            'VirtualNetwork' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsVirtualNetworkGroup']$" }
+            'AccessControlList' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsAccessControlListGroup']$" }
+            'NetworkInterface' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsNetworkInterfaceGroup']$" }
+            'LoadBalancerMux' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsLoadBalancerMuxGroup']$" }
+            'GatewayPool' { "$MPElement[Name='HyperVPrivateCloud.Capability.SDN.NetworkContainsGatewayPoolGroup']$" }
+        }
+        Add-HcsRelationship $relationshipType $network $group
+    }
+
+    $api.Return($script:DiscoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.SDN.RelationshipDiscovery.ps1', 8508, 1, $_.Exception.Message)
+    throw
+}

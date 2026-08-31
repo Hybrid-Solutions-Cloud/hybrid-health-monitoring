@@ -1,0 +1,279 @@
+#Requires -Version 7.0
+param($VMId, $ExpectedState, $CheckpointWarningHours = 168, $CheckpointCriticalHours = 336, $Mode = 'Health')
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+
+function Write-HcsState {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
+    $bag.AddValue($Name, $State)
+    $bag.AddValue($Name + 'Detail', $Detail)
+    $statesSet[$Name] = $true
+}
+
+function Get-HcsCounterSamples {
+    param([Parameter(Mandatory)][string]$Path)
+    if ($null -eq (Get-Variable -Name HcsCounterSampleCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsCounterSampleCache = @{} }
+    if ($script:HcsCounterSampleCache.ContainsKey($Path)) { return $script:HcsCounterSampleCache[$Path] }
+    try { $samples = @((Get-Counter -Counter $Path -ErrorAction Stop).CounterSamples) }
+    catch { $samples = @() }
+    $script:HcsCounterSampleCache[$Path] = $samples
+    return $samples
+}
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    try {
+        if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+        Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsClusteredVmGroupStates {
+    # Returns a hashtable VMId (lower-case) -> cluster group state for clustered VM roles. Empty when
+    # the node is not clustered or the FailoverClusters module is unavailable. Never throws.
+    $states = @{}
+    try {
+        if (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-ClusterResource')) { return $states }
+        foreach ($resource in @(Get-ClusterResource -ErrorAction SilentlyContinue | Where-Object { $_.ResourceType -eq 'Virtual Machine' })) {
+            $vmIdParameter = Get-ClusterParameter -InputObject $resource -Name 'VmID' -ErrorAction SilentlyContinue
+            if ($null -eq $vmIdParameter -or [string]::IsNullOrWhiteSpace([string]$vmIdParameter.Value)) { continue }
+            $group = $resource.OwnerGroup
+            $states[([string]$vmIdParameter.Value).ToLowerInvariant()] = [string]$group.State
+        }
+    }
+    catch { }
+    return $states
+}
+
+function Get-HcsExpectedVmState {
+    # Expected = Running when Hyper-V auto-starts the VM, when StartIfRunning applies and the VM is
+    # running now, or when the VM is a clustered role whose group is Online (the cluster, not Hyper-V,
+    # owns its start policy). Anything else is PolicyDependent and evaluates NotApplicable.
+    param($Vm, [hashtable]$ClusterGroupStates)
+    $startAction = [string]$Vm.AutomaticStartAction
+    if ($startAction -eq 'Start') { return 'Running' }
+    if ($startAction -eq 'StartIfRunning' -and [string]$Vm.State -eq 'Running') { return 'Running' }
+    $isClustered = $false
+    try { $isClustered = ($Vm.PSObject.Properties['IsClustered'] -and [bool]$Vm.IsClustered) } catch { $isClustered = $false }
+    if ($isClustered) {
+        $groupState = $ClusterGroupStates[([string]$Vm.VMId).ToLowerInvariant()]
+        if ($null -ne $groupState -and $groupState -eq 'Online') { return 'Running' }
+        if ($null -eq $groupState -and [string]$Vm.State -eq 'Running') { return 'Running' }
+    }
+    return 'PolicyDependent'
+}
+
+function Measure-HcsSamples {
+    param([Parameter(Mandatory)][AllowEmptyCollection()][double[]]$Values, [Parameter(Mandatory)][ValidateSet('Maximum', 'Average', 'Sum')][string]$Aggregate, [double]$Scale = 1.0, [int]$Digits = 2)
+    if (-not $Values.Count) { return -1 }
+    $measured = $Values | Measure-Object -Maximum -Average -Sum
+    $value = switch ($Aggregate) {
+        'Maximum' { $measured.Maximum }
+        'Average' { $measured.Average }
+        'Sum' { $measured.Sum }
+    }
+    return [math]::Round(([double]$value * $Scale), $Digits)
+}
+
+# Evaluates one VM and returns a fully-populated property bag (health states plus performance values).
+function Invoke-HcsVmEvaluation {
+param([string]$VMId, [string]$ExpectedState)
+$bag = $api.CreatePropertyBag()
+$statesSet = @{}
+try {
+    if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) {
+        if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+    }
+    if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) { throw 'The Hyper-V PowerShell module is unavailable.' }
+    $vm = $null
+    try { $vm = Get-VM -Id $VMId -ErrorAction Stop } catch { $vm = $null }
+    if ($null -eq $vm) {
+        # The runtime object still exists on this node but the VM is no longer registered here (live
+        # migration, quick migration, or deletion) and topology discovery has not yet removed it. This
+        # is a benign window, not a fault: report NotApplicable so no alert storm follows every migration.
+        $benign = 'The virtual machine is not registered on this host (migrated or removed); the runtime object is awaiting topology rediscovery.'
+        foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState')) { Write-HcsState $state 'NotApplicable' $benign }
+        Write-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o') + '; ' + $benign)
+        return $bag
+    }
+    $vmState = [string]$vm.State
+    $isRunning = $vmState -eq 'Running'
+    # Any *Critical state (PausedCritical, RunningCritical, OffCritical...) means Hyper-V has flagged the VM
+    # as unable to continue, most often because the volume holding its VHDX ran out of space.
+    $isCriticalState = $vmState -like '*Critical'
+
+    if ($Mode -ne 'Performance') {
+        if ($isCriticalState) {
+            Write-HcsState 'AvailabilityState' 'Critical' ("VM is in a critical state: {0}; status: {1}. Check free space on the volume or share holding its virtual hard disks." -f $vmState, [string]$vm.Status)
+        }
+        elseif ($ExpectedState -eq 'Running') {
+            Write-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vmState)
+        }
+        else {
+            Write-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vmState)
+        }
+
+        if ($isRunning) {
+            $services = @(Get-VMIntegrationService -VM $vm -ErrorAction SilentlyContinue | Where-Object Enabled)
+            $heartbeat = $services | Where-Object Name -eq 'Heartbeat' | Select-Object -First 1
+            $heartbeatState = if ($null -eq $heartbeat) { 'Warning' } elseif ([string]$heartbeat.PrimaryStatusDescription -match 'OK') { 'Good' } else { 'Critical' }
+            Write-HcsState 'HeartbeatState' $heartbeatState $(if ($heartbeat) { [string]$heartbeat.PrimaryStatusDescription } else { 'Heartbeat integration service is unavailable.' })
+            $unhealthyServices = @($services | Where-Object { [string]$_.PrimaryStatusDescription -notmatch 'OK' })
+            Write-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}" -f $services.Count, $unhealthyServices.Count)
+        }
+        else {
+            Write-HcsState 'HeartbeatState' 'NotApplicable' 'Heartbeat is not applicable while the VM is not running.'
+            Write-HcsState 'IntegrationServicesState' 'NotApplicable' 'Runtime integration-service health is not applicable while the VM is not running.'
+        }
+
+        $checkpoints = @(Get-VMSnapshot -VM $vm -ErrorAction SilentlyContinue)
+        $oldestHours = if ($checkpoints.Count) { [math]::Round(([DateTime]::UtcNow - ($checkpoints | Sort-Object CreationTime | Select-Object -First 1).CreationTime.ToUniversalTime()).TotalHours, 1) } else { 0 }
+        $checkpointState = if ($oldestHours -ge [double]$CheckpointCriticalHours) { 'Critical' } elseif ($oldestHours -ge [double]$CheckpointWarningHours) { 'Warning' } else { 'Good' }
+        Write-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
+
+        $replications = @(Get-VMReplication -VM $vm -ErrorAction SilentlyContinue)
+        $replicationCritical = @($replications | Where-Object { [string]$_.Health -eq 'Critical' }).Count
+        $replicationWarning = @($replications | Where-Object { [string]$_.Health -eq 'Warning' }).Count
+        $replicationState = if ($replicationCritical) { 'Critical' } elseif ($replicationWarning) { 'Warning' } elseif (-not $replications.Count) { 'NotApplicable' } else { 'Good' }
+        Write-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
+
+        $invalidDisks = 0
+        foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue)) {
+            if ($drive.Path -and -not (Test-Path -LiteralPath $drive.Path -PathType Leaf)) { $invalidDisks++ }
+            elseif ($drive.Path -and -not (Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue)) { $invalidDisks++ }
+        }
+        Write-HcsState 'StorageState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable disk attachments: {0}" -f $invalidDisks)
+
+        $adapters = @(Get-VMNetworkAdapter -VM $vm -ErrorAction SilentlyContinue)
+        $disconnected = @($adapters | Where-Object { -not $_.SwitchName -or ([string]$_.Status -notin @('Ok', 'Degraded', '')) })
+        Write-HcsState 'NetworkState' $(if ($disconnected.Count) { 'Warning' } else { 'Good' }) ("Adapters: {0}; disconnected or unhealthy: {1}" -f $adapters.Count, $disconnected.Count)
+
+        $memoryState = if (-not $vm.DynamicMemoryEnabled -or -not $isRunning) { 'NotApplicable' } elseif ([string]$vm.MemoryStatus -match 'Low|Warning') { 'Warning' } elseif ([string]$vm.MemoryStatus -match 'Critical') { 'Critical' } else { 'Good' }
+        Write-HcsState 'MemoryPressureState' $memoryState ("Dynamic Memory: {0}; status: {1}; assigned MB: {2}" -f $vm.DynamicMemoryEnabled, $vm.MemoryStatus, [int]($vm.MemoryAssigned / 1MB))
+    }
+
+    # Raw per-VM resource-consumption instrumentation. Guest workload internals are deliberately out of
+    # scope: only the resources the VM draws from the host are measured. Threshold evaluation is performed
+    # by the Management Pack monitor types so that every threshold stays overridable per environment.
+    # A value of -1 means the measurement is unavailable (usually because the VM is not running) and is
+    # treated as healthy by every threshold monitor.
+    $vmName = [string]$vm.Name
+    $vmInstanceName = ($vmName -replace '[\\/()#]', '_')
+
+    $processorValues = [System.Collections.Generic.List[double]]::new()
+    foreach ($sample in (Get-HcsCounterSamples -Path '\Hyper-V Hypervisor Virtual Processor(*)\% Total Run Time')) {
+        $instance = [string]$sample.InstanceName
+        if ($instance -like ($vmName + ':*') -or $instance -like ($vmInstanceName + ':*')) { $processorValues.Add([double]$sample.CookedValue) }
+    }
+    $bag.AddValue('VirtualProcessorCount', $processorValues.Count)
+    $bag.AddValue('VirtualProcessorTotalRunTimePercent', (Measure-HcsSamples -Values $processorValues -Aggregate 'Average'))
+    $bag.AddValue('VirtualProcessorPeakRunTimePercent', (Measure-HcsSamples -Values $processorValues -Aggregate 'Maximum'))
+
+    $assignedMemoryMB = [math]::Round(([double]$vm.MemoryAssigned / 1MB), 0)
+    $demandMemoryMB = [math]::Round(([double]$vm.MemoryDemand / 1MB), 0)
+    $maximumMemoryMB = [math]::Round(([double]$vm.MemoryMaximum / 1MB), 0)
+    $bag.AddValue('AssignedMemoryMB', $assignedMemoryMB)
+    $bag.AddValue('MemoryDemandMB', $demandMemoryMB)
+    # Memory pressure (demand/assigned) and demand vs maximum are Dynamic Memory concepts. For a static-memory
+    # VM demand routinely equals assigned (100%) and MemoryMaximum is the 1 TB default, so both ratios are
+    # meaningless and would alert on every busy static VM. Emit -1 (healthy) unless Dynamic Memory is on.
+    $dynamicMemory = $false
+    try { $dynamicMemory = [bool]$vm.DynamicMemoryEnabled } catch { $dynamicMemory = $false }
+    $bag.AddValue('MemoryPressurePercent', $(if ($dynamicMemory -and $isRunning -and $assignedMemoryMB -gt 0) { [math]::Round((($demandMemoryMB / $assignedMemoryMB) * 100.0), 2) } else { -1 }))
+    $bag.AddValue('MemoryDemandPercentOfMaximum', $(if ($dynamicMemory -and $isRunning -and $maximumMemoryMB -gt 0) { [math]::Round((($demandMemoryMB / $maximumMemoryMB) * 100.0), 2) } else { -1 }))
+
+    $diskPaths = @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | ForEach-Object { [string]$_.Path } | Where-Object { $_ })
+    # Hyper-V publishes each virtual storage device instance as the full VHDX path with ':' '\' '/' replaced
+    # by '-' and prefixed with '--?-' (the \\?\ device prefix). Suffix-match on the whole transformed path,
+    # which is unique per file; a leaf-name match would aggregate every VM whose disk is called OS.vhdx.
+    $diskInstanceKeys = @($diskPaths | ForEach-Object { ($_ -replace '[:\\/]', '-').ToLowerInvariant() })
+    $storageValues = @{}
+    foreach ($counterName in @('Latency', 'Queue Length', 'Read Bytes/sec', 'Write Bytes/sec', 'Error Count')) {
+        $matched = [System.Collections.Generic.List[double]]::new()
+        foreach ($sample in (Get-HcsCounterSamples -Path ('\Hyper-V Virtual Storage Device(*)\' + $counterName))) {
+            $instance = ([string]$sample.InstanceName).ToLowerInvariant()
+            $isMatch = $false
+            foreach ($key in $diskInstanceKeys) { if ($key -and ($instance -eq $key -or $instance.EndsWith($key))) { $isMatch = $true; break } }
+            if ($isMatch) { $matched.Add([double]$sample.CookedValue) }
+        }
+        $storageValues[$counterName] = $matched
+    }
+    # The Hyper-V Virtual Storage Device Latency counter reports microseconds; scale it to milliseconds.
+    $bag.AddValue('VirtualStorageLatencyMs', (Measure-HcsSamples -Values $storageValues['Latency'] -Aggregate 'Maximum' -Scale 0.001))
+    $bag.AddValue('VirtualStorageQueueLength', (Measure-HcsSamples -Values $storageValues['Queue Length'] -Aggregate 'Maximum'))
+    $bag.AddValue('VirtualStorageReadBytesPerSecond', (Measure-HcsSamples -Values $storageValues['Read Bytes/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualStorageWriteBytesPerSecond', (Measure-HcsSamples -Values $storageValues['Write Bytes/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualStorageErrorCount', (Measure-HcsSamples -Values $storageValues['Error Count'] -Aggregate 'Sum' -Digits 0))
+
+    $adapterValues = @{}
+    foreach ($counterName in @('Bytes Sent/sec', 'Bytes Received/sec', 'Packets Sent/sec', 'Packets Received/sec')) {
+        $matched = [System.Collections.Generic.List[double]]::new()
+        foreach ($sample in (Get-HcsCounterSamples -Path ('\Hyper-V Virtual Network Adapter(*)\' + $counterName))) {
+            $instance = [string]$sample.InstanceName
+            # Instance format is <VMName>_<AdapterName>_<GUID>--<port>; anchor on the '_' delimiter so SQL01
+            # does not also collect SQL01-B's adapters.
+            if ($instance -like ($vmName + '_*') -or $instance -like ($vmInstanceName + '_*')) { $matched.Add([double]$sample.CookedValue) }
+        }
+        $adapterValues[$counterName] = $matched
+    }
+    $bag.AddValue('VirtualNetworkBytesSentPerSecond', (Measure-HcsSamples -Values $adapterValues['Bytes Sent/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualNetworkBytesReceivedPerSecond', (Measure-HcsSamples -Values $adapterValues['Bytes Received/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualNetworkPacketsSentPerSecond', (Measure-HcsSamples -Values $adapterValues['Packets Sent/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualNetworkPacketsReceivedPerSecond', (Measure-HcsSamples -Values $adapterValues['Packets Received/sec'] -Aggregate 'Sum' -Digits 0))
+
+    Write-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
+}
+catch {
+    foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState', 'PipelineState')) {
+        if (-not $statesSet.ContainsKey($state)) { Write-HcsState $state 'Critical' $_.Exception.Message }
+    }
+    $api.LogScriptEvent('Hyper-V Private Cloud VM Health', 8202, 1, $_.Exception.ToString())
+}
+
+return $bag
+}
+
+if ($Mode -eq 'Inventory') {
+    # One probe run per host feeds every per-VM monitor and collection rule: one bag per VM with
+    # every health state and performance value, keyed by VMId as topology discovery stamps it
+    # (ADR 0053 cookdown). Expected state is computed here with the same policy the discovery uses.
+    $vmCount = 0
+    if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) {
+        if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+    }
+    if (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue) {
+        $clusterGroupStates = Get-HcsClusteredVmGroupStates
+        foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
+            $vmId = [string]$vm.VMId
+            if ([string]::IsNullOrWhiteSpace($vmId)) { continue }
+            $vmExpectedState = Get-HcsExpectedVmState -Vm $vm -ClusterGroupStates $clusterGroupStates
+            $vmBag = Invoke-HcsVmEvaluation -VMId $vmId -ExpectedState $vmExpectedState
+            $vmBag.AddValue('VMId', $vmId)
+            $api.AddItem($vmBag)
+            $vmCount++
+        }
+    }
+    # Heartbeat bag: proves the inventory ran on hosts with no VMs and satisfies the one-DataItem
+    # probe contract. It carries every property so keyed filters never hit a missing property, and
+    # no monitor matches its VMId.
+    $summaryBag = $api.CreatePropertyBag()
+    $summaryBag.AddValue('VMId', 'vm-inventory')
+    $summaryBag.AddValue('InventoryVmCount', $vmCount)
+    foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState', 'PipelineState')) {
+        $summaryBag.AddValue($state, 'NotApplicable')
+        $summaryBag.AddValue($state + 'Detail', 'VM inventory heartbeat.')
+    }
+    foreach ($value in @('VirtualProcessorTotalRunTimePercent', 'VirtualProcessorPeakRunTimePercent', 'MemoryPressurePercent', 'MemoryDemandPercentOfMaximum', 'VirtualStorageLatencyMs', 'VirtualStorageQueueLength')) {
+        $summaryBag.AddValue($value, -1)
+    }
+    $api.AddItem($summaryBag)
+    $api.ReturnItems()
+}
+else {
+    $api.Return((Invoke-HcsVmEvaluation -VMId $VMId -ExpectedState $ExpectedState))
+}

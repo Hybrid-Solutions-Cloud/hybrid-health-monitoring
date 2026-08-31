@@ -1,0 +1,554 @@
+#Requires -Version 7.0
+param(
+    [Parameter(Mandatory)][string]$ComputerName,
+    [ValidateSet('Integration', 'AdapterLink', 'AdapterSpeed', 'AdapterErrors', 'AdapterDiscards', 'SwitchPort', 'PortCorrelation', 'VlanMismatch', 'PortUtilization', 'Performance')][string]$Mode = 'Integration',
+    [string]$Counter,
+    [int]$MinimumLinkSpeedMbps = 10000,
+    [int]$WarningErrorsPerSecond = 1,
+    [int]$CriticalErrorsPerSecond = 10,
+    [int]$WarningDiscardsPerSecond = 5,
+    [int]$CriticalDiscardsPerSecond = 50,
+    [int]$WarningUtilizationPercent = 70,
+    [int]$CriticalUtilizationPercent = 90,
+    [string]$RequireLldpCorrelation = 'false',
+    [string]$RequireVlanMatch = 'false',
+    [string]$IncludeNonUplinkAdapters = 'false',
+    [int]$SampleSeconds = 10
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+# pwsh -File delivers every argument as a string, and [bool] parameters refuse the strings 'true'/'false' that
+# the data-source Arguments pass. Declare them as strings and coerce once here; empty means false.
+[bool]$RequireLldpCorrelation = ([string]$RequireLldpCorrelation) -match '^(?i)(true|1|yes)$'
+[bool]$RequireVlanMatch = ([string]$RequireVlanMatch) -match '^(?i)(true|1|yes)$'
+[bool]$IncludeNonUplinkAdapters = ([string]$IncludeNonUplinkAdapters) -match '^(?i)(true|1|yes)$'
+
+function Get-HcsPropertyValue {
+    param([AllowNull()]$InputObject, [Parameter(Mandatory)][string[]]$Name)
+    if ($null -eq $InputObject) { return $null }
+    foreach ($candidate in $Name) {
+        $property = $InputObject.PSObject.Properties[$candidate]
+        if ($null -ne $property -and $null -ne $property.Value) { return $property.Value }
+    }
+    return $null
+}
+
+function Test-HcsCommand {
+    param([Parameter(Mandatory)][string]$Name)
+    return $null -ne (Get-Command -Name $Name -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsDouble {
+    param([AllowNull()]$Value)
+    if ($null -eq $Value) { return 0.0 }
+    $parsed = 0.0
+    if ([double]::TryParse([string]$Value, [ref]$parsed)) { return $parsed }
+    return 0.0
+}
+
+function Get-HcsAdapterSpeedMbps {
+    param([AllowNull()]$Adapter)
+    if ($null -eq $Adapter) { return 0 }
+    $bits = Get-HcsDouble (Get-HcsPropertyValue -InputObject $Adapter -Name @('Speed'))
+    if ($bits -gt 0) { return [math]::Round($bits / 1000000.0) }
+    $linkSpeed = [string](Get-HcsPropertyValue -InputObject $Adapter -Name @('LinkSpeed'))
+    if ([string]::IsNullOrWhiteSpace($linkSpeed)) { return 0 }
+    $parts = $linkSpeed.Trim() -split '\s+'
+    $value = Get-HcsDouble $parts[0]
+    $unit = if ($parts.Count -gt 1) { $parts[1].ToLowerInvariant() } else { 'mbps' }
+    switch -Wildcard ($unit) {
+        'tbps*' { return [math]::Round($value * 1000000) }
+        'gbps*' { return [math]::Round($value * 1000) }
+        'mbps*' { return [math]::Round($value) }
+        'kbps*' { return [math]::Round($value / 1000) }
+        'bps*' { return [math]::Round($value / 1000000) }
+        default { return [math]::Round($value) }
+    }
+}
+
+function Get-HcsPhysicalAdapter {
+    if (-not (Test-HcsCommand -Name 'Get-NetAdapter')) { return @() }
+    try { return @(Get-NetAdapter -Physical -ErrorAction Stop) }
+    catch { return @() }
+}
+
+function Get-HcsAdapterStatisticsMap {
+    param([Parameter(Mandatory)][string[]]$Name)
+    $map = @{}
+    if (-not (Test-HcsCommand -Name 'Get-NetAdapterStatistics')) { return $map }
+    foreach ($adapterName in $Name) {
+        try { $statistics = Get-NetAdapterStatistics -Name $adapterName -ErrorAction Stop | Select-Object -First 1 }
+        catch { $statistics = $null }
+        if ($null -ne $statistics) { $map[$adapterName] = $statistics }
+    }
+    return $map
+}
+
+function Get-HcsAdapterRateSample {
+    param([Parameter(Mandatory)][string[]]$Name, [Parameter(Mandatory)][int]$Seconds)
+    $window = [math]::Max(2, $Seconds)
+    $first = Get-HcsAdapterStatisticsMap -Name $Name
+    if ($first.Count -eq 0) { return @{} }
+    Start-Sleep -Seconds $window
+    $second = Get-HcsAdapterStatisticsMap -Name $Name
+    $rates = @{}
+    foreach ($adapterName in $first.Keys) {
+        if (-not $second.ContainsKey($adapterName)) { continue }
+        $a = $first[$adapterName]
+        $b = $second[$adapterName]
+        $delta = {
+            param($Names)
+            $before = Get-HcsDouble (Get-HcsPropertyValue -InputObject $a -Name $Names)
+            $after = Get-HcsDouble (Get-HcsPropertyValue -InputObject $b -Name $Names)
+            return [math]::Max(0, $after - $before) / $window
+        }
+        $rates[$adapterName] = [pscustomobject]@{
+            ReceivedBytesPerSecond = & $delta @('ReceivedBytes')
+            SentBytesPerSecond = & $delta @('SentBytes')
+            ErrorsPerSecond = (& $delta @('ReceivedPacketErrors')) + (& $delta @('OutboundPacketErrors'))
+            DiscardsPerSecond = (& $delta @('ReceivedDiscardedPackets')) + (& $delta @('OutboundDiscardedPackets'))
+        }
+    }
+    return $rates
+}
+
+function Get-HcsLldpNeighbor {
+    param([Parameter(Mandatory)][string]$AdapterName)
+    foreach ($className in @('MSFT_NetLldpNeighbor', 'MSFT_NetLldpAgent')) {
+        try {
+            $instances = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName $className -ErrorAction Stop)
+        }
+        catch { continue }
+        foreach ($instance in $instances) {
+            $interface = [string](Get-HcsPropertyValue -InputObject $instance -Name @('InterfaceAlias', 'Name', 'InterfaceDescription'))
+            if ($interface -eq $AdapterName) { return $instance }
+        }
+    }
+    return $null
+}
+
+function Get-HcsAdapterVlanId {
+    param([Parameter(Mandatory)][string]$AdapterName)
+    if (-not (Test-HcsCommand -Name 'Get-NetAdapterAdvancedProperty')) { return $null }
+    foreach ($keyword in @('VlanID', 'VLANID', '*VlanId')) {
+        try {
+            $property = Get-NetAdapterAdvancedProperty -Name $AdapterName -RegistryKeyword $keyword -ErrorAction Stop | Select-Object -First 1
+        }
+        catch { continue }
+        if ($null -ne $property) {
+            $value = Get-HcsPropertyValue -InputObject $property -Name @('RegistryValue', 'DisplayValue')
+            if ($null -ne $value) { return [string](@($value)[0]) }
+        }
+    }
+    return $null
+}
+
+function Get-HcsUplinkAdapterName {
+    $names = [System.Collections.Generic.List[string]]::new()
+    if (-not (Test-HcsCommand -Name 'Get-VMSwitch')) { return @() }
+    $adapters = Get-HcsPhysicalAdapter
+    $lookup = @{}
+    foreach ($adapter in $adapters) {
+        foreach ($candidate in @([string]$adapter.Name, [string]$adapter.InterfaceDescription)) {
+            if (-not [string]::IsNullOrWhiteSpace($candidate)) { $lookup[$candidate.Trim().ToLowerInvariant()] = [string]$adapter.Name }
+        }
+    }
+    try { $switches = @(Get-VMSwitch -SwitchType External -ErrorAction Stop) }
+    catch { $switches = @() }
+    foreach ($switch in $switches) {
+        foreach ($description in @(Get-HcsPropertyValue -InputObject $switch -Name @('NetAdapterInterfaceDescriptions'))) {
+            if ([string]::IsNullOrWhiteSpace([string]$description)) { continue }
+            $key = ([string]$description).Trim().ToLowerInvariant()
+            if ($lookup.ContainsKey($key) -and -not $names.Contains($lookup[$key])) { $names.Add($lookup[$key]) }
+        }
+    }
+    return @($names)
+}
+
+function Get-HcsMonitoredAdapterName {
+    # Physical adapters that actually carry Hyper-V traffic: external vSwitch uplinks plus adapters
+    # participating in a Network ATC intent. Unused ports on multi-port NICs are excluded so a
+    # dark port does not hold the host Warning forever (ADR 0053).
+    $names = [System.Collections.Generic.List[string]]::new()
+    foreach ($name in @(Get-HcsUplinkAdapterName)) {
+        if (-not [string]::IsNullOrWhiteSpace($name) -and -not $names.Contains($name)) { $names.Add($name) }
+    }
+    if (Test-HcsCommand -Name 'Get-NetIntent') {
+        try {
+            foreach ($intent in @(Get-NetIntent -ErrorAction Stop)) {
+                $value = Get-HcsPropertyValue -InputObject $intent -Name @('NetAdapterNamesAsList', 'NetAdapterNames', 'AdapterNames')
+                foreach ($entry in @($value)) {
+                    foreach ($part in ([string]$entry -split '[,;]')) {
+                        $trimmed = $part.Trim()
+                        if ($trimmed -and -not $names.Contains($trimmed)) { $names.Add($trimmed) }
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+    return @($names)
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+
+if ($Mode -eq 'Performance') {
+    $counterName = if ([string]::IsNullOrWhiteSpace($Counter)) { 'Bytes Total/sec' } else { $Counter }
+    $objectName = if ($counterName -eq '% Port Utilization') { 'HCS Physical Switch Port' } else { 'HCS Physical Network Adapter' }
+    $samples = [System.Collections.Generic.List[pscustomobject]]::new()
+    try {
+        $adapters = @(Get-HcsPhysicalAdapter | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Up' })
+        $names = @($adapters | ForEach-Object { [string]$_.Name })
+        $rates = if ($names.Count -gt 0) { Get-HcsAdapterRateSample -Name $names -Seconds $SampleSeconds } else { @{} }
+        foreach ($adapter in $adapters) {
+            $adapterName = [string]$adapter.Name
+            if (-not $rates.ContainsKey($adapterName)) { continue }
+            $rate = $rates[$adapterName]
+            $speedMbps = Get-HcsAdapterSpeedMbps -Adapter $adapter
+            $value = switch ($counterName) {
+                'Bytes Received/sec' { $rate.ReceivedBytesPerSecond }
+                'Bytes Sent/sec' { $rate.SentBytesPerSecond }
+                'Errors/sec' { $rate.ErrorsPerSecond }
+                'Discards/sec' { $rate.DiscardsPerSecond }
+                '% Link Utilization' { if ($speedMbps -gt 0) { [math]::Min(100, (($rate.ReceivedBytesPerSecond + $rate.SentBytesPerSecond) * 8 / ($speedMbps * 1000000.0)) * 100) } else { 0 } }
+                '% Port Utilization' { if ($speedMbps -gt 0) { [math]::Min(100, (($rate.ReceivedBytesPerSecond + $rate.SentBytesPerSecond) * 8 / ($speedMbps * 1000000.0)) * 100) } else { 0 } }
+                default { $rate.ReceivedBytesPerSecond + $rate.SentBytesPerSecond }
+            }
+            $samples.Add([pscustomobject]@{ Instance = $adapterName; Value = [math]::Round([double]$value, 3) })
+        }
+    }
+    catch {
+        $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.IntegrationHealth.ps1', 8804, 2, "Physical-network performance collection failed on '$ComputerName': $($_.Exception.Message)")
+    }
+
+    $total = 0.0
+    foreach ($sample in $samples) { $total += [double]$sample.Value }
+    if ($counterName -in @('% Link Utilization', '% Port Utilization') -and $samples.Count -gt 0) {
+        $total = [math]::Round($total / $samples.Count, 3)
+    }
+    $totalBag = $api.CreatePropertyBag()
+    $totalBag.AddValue('ObjectName', $objectName)
+    $totalBag.AddValue('CounterName', $counterName)
+    $totalBag.AddValue('Instance', '_Total')
+    $totalBag.AddValue('Value', [double]$total)
+    $api.AddItem($totalBag)
+    foreach ($sample in $samples) {
+        $sampleBag = $api.CreatePropertyBag()
+        $sampleBag.AddValue('ObjectName', $objectName)
+        $sampleBag.AddValue('CounterName', $counterName)
+        $sampleBag.AddValue('Instance', [string]$sample.Instance)
+        $sampleBag.AddValue('Value', [double]$sample.Value)
+        $api.AddItem($sampleBag)
+    }
+    $api.ReturnItems()
+    return
+}
+
+$bag = $api.CreatePropertyBag()
+$state = 'Good'
+$detail = 'All external Hyper-V switch uplinks have stable Windows network-adapter identities for SCOM network-topology correlation.'
+
+try {
+    if ($Mode -eq 'Integration') {
+        if (-not (Test-HcsCommand -Name 'Get-VMSwitch')) {
+            throw 'Get-VMSwitch is unavailable. Install Hyper-V-PowerShell with management tools.'
+        }
+        if (-not (Test-HcsCommand -Name 'Get-NetAdapter')) {
+            throw 'Get-NetAdapter is unavailable. Install the Windows network adapter management tools.'
+        }
+
+        $switches = @(Get-VMSwitch -SwitchType External -ErrorAction Stop)
+        if ($switches.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = 'No external Hyper-V virtual switch is present.'
+        }
+        else {
+            $physicalAdapters = @(Get-NetAdapter -Physical -ErrorAction Stop)
+            $lookup = @{}
+            foreach ($adapter in $physicalAdapters) {
+                foreach ($candidate in @([string]$adapter.Name, [string]$adapter.InterfaceDescription)) {
+                    if (-not [string]::IsNullOrWhiteSpace($candidate)) { $lookup[$candidate.Trim().ToLowerInvariant()] = $adapter }
+                }
+            }
+
+            $problems = [System.Collections.Generic.List[string]]::new()
+            foreach ($switch in $switches) {
+                $uplinks = @($switch.NetAdapterInterfaceDescriptions)
+                if ($uplinks.Count -eq 0) {
+                    $problems.Add("switch '$($switch.Name)' has no physical uplink identity")
+                    continue
+                }
+                foreach ($description in $uplinks) {
+                    $key = ([string]$description).Trim().ToLowerInvariant()
+                    if (-not $lookup.ContainsKey($key)) {
+                        $problems.Add("switch '$($switch.Name)' uplink '$description' did not resolve to Win32_NetworkAdapter")
+                        continue
+                    }
+                    $adapter = $lookup[$key]
+                    if ([string]::IsNullOrWhiteSpace([string]$adapter.DeviceID) -or [string]::IsNullOrWhiteSpace([string]$adapter.MACAddress)) {
+                        $problems.Add("switch '$($switch.Name)' uplink '$description' lacks DeviceID or MACAddress")
+                    }
+                }
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Warning'
+                $detail = $problems -join '; '
+            }
+        }
+    }
+    elseif ($Mode -eq 'AdapterLink') {
+        $adapters = @(Get-HcsPhysicalAdapter)
+        if (-not $IncludeNonUplinkAdapters) {
+            $monitored = @(Get-HcsMonitoredAdapterName)
+            $adapters = if ($monitored.Count -eq 0) { @() } else { @($adapters | Where-Object { $monitored -contains [string]$_.Name }) }
+        }
+        if ($adapters.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No uplink or intent-bound physical adapter is present on '$ComputerName'. Set the IncludeNonUplinkAdapters override to evaluate every physical adapter."
+        }
+        else {
+            $down = [System.Collections.Generic.List[string]]::new()
+            $disconnected = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapter in $adapters) {
+                $adapterName = [string]$adapter.Name
+                $status = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('Status'))
+                $media = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('MediaConnectionState', 'MediaConnectState'))
+                if ($status -eq 'Disabled' -or $status -eq 'Not Present') { continue }
+                if ($status -ne 'Up') { $down.Add("adapter '$adapterName' is '$status'"); continue }
+                if (-not [string]::IsNullOrWhiteSpace($media) -and $media -notin @('Connected', 'Unknown')) {
+                    $disconnected.Add("adapter '$adapterName' media state is '$media'")
+                }
+            }
+            if ($down.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Physical adapter link state failed on '$ComputerName': $($down -join '; ')."
+            }
+            elseif ($disconnected.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "Physical adapter media state is degraded on '$ComputerName': $($disconnected -join '; ')."
+            }
+            else {
+                $detail = "All $($adapters.Count) enabled physical adapter(s) on '$ComputerName' report link state Up."
+            }
+        }
+    }
+    elseif ($Mode -eq 'AdapterSpeed') {
+        $adapters = @(Get-HcsPhysicalAdapter | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Up' })
+        if (-not $IncludeNonUplinkAdapters) {
+            $monitored = @(Get-HcsMonitoredAdapterName)
+            $adapters = if ($monitored.Count -eq 0) { @() } else { @($adapters | Where-Object { $monitored -contains [string]$_.Name }) }
+        }
+        if ($adapters.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No uplink or intent-bound physical adapter on '$ComputerName' is Up, so link speed is not evaluated. Set the IncludeNonUplinkAdapters override to evaluate every physical adapter."
+        }
+        elseif ($MinimumLinkSpeedMbps -le 0) {
+            $state = 'NotApplicable'
+            $detail = 'MinimumLinkSpeedMbps is zero or negative, so link speed is not evaluated.'
+        }
+        else {
+            $slow = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapter in $adapters) {
+                $speedMbps = Get-HcsAdapterSpeedMbps -Adapter $adapter
+                if ($speedMbps -gt 0 -and $speedMbps -lt $MinimumLinkSpeedMbps) {
+                    $slow.Add("adapter '$([string]$adapter.Name)' links at $speedMbps Mbps")
+                }
+            }
+            if ($slow.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "Physical adapters on '$ComputerName' link below the expected minimum of $MinimumLinkSpeedMbps Mbps: $($slow -join '; ')."
+            }
+            else {
+                $detail = "All Up physical adapters on '$ComputerName' link at or above the expected minimum of $MinimumLinkSpeedMbps Mbps."
+            }
+        }
+    }
+    elseif ($Mode -in @('AdapterErrors', 'AdapterDiscards')) {
+        $adapters = @(Get-HcsPhysicalAdapter | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Up' })
+        $names = @($adapters | ForEach-Object { [string]$_.Name })
+        if ($names.Count -eq 0 -or -not (Test-HcsCommand -Name 'Get-NetAdapterStatistics')) {
+            $state = 'NotApplicable'
+            $detail = "Physical adapter statistics are unavailable on '$ComputerName'; error and discard rates are not evaluated."
+        }
+        else {
+            $rates = Get-HcsAdapterRateSample -Name $names -Seconds $SampleSeconds
+            $isErrors = $Mode -eq 'AdapterErrors'
+            $warningThreshold = if ($isErrors) { $WarningErrorsPerSecond } else { $WarningDiscardsPerSecond }
+            $criticalThreshold = if ($isErrors) { $CriticalErrorsPerSecond } else { $CriticalDiscardsPerSecond }
+            $label = if ($isErrors) { 'error' } else { 'discard' }
+            $critical = [System.Collections.Generic.List[string]]::new()
+            $warning = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapterName in $rates.Keys) {
+                $rate = if ($isErrors) { $rates[$adapterName].ErrorsPerSecond } else { $rates[$adapterName].DiscardsPerSecond }
+                $rounded = [math]::Round($rate, 2)
+                if ($rate -ge $criticalThreshold) { $critical.Add("adapter '$adapterName' at $rounded per second") }
+                elseif ($rate -ge $warningThreshold) { $warning.Add("adapter '$adapterName' at $rounded per second") }
+            }
+            if ($critical.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Physical adapter $label rate on '$ComputerName' is at or above the critical threshold of $criticalThreshold per second: $($critical -join '; ')."
+            }
+            elseif ($warning.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "Physical adapter $label rate on '$ComputerName' is at or above the warning threshold of $warningThreshold per second: $($warning -join '; ')."
+            }
+            else {
+                $detail = "Physical adapter $label rate on '$ComputerName' is below the warning threshold of $warningThreshold per second across $($rates.Count) adapter(s)."
+            }
+        }
+    }
+    elseif ($Mode -eq 'SwitchPort') {
+        $uplinks = Get-HcsUplinkAdapterName
+        if ($uplinks.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No external Hyper-V virtual switch uplink is present on '$ComputerName', so no switch port is evaluated."
+        }
+        else {
+            $down = [System.Collections.Generic.List[string]]::new()
+            $unknown = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapterName in $uplinks) {
+                $adapter = Get-NetAdapter -Name $adapterName -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $adapter) { $down.Add("uplink '$adapterName' is no longer present"); continue }
+                $media = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('MediaConnectionState', 'MediaConnectState'))
+                $status = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('Status'))
+                if ($status -ne 'Up' -or ($media -notin @('', 'Connected', 'Unknown'))) {
+                    $down.Add("the switch port serving uplink '$adapterName' is not passing traffic (adapter status '$status', media '$media')")
+                    continue
+                }
+                $neighbor = Get-HcsLldpNeighbor -AdapterName $adapterName
+                if ($null -eq $neighbor) { $unknown.Add("uplink '$adapterName' has no LLDP neighbour data") }
+            }
+            if ($down.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Switch port operational state failed for '$ComputerName': $($down -join '; ')."
+            }
+            elseif ($unknown.Count -gt 0 -and $RequireLldpCorrelation) {
+                $state = 'Warning'
+                $detail = "Switch port operational state cannot be confirmed from LLDP on '$ComputerName': $($unknown -join '; ')."
+            }
+            elseif ($unknown.Count -gt 0) {
+                $state = 'NotApplicable'
+                $detail = "Every uplink on '$ComputerName' is passing traffic. LLDP neighbour data is unavailable and RequireLldpCorrelation is false."
+            }
+            else {
+                $detail = "Every switch port serving an uplink on '$ComputerName' is operational and reports LLDP neighbour data."
+            }
+        }
+    }
+    elseif ($Mode -eq 'PortCorrelation') {
+        $uplinks = Get-HcsUplinkAdapterName
+        if ($uplinks.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No external Hyper-V virtual switch uplink is present on '$ComputerName', so port-to-adapter correlation is not evaluated."
+        }
+        else {
+            $problems = [System.Collections.Generic.List[string]]::new()
+            $missingNeighbor = [System.Collections.Generic.List[string]]::new()
+            $macAddresses = @{}
+            foreach ($adapterName in $uplinks) {
+                $adapter = Get-NetAdapter -Name $adapterName -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $adapter) { $problems.Add("uplink '$adapterName' no longer resolves to a Windows adapter"); continue }
+                $mac = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('MacAddress', 'MACAddress'))
+                $deviceId = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('DeviceID', 'InterfaceGuid'))
+                if ([string]::IsNullOrWhiteSpace($mac)) { $problems.Add("uplink '$adapterName' exposes no MAC address, so MAC-based topology correlation cannot resolve its switch port") }
+                elseif ($macAddresses.ContainsKey($mac)) { $problems.Add("uplink '$adapterName' shares MAC address '$mac' with '$($macAddresses[$mac])', which makes switch-port correlation ambiguous") }
+                else { $macAddresses[$mac] = $adapterName }
+                if ([string]::IsNullOrWhiteSpace($deviceId)) { $problems.Add("uplink '$adapterName' exposes no stable device identifier") }
+                if ($null -eq (Get-HcsLldpNeighbor -AdapterName $adapterName)) { $missingNeighbor.Add($adapterName) }
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Port-to-adapter correlation is lost on '$ComputerName': $($problems -join '; ')."
+            }
+            elseif ($missingNeighbor.Count -gt 0 -and $RequireLldpCorrelation) {
+                $state = 'Warning'
+                $detail = "LLDP correlation is required but no neighbour data is published for uplink(s): $($missingNeighbor -join ', ')."
+            }
+            else {
+                $detail = "Every uplink on '$ComputerName' exposes a unique MAC address and a stable device identifier for switch-port correlation."
+            }
+        }
+    }
+    elseif ($Mode -eq 'VlanMismatch') {
+        $uplinks = Get-HcsUplinkAdapterName
+        if ($uplinks.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No external Hyper-V virtual switch uplink is present on '$ComputerName', so VLAN comparison is not evaluated."
+        }
+        else {
+            $mismatches = [System.Collections.Generic.List[string]]::new()
+            $unknown = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapterName in $uplinks) {
+                $adapterVlan = Get-HcsAdapterVlanId -AdapterName $adapterName
+                $neighbor = Get-HcsLldpNeighbor -AdapterName $adapterName
+                $portVlan = if ($null -eq $neighbor) { $null } else { [string](Get-HcsPropertyValue -InputObject $neighbor -Name @('PortVlanId', 'VlanId', 'PortVlanID')) }
+                if ([string]::IsNullOrWhiteSpace([string]$adapterVlan) -or [string]::IsNullOrWhiteSpace([string]$portVlan)) {
+                    $unknown.Add($adapterName)
+                    continue
+                }
+                if ([string]$adapterVlan -ne [string]$portVlan) {
+                    $mismatches.Add("uplink '$adapterName' is configured for VLAN '$adapterVlan' but the switch port reports VLAN '$portVlan'")
+                }
+            }
+            if ($mismatches.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "VLAN configuration does not match between adapter and switch port on '$ComputerName': $($mismatches -join '; ')."
+            }
+            elseif ($unknown.Count -gt 0 -and $RequireVlanMatch) {
+                $state = 'Warning'
+                $detail = "VLAN comparison is required but adapter or switch-port VLAN data is unavailable for uplink(s): $($unknown -join ', ')."
+            }
+            elseif ($unknown.Count -gt 0) {
+                $state = 'NotApplicable'
+                $detail = "Adapter or switch-port VLAN data is unavailable on '$ComputerName' and RequireVlanMatch is false."
+            }
+            else {
+                $detail = "Adapter and switch-port VLAN configuration matches for every uplink on '$ComputerName'."
+            }
+        }
+    }
+    elseif ($Mode -eq 'PortUtilization') {
+        $uplinks = Get-HcsUplinkAdapterName
+        if ($uplinks.Count -eq 0 -or -not (Test-HcsCommand -Name 'Get-NetAdapterStatistics')) {
+            $state = 'NotApplicable'
+            $detail = "Uplink adapters or adapter statistics are unavailable on '$ComputerName'; port utilisation is not evaluated."
+        }
+        else {
+            $rates = Get-HcsAdapterRateSample -Name $uplinks -Seconds $SampleSeconds
+            $critical = [System.Collections.Generic.List[string]]::new()
+            $warning = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapterName in $rates.Keys) {
+                $adapter = Get-NetAdapter -Name $adapterName -ErrorAction SilentlyContinue | Select-Object -First 1
+                $speedMbps = Get-HcsAdapterSpeedMbps -Adapter $adapter
+                if ($speedMbps -le 0) { continue }
+                $bitsPerSecond = ($rates[$adapterName].ReceivedBytesPerSecond + $rates[$adapterName].SentBytesPerSecond) * 8
+                $percent = [math]::Round([math]::Min(100, ($bitsPerSecond / ($speedMbps * 1000000.0)) * 100), 1)
+                if ($percent -ge $CriticalUtilizationPercent) { $critical.Add("port serving uplink '$adapterName' at $percent percent") }
+                elseif ($percent -ge $WarningUtilizationPercent) { $warning.Add("port serving uplink '$adapterName' at $percent percent") }
+            }
+            if ($critical.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Switch port utilisation on '$ComputerName' is at or above the critical threshold of $CriticalUtilizationPercent percent: $($critical -join '; ')."
+            }
+            elseif ($warning.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "Switch port utilisation on '$ComputerName' is at or above the warning threshold of $WarningUtilizationPercent percent: $($warning -join '; ')."
+            }
+            else {
+                $detail = "Switch port utilisation on '$ComputerName' is below the warning threshold of $WarningUtilizationPercent percent across $($rates.Count) uplink(s)."
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Physical-network integration probe failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.IntegrationHealth.ps1', 8803, 1, $detail)
+}
+
+$bag.AddValue('PhysicalNetworkIntegrationState', $state)
+$bag.AddValue('PhysicalNetworkIntegrationStateDetail', $detail)
+$api.Return($bag)

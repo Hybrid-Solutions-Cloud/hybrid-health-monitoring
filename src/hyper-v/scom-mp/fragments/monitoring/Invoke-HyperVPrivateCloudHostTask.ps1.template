@@ -1,0 +1,181 @@
+#Requires -Version 7.0
+# Operator tasks for the Hyper-V host and its virtual machines. Read-only actions come first in the
+# ValidateSet (the probe smoke test runs the first one); remediation actions change state and are
+# exposed as separate Task elements that the console asks the operator to confirm.
+param(
+    [ValidateSet('VmInventory', 'HostHeadroom', 'EventTail', 'LiveMigrationSettings', 'SwitchConfiguration', 'PendingReboot', 'PipelineSelfTest', 'HyperVBpa',
+        'VmDetail', 'VmPerformance', 'VmReplica',
+        'RestartVmms', 'RestartVmCompute', 'StartVm', 'StopVm', 'SaveVm', 'ResumeVm', 'RestartVm', 'MergeCheckpoints', 'CreateCheckpoint', 'ResumeReplication', 'MoveVmToBestNode')]
+    [string]$Action = 'VmInventory',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+function Import-HcsModule { param([string]$Name)
+    if (-not (Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue)) { return $false }
+    Import-Module -Name $Name -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    return $true
+}
+function Get-HcsVm {
+    if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the VM Id or name.' }
+    $vm = $null
+    try { $vm = Get-VM -Id $Parameter -ErrorAction Stop } catch { $vm = $null }
+    if ($null -eq $vm) { $vm = Get-VM -Name $Parameter -ErrorAction Stop | Select-Object -First 1 }
+    return $vm
+}
+
+$lines.Add("Hyper-V Private Cloud task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    if (-not (Import-HcsModule -Name 'Hyper-V')) { throw 'The Hyper-V PowerShell module is not available on this host.' }
+    switch ($Action) {
+        'VmInventory' {
+            Add-HcsSection 'Virtual machines'
+            Add-HcsText (Get-VM | Sort-Object Name | Select-Object Name, State, Status, Uptime, ProcessorCount, @{ n = 'MemoryAssignedMB'; e = { [int]($_.MemoryAssigned / 1MB) } }, DynamicMemoryEnabled, Version, Generation, IsClustered, AutomaticStartAction | Format-Table -AutoSize)
+        }
+        'HostHeadroom' {
+            $hostInfo = Get-VMHost
+            $os = Get-CimInstance Win32_OperatingSystem
+            $vms = @(Get-VM)
+            Add-HcsSection 'Host'
+            Add-HcsText ([pscustomobject]@{
+                    LogicalProcessors = $hostInfo.LogicalProcessorCount
+                    VirtualProcessorsAssignedToRunningVMs = (($vms | Where-Object State -eq 'Running' | Measure-Object -Property ProcessorCount -Sum).Sum)
+                    MemoryTotalMB = [int]($hostInfo.MemoryCapacity / 1MB)
+                    MemoryFreeMB = [int]($os.FreePhysicalMemory / 1KB)
+                    MemoryAssignedToVMsMB = [int](($vms | Measure-Object -Property MemoryAssigned -Sum).Sum / 1MB)
+                    MemoryDemandOfVMsMB = [int](($vms | Measure-Object -Property MemoryDemand -Sum).Sum / 1MB)
+                    NumaSpanningEnabled = $hostInfo.NumaSpanningEnabled
+                    RunningVMs = @($vms | Where-Object State -eq 'Running').Count
+                    TotalVMs = $vms.Count
+                } | Format-List)
+            Add-HcsSection 'NUMA'
+            Add-HcsText ($hostInfo.NumaStatus | Format-Table -AutoSize)
+        }
+        'EventTail' {
+            $max = if ($Parameter -match '^\d+$') { [int]$Parameter } else { 25 }
+            foreach ($log in @('Microsoft-Windows-Hyper-V-VMMS-Admin', 'Microsoft-Windows-Hyper-V-Worker-Admin', 'Microsoft-Windows-Hyper-V-Hypervisor-Admin', 'Microsoft-Windows-Hyper-V-StorageVSP-Admin', 'Microsoft-Windows-Hyper-V-Config-Admin')) {
+                Add-HcsSection "$log (last $max errors/warnings)"
+                try { Add-HcsText (Get-WinEvent -FilterHashtable @{ LogName = $log; Level = @(1, 2, 3) } -MaxEvents $max -ErrorAction Stop | Select-Object TimeCreated, Id, LevelDisplayName, @{ n = 'Message'; e = { ($_.Message -split "`n")[0] } } | Format-Table -AutoSize -Wrap) }
+                catch { $lines.Add("  (no events or log unavailable: $($_.Exception.Message))") }
+            }
+        }
+        'LiveMigrationSettings' {
+            Add-HcsSection 'Live migration'
+            Add-HcsText (Get-VMHost | Select-Object VirtualMachineMigrationEnabled, VirtualMachineMigrationAuthenticationType, VirtualMachineMigrationPerformanceOption, MaximumVirtualMachineMigrations, MaximumStorageMigrations, UseAnyNetworkForMigration | Format-List)
+            Add-HcsText (Get-VMMigrationNetwork -ErrorAction SilentlyContinue | Format-Table -AutoSize)
+            Add-HcsSection 'Recent migration events (VMMS 20xxx/21xxx)'
+            try { Add-HcsText (Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-Hyper-V-VMMS-Admin'; Id = @(20413, 20417, 21501, 21502, 21125, 21024) } -MaxEvents 20 -ErrorAction Stop | Select-Object TimeCreated, Id, @{ n = 'Message'; e = { ($_.Message -split "`n")[0] } } | Format-Table -AutoSize -Wrap) } catch { $lines.Add('  (none)') }
+        }
+        'SwitchConfiguration' {
+            Add-HcsSection 'Virtual switches'
+            Add-HcsText (Get-VMSwitch | Select-Object Name, SwitchType, EmbeddedTeamingEnabled, IovEnabled, BandwidthReservationMode, NetAdapterInterfaceDescriptions | Format-List)
+            Add-HcsSection 'SET team members'
+            Add-HcsText (Get-VMSwitchTeam -ErrorAction SilentlyContinue | Format-List)
+            Add-HcsSection 'Physical adapters'
+            Add-HcsText (Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Select-Object Name, InterfaceDescription, Status, LinkSpeed, MacAddress, DriverVersion | Format-Table -AutoSize)
+            Add-HcsText (Get-NetAdapterRdma -ErrorAction SilentlyContinue | Select-Object Name, Enabled, OperationalState | Format-Table -AutoSize)
+        }
+        'PendingReboot' {
+            $pending = [ordered]@{
+                ComponentBasedServicing = Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
+                WindowsUpdate = Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+                PendingFileRename = [bool](Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue)
+                LastBootUtc = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o')
+            }
+            Add-HcsSection 'Pending reboot'
+            Add-HcsText ([pscustomobject]$pending | Format-List)
+        }
+        'PipelineSelfTest' {
+            Add-HcsSection 'Monitoring pipeline'
+            Add-HcsText ([pscustomobject]@{
+                    PowerShell = $PSVersionTable.PSVersion.ToString()
+                    Process = (Get-Process -Id $PID).Path
+                    HyperVModule = (Get-Module Hyper-V -ListAvailable | Select-Object -First 1).Version.ToString()
+                    FailoverClustersModule = [bool](Get-Module FailoverClusters -ListAvailable)
+                    StorageModule = [bool](Get-Module Storage -ListAvailable)
+                    HypervisorPresent = (Get-CimInstance Win32_ComputerSystem).HypervisorPresent
+                    VmmsService = (Get-Service vmms -ErrorAction SilentlyContinue).Status
+                    VmComputeService = (Get-Service vmcompute -ErrorAction SilentlyContinue).Status
+                    GetVmWorks = $(try { $null = Get-VM; $true } catch { $_.Exception.Message })
+                    HealthServiceRunning = (Get-Service HealthService -ErrorAction SilentlyContinue).Status
+                } | Format-List)
+        }
+        'HyperVBpa' {
+            Add-HcsSection 'Hyper-V Best Practices Analyzer'
+            if (Get-Command Invoke-BpaModel -ErrorAction SilentlyContinue) {
+                $null = Invoke-BpaModel -ModelId 'Microsoft/Windows/Hyper-V' -ErrorAction Stop
+                Add-HcsText (Get-BpaResult -ModelId 'Microsoft/Windows/Hyper-V' -ErrorAction Stop | Where-Object { $_.Severity -ne 'Information' -and -not $_.Compliance.StartsWith('Compliant') } | Select-Object Severity, Category, Title | Format-Table -AutoSize -Wrap)
+            }
+            else { $lines.Add('The BestPractices module is not available on this host.') }
+        }
+        'VmDetail' {
+            $vm = Get-HcsVm
+            Add-HcsSection "VM $($vm.Name)"
+            Add-HcsText ($vm | Select-Object Name, Id, State, Status, Uptime, Version, Generation, ProcessorCount, DynamicMemoryEnabled, @{ n = 'MemoryStartupMB'; e = { [int]($_.MemoryStartup / 1MB) } }, @{ n = 'MemoryAssignedMB'; e = { [int]($_.MemoryAssigned / 1MB) } }, @{ n = 'MemoryDemandMB'; e = { [int]($_.MemoryDemand / 1MB) } }, CheckpointType, AutomaticStartAction, AutomaticStopAction, IsClustered, ReplicationMode, ReplicationHealth | Format-List)
+            Add-HcsSection 'Integration services'
+            Add-HcsText (Get-VMIntegrationService -VM $vm | Select-Object Name, Enabled, PrimaryStatusDescription | Format-Table -AutoSize)
+            Add-HcsSection 'Network adapters'
+            Add-HcsText (Get-VMNetworkAdapter -VM $vm | Select-Object Name, SwitchName, MacAddress, Status, @{ n = 'IP'; e = { $_.IPAddresses -join ',' } }, @{ n = 'VLAN'; e = { ($_ | Get-VMNetworkAdapterVlan).OperationMode } } | Format-Table -AutoSize)
+            Add-HcsSection 'Virtual hard disks and chain'
+            foreach ($drive in Get-VMHardDiskDrive -VM $vm) {
+                $lines.Add("  $($drive.ControllerType) $($drive.ControllerNumber):$($drive.ControllerLocation) $($drive.Path)")
+                $path = $drive.Path
+                while ($path) {
+                    $vhd = Get-VHD -Path $path -ErrorAction SilentlyContinue
+                    if ($null -eq $vhd) { break }
+                    $lines.Add(("    {0} {1} size={2} GB file={3} GB parent={4}" -f $vhd.VhdFormat, $vhd.VhdType, [math]::Round($vhd.Size / 1GB, 1), [math]::Round($vhd.FileSize / 1GB, 1), $vhd.ParentPath))
+                    $path = $vhd.ParentPath
+                }
+            }
+            Add-HcsSection 'Checkpoints'
+            Add-HcsText (Get-VMSnapshot -VM $vm -ErrorAction SilentlyContinue | Select-Object Name, SnapshotType, CreationTime, ParentSnapshotName | Format-Table -AutoSize)
+        }
+        'VmPerformance' {
+            $vm = Get-HcsVm
+            Add-HcsSection "Resource metering for $($vm.Name)"
+            if (-not $vm.ResourceMeteringEnabled) { $lines.Add('Resource metering is not enabled for this VM (Enable-VMResourceMetering); showing live counters instead.') }
+            else { Add-HcsText (Measure-VM -VM $vm | Format-List) }
+            $counters = @("\Hyper-V Hypervisor Virtual Processor($($vm.Name -replace '[\\/()#]', '_'):Hv VP *)\% Total Run Time", '\Hyper-V Dynamic Memory VM(*)\Current Pressure')
+            foreach ($c in $counters) { try { Add-HcsText ((Get-Counter -Counter $c -ErrorAction Stop).CounterSamples | Select-Object Path, CookedValue | Format-Table -AutoSize) } catch { } }
+        }
+        'VmReplica' {
+            $vm = Get-HcsVm
+            Add-HcsSection "Replication for $($vm.Name)"
+            Add-HcsText (Get-VMReplication -VM $vm -ErrorAction SilentlyContinue | Format-List)
+            Add-HcsText (Measure-VMReplication -VM $vm -ErrorAction SilentlyContinue | Format-List)
+        }
+        'RestartVmms' { Restart-Service -Name vmms -Force -ErrorAction Stop; Add-HcsText (Get-Service vmms | Format-Table -AutoSize) }
+        'RestartVmCompute' { Restart-Service -Name vmcompute -Force -ErrorAction Stop; Add-HcsText (Get-Service vmcompute | Format-Table -AutoSize) }
+        'StartVm' { $vm = Get-HcsVm; Start-VM -VM $vm -ErrorAction Stop; Add-HcsText (Get-VM -Id $vm.Id | Select-Object Name, State, Status | Format-Table -AutoSize) }
+        'StopVm' { $vm = Get-HcsVm; Stop-VM -VM $vm -Force -ErrorAction Stop; Add-HcsText (Get-VM -Id $vm.Id | Select-Object Name, State, Status | Format-Table -AutoSize) }
+        'SaveVm' { $vm = Get-HcsVm; Save-VM -VM $vm -ErrorAction Stop; Add-HcsText (Get-VM -Id $vm.Id | Select-Object Name, State, Status | Format-Table -AutoSize) }
+        'ResumeVm' { $vm = Get-HcsVm; Resume-VM -VM $vm -ErrorAction Stop; Add-HcsText (Get-VM -Id $vm.Id | Select-Object Name, State, Status | Format-Table -AutoSize) }
+        'RestartVm' { $vm = Get-HcsVm; Restart-VM -VM $vm -Force -ErrorAction Stop; Add-HcsText (Get-VM -Id $vm.Id | Select-Object Name, State, Status | Format-Table -AutoSize) }
+        'MergeCheckpoints' {
+            $vm = Get-HcsVm
+            $checkpoints = @(Get-VMSnapshot -VM $vm -ErrorAction Stop)
+            foreach ($checkpoint in $checkpoints) { Remove-VMSnapshot -VMSnapshot $checkpoint -ErrorAction Stop }
+            $lines.Add("Removed $($checkpoints.Count) checkpoint(s); the merge continues in the background (VM status shows 'Merging disks').")
+        }
+        'CreateCheckpoint' { $vm = Get-HcsVm; $cp = Checkpoint-VM -VM $vm -SnapshotName ("SCOM task " + [DateTime]::UtcNow.ToString('yyyy-MM-dd HH:mm')) -Passthru -ErrorAction Stop; Add-HcsText ($cp | Select-Object Name, SnapshotType, CreationTime | Format-List) }
+        'ResumeReplication' { $vm = Get-HcsVm; Resume-VMReplication -VM $vm -ErrorAction Stop; Add-HcsText (Get-VMReplication -VM $vm | Select-Object State, Health, LastReplicationTime | Format-List) }
+        'MoveVmToBestNode' {
+            $vm = Get-HcsVm
+            if (-not (Import-HcsModule -Name 'FailoverClusters')) { throw 'FailoverClusters module unavailable; this task needs a clustered VM.' }
+            $group = Get-ClusterResource -ErrorAction Stop | Where-Object { $_.ResourceType -eq 'Virtual Machine' -and ((Get-ClusterParameter -InputObject $_ -Name VmID -ErrorAction SilentlyContinue).Value -eq [string]$vm.Id) } | Select-Object -First 1 -ExpandProperty OwnerGroup
+            if ($null -eq $group) { throw "VM '$($vm.Name)' is not a clustered role." }
+            Add-HcsText (Move-ClusterVirtualMachineRole -Name $group.Name -MigrationType Live -ErrorAction Stop | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

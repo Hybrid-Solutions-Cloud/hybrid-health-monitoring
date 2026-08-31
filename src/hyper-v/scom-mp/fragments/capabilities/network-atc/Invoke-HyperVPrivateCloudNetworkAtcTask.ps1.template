@@ -1,0 +1,59 @@
+#Requires -Version 7.0
+# Network ATC operator tasks. Read-only actions first; RetryIntent is the only remediation.
+param(
+    [ValidateSet('IntentStatus', 'RdmaAndDcbHealth', 'RetryIntent')]
+    [string]$Action = 'IntentStatus',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+function Import-HcsModule { param([string]$Name) if (-not (Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue)) { return $false }; Import-Module -Name $Name -ErrorAction SilentlyContinue -WarningAction SilentlyContinue; return $true }
+
+$lines.Add("Hyper-V Private Cloud Network ATC task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    switch ($Action) {
+        'IntentStatus' {
+            if (-not (Import-HcsModule -Name 'NetworkATC')) { throw 'The NetworkATC module is not available on this host.' }
+            Add-HcsSection 'Intents'
+            Add-HcsText (Get-NetIntent -ErrorAction SilentlyContinue | Select-Object IntentName, Scope, IsComputeIntentSet, IsStorageIntentSet, IsManagementIntentSet, NetAdapterNamesAsList | Format-Table -AutoSize)
+            Add-HcsSection 'Intent status'
+            Add-HcsText (Get-NetIntentStatus -ErrorAction SilentlyContinue | Select-Object IntentName, Host, ConfigurationStatus, ProvisioningStatus, Error, RetryCount, LastUpdated, LastSuccess | Format-Table -AutoSize -Wrap)
+            Add-HcsSection 'Global overrides'
+            Add-HcsText (Get-NetIntent -GlobalOverrides -ErrorAction SilentlyContinue | Format-List)
+            Add-HcsSection 'Network ATC service and recent events'
+            Add-HcsText (Get-Service NetworkATC -ErrorAction SilentlyContinue | Select-Object Name, Status, StartType | Format-Table -AutoSize)
+            try { Add-HcsText (Get-WinEvent -LogName 'Microsoft-Windows-Networking-NetworkAtc/Operational' -MaxEvents 15 -ErrorAction Stop | Where-Object Level -le 3 | Select-Object TimeCreated, Id, LevelDisplayName, @{ n = 'Message'; e = { ($_.Message -split "`n")[0] } } | Format-Table -AutoSize -Wrap) } catch { $lines.Add('  (no events)') }
+        }
+        'RdmaAndDcbHealth' {
+            Add-HcsSection 'RDMA adapters'
+            Add-HcsText (Get-NetAdapterRdma -ErrorAction SilentlyContinue | Select-Object Name, Enabled, OperationalState, PFC, ETS | Format-Table -AutoSize)
+            Add-HcsSection 'DCBX and flow control'
+            if (Get-Command Get-NetQosDcbxSetting -ErrorAction SilentlyContinue) { Add-HcsText (Get-NetQosDcbxSetting -ErrorAction SilentlyContinue | Format-Table -AutoSize) }
+            if (Get-Command Get-NetQosFlowControl -ErrorAction SilentlyContinue) { Add-HcsText (Get-NetQosFlowControl -ErrorAction SilentlyContinue | Format-Table -AutoSize) }
+            if (Get-Command Get-NetQosTrafficClass -ErrorAction SilentlyContinue) { Add-HcsText (Get-NetQosTrafficClass -ErrorAction SilentlyContinue | Format-Table -AutoSize) }
+            if (Get-Command Get-NetQosPolicy -ErrorAction SilentlyContinue) { Add-HcsText (Get-NetQosPolicy -ErrorAction SilentlyContinue | Select-Object Name, PriorityValue8021Action, NetDirectPortMatchCondition | Format-Table -AutoSize) }
+            Add-HcsSection 'SMB Direct'
+            if (Import-HcsModule -Name 'SmbShare') { Add-HcsText (Get-SmbClientNetworkInterface -ErrorAction SilentlyContinue | Select-Object FriendlyName, RdmaCapable, RssCapable, LinkSpeed | Format-Table -AutoSize) }
+            Add-HcsSection 'RDMA activity counters'
+            try { Add-HcsText ((Get-Counter -Counter @('\RDMA Activity(*)\RDMA Failed Connection Attempts', '\RDMA Activity(*)\RDMA Connection Errors', '\RDMA Activity(*)\RDMA Active Connections') -ErrorAction Stop).CounterSamples | Select-Object InstanceName, @{ n = 'Counter'; e = { ($_.Path -split '\\')[-1] } }, CookedValue | Format-Table -AutoSize) } catch { $lines.Add('  (RDMA counters unavailable)') }
+        }
+        'RetryIntent' {
+            if (-not (Import-HcsModule -Name 'NetworkATC')) { throw 'The NetworkATC module is not available on this host.' }
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the intent name.' }
+            Set-NetIntentRetryState -Name $Parameter -ErrorAction Stop
+            Start-Sleep -Seconds 5
+            Add-HcsText (Get-NetIntentStatus -Name $Parameter -ErrorAction SilentlyContinue | Select-Object IntentName, Host, ConfigurationStatus, ProvisioningStatus, RetryCount | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

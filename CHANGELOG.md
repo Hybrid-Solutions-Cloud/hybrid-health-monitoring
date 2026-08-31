@@ -1,6 +1,29 @@
 # Changelog
 
-## [1.0.0.0] — 2026-08-30
+## [1.0.0.0] — 2026-08-31
+
+**The first release of Hyper-V Private Cloud Monitoring.** 13 permanently sealed Management Packs
+(token `54d0fb1159995c86`), 66 public override packs, 14 deterministic bundles, manifests and
+SHA-256 checksums under `docs/public/downloads/hyper-v-private-cloud/1.0.0.0/` and `latest/`:
+162 unit monitors, 96 dependency roll-ups, 80 rules, 22 discoveries, 112 views, 63 agent tasks,
+4 console tasks and 234 knowledge articles.
+
+This release consolidates everything below. The sealed builds published briefly during
+2026-08-30/31 under versions `1.0.0.0`–`1.4.0.0` were engineering iterations that were never
+deployed to any management group; they were withdrawn and their download artifacts removed
+([ADR 0054](docs/design/decisions/0054-the-real-1000-version-reset.md)). The source tree also lost
+its misleading `v2` directory: the product lives at `src/hyper-v/scom-mp/`, with the abandoned
+pre-rename pack source under `archive/hyperv-scom-mp-legacy/`.
+
+Highlights on top of the section below: cluster-wide facts evaluated once per cluster on a
+cluster-hosted role; host-wide facts (iSCSI/MPIO event counts, ATC ETS/QoS) once per host; **one
+probe run per host** feeding every per-VM, per-LUN, per-session, per-port and per-intent monitor
+and collection rule (cookdown restored across the board); Physical Network link monitors scoped to
+vSwitch-uplink and intent adapters by default; the File Services link to Microsoft's SMB service
+objects as an opt-in discovery; a 63-task operator catalogue; and a probe smoke test that runs
+every embedded script under `pwsh -File` before a release can be cut.
+
+## Withdrawn: engineering build — 2026-08-30 (never deployed; see ADR 0054)
 
 First release of Hyper-V Private Cloud Monitoring under its own product-named identity.
 
@@ -40,13 +63,80 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 * Navigation restructured task-first; architecture decision records moved to their own themed
   section.
 
-## [Unreleased]
+## Consolidated engineering notes (2026-08-30/31, released as 1.0.0.0 above)
 
 * Move the project to `Hybrid-Solutions-Cloud/hybrid-health-monitoring` and publish documentation
   at `https://labs.hybridsolutions.cloud/hybrid-health-monitoring/`.
 
+### Fixed
+
+* Full line-by-line review of the thirteen Hyper-V Private Cloud packs ([ADR 0053](docs/design/decisions/0053-management-pack-review-and-runtime-correctness.md)).
+  The shipped `1.0.0.0` could not have monitored a real host: a non-existent `VMHost.HyperVVersion`
+  property aborted topology discovery on every host, 20 of 27 scripts constructed the script API as a
+  .NET type that does not exist in `pwsh.exe`, nine `[bool]` parameters could not bind the string
+  arguments `pwsh -File` passes, and the generator garbled every property and relationship display
+  name. All four are corrected and guarded by tests.
+* Corrected runtime behaviour found by the same review: CSV objects keyed as Microsoft's CSV pack
+  keys them, quorum vote margin defaults that were permanently Critical on 2–4 node clusters,
+  Dynamic Memory ratios on static-memory VMs, nine Critical states per VM after every live migration,
+  S2D boot-disk false alerts, SAS/RAID multipath warnings, Network ATC blank provisioning status,
+  SDN certificate selection and endpoint counting, VMM agent-drift comparison and cloud capacity
+  cmdlets, alert and performance views targeted at classes that never carried the packs' data, and
+  cookdown broken by mixed intervals inside one data source.
+* Schema faults that only Microsoft VSAE reports: `<Monitors>` child ordering in all nine capability
+  packs and the performance mapper referenced under the wrong alias in the networking packs. All 13
+  packs now verify and seal.
+
+### Added
+
+* Publish Hyper-V Private Cloud Monitoring `1.4.0.0`: 13 permanently sealed MPs (token
+  `54d0fb1159995c86`), 66 public override packs, 14 bundles, manifests and SHA-256 checksums under
+  `docs/public/downloads/hyper-v-private-cloud/1.4.0.0/` and `latest/`: 162 unit monitors, 96
+  dependency roll-ups, 80 rules, 22 discoveries, 112 views, 63 agent tasks, 4 console tasks and
+  234 knowledge articles. `1.3.0.0`, `1.2.0.0` and `1.1.0.0` (same day, before the cluster role and the task
+  catalogue respectively) and `1.0.0.0` (non-functional, ADR 0053) are retained as evidence only;
+  `1.0.0.0` is marked not for deployment.
+* Operator task catalogue: 63 agent tasks across the Monitoring, Cluster, S2D, Storage, File
+  Services, Network ATC, Physical Network, VMM and SDN packs (read-only diagnostics plus clearly
+  labelled remediation tasks, each with knowledge), 4 console tasks (Remote Desktop, Hyper-V
+  Manager, Failover Cluster Manager, VM Connect), a VM-health diagnostic on the expected-state
+  monitor and two recoveries that ship disabled (restart VMMS, resume a paused VM).
+* Probe smoke test that runs every embedded script under `pwsh -File` with its real arguments
+  against a `MOM.ScriptAPI` shim (47 cases) — the layer whose absence let 1.0.0.0 ship.
+* Distributed Application roll-ups redesigned so each branch reflects its own domain (Storage,
+  Networking, Availability, Management, Monitoring Pipeline) with Performance and Configuration
+  roll-ups at both levels; Hyper-V event collection (8 channels) and alert rules (10) with operator
+  knowledge; a product-wide `Hyper-V Private Cloud Objects` group with an All Active Alerts view;
+  SDN host-binding roll-ups and alerting; 41 knowledge articles for Cluster, S2D and File Services
+  monitors that had none; Lab/Standard/Strict tiers for the SDN host-side monitors.
+
 ### Changed
 
+* Host-wide facts are evaluated once per host. The storage iSCSI connection-error, iSCSI
+  authentication-failure and MPIO path-failover monitors target the host role through a shared
+  `HostEvents` monitor type with cookdown-identical configuration (one probe run feeds all three);
+  the Network ATC ETS and QoS traffic-class monitors target the host role (`Get-NetQosTrafficClass`
+  is host-global). Previously each iSCSI session, each LUN and each intent raised the same alert.
+* Physical Network link-state and link-speed monitors evaluate only external-vSwitch uplinks and
+  Network ATC intent adapters by default; the new `IncludeNonUplinkAdapters` override restores the
+  old behaviour. A dark port on a multi-port NIC no longer holds the host Warning forever.
+* The File Services discovery no longer emits a Microsoft SMB service instance for the file servers
+  it sees — that emission rejected the whole discovery batch (event 10801) when the file server's
+  computer object was not in the management group, and created a phantom SMB service where it was.
+  The reference ships as a separate `MicrosoftSmbLink` discovery, disabled by default, for
+  deployments whose SMB file servers are SCOM-managed.
+* Cluster-wide facts are evaluated once per cluster. The 13 cluster-scoped monitors (CSV state,
+  free space and redirected access, quorum, node, network and group state), the two CSV capacity
+  rules and the cluster relationship discovery now target
+  `HyperVPrivateCloud.Capability.Cluster.ClusterRole`, hosted by the cluster core virtual server
+  (`Microsoft.Windows.Cluster.VirtualServer`) so they run on the core-group owner and fail over with
+  it; only the node-local CSV latency and queue monitors remain on the host role. Requires agent
+  proxy on cluster nodes, as the Microsoft Cluster pack already does. Tuning-catalog context class
+  updated accordingly.
+* The four original storage availability monitors (attachment availability/redundancy, iSCSI
+  session availability, Fibre Channel port availability) ship disabled as superseded by the depth
+  monitors; the VLAN-mismatch monitor ships disabled because Windows exposes no LLDP neighbour data.
+  Element IDs are preserved.
 * Run every Hyper-V Private Cloud v2 first-party script through public SCOM command-executor
   wrappers that launch the machine-wide PowerShell 7 MSI path explicitly; add operator-visible
   runtime evidence, the common installation prerequisite, static contract tests, and ADR 0047.

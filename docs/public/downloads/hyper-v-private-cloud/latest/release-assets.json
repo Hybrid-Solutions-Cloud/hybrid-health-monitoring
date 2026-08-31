@@ -6,143 +6,143 @@
   "assets": [
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Complete.zip",
-      "sha256": "b21a0cee16383bffca85d8fd5fd4a0c86d78f8cfd481096adbc56e0f3edb9e26",
-      "bytes": 328808
+      "sha256": "dc91a6322facff3469c533ba9b191661e880f8e84f11a0e9d3a67ff3d730a6c5",
+      "bytes": 867147
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Core.zip",
-      "sha256": "dfb4f4dda32258353f11239c18e1de197aeba4a083e0a331d72179f05811ea08",
-      "bytes": 55008
+      "sha256": "55e0d748219bf2462fc6d0b944cd8d64e2d55b3331ce1fb48c24c532bdc6a99f",
+      "bytes": 134052
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Overrides.zip",
-      "sha256": "5572ffe840e82c775f1188613c29908b08a14cd6499387991ff35ae68a0b6e94",
-      "bytes": 144210
+      "sha256": "4b573a79269f1ece07ca8fa1d318f39c721e7d84e55832092b13bb8fd23db49a",
+      "bytes": 225289
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredPure.zip",
-      "sha256": "78bf77d2c978da62e52b905f51b2fce2d00b082c3a959bcb8d3480f2e5aa70d1",
-      "bytes": 112501
+      "sha256": "744c5cd5cf03eb2c1c27dbe625983e933d2996eeec942e245241d6df26fa5897",
+      "bytes": 369169
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredS2D.zip",
-      "sha256": "24659f8dace6e5c116825d032953de65a4cf4b669d6aab34ffd7fc44445e46dc",
-      "bytes": 95132
+      "sha256": "125f582091b233b2acfd29796c08ba406d5cbadf79b120992bef794378ef62ce",
+      "bytes": 237417
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredSAN.zip",
-      "sha256": "e6220450564af95708e44c1e085587ce1e6ea6f0662478bf3d1bce0ce953ab56",
-      "bytes": 98662
+      "sha256": "73e7af35c2f63eb23016c1a7c7620cb69262fe7a74c9d705c494b0650b04b1f8",
+      "bytes": 355272
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-CompletePrivateCloud.zip",
-      "sha256": "d70a6bef3d4482300e7555012a8b345579274af5b153adae79b9e931d62b23c2",
-      "bytes": 207541
+      "sha256": "ffa093b6337b34f39c953b48e4b57a035028de926ba50e0dc0b807a0b3a979a3",
+      "bytes": 686515
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-HybridPureAndS2D.zip",
-      "sha256": "e7068b2bf574638c2f65214ffe2b9346b9866c03100604f540cea2b775ceef58",
-      "bytes": 130428
+      "sha256": "d89364b7d0b12474a4dee6d2975cfec181eceb26f6ae0ca424d520d2aa766b21",
+      "bytes": 415691
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-HybridSANAndS2D.zip",
-      "sha256": "a34d7703219c3c8da043721c272487e1cde69c74365ffd55d6e9190572efbfce",
-      "bytes": 116603
+      "sha256": "e59f8c071715d447035348ab758f104f6885c04cc641466c3236fdc65833d812",
+      "bytes": 401794
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-HyperVOverSMB.zip",
-      "sha256": "4ef1731c56f053118d3df3615a1813c02dee0834387f73cd27b290d2ab84f5c5",
-      "bytes": 91640
+      "sha256": "9e8980992934b00ebe1a5282134bcb5c4bc65f7e104843324854444f0e3393e9",
+      "bytes": 241398
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-NetworkATC.zip",
-      "sha256": "6368c637439fd396a6affccbccc878d9d89f89e17043a74a378cbdd2f7b77088",
-      "bytes": 84696
+      "sha256": "f306749a00dc3649777e85b7cef7b0abd6d4b060658e41af4902cc7872307839",
+      "bytes": 216585
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-SDNEnabled.zip",
-      "sha256": "adf0dafeecfa97640106c3f07b1291762e9ebd77afe5176f55a544955bf17b5b",
-      "bytes": 79814
+      "sha256": "c720e20e300d93fe6d5936effd2a1efc94c10995911dab8668652091d0406207",
+      "bytes": 190664
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-Standalone.zip",
-      "sha256": "de4cedf5779c0ba3c67eb3f9c224ecf2737cf2be13bbcfd33cc9117d50c59467",
-      "bytes": 65989
+      "sha256": "225c7e03f87763a0a53a64f4e5217476e882804138000f62aad2eb9bb5cde517",
+      "bytes": 146823
     },
     {
       "file": "Hyper-V-Private-Cloud-Monitoring-Profile-VMMManaged.zip",
-      "sha256": "a485eed0c7ef7b321bc5e0ed828995cf1b9e9baeac13ca8f00dff5c6afa933ea",
-      "bytes": 86122
+      "sha256": "a79e341e8dbcb0d79082dba263b6cb157b7ad3680c63911b65bcb814dd0d4a91",
+      "bytes": 206920
     },
     {
       "file": "HyperVPrivateCloud.Capability.Cluster.mp",
-      "sha256": "2e370a97b5c9cc1adbf5f02337f6e934eb3fcf2bda6b646852e66f840f124fbb",
-      "bytes": 13312
+      "sha256": "03a8028772d933fcd4a7deb0bf3ecd623327dab927d661d0790297234f853220",
+      "bytes": 57344
     },
     {
       "file": "HyperVPrivateCloud.Capability.FileServices.mp",
-      "sha256": "070b2f395b5bcda91cb8de233d13be1a74384fc8adfd96be9e4accba030f8add",
-      "bytes": 16384
+      "sha256": "209d04d9329e0da2e2bc348394116124c25a91edcf46017b2a6d65e1be4d2bcd",
+      "bytes": 61440
     },
     {
       "file": "HyperVPrivateCloud.Capability.NetworkATC.mp",
-      "sha256": "0c8576c23a70f0d9c13e6fa400449730f0d178ae4df666807f8e07c2b66bf6f2",
-      "bytes": 32768
+      "sha256": "28c66c0a140edf810a3843a21b8b3915d7e222a655e78d72c0d753eba46ad9ec",
+      "bytes": 81920
     },
     {
       "file": "HyperVPrivateCloud.Capability.PhysicalNetwork.mp",
-      "sha256": "c9d85f26bd801bc93ebfe7776cdc0da0a07191b30f7ce201ec6dbaba572aa065",
-      "bytes": 12800
+      "sha256": "5a80491cc57b7254b877b49404ebe1e7514abc5db8dc49e9003cb56ed5b47c63",
+      "bytes": 61440
     },
     {
       "file": "HyperVPrivateCloud.Capability.PureStorage.mp",
-      "sha256": "9bdb9c582f31b4e12b54f890e07ea6ef8d44f7c3618ceb20632bc59dd7333880",
+      "sha256": "8cb434e488cd488463fae9db0767feccb203ce42b84bf272215e175994662a1b",
       "bytes": 15872
     },
     {
       "file": "HyperVPrivateCloud.Capability.S2D.mp",
-      "sha256": "f4f5c6697973e9cc3923e9666d76b22154bc821a8743beb0a80091c8977b77ed",
-      "bytes": 32768
+      "sha256": "cd977d276be49d083f583940c26fbdb93436c2f249d122bd50509e4055b83172",
+      "bytes": 61440
     },
     {
       "file": "HyperVPrivateCloud.Capability.SDN.mp",
-      "sha256": "88e29557a17f7c5de88519955a7b06734df4e446c0612f3b8b7afe3484f992c1",
-      "bytes": 15872
+      "sha256": "843b3188b6f9f77d88f84011c23be0fed6592944fd9e03d9b11c718a43911c3f",
+      "bytes": 57344
     },
     {
       "file": "HyperVPrivateCloud.Capability.Storage.mp",
-      "sha256": "53654f5446584c806270e98f555099f2e24fd41a106feeae50e820d7c49d8d8d",
-      "bytes": 32768
+      "sha256": "ce90ddbbb64b549f29761c1cf3da38b4ca3a57997eedc9fa46fa75b62fbf996e",
+      "bytes": 188416
     },
     {
       "file": "HyperVPrivateCloud.Capability.VMM.mp",
-      "sha256": "4a55606845c5927d6ed4bb8e2dbcde21f2b36537d7c2f0119028e3498766eaf8",
-      "bytes": 32768
+      "sha256": "78780f3763f0be62059339430a4f06bdc3a2d3b20a5233bcd3c84977c4b50eb5",
+      "bytes": 73728
     },
     {
       "file": "HyperVPrivateCloud.Discovery.mp",
-      "sha256": "ecf224d083108ea60d95778e690571363e98d9cce33dabd6ab1bd16d0307a6d8",
-      "bytes": 11776
+      "sha256": "0a5805db15b0ee73e59bfb396e7fb39157e4b3cd780186791b1c2d8d0b9ad5f2",
+      "bytes": 24576
     },
     {
       "file": "HyperVPrivateCloud.Library.mp",
-      "sha256": "0ff5e6b3f7ac18cef51cb5bac6a6c9202385b9cb157c7c1594728de40299f4e6",
-      "bytes": 11776
+      "sha256": "d1ead3755e600e389f3e5f540b538cd6beeb45aa33d47c64e188e492f214c767",
+      "bytes": 11264
     },
     {
       "file": "HyperVPrivateCloud.Monitoring.mp",
-      "sha256": "be56b928eaea8e4c7400a37a67f70ba2f0865cb35a0e6937f50a96e5317d5e2b",
-      "bytes": 36864
+      "sha256": "701f3d1f4a2386a392751a6376a1dd058fa3887209e39587c75aa977d78b61d0",
+      "bytes": 118784
     },
     {
       "file": "HyperVPrivateCloud.Presentation.mp",
-      "sha256": "db0f9d3cfe453e19d025d9ee2ddf0ff796f87083f77b12b12fe6a9d8f61715da",
-      "bytes": 7680
+      "sha256": "7322c37fa03e5f182cc8eb4b439dfe3629b114817101474e5583b92dfe7630b9",
+      "bytes": 8704
     },
     {
       "file": "release-manifest.json",
-      "sha256": "f8f86c70de880da1a10de1c8d27ab278111e60e6abef6e69e580bc7ad18dd7db",
-      "bytes": 37398
+      "sha256": "99069d541d7f762d1555f3f84c2a19ea9dedea4d3149796f24b44911bed75790",
+      "bytes": 38109
     }
   ]
 }

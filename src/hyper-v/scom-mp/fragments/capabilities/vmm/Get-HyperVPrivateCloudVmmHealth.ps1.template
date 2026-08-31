@@ -1,0 +1,616 @@
+#Requires -Version 7.0
+param(
+    [string]$ComputerName,
+    [int]$JobLookbackHours = 24,
+    [int]$FailedJobCriticalCount = 1,
+    [ValidateSet('Core', 'ManagementService', 'AgentCommunication', 'AgentVersionDrift', 'LogicalNetwork', 'VMNetwork', 'VMNetworkBinding', 'VirtualSwitchUplink', 'HostGroupCapacity', 'CloudCapacity', 'JobFailureRate', 'ProTip', 'Performance')][string]$Mode = 'Core',
+    [string]$Counter,
+    [int]$WarningCpuPercent = 75,
+    [int]$CriticalCpuPercent = 90,
+    [int]$WarningMemoryPercent = 80,
+    [int]$CriticalMemoryPercent = 92,
+    [int]$WarningStoragePercent = 80,
+    [int]$CriticalStoragePercent = 90,
+    [int]$WarningJobFailurePercent = 10,
+    [int]$CriticalJobFailurePercent = 25,
+    [int]$MinimumJobSampleCount = 5,
+    [int]$MaxAgentVersionDriftCount = 0,
+    [int]$WarningProTipCount = 1,
+    [int]$CriticalProTipCount = 5,
+    [string]$RequireVmNetworkBinding = 'true'
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+# pwsh -File delivers every argument as a string, and [bool] parameters refuse the strings 'true'/'false' that
+# the data-source Arguments pass. Declare them as strings and coerce once here; empty means false.
+[bool]$RequireVmNetworkBinding = ([string]$RequireVmNetworkBinding) -match '^(?i)(true|1|yes)$'
+
+function Get-HcsPropertyValue {
+    param([AllowNull()]$InputObject, [Parameter(Mandatory)][string[]]$Name)
+    if ($null -eq $InputObject) { return $null }
+    foreach ($candidate in $Name) {
+        $property = $InputObject.PSObject.Properties[$candidate]
+        if ($null -ne $property -and $null -ne $property.Value) { return $property.Value }
+    }
+    return $null
+}
+
+function Test-HcsCommand {
+    param([Parameter(Mandatory)][string]$Name)
+    return $null -ne (Get-Command -Name $Name -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsDouble {
+    param([AllowNull()]$Value)
+    if ($null -eq $Value) { return 0.0 }
+    $parsed = 0.0
+    if ([double]::TryParse([string]$Value, [ref]$parsed)) { return $parsed }
+    return 0.0
+}
+
+function Get-HcsPercentUsed {
+    param([AllowNull()]$Used, [AllowNull()]$Total)
+    $totalValue = Get-HcsDouble $Total
+    if ($totalValue -le 0) { return -1 }
+    $usedValue = Get-HcsDouble $Used
+    return [math]::Round([math]::Min(100, [math]::Max(0, ($usedValue / $totalValue) * 100)), 1)
+}
+
+function Import-HcsVmmModule {
+    $module = Get-Module -ListAvailable -Name 'VirtualMachineManager' | Select-Object -First 1
+    if ($null -eq $module) {
+        throw 'The VirtualMachineManager PowerShell module is unavailable. Install the matching VMM console on the VMM management server.'
+    }
+    Import-Module -Name $module.Path -ErrorAction Stop
+}
+
+function Get-HcsCapacityRecord {
+    param([Parameter(Mandatory)][string]$Name, [AllowNull()]$CpuPercent, [AllowNull()]$MemoryPercent, [AllowNull()]$StoragePercent)
+    return [pscustomobject]@{
+        Name = $Name
+        CpuPercent = if ($null -eq $CpuPercent) { -1 } else { [double]$CpuPercent }
+        MemoryPercent = if ($null -eq $MemoryPercent) { -1 } else { [double]$MemoryPercent }
+        StoragePercent = if ($null -eq $StoragePercent) { -1 } else { [double]$StoragePercent }
+    }
+}
+
+function Get-HcsHostGroupCapacity {
+    param([Parameter(Mandatory)]$VmmServer)
+    $records = [System.Collections.Generic.List[pscustomobject]]::new()
+    if (-not (Test-HcsCommand -Name 'Get-SCVMHostGroup') -or -not (Test-HcsCommand -Name 'Get-SCVMHost')) { return $records }
+    $hosts = @(Get-SCVMHost -VMMServer $VmmServer -ErrorAction SilentlyContinue)
+    if ($hosts.Count -eq 0) { return $records }
+    $groups = @{}
+    foreach ($vmHost in $hosts) {
+        $groupName = [string](Get-HcsPropertyValue -InputObject (Get-HcsPropertyValue -InputObject $vmHost -Name @('VMHostGroup')) -Name @('Name', 'Path'))
+        if ([string]::IsNullOrWhiteSpace($groupName)) { $groupName = 'All Hosts' }
+        if (-not $groups.ContainsKey($groupName)) { $groups[$groupName] = [System.Collections.Generic.List[object]]::new() }
+        $groups[$groupName].Add($vmHost)
+    }
+    foreach ($groupName in $groups.Keys) {
+        $totalMemory = 0.0; $availableMemory = 0.0
+        $totalStorage = 0.0; $availableStorage = 0.0
+        $logicalProcessors = 0.0; $cpuSamples = [System.Collections.Generic.List[double]]::new()
+        $assignedProcessors = 0.0
+        foreach ($vmHost in $groups[$groupName]) {
+            $totalMemory += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('TotalMemory'))
+            $availableMemory += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('AvailableMemory'))
+            $totalStorage += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('TotalStorageCapacity'))
+            $availableStorage += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('AvailableStorageCapacity'))
+            $logicalProcessors += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('LogicalProcessorCount', 'LogicalProcessors'))
+            $assignedProcessors += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('AssignedVirtualProcessorCount'))
+            $sample = Get-HcsPropertyValue -InputObject $vmHost -Name @('CPUUtilization', 'CpuUtilization', 'CPUPercentageUsage')
+            if ($null -ne $sample) { $cpuSamples.Add((Get-HcsDouble $sample)) }
+        }
+        $cpuPercent = if ($cpuSamples.Count -gt 0) { [math]::Round(($cpuSamples | Measure-Object -Average).Average, 1) }
+        elseif ($logicalProcessors -gt 0 -and $assignedProcessors -gt 0) { Get-HcsPercentUsed -Used $assignedProcessors -Total $logicalProcessors }
+        else { -1 }
+        $memoryPercent = Get-HcsPercentUsed -Used ($totalMemory - $availableMemory) -Total $totalMemory
+        $storagePercent = Get-HcsPercentUsed -Used ($totalStorage - $availableStorage) -Total $totalStorage
+        $records.Add((Get-HcsCapacityRecord -Name $groupName -CpuPercent $cpuPercent -MemoryPercent $memoryPercent -StoragePercent $storagePercent))
+    }
+    return $records
+}
+
+function Get-HcsCloudCapacity {
+    param([Parameter(Mandatory)]$VmmServer)
+    $records = [System.Collections.Generic.List[pscustomobject]]::new()
+    if (-not (Test-HcsCommand -Name 'Get-SCCloud')) { return $records }
+    $hasCapacityCmdlets = (Test-HcsCommand -Name 'Get-SCCloudCapacity') -and (Test-HcsCommand -Name 'Get-SCCloudUsage')
+    foreach ($cloud in @(Get-SCCloud -VMMServer $VmmServer -ErrorAction SilentlyContinue)) {
+        $name = [string](Get-HcsPropertyValue -InputObject $cloud -Name @('Name'))
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        if ($hasCapacityCmdlets) {
+            # VMM documents capacity and usage on Get-SCCloudCapacity / Get-SCCloudUsage, not on the Cloud object.
+            # A capacity dimension flagged Use*Maximum is unlimited and is reported as -1 (not applicable).
+            $capacity = $null; $usage = $null
+            try { $capacity = Get-SCCloudCapacity -Cloud $cloud -ErrorAction Stop } catch { $capacity = $null }
+            try { $usage = Get-SCCloudUsage -Cloud $cloud -ErrorAction Stop } catch { $usage = $null }
+            if ($null -ne $capacity -and $null -ne $usage) {
+                $cpuUnlimited = [bool](Get-HcsPropertyValue -InputObject $capacity -Name @('UseCPUCountMaximum'))
+                $memUnlimited = [bool](Get-HcsPropertyValue -InputObject $capacity -Name @('UseMemoryMBMaximum'))
+                $stgUnlimited = [bool](Get-HcsPropertyValue -InputObject $capacity -Name @('UseStorageGBMaximum'))
+                $cpuPercent = if ($cpuUnlimited) { -1 } else { Get-HcsPercentUsed -Used (Get-HcsPropertyValue -InputObject $usage -Name @('CPUCount', 'CPUUsageCount')) -Total (Get-HcsPropertyValue -InputObject $capacity -Name @('CPUCount')) }
+                $memoryPercent = if ($memUnlimited) { -1 } else { Get-HcsPercentUsed -Used (Get-HcsPropertyValue -InputObject $usage -Name @('MemoryMB', 'MemoryUsageMB')) -Total (Get-HcsPropertyValue -InputObject $capacity -Name @('MemoryMB')) }
+                $storagePercent = if ($stgUnlimited) { -1 } else { Get-HcsPercentUsed -Used (Get-HcsPropertyValue -InputObject $usage -Name @('StorageGB', 'StorageUsageGB')) -Total (Get-HcsPropertyValue -InputObject $capacity -Name @('StorageGB')) }
+                $records.Add((Get-HcsCapacityRecord -Name $name -CpuPercent $cpuPercent -MemoryPercent $memoryPercent -StoragePercent $storagePercent))
+                continue
+            }
+        }
+        $cpuPercent = Get-HcsPercentUsed -Used (Get-HcsPropertyValue -InputObject $cloud -Name @('UsedCPUCount', 'CPUUsageCount', 'UsedCPU')) -Total (Get-HcsPropertyValue -InputObject $cloud -Name @('CPUCount', 'TotalCPUCount'))
+        $memoryPercent = Get-HcsPercentUsed -Used (Get-HcsPropertyValue -InputObject $cloud -Name @('UsedMemoryMB', 'MemoryUsageMB')) -Total (Get-HcsPropertyValue -InputObject $cloud -Name @('MemoryMB', 'TotalMemoryMB'))
+        $storagePercent = Get-HcsPercentUsed -Used (Get-HcsPropertyValue -InputObject $cloud -Name @('UsedStorageGB', 'StorageUsageGB')) -Total (Get-HcsPropertyValue -InputObject $cloud -Name @('StorageGB', 'TotalStorageGB'))
+        $records.Add((Get-HcsCapacityRecord -Name $name -CpuPercent $cpuPercent -MemoryPercent $memoryPercent -StoragePercent $storagePercent))
+    }
+    return $records
+}
+
+function Get-HcsCapacityState {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Record,
+        [Parameter(Mandatory)][string]$Subject,
+        [Parameter(Mandatory)][int]$WarningCpu, [Parameter(Mandatory)][int]$CriticalCpu,
+        [Parameter(Mandatory)][int]$WarningMemory, [Parameter(Mandatory)][int]$CriticalMemory,
+        [Parameter(Mandatory)][int]$WarningStorage, [Parameter(Mandatory)][int]$CriticalStorage
+    )
+    if ($Record.Count -eq 0) {
+        return [pscustomobject]@{ State = 'NotApplicable'; Detail = "No $Subject capacity data is published by this VMM server." }
+    }
+    $critical = [System.Collections.Generic.List[string]]::new()
+    $warning = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in $Record) {
+        foreach ($metric in @(
+                @('processor', $item.CpuPercent, $WarningCpu, $CriticalCpu),
+                @('memory', $item.MemoryPercent, $WarningMemory, $CriticalMemory),
+                @('storage', $item.StoragePercent, $WarningStorage, $CriticalStorage))) {
+            $value = [double]$metric[1]
+            if ($value -lt 0) { continue }
+            if ($value -ge [double]$metric[3]) { $critical.Add("$($item.Name) $($metric[0]) at $value percent") }
+            elseif ($value -ge [double]$metric[2]) { $warning.Add("$($item.Name) $($metric[0]) at $value percent") }
+        }
+    }
+    if ($critical.Count -gt 0) {
+        return [pscustomobject]@{ State = 'Critical'; Detail = "$Subject capacity is at or above the critical thresholds (processor $CriticalCpu, memory $CriticalMemory, storage $CriticalStorage percent): $($critical -join '; ')." }
+    }
+    if ($warning.Count -gt 0) {
+        return [pscustomobject]@{ State = 'Warning'; Detail = "$Subject capacity is at or above the warning thresholds (processor $WarningCpu, memory $WarningMemory, storage $WarningStorage percent): $($warning -join '; ')." }
+    }
+    return [pscustomobject]@{ State = 'Good'; Detail = "All $($Record.Count) $Subject record(s) are below the warning thresholds (processor $WarningCpu, memory $WarningMemory, storage $WarningStorage percent)." }
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+
+if ($Mode -eq 'Performance') {
+    $counterName = if ([string]::IsNullOrWhiteSpace($Counter)) { 'Cloud Memory Utilization %' } else { $Counter }
+    $isCloud = $counterName -like 'Cloud *'
+    $objectName = if ($isCloud) { 'HCS VMM Cloud' } else { 'HCS VMM Host Group' }
+    $samples = [System.Collections.Generic.List[pscustomobject]]::new()
+    try {
+        Import-HcsVmmModule
+        $vmmServer = Get-SCVMMServer -ComputerName $ComputerName
+        $records = if ($isCloud) { @(Get-HcsCloudCapacity -VmmServer $vmmServer) } else { @(Get-HcsHostGroupCapacity -VmmServer $vmmServer) }
+        foreach ($record in $records) {
+            $value = switch -Wildcard ($counterName) {
+                '*CPU Utilization*' { $record.CpuPercent }
+                '*Memory Utilization*' { $record.MemoryPercent }
+                '*Storage Utilization*' { $record.StoragePercent }
+                default { -1 }
+            }
+            if ([double]$value -lt 0) { continue }
+            $samples.Add([pscustomobject]@{ Instance = [string]$record.Name; Value = [math]::Round([double]$value, 2) })
+        }
+    }
+    catch {
+        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8904, 2, "VMM capacity performance collection failed on '$ComputerName': $($_.Exception.Message)")
+    }
+
+    # No samples (VMM unreachable or query failed) means no data: never write a synthetic 0 % into the
+    # warehouse. _Total is the mean across instances and is only emitted when instances exist.
+    if ($samples.Count -eq 0) {
+        $api.ReturnItems()
+        return
+    }
+    $total = 0.0
+    foreach ($sample in $samples) { $total += [double]$sample.Value }
+    $total = [math]::Round($total / $samples.Count, 2)
+    $totalBag = $api.CreatePropertyBag()
+    $totalBag.AddValue('ObjectName', $objectName)
+    $totalBag.AddValue('CounterName', $counterName)
+    $totalBag.AddValue('Instance', '_Total')
+    $totalBag.AddValue('Value', [double]$total)
+    $api.AddItem($totalBag)
+    foreach ($sample in $samples) {
+        $sampleBag = $api.CreatePropertyBag()
+        $sampleBag.AddValue('ObjectName', $objectName)
+        $sampleBag.AddValue('CounterName', $counterName)
+        $sampleBag.AddValue('Instance', [string]$sample.Instance)
+        $sampleBag.AddValue('Value', [double]$sample.Value)
+        $api.AddItem($sampleBag)
+    }
+    $api.ReturnItems()
+    return
+}
+
+$bag = $api.CreatePropertyBag()
+
+if ($Mode -eq 'Core') {
+    $integrationState = 'Critical'
+    $integrationDetail = ''
+    $failedJobState = 'Critical'
+    $failedJobDetail = ''
+    $failedJobCount = 0
+
+    try {
+        Import-HcsVmmModule
+
+        foreach ($commandName in @('Get-SCVMMServer', 'Get-SCLogicalNetwork', 'Get-SCLogicalNetworkDefinition', 'Get-SCVMNetwork', 'Get-SCJob')) {
+            if ($null -eq (Get-Command -Name $commandName -ErrorAction SilentlyContinue)) {
+                throw "Required VMM command '$commandName' is unavailable."
+            }
+        }
+
+        $vmmServer = Get-SCVMMServer -ComputerName $ComputerName
+        $logicalNetworks = @(Get-SCLogicalNetwork -VMMServer $vmmServer -All)
+        $networkSiteCount = 0
+        $vmNetworkCount = 0
+        foreach ($logicalNetwork in $logicalNetworks) {
+            $networkSiteCount += @(Get-SCLogicalNetworkDefinition -VMMServer $vmmServer -LogicalNetwork $logicalNetwork -ReturnAllTypes).Count
+            $vmNetworkCount += @(Get-SCVMNetwork -VMMServer $vmmServer -LogicalNetwork $logicalNetwork).Count
+        }
+        $integrationState = 'Good'
+        $integrationDetail = "Connected to VMM '$ComputerName'. Logical networks: $($logicalNetworks.Count); network sites: $networkSiteCount; VM networks: $vmNetworkCount."
+
+        $jobs = @(Get-SCJob -VMMServer $vmmServer -Newest $JobLookbackHours)
+        $failedJobs = @($jobs | Where-Object { [string]$_.Status -eq 'Failed' } | Sort-Object StartTime -Descending)
+        $failedJobCount = $failedJobs.Count
+        if ($failedJobCount -eq 0) {
+            $failedJobState = 'Good'
+            $failedJobDetail = "No failed VMM jobs were found in the last $JobLookbackHours hour(s)."
+        }
+        elseif ($failedJobCount -ge [Math]::Max(1, $FailedJobCriticalCount)) {
+            $failedJobState = 'Critical'
+        }
+        else {
+            $failedJobState = 'Warning'
+        }
+        if ($failedJobCount -gt 0) {
+            $summaries = $failedJobs | Select-Object -First 5 | ForEach-Object {
+                $start = if ($null -ne $_.StartTime) { ([datetime]$_.StartTime).ToUniversalTime().ToString('u') } else { 'unknown time' }
+                '{0} [{1}] at {2}' -f ([string]$_.Name), ([string]$_.ID), $start
+            }
+            $failedJobDetail = "$failedJobCount failed VMM job(s) in the last $JobLookbackHours hour(s): $($summaries -join '; ')"
+        }
+    }
+    catch {
+        $integrationState = 'Critical'
+        $integrationDetail = $_.Exception.Message
+        $failedJobState = 'Critical'
+        $failedJobDetail = "Failed-job status could not be queried because VMM connectivity or capability validation failed: $($_.Exception.Message)"
+    }
+
+    $bag.AddValue('VmmIntegrationState', $integrationState)
+    $bag.AddValue('VmmIntegrationStateDetail', $integrationDetail)
+    $bag.AddValue('FailedJobState', $failedJobState)
+    $bag.AddValue('FailedJobStateDetail', $failedJobDetail)
+    $bag.AddValue('FailedJobCount', $failedJobCount)
+    $api.Return($bag)
+    return
+}
+
+$state = 'Good'
+$detail = "VMM fabric check '$Mode' completed with no finding on '$ComputerName'."
+
+try {
+    Import-HcsVmmModule
+    $vmmServer = Get-SCVMMServer -ComputerName $ComputerName
+
+    if ($Mode -eq 'ManagementService') {
+        $stopped = [System.Collections.Generic.List[string]]::new()
+        $missing = [System.Collections.Generic.List[string]]::new()
+        foreach ($serviceName in @('scvmmservice', 'scvmmagent')) {
+            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            if ($null -eq $service) { $missing.Add($serviceName); continue }
+            if ([string]$service.Status -ne 'Running') { $stopped.Add("$serviceName is '$([string]$service.Status)'") }
+        }
+        if ($stopped.Count -gt 0) {
+            $state = 'Critical'
+            $detail = "VMM management server services are not running on '$ComputerName': $($stopped -join '; ')."
+        }
+        elseif ($missing.Count -gt 0) {
+            $state = 'Warning'
+            $detail = "VMM management server service(s) not installed on '$ComputerName': $($missing -join ', ')."
+        }
+        else {
+            $detail = "The VMM management service and agent are running on '$ComputerName' and the server accepted a read-only connection."
+        }
+    }
+    elseif ($Mode -eq 'AgentCommunication') {
+        if (-not (Test-HcsCommand -Name 'Get-SCVMHost')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCVMHost is unavailable; host agent communication state is not evaluated.'
+        }
+        else {
+            $vmHosts = @(Get-SCVMHost -VMMServer $vmmServer -ErrorAction SilentlyContinue)
+            if ($vmHosts.Count -eq 0) {
+                $state = 'NotApplicable'
+                $detail = "VMM server '$ComputerName' manages no Hyper-V host."
+            }
+            else {
+                $notResponding = [System.Collections.Generic.List[string]]::new()
+                $degraded = [System.Collections.Generic.List[string]]::new()
+                foreach ($vmHost in $vmHosts) {
+                    $name = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('ComputerName', 'Name'))
+                    $communication = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('CommunicationState', 'AgentState'))
+                    $overall = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('OverallState'))
+                    if (-not [string]::IsNullOrWhiteSpace($communication) -and $communication -notin @('Responding', 'OK')) {
+                        $notResponding.Add("$name communication '$communication'")
+                    }
+                    elseif (-not [string]::IsNullOrWhiteSpace($overall) -and $overall -notin @('OK', 'Responding', 'Healthy')) {
+                        $degraded.Add("$name overall state '$overall'")
+                    }
+                }
+                if ($notResponding.Count -gt 0) {
+                    $state = 'Critical'
+                    $detail = "VMM host agents are not responding: $($notResponding -join '; ')."
+                }
+                elseif ($degraded.Count -gt 0) {
+                    $state = 'Warning'
+                    $detail = "VMM hosts report a degraded overall state: $($degraded -join '; ')."
+                }
+                else {
+                    $detail = "All $($vmHosts.Count) VMM-managed host(s) report a responding agent and a healthy overall state."
+                }
+            }
+        }
+    }
+    elseif ($Mode -eq 'AgentVersionDrift') {
+        if (-not (Test-HcsCommand -Name 'Get-SCVMHost')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCVMHost is unavailable; host agent version drift is not evaluated.'
+        }
+        else {
+            $vmHosts = @(Get-SCVMHost -VMMServer $vmmServer -ErrorAction SilentlyContinue)
+            $serverVersion = [string](Get-HcsPropertyValue -InputObject $vmmServer -Name @('Version', 'ProductVersion'))
+            $versions = @{}
+            $drifted = [System.Collections.Generic.List[string]]::new()
+            foreach ($vmHost in $vmHosts) {
+                $name = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('ComputerName', 'Name'))
+                $agentVersion = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('AgentVersion'))
+                if ([string]::IsNullOrWhiteSpace($agentVersion)) { continue }
+                $versions[$agentVersion] = $true
+                # Compare Major.Minor: VMM 2022 agents (10.22.x) and VMM 2025 servers (10.25.x) share the major
+                # version, so a major-only comparison never detects drift.
+                $serverParsed = $null; $agentParsed = $null
+                $serverOk = [version]::TryParse($serverVersion, [ref]$serverParsed)
+                $agentOk = [version]::TryParse($agentVersion, [ref]$agentParsed)
+                if (-not [string]::IsNullOrWhiteSpace($serverVersion)) {
+                    if (-not $serverOk -or -not $agentOk) {
+                        $drifted.Add("$name at agent version '$agentVersion' (unparsable against server '$serverVersion')")
+                    }
+                    elseif ($serverParsed.Major -ne $agentParsed.Major -or $serverParsed.Minor -ne $agentParsed.Minor) {
+                        $drifted.Add("$name at agent version $agentVersion (server $serverVersion)")
+                    }
+                }
+            }
+            if ($versions.Count -eq 0) {
+                $state = 'NotApplicable'
+                $detail = 'No VMM host reports an agent version.'
+            }
+            elseif ($drifted.Count -gt $MaxAgentVersionDriftCount) {
+                $state = 'Critical'
+                $detail = "$($drifted.Count) VMM host agent(s) have drifted from server version '$serverVersion', beyond the allowance of ${MaxAgentVersionDriftCount}: $($drifted -join '; ')."
+            }
+            elseif ($versions.Count -gt 1) {
+                $state = 'Warning'
+                $detail = "VMM hosts report $($versions.Count) distinct agent versions: $(($versions.Keys | Sort-Object) -join ', ')."
+            }
+            else {
+                $detail = "All VMM host agents report a single, consistent version: $(($versions.Keys) -join ', ')."
+            }
+        }
+    }
+    elseif ($Mode -eq 'LogicalNetwork') {
+        if (-not (Test-HcsCommand -Name 'Get-SCLogicalNetwork')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCLogicalNetwork is unavailable; logical network availability is not evaluated.'
+        }
+        else {
+            $logicalNetworks = @(Get-SCLogicalNetwork -VMMServer $vmmServer -All -ErrorAction SilentlyContinue)
+            if ($logicalNetworks.Count -eq 0) {
+                $state = 'Warning'
+                $detail = "VMM server '$ComputerName' publishes no logical network, so no VM network can be bound to fabric."
+            }
+            else {
+                $unusable = [System.Collections.Generic.List[string]]::new()
+                foreach ($logicalNetwork in $logicalNetworks) {
+                    $name = [string](Get-HcsPropertyValue -InputObject $logicalNetwork -Name @('Name'))
+                    $definitions = if (Test-HcsCommand -Name 'Get-SCLogicalNetworkDefinition') {
+                        @(Get-SCLogicalNetworkDefinition -VMMServer $vmmServer -LogicalNetwork $logicalNetwork -ReturnAllTypes -ErrorAction SilentlyContinue)
+                    }
+                    else { @() }
+                    if ($definitions.Count -eq 0) { $unusable.Add("logical network '$name' has no network site") }
+                }
+                if ($unusable.Count -gt 0) {
+                    $state = 'Warning'
+                    $detail = "Logical networks on '$ComputerName' are not fully usable: $($unusable -join '; ')."
+                }
+                else {
+                    $detail = "All $($logicalNetworks.Count) logical network(s) on '$ComputerName' publish at least one network site."
+                }
+            }
+        }
+    }
+    elseif ($Mode -eq 'VMNetwork') {
+        if (-not (Test-HcsCommand -Name 'Get-SCVMNetwork')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCVMNetwork is unavailable; VM network availability is not evaluated.'
+        }
+        else {
+            $vmNetworks = @(Get-SCVMNetwork -VMMServer $vmmServer -ErrorAction SilentlyContinue)
+            if ($vmNetworks.Count -eq 0) {
+                $state = 'Warning'
+                $detail = "VMM server '$ComputerName' publishes no VM network."
+            }
+            else {
+                $problems = [System.Collections.Generic.List[string]]::new()
+                foreach ($vmNetwork in $vmNetworks) {
+                    $name = [string](Get-HcsPropertyValue -InputObject $vmNetwork -Name @('Name'))
+                    $status = [string](Get-HcsPropertyValue -InputObject $vmNetwork -Name @('Status', 'OperatingSystemShutdownEnabled'))
+                    if (-not [string]::IsNullOrWhiteSpace($status) -and $status -in @('Failed', 'Error', 'Missing')) {
+                        $problems.Add("VM network '$name' reports status '$status'")
+                    }
+                }
+                if ($problems.Count -gt 0) {
+                    $state = 'Critical'
+                    $detail = "VM network availability failed on '$ComputerName': $($problems -join '; ')."
+                }
+                else {
+                    $detail = "All $($vmNetworks.Count) VM network(s) on '$ComputerName' are available."
+                }
+            }
+        }
+    }
+    elseif ($Mode -eq 'VMNetworkBinding') {
+        if (-not $RequireVmNetworkBinding) {
+            $state = 'NotApplicable'
+            $detail = 'VM network to logical network binding is not evaluated because RequireVmNetworkBinding is false.'
+        }
+        elseif (-not (Test-HcsCommand -Name 'Get-SCVMNetwork')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCVMNetwork is unavailable; VM network binding is not evaluated.'
+        }
+        else {
+            $vmNetworks = @(Get-SCVMNetwork -VMMServer $vmmServer -ErrorAction SilentlyContinue)
+            $unbound = [System.Collections.Generic.List[string]]::new()
+            foreach ($vmNetwork in $vmNetworks) {
+                $name = [string](Get-HcsPropertyValue -InputObject $vmNetwork -Name @('Name'))
+                $logicalNetwork = Get-HcsPropertyValue -InputObject $vmNetwork -Name @('LogicalNetwork')
+                $logicalNetworkName = [string](Get-HcsPropertyValue -InputObject $logicalNetwork -Name @('Name'))
+                if ([string]::IsNullOrWhiteSpace($logicalNetworkName)) { $unbound.Add("VM network '$name'") }
+            }
+            if ($vmNetworks.Count -eq 0) {
+                $state = 'NotApplicable'
+                $detail = "VMM server '$ComputerName' publishes no VM network to bind."
+            }
+            elseif ($unbound.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "VM networks are not bound to a logical network on '$ComputerName': $($unbound -join '; ')."
+            }
+            else {
+                $detail = "All $($vmNetworks.Count) VM network(s) on '$ComputerName' are bound to a logical network."
+            }
+        }
+    }
+    elseif ($Mode -eq 'VirtualSwitchUplink') {
+        if (-not (Test-HcsCommand -Name 'Get-SCVMHostNetworkAdapter')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCVMHostNetworkAdapter is unavailable; virtual switch uplink state is not evaluated.'
+        }
+        else {
+            $adapters = @(Get-SCVMHostNetworkAdapter -VMMServer $vmmServer -ErrorAction SilentlyContinue)
+            $disconnected = [System.Collections.Generic.List[string]]::new()
+            $unbound = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapter in $adapters) {
+                $name = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('ConnectionName', 'Name'))
+                $switchName = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('VirtualNetwork', 'LogicalNetworkMap'))
+                $connectionState = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('ConnectionState', 'LinkState'))
+                if ([string]::IsNullOrWhiteSpace($switchName)) { continue }
+                if (-not [string]::IsNullOrWhiteSpace($connectionState) -and $connectionState -notin @('Connected', 'Up', 'OK')) {
+                    $disconnected.Add("uplink '$name' on switch '$switchName' reports '$connectionState'")
+                }
+                $logicalNetworks = @(Get-HcsPropertyValue -InputObject $adapter -Name @('LogicalNetworks'))
+                if ($logicalNetworks.Count -eq 0) { $unbound.Add("uplink '$name' carries no logical network") }
+            }
+            if ($disconnected.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "VMM virtual switch uplinks are not connected: $($disconnected -join '; ')."
+            }
+            elseif ($unbound.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "VMM virtual switch uplinks carry no logical network: $($unbound -join '; ')."
+            }
+            else {
+                $detail = "All VMM-managed virtual switch uplinks are connected and carry at least one logical network."
+            }
+        }
+    }
+    elseif ($Mode -eq 'HostGroupCapacity') {
+        $records = @(Get-HcsHostGroupCapacity -VmmServer $vmmServer)
+        $result = Get-HcsCapacityState -Record $records -Subject 'host group' -WarningCpu $WarningCpuPercent -CriticalCpu $CriticalCpuPercent -WarningMemory $WarningMemoryPercent -CriticalMemory $CriticalMemoryPercent -WarningStorage $WarningStoragePercent -CriticalStorage $CriticalStoragePercent
+        $state = $result.State
+        $detail = $result.Detail
+    }
+    elseif ($Mode -eq 'CloudCapacity') {
+        $records = @(Get-HcsCloudCapacity -VmmServer $vmmServer)
+        $result = Get-HcsCapacityState -Record $records -Subject 'private cloud' -WarningCpu $WarningCpuPercent -CriticalCpu $CriticalCpuPercent -WarningMemory $WarningMemoryPercent -CriticalMemory $CriticalMemoryPercent -WarningStorage $WarningStoragePercent -CriticalStorage $CriticalStoragePercent
+        $state = $result.State
+        $detail = $result.Detail
+    }
+    elseif ($Mode -eq 'JobFailureRate') {
+        if (-not (Test-HcsCommand -Name 'Get-SCJob')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCJob is unavailable; the VMM job failure rate is not evaluated.'
+        }
+        else {
+            $cutoff = (Get-Date).AddHours(-1 * [math]::Max(1, $JobLookbackHours))
+            $jobs = @(Get-SCJob -VMMServer $vmmServer -ErrorAction SilentlyContinue | Where-Object {
+                    $start = Get-HcsPropertyValue -InputObject $_ -Name @('StartTime')
+                    $null -ne $start -and ([datetime]$start) -ge $cutoff
+                })
+            $failed = @($jobs | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Failed' })
+            if ($jobs.Count -lt [math]::Max(1, $MinimumJobSampleCount)) {
+                $state = 'NotApplicable'
+                $detail = "Only $($jobs.Count) VMM job(s) ran in the last $JobLookbackHours hour(s), below the minimum sample of $MinimumJobSampleCount; the failure rate is not evaluated."
+            }
+            else {
+                $percent = [math]::Round(($failed.Count / [double]$jobs.Count) * 100, 1)
+                if ($percent -ge $CriticalJobFailurePercent) {
+                    $state = 'Critical'
+                    $detail = "$($failed.Count) of $($jobs.Count) VMM job(s) failed in the last $JobLookbackHours hour(s), a failure rate of $percent percent at or above the critical threshold of $CriticalJobFailurePercent percent."
+                }
+                elseif ($percent -ge $WarningJobFailurePercent) {
+                    $state = 'Warning'
+                    $detail = "$($failed.Count) of $($jobs.Count) VMM job(s) failed in the last $JobLookbackHours hour(s), a failure rate of $percent percent at or above the warning threshold of $WarningJobFailurePercent percent."
+                }
+                else {
+                    $detail = "$($failed.Count) of $($jobs.Count) VMM job(s) failed in the last $JobLookbackHours hour(s), a failure rate of $percent percent below the warning threshold of $WarningJobFailurePercent percent."
+                }
+            }
+        }
+    }
+    elseif ($Mode -eq 'ProTip') {
+        if (-not (Test-HcsCommand -Name 'Get-SCPROTip')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-SCPROTip is unavailable; PRO tips are not surfaced by this VMM server.'
+        }
+        else {
+            $tips = @(Get-SCPROTip -VMMServer $vmmServer -ErrorAction SilentlyContinue | Where-Object {
+                    [string](Get-HcsPropertyValue -InputObject $_ -Name @('TipState', 'State')) -in @('Active', 'New', 'Pending')
+                })
+            if ($tips.Count -ge [math]::Max(1, $CriticalProTipCount)) {
+                $state = 'Critical'
+                $detail = "$($tips.Count) active PRO tip(s) are outstanding on '$ComputerName', at or above the critical threshold of $CriticalProTipCount."
+            }
+            elseif ($tips.Count -ge [math]::Max(1, $WarningProTipCount)) {
+                $state = 'Warning'
+                $summaries = $tips | Select-Object -First 5 | ForEach-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Name', 'ID')) }
+                $detail = "$($tips.Count) active PRO tip(s) are outstanding on '$ComputerName', at or above the warning threshold of ${WarningProTipCount}: $($summaries -join '; ')."
+            }
+            else {
+                $detail = "No active PRO tip is outstanding on '$ComputerName'."
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "VMM fabric check '$Mode' failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, $detail)
+}
+
+$bag.AddValue('VmmFabricState', $state)
+$bag.AddValue('VmmFabricStateDetail', $detail)
+$api.Return($bag)

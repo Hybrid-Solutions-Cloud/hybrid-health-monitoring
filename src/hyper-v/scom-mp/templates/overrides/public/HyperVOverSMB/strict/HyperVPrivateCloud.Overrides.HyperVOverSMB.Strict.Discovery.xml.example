@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity><ID>HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery</ID><Version>{{VERSION}}</Version></Identity>
+    <Name>Hyper-V Private Cloud Monitoring - HyperVOverSMB Strict Discovery Overrides</Name>
+    <References>
+      <Reference Alias="Windows"><ID>Microsoft.Windows.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Library"><ID>HyperVPrivateCloud.Library</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Discovery"><ID>HyperVPrivateCloud.Discovery</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Cluster"><ID>HyperVPrivateCloud.Capability.Cluster</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2FileServices"><ID>HyperVPrivateCloud.Capability.FileServices</ID><Version>{{PRODUCT_VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+    </References>
+  </Manifest>
+  <Monitoring>
+    <Overrides>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery.Core.Seed.Frequency.HostRoleSeed.Override" Context="Windows!Microsoft.Windows.Server.OperatingSystem" Enforced="false" Discovery="HCSV2Discovery!HyperVPrivateCloud.HostRole.Seed.Discovery" Module="RegistrySeed" Parameter="Frequency"><Value>7200</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery.Core.Topology.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2Discovery!HyperVPrivateCloud.Topology.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>900</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery.Cluster.Discovery.Interval.Relationships.Override" Context="HCSV2Cluster!HyperVPrivateCloud.Capability.Cluster.ClusterRole" Enforced="false" Discovery="HCSV2Cluster!HyperVPrivateCloud.Capability.Cluster.Relationship.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>3600</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery.FileServices.Discovery.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2FileServices!HyperVPrivateCloud.Capability.FileServices.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>3600</Value></DiscoveryConfigurationOverride>
+    </Overrides>
+  </Monitoring>
+  <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings>
+        <DisplayString ElementID="HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery"><Name>Hyper-V Private Cloud Monitoring - HyperVOverSMB Strict Discovery Overrides</Name><Description>Unsealed, customer-owned Strict starter overrides for the HyperVOverSMB deployment profile. Review in a test management group, customize locally, and export after every change.</Description></DisplayString>
+      </DisplayStrings></LanguagePack></LanguagePacks>
+</ManagementPack>

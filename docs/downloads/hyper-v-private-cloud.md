@@ -16,10 +16,17 @@ and a missing one is the most common cause of a failed import. Work through the
 
 ## Current release: 1.0.0.0
 
-All 13 product Management Packs are sealed with the permanent public key token
-`54d0fb1159995c86`, verified by Microsoft VSAE, strong-name checked, and covered by the published
-SHA-256 manifest. The release contains 13 sealed Management Packs, 66 public override packs, and 14
-deterministic bundles.
+This is the **first release** of Hyper-V Private Cloud Monitoring. All 13 product Management Packs
+are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
+strong-name checked, and covered by the published SHA-256 manifest. The release contains 13 sealed
+Management Packs, 66 public override packs, and 14 deterministic bundles: 162 unit monitors, 96
+dependency roll-ups, 80 rules, 22 discoveries, 112 views, 63 operator tasks plus 4 console tasks,
+and 234 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
+(Fibre Channel, iSCSI, MPIO), SMB/SOFS, Network ATC, physical networking, SDN host binding, VMM and
+Pure Storage. Cluster-wide facts are evaluated once per cluster, host-wide facts once per host, and
+one probe run per host feeds every per-VM, per-LUN, per-session, per-port and per-intent monitor
+([ADR 0053](../design/decisions/0053-management-pack-review-and-runtime-correctness.md),
+[ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 
 Management Packs are named for the product — `HyperVPrivateCloud.Library`,
 `HyperVPrivateCloud.Capability.Cluster`, and so on. Publisher attribution is carried in the sealed
@@ -34,7 +41,7 @@ Export any customer-owned override Management Packs first, then re-apply them ag
 IDs after importing. Reasoning and detail in
 [ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
 
-The version line restarts at `1.0.0.0` because this is a new pack identity with no prior release.
+The version line starts at `1.0.0.0` because this is a new pack identity with no prior release.
 :::
 
 ## Download now
@@ -49,6 +56,8 @@ The version line restarts at `1.0.0.0` because this is a new pack identity with 
 The immutable versioned files are also retained under
 [`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
+Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
+([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 
 The superseded [`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json) assets are
 retained unchanged as release evidence. They carry the previous

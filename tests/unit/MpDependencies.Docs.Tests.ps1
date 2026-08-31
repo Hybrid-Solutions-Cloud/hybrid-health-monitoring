@@ -55,7 +55,7 @@ Describe 'Management pack dependency documentation' {
     }
 
     It 'documents every external reference found in Hyper-V management pack source' {
-        $fragmentRoot = Join-Path $script:RepoRoot 'src/hyper-v/scom-mp/v2/fragments'
+        $fragmentRoot = Join-Path $script:RepoRoot 'src/hyper-v/scom-mp/fragments'
         $page = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'docs/hyper-v/prerequisites.md') -Raw
 
         $referenced = Get-ChildItem -LiteralPath $fragmentRoot -Recurse -Filter 'ManagementPack.xml.template' -File |

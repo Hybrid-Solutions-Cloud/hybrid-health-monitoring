@@ -38,7 +38,7 @@ before the new ones are imported; export any customer-owned overrides first. See
 :::
 
 ::: danger Do not import from a local build directory
-If you build from source, `src/hyper-v/scom-mp/v2/out/development/` may contain a **partial** build.
+If you build from source, `src/hyper-v/scom-mp/out/development/` may contain a **partial** build.
 A partial build is missing `Presentation`, which all nine capability packs reference — so every
 capability import fails even though your management group is configured correctly.
 
@@ -218,6 +218,16 @@ The Cluster capability references `Microsoft.Windows.Cluster.Library` at version
 older base library distinct from `Microsoft.Windows.Cluster.Management.Library` `10.1.0.0`. The
 Microsoft download bundle normally includes both, but if you have imported cluster packs
 selectively in the past you may have the management library without the base library.
+
+### Cluster nodes need agent proxy enabled
+
+The cluster-wide monitors, the CSV capacity rules and the cluster relationship discovery
+target `HyperVPrivateCloud.Capability.Cluster.ClusterRole`, which is hosted by the cluster core
+virtual server (`Microsoft.Windows.Cluster.VirtualServer`) — the same object Microsoft's own
+Cluster and CSV packs use. A node can only submit discovery data for an object it does not host
+itself when **Allow this agent to act as a proxy** is enabled on every cluster node. Microsoft's
+Cluster pack already requires this, so an existing cluster deployment normally has it; if the
+`ClusterRole` object never appears, the proxy setting is the first thing to check.
 
 ### File Services pins two packs at two different versions
 

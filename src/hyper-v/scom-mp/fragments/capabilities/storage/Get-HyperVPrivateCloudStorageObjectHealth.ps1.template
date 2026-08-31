@@ -1,0 +1,930 @@
+#Requires -Version 7.0
+param(
+    [ValidateSet('Attachment', 'IscsiSession', 'FibreChannelPort', 'FibreChannelDetail', 'IscsiDetail', 'MultipathDetail', 'LogicalUnitDetail', 'HostEventDetail', 'HostStorageInventory')][string]$ObjectKind,
+    [string]$Identity,
+    [int]$DiskNumber,
+    [string]$StorageId,
+    [string]$BusType,
+    [string]$ComputerName,
+    [int]$MinimumPathCount,
+    [int]$MinimumLinkSpeedGbps = 8,
+    [double]$LinkFailureRatePerHourWarning = 1,
+    [double]$LinkFailureRatePerHourCritical = 5,
+    [double]$LossOfSignalRatePerHourWarning = 1,
+    [double]$LossOfSignalRatePerHourCritical = 5,
+    [double]$LossOfSyncRatePerHourWarning = 1,
+    [double]$LossOfSyncRatePerHourCritical = 5,
+    [double]$CrcErrorRatePerHourWarning = 5,
+    [double]$CrcErrorRatePerHourCritical = 25,
+    [int]$MinimumSessionsPerTarget = 2,
+    [double]$IscsiConnectionErrorRatePerHourWarning = 3,
+    [double]$IscsiConnectionErrorRatePerHourCritical = 12,
+    [int]$IscsiAuthFailureWindowMinutes = 60,
+    [int]$IscsiAuthFailureWarningCount = 1,
+    [int]$CriticalPathCount = 1,
+    [int]$PathImbalancePercentWarning = 40,
+    [int]$PathImbalancePercentCritical = 70,
+    [int]$FailoverEventWindowMinutes = 60,
+    [int]$FailoverEventWarningCount = 1,
+    [int]$FailoverEventCriticalCount = 5,
+    [int]$CapacityUsedWarningPercent = 80,
+    [int]$CapacityUsedCriticalPercent = 90,
+    [double]$ReadLatencyWarningMs = 20,
+    [double]$ReadLatencyCriticalMs = 50,
+    [double]$WriteLatencyWarningMs = 20,
+    [double]$WriteLatencyCriticalMs = 50,
+    [double]$QueueDepthWarning = 32,
+    [double]$QueueDepthCritical = 64
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsProperty {
+    param($InputObject, [string]$Name)
+    if ($null -eq $InputObject) { return $null }
+    try {
+        $property = $InputObject.PSObject.Properties[$Name]
+        if ($null -eq $property) { return $null }
+        return $property.Value
+    }
+    catch { return $null }
+}
+
+function Get-HcsStableId {
+    param([Parameter(Mandatory)][string]$Value)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try { return ([Convert]::ToHexString($sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value)))).ToLowerInvariant() }
+    finally { $sha256.Dispose() }
+}
+
+function Get-HcsMpioDrive {
+    param([string[]]$Candidates)
+    try {
+        if ($null -eq (Get-Variable -Name HcsMpioDiskInfoCache -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:HcsMpioDiskInfoCache = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_DISK_INFO' -ErrorAction SilentlyContinue)
+        }
+        foreach ($mpio in $script:HcsMpioDiskInfoCache) {
+            foreach ($drive in @($mpio.DriveInfo)) {
+                $serial = ([string](Get-HcsProperty -InputObject $drive -Name 'SerialNumber')).Trim().ToLowerInvariant()
+                foreach ($candidate in $Candidates) {
+                    if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+                    $normalized = $candidate.Trim().ToLowerInvariant()
+                    if ($serial -eq $normalized -or $serial.Contains($normalized) -or $normalized.Contains($serial)) { return $drive }
+                }
+            }
+        }
+    }
+    catch { return $null }
+    return $null
+}
+
+# Persists cumulative counter samples so monotonic HBA and initiator counters can be expressed as a
+# per-hour rate. Returns $null on the first sample, after a counter reset, or when state is unusable.
+function Get-HcsCounterRatePerHour {
+    param([string]$Key, [double]$CurrentValue)
+    try {
+        $root = Join-Path ([System.Environment]::GetFolderPath('CommonApplicationData')) 'HyperVPrivateCloud\StorageCounters'
+        if (-not (Test-Path -LiteralPath $root)) { [void](New-Item -ItemType Directory -Path $root -Force -ErrorAction Stop) }
+        $safeKey = ([string]$Key) -replace '[^A-Za-z0-9._-]', '_'
+        if ($safeKey.Length -gt 120) { $safeKey = $safeKey.Substring(0, 120) }
+        $file = Join-Path $root "$safeKey.json"
+        $now = [DateTimeOffset]::UtcNow
+        $rate = $null
+        if (Test-Path -LiteralPath $file) {
+            $previous = Get-Content -LiteralPath $file -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+            $previousValue = [double](Get-HcsProperty -InputObject $previous -Name 'Value')
+            $previousStamp = [string](Get-HcsProperty -InputObject $previous -Name 'Timestamp')
+            $parsedStamp = [DateTimeOffset]::MinValue
+            if ([DateTimeOffset]::TryParse($previousStamp, [ref]$parsedStamp)) {
+                $elapsedHours = ($now - $parsedStamp).TotalHours
+                if ($elapsedHours -gt 0.0027 -and $CurrentValue -ge $previousValue) {
+                    $rate = [Math]::Round((($CurrentValue - $previousValue) / $elapsedHours), 3)
+                }
+            }
+        }
+        $state = [pscustomobject]@{ Value = $CurrentValue; Timestamp = $now.ToString('o') }
+        $state | ConvertTo-Json -Compress | Set-Content -LiteralPath $file -Encoding UTF8 -ErrorAction Stop
+        return $rate
+    }
+    catch { return $null }
+}
+
+function Get-HcsRateState {
+    param([Nullable[double]]$Rate, [double]$WarningThreshold, [double]$CriticalThreshold, [string]$Label, [string]$PortLabel)
+    if ($null -eq $Rate) {
+        return @('NotApplicable', "$Label rate for $PortLabel is not yet available. A baseline sample was recorded; the rate is reported on the next cycle.")
+    }
+    if ($Rate -ge $CriticalThreshold) {
+        return @('Critical', "$Label rate for $PortLabel is $Rate per hour, at or above the critical threshold of $CriticalThreshold per hour.")
+    }
+    if ($Rate -ge $WarningThreshold) {
+        return @('Warning', "$Label rate for $PortLabel is $Rate per hour, at or above the warning threshold of $WarningThreshold per hour.")
+    }
+    return @('Good', "$Label rate for $PortLabel is $Rate per hour, below the warning threshold of $WarningThreshold per hour.")
+}
+
+function ConvertTo-HcsFibrePortSpeedGbps {
+    param([int]$Value)
+    # HBA API PortSpeed is a bit flag. Unknown or unmapped values return 0 so callers can skip evaluation.
+    switch ($Value) {
+        1 { return 1 }
+        2 { return 2 }
+        4 { return 10 }
+        8 { return 4 }
+        16 { return 8 }
+        32 { return 16 }
+        64 { return 32 }
+        128 { return 20 }
+        256 { return 40 }
+        512 { return 64 }
+        1024 { return 128 }
+        default { return 0 }
+    }
+}
+
+function ConvertTo-HcsFibrePortStateName {
+    param([int]$Value)
+    switch ($Value) {
+        1 { return 'Unknown' }
+        2 { return 'Online' }
+        3 { return 'Offline' }
+        4 { return 'Bypassed' }
+        5 { return 'Diagnostics' }
+        6 { return 'LinkDown' }
+        7 { return 'Error' }
+        8 { return 'Loopback' }
+        default { return 'Unknown' }
+    }
+}
+
+function Get-HcsFibrePort {
+    param([string]$PortId)
+    try {
+        if ($null -eq (Get-Variable -Name HcsFibrePortCache -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:HcsFibrePortCache = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue)
+        }
+        $ports = $script:HcsFibrePortCache
+        if ($ports.Count -eq 0) { return $null }
+        $match = $ports | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'UniquePortId') -eq $PortId } | Select-Object -First 1
+        return $match
+    }
+    catch { return $null }
+}
+
+function Get-HcsFibrePortStatistics {
+    param([string]$PortId)
+    try {
+        if ($null -eq (Get-Variable -Name HcsFibreStatsCache -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:HcsFibreStatsCache = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAStatistics' -ErrorAction SilentlyContinue)
+        }
+        $stats = $script:HcsFibreStatsCache
+        if ($stats.Count -eq 0) { return $null }
+        $match = $stats | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'UniquePortId') -eq $PortId } | Select-Object -First 1
+        if ($null -eq $match) { return $null }
+        return (Get-HcsProperty -InputObject $match -Name 'Statistics')
+    }
+    catch { return $null }
+}
+
+function Get-HcsEventCount {
+    param([string]$LogName, [string]$ProviderName, [int[]]$EventId, [int]$WindowMinutes)
+    $cacheKey = "$LogName|$ProviderName|$($EventId -join '-')|$WindowMinutes"
+    if ($null -eq (Get-Variable -Name HcsEventCountCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsEventCountCache = @{} }
+    if ($script:HcsEventCountCache.ContainsKey($cacheKey)) { return $script:HcsEventCountCache[$cacheKey] }
+    try {
+        $filter = @{ LogName = $LogName; StartTime = (Get-Date).AddMinutes(-$WindowMinutes) }
+        if (-not [string]::IsNullOrWhiteSpace($ProviderName)) { $filter['ProviderName'] = $ProviderName }
+        if ($EventId.Count -gt 0) { $filter['Id'] = $EventId }
+        $count = @(Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue).Count
+        $script:HcsEventCountCache[$cacheKey] = $count
+        return $count
+    }
+    catch { return 0 }
+}
+
+function Get-HcsPhysicalDiskCounter {
+    param([int]$Number, [string]$CounterSuffix)
+    try {
+        if ($null -eq (Get-Variable -Name HcsDiskCounterCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsDiskCounterCache = @{} }
+        if (-not $script:HcsDiskCounterCache.ContainsKey($CounterSuffix)) {
+            $script:HcsDiskCounterCache[$CounterSuffix] = @((Get-Counter -Counter "\PhysicalDisk(*)\$CounterSuffix" -SampleInterval 1 -MaxSamples 1 -ErrorAction Stop).CounterSamples)
+        }
+        $samples = $script:HcsDiskCounterCache[$CounterSuffix]
+        foreach ($sample in $samples) {
+            $instance = [string](Get-HcsProperty -InputObject $sample -Name 'InstanceName')
+            if ([string]::IsNullOrWhiteSpace($instance)) { continue }
+            if ($instance -eq [string]$Number -or $instance -like "$Number *") {
+                return [double](Get-HcsProperty -InputObject $sample -Name 'CookedValue')
+            }
+        }
+    }
+    catch { return $null }
+    return $null
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+
+# Evaluates one storage object's facets and returns a fully-populated property bag. Every facet the
+# evaluation does not reach stays NotApplicable, so every bag carries every property and the keyed
+# monitor-type filters never hit a missing property.
+function Get-HcsFacetBag {
+param([string]$ObjectKind, [string]$Identity, [int]$DiskNumber, [string]$StorageId, [string]$BusType)
+$bag = $api.CreatePropertyBag()
+
+# Shipped v1 property bag values. Their names and semantics must not change.
+$state = 'Good'
+$redundancy = 'NotApplicable'
+$detail = 'Storage object is healthy.'
+$redundancyDetail = 'Path redundancy is not applicable to this object.'
+
+# Fibre Channel detail values.
+$linkState = 'NotApplicable'
+$linkStateDetail = 'Fibre Channel link state is not evaluated for this object.'
+$linkSpeedState = 'NotApplicable'
+$linkSpeedStateDetail = 'Fibre Channel link speed is not evaluated for this object.'
+$linkFailureState = 'NotApplicable'
+$linkFailureStateDetail = 'Fibre Channel link failure rate is not evaluated for this object.'
+$lossOfSignalState = 'NotApplicable'
+$lossOfSignalStateDetail = 'Fibre Channel loss-of-signal rate is not evaluated for this object.'
+$lossOfSyncState = 'NotApplicable'
+$lossOfSyncStateDetail = 'Fibre Channel loss-of-sync rate is not evaluated for this object.'
+$crcErrorState = 'NotApplicable'
+$crcErrorStateDetail = 'Fibre Channel CRC error rate is not evaluated for this object.'
+$fabricLoginState = 'NotApplicable'
+$fabricLoginStateDetail = 'Fibre Channel fabric login is not evaluated for this object.'
+
+# iSCSI detail values.
+$connectedState = 'NotApplicable'
+$connectedStateDetail = 'iSCSI session connection state is not evaluated for this object.'
+$sessionCountState = 'NotApplicable'
+$sessionCountStateDetail = 'iSCSI session count per target is not evaluated for this object.'
+$connectionErrorState = 'NotApplicable'
+$connectionErrorStateDetail = 'iSCSI connection error rate is not evaluated for this object.'
+$authenticationState = 'NotApplicable'
+$authenticationStateDetail = 'iSCSI authentication failures are not evaluated for this object.'
+
+# Multipath detail values.
+$pathCountState = 'NotApplicable'
+$pathCountStateDetail = 'MPIO path count is not evaluated for this object.'
+$pathLossState = 'NotApplicable'
+$pathLossStateDetail = 'MPIO path loss is not evaluated for this object.'
+$pathBalanceState = 'NotApplicable'
+$pathBalanceStateDetail = 'MPIO path balance is not evaluated for this object.'
+$failoverState = 'NotApplicable'
+$failoverStateDetail = 'MPIO failover events are not evaluated for this object.'
+
+# Logical unit detail values.
+$operationalState = 'NotApplicable'
+$operationalStateDetail = 'Logical unit operational status is not evaluated for this object.'
+$capacityState = 'NotApplicable'
+$capacityStateDetail = 'Logical unit capacity is not evaluated for this object.'
+$readLatencyState = 'NotApplicable'
+$readLatencyStateDetail = 'Logical unit read latency is not evaluated for this object.'
+$writeLatencyState = 'NotApplicable'
+$writeLatencyStateDetail = 'Logical unit write latency is not evaluated for this object.'
+$queueDepthState = 'NotApplicable'
+$queueDepthStateDetail = 'Logical unit queue depth is not evaluated for this object.'
+
+try {
+    switch ($ObjectKind) {
+        'Attachment' {
+            if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) { throw 'The Windows Storage PowerShell module is unavailable.' }
+            $disk = Get-Disk -Number $DiskNumber -ErrorAction SilentlyContinue
+            if ($null -eq $disk) { $state = 'Critical'; $detail = "Disk $DiskNumber for storage identity '$StorageId' is no longer visible." }
+            elseif ($disk.IsOffline -and [bool](Get-HcsProperty -InputObject $disk -Name 'IsClustered')) { $state = 'NotApplicable'; $detail = "Disk $DiskNumber is a clustered disk that is offline on this node by design (owned by another node); the Cluster capability monitors its role." }
+            elseif ($disk.IsOffline) { $state = 'Critical'; $detail = "Disk $DiskNumber is offline." }
+            elseif ([string]$disk.HealthStatus -notin @('Healthy', 'Unknown')) { $state = 'Critical'; $detail = "Disk $DiskNumber reports health '$($disk.HealthStatus)' and operational state '$($disk.OperationalStatus -join ',')'." }
+            elseif ($disk.IsReadOnly) { $state = 'Warning'; $detail = "Disk $DiskNumber is read-only." }
+            else { $detail = "Disk $DiskNumber is online, writable, and reports health '$($disk.HealthStatus)'." }
+
+            if ($BusType -in @('iSCSI', 'Fibre Channel')) {
+                $mpio = Get-HcsMpioDrive -Candidates @($StorageId, [string]$disk.SerialNumber, [string]$disk.UniqueId)
+                if ($null -eq $mpio) { $redundancy = 'Warning'; $redundancyDetail = "No MPIO record matched disk $DiskNumber. Validate Multipath-IO and DSM claiming." }
+                elseif ([int]$mpio.NumberPaths -lt 1) { $redundancy = 'Critical'; $redundancyDetail = "MPIO reports zero paths for disk $DiskNumber." }
+                elseif ([int]$mpio.NumberPaths -lt $MinimumPathCount) { $redundancy = 'Warning'; $redundancyDetail = "MPIO reports $($mpio.NumberPaths) path(s), below the required $MinimumPathCount." }
+                else { $redundancy = 'Good'; $redundancyDetail = "MPIO reports $($mpio.NumberPaths) path(s) through DSM '$($mpio.DsmName)'." }
+            }
+        }
+        'IscsiSession' {
+            if (-not (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession')) { throw 'The iSCSI PowerShell module is unavailable.' }
+            $session = Get-IscsiSession -SessionIdentifier $Identity -ErrorAction SilentlyContinue
+            if ($null -eq $session) { $state = 'Critical'; $detail = "iSCSI session '$Identity' is no longer established." }
+            elseif ([int]$session.NumberOfConnections -lt 1) { $state = 'Critical'; $detail = "iSCSI session '$Identity' has no active connections." }
+            elseif ([int]$session.NumberOfConnections -lt $MinimumPathCount) { $state = 'Warning'; $detail = "iSCSI session '$Identity' has $($session.NumberOfConnections) connection(s), below the required $MinimumPathCount." }
+            else { $detail = "iSCSI session '$Identity' has $($session.NumberOfConnections) connection(s)." }
+        }
+        'FibreChannelPort' {
+            $port = Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue | Where-Object { [string]$_.UniquePortId -eq $Identity } | Select-Object -First 1
+            if ($null -eq $port) { $state = 'Critical'; $detail = "Fibre Channel port '$Identity' is no longer exposed by the HBA provider." }
+            elseif ([int]$port.HBAStatus -ne 0) { $state = 'Critical'; $detail = "Fibre Channel port '$Identity' reports HBA status $($port.HBAStatus)." }
+            elseif ([int]$port.Attributes.PortState -eq 2) { $detail = "Fibre Channel port '$Identity' is operational." }
+            elseif ([int]$port.Attributes.PortState -eq 1) { $state = 'Warning'; $detail = "Fibre Channel port '$Identity' state is unknown." }
+            else { $state = 'Critical'; $detail = "Fibre Channel port '$Identity' is not operational; port state is $($port.Attributes.PortState)." }
+        }
+        'FibreChannelDetail' {
+            $port = Get-HcsFibrePort -PortId $Identity
+            if ($null -eq $port) {
+                $linkState = 'Critical'
+                $linkStateDetail = "Fibre Channel port '$Identity' is no longer exposed by the HBA provider. Check the HBA driver, the WMI HBA provider, and the adapter itself."
+            }
+            else {
+                $attributes = Get-HcsProperty -InputObject $port -Name 'Attributes'
+                $hbaStatus = [int](Get-HcsProperty -InputObject $port -Name 'HBAStatus')
+                $portStateValue = [int](Get-HcsProperty -InputObject $attributes -Name 'PortState')
+                $portStateName = ConvertTo-HcsFibrePortStateName -Value $portStateValue
+                $wwpnParts = @(Get-HcsProperty -InputObject $attributes -Name 'PortWWN')
+                $wwpn = if ($wwpnParts.Count -gt 0) { (($wwpnParts | ForEach-Object { '{0:X2}' -f [int]$_ }) -join ':') } else { $Identity }
+                $portLabel = "Fibre Channel port '$Identity' (WWPN $wwpn)"
+
+                if ($hbaStatus -ne 0) {
+                    $linkState = 'Critical'
+                    $linkStateDetail = "$portLabel reports HBA status $hbaStatus. The adapter is not returning valid data."
+                }
+                elseif ($portStateValue -eq 2) {
+                    $linkState = 'Good'
+                    $linkStateDetail = "$portLabel is Online."
+                }
+                elseif ($portStateValue -in @(1, 4, 5, 8)) {
+                    $linkState = 'Warning'
+                    $linkStateDetail = "$portLabel reports state '$portStateName'. The port is not carrying production traffic."
+                }
+                else {
+                    $linkState = 'Critical'
+                    $linkStateDetail = "$portLabel reports state '$portStateName'. Inspect the optic, cable, switch port, and zoning."
+                }
+
+                # Link speed against the negotiated maximum the port supports.
+                $currentSpeedGbps = ConvertTo-HcsFibrePortSpeedGbps -Value ([int](Get-HcsProperty -InputObject $attributes -Name 'PortSpeed'))
+                $supportedRaw = [int](Get-HcsProperty -InputObject $attributes -Name 'PortSupportedSpeed')
+                $supportedGbps = 0
+                foreach ($flag in @(1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1)) {
+                    if (($supportedRaw -band $flag) -eq $flag) {
+                        $candidate = ConvertTo-HcsFibrePortSpeedGbps -Value $flag
+                        if ($candidate -gt $supportedGbps) { $supportedGbps = $candidate }
+                    }
+                }
+                if ($currentSpeedGbps -le 0) {
+                    $linkSpeedState = 'NotApplicable'
+                    $linkSpeedStateDetail = "$portLabel does not report a decodable link speed."
+                }
+                else {
+                    $floorGbps = $MinimumLinkSpeedGbps
+                    if ($supportedGbps -gt 0 -and $supportedGbps -lt $floorGbps) { $floorGbps = $supportedGbps }
+                    if ($currentSpeedGbps -lt $floorGbps) {
+                        $linkSpeedState = 'Warning'
+                        $linkSpeedStateDetail = "$portLabel negotiated $currentSpeedGbps Gbps, below the required minimum of $floorGbps Gbps (adapter maximum $supportedGbps Gbps). Check the optic, cable, and switch port speed settings."
+                    }
+                    else {
+                        $linkSpeedState = 'Good'
+                        $linkSpeedStateDetail = "$portLabel negotiated $currentSpeedGbps Gbps, at or above the required minimum of $floorGbps Gbps."
+                    }
+                }
+
+                # Fabric login. A zero fabric name means the port never completed FLOGI/PLOGI.
+                $fabricParts = @(Get-HcsProperty -InputObject $attributes -Name 'FabricName')
+                $fabricName = if ($fabricParts.Count -gt 0) { (($fabricParts | ForEach-Object { '{0:X2}' -f [int]$_ }) -join ':') } else { '' }
+                $fabricLoggedIn = $fabricParts.Count -gt 0 -and (@($fabricParts | Where-Object { [int]$_ -ne 0 }).Count -gt 0)
+                if ($portStateValue -ne 2) {
+                    $fabricLoginState = 'NotApplicable'
+                    $fabricLoginStateDetail = "$portLabel is not Online, so fabric login is not evaluated."
+                }
+                elseif ($fabricLoggedIn) {
+                    $fabricLoginState = 'Good'
+                    $fabricLoginStateDetail = "$portLabel is logged in to fabric $fabricName."
+                }
+                else {
+                    $fabricLoginState = 'Critical'
+                    $fabricLoginStateDetail = "$portLabel is Online but reports no fabric name, so fabric login has not completed. Check zoning, switch port configuration, and name-server registration."
+                }
+
+                # Error counters expressed as a per-hour rate against the previous sample.
+                $statistics = Get-HcsFibrePortStatistics -PortId $Identity
+                if ($null -eq $statistics) {
+                    $linkFailureState = 'NotApplicable'
+                    $linkFailureStateDetail = "$portLabel does not expose MSFC_FibrePortHBAStatistics."
+                    $lossOfSignalState = 'NotApplicable'
+                    $lossOfSignalStateDetail = $linkFailureStateDetail
+                    $lossOfSyncState = 'NotApplicable'
+                    $lossOfSyncStateDetail = $linkFailureStateDetail
+                    $crcErrorState = 'NotApplicable'
+                    $crcErrorStateDetail = $linkFailureStateDetail
+                }
+                else {
+                    $linkFailureCount = [double](Get-HcsProperty -InputObject $statistics -Name 'LinkFailureCount')
+                    $lossOfSignalCount = [double](Get-HcsProperty -InputObject $statistics -Name 'LossOfSignalCount')
+                    $lossOfSyncCount = [double](Get-HcsProperty -InputObject $statistics -Name 'LossOfSyncCount')
+                    $crcCount = [double](Get-HcsProperty -InputObject $statistics -Name 'InvalidCRCCount')
+
+                    $result = Get-HcsRateState -Rate (Get-HcsCounterRatePerHour -Key "fc-$Identity-linkfailure" -CurrentValue $linkFailureCount) -WarningThreshold $LinkFailureRatePerHourWarning -CriticalThreshold $LinkFailureRatePerHourCritical -Label 'Link failure' -PortLabel $portLabel
+                    $linkFailureState = $result[0]; $linkFailureStateDetail = $result[1]
+
+                    $result = Get-HcsRateState -Rate (Get-HcsCounterRatePerHour -Key "fc-$Identity-lossofsignal" -CurrentValue $lossOfSignalCount) -WarningThreshold $LossOfSignalRatePerHourWarning -CriticalThreshold $LossOfSignalRatePerHourCritical -Label 'Loss of signal' -PortLabel $portLabel
+                    $lossOfSignalState = $result[0]; $lossOfSignalStateDetail = $result[1]
+
+                    $result = Get-HcsRateState -Rate (Get-HcsCounterRatePerHour -Key "fc-$Identity-lossofsync" -CurrentValue $lossOfSyncCount) -WarningThreshold $LossOfSyncRatePerHourWarning -CriticalThreshold $LossOfSyncRatePerHourCritical -Label 'Loss of sync' -PortLabel $portLabel
+                    $lossOfSyncState = $result[0]; $lossOfSyncStateDetail = $result[1]
+
+                    $result = Get-HcsRateState -Rate (Get-HcsCounterRatePerHour -Key "fc-$Identity-crc" -CurrentValue $crcCount) -WarningThreshold $CrcErrorRatePerHourWarning -CriticalThreshold $CrcErrorRatePerHourCritical -Label 'Invalid CRC' -PortLabel $portLabel
+                    $crcErrorState = $result[0]; $crcErrorStateDetail = $result[1]
+                }
+            }
+        }
+        'IscsiDetail' {
+            if (-not (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession')) {
+                $connectedState = 'NotApplicable'
+                $connectedStateDetail = 'The iSCSI PowerShell module is unavailable on this host, so iSCSI detail monitoring is skipped.'
+            }
+            else {
+                $session = Get-IscsiSession -ErrorAction SilentlyContinue | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'SessionIdentifier') -eq $Identity } | Select-Object -First 1
+                if ($null -eq $session) {
+                    $connectedState = 'Critical'
+                    $connectedStateDetail = "iSCSI session '$Identity' is no longer established. Check initiator service state, target reachability, and persistent-target configuration."
+                }
+                else {
+                    $targetNode = [string](Get-HcsProperty -InputObject $session -Name 'TargetNodeAddress')
+                    $connections = @()
+                    if (Get-Command -Name 'Get-IscsiConnection' -ErrorAction SilentlyContinue) {
+                        $connections = @(Get-IscsiConnection -ErrorAction SilentlyContinue | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'SessionIdentifier') -eq $Identity })
+                    }
+                    $connectionCount = [int](Get-HcsProperty -InputObject $session -Name 'NumberOfConnections')
+                    if ($connections.Count -gt $connectionCount) { $connectionCount = $connections.Count }
+
+                    if ($connectionCount -lt 1) {
+                        $connectedState = 'Critical'
+                        $connectedStateDetail = "iSCSI session '$Identity' to target '$targetNode' has no active connections."
+                    }
+                    else {
+                        $connectedState = 'Good'
+                        $connectedStateDetail = "iSCSI session '$Identity' to target '$targetNode' is connected with $connectionCount connection(s)."
+                    }
+
+                    # Session count for the whole target, which is the redundancy that actually matters.
+                    $targetSessions = @(Get-IscsiSession -ErrorAction SilentlyContinue | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'TargetNodeAddress') -eq $targetNode })
+                    if ($targetSessions.Count -lt 1) {
+                        $sessionCountState = 'Critical'
+                        $sessionCountStateDetail = "Target '$targetNode' has no established sessions."
+                    }
+                    elseif ($targetSessions.Count -lt $MinimumSessionsPerTarget) {
+                        $sessionCountState = 'Warning'
+                        $sessionCountStateDetail = "Target '$targetNode' has $($targetSessions.Count) session(s), below the required minimum of $MinimumSessionsPerTarget. Redundancy is reduced."
+                    }
+                    else {
+                        $sessionCountState = 'Good'
+                        $sessionCountStateDetail = "Target '$targetNode' has $($targetSessions.Count) session(s), at or above the required minimum of $MinimumSessionsPerTarget."
+                    }
+
+                    # Connection drops and retries are surfaced by the iScsiPrt driver in the System log.
+                    $errorCount = Get-HcsEventCount -LogName 'System' -ProviderName 'iScsiPrt' -EventId @(7, 9, 20, 27, 39, 40, 63, 70) -WindowMinutes 60
+                    if ($errorCount -ge $IscsiConnectionErrorRatePerHourCritical) {
+                        $connectionErrorState = 'Critical'
+                        $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged in the last hour, at or above the critical threshold of $IscsiConnectionErrorRatePerHourCritical per hour."
+                    }
+                    elseif ($errorCount -ge $IscsiConnectionErrorRatePerHourWarning) {
+                        $connectionErrorState = 'Warning'
+                        $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged in the last hour, at or above the warning threshold of $IscsiConnectionErrorRatePerHourWarning per hour."
+                    }
+                    else {
+                        $connectionErrorState = 'Good'
+                        $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged in the last hour, below the warning threshold of $IscsiConnectionErrorRatePerHourWarning per hour."
+                    }
+
+                    # CHAP and mutual CHAP failures.
+                    $authFailures = Get-HcsEventCount -LogName 'System' -ProviderName 'iScsiPrt' -EventId @(30, 31, 32) -WindowMinutes $IscsiAuthFailureWindowMinutes
+                    if ($authFailures -ge $IscsiAuthFailureWarningCount) {
+                        $authenticationState = 'Critical'
+                        $authenticationStateDetail = "$authFailures iSCSI authentication failure event(s) were logged in the last $IscsiAuthFailureWindowMinutes minute(s), at or above the threshold of $IscsiAuthFailureWarningCount. Verify CHAP secrets on the initiator and the target."
+                    }
+                    else {
+                        $authenticationState = 'Good'
+                        $authenticationStateDetail = "No iSCSI authentication failures were logged in the last $IscsiAuthFailureWindowMinutes minute(s)."
+                    }
+                }
+            }
+        }
+        { $_ -in @('MultipathDetail', 'DiskDetail') } {
+            if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
+                $pathCountState = 'NotApplicable'
+                $pathCountStateDetail = 'The Windows Storage PowerShell module is unavailable on this host, so multipath monitoring is skipped.'
+            }
+            elseif ($BusType -notin @('iSCSI', 'Fibre Channel', 'SAS', 'RAID')) {
+                $pathCountState = 'NotApplicable'
+                $pathCountStateDetail = "Disk $DiskNumber uses bus type '$BusType', which is not a multipath-capable SAN transport."
+            }
+            else {
+                $disk = Get-Disk -Number $DiskNumber -ErrorAction SilentlyContinue
+                $candidates = @($StorageId)
+                if ($null -ne $disk) {
+                    $candidates += [string](Get-HcsProperty -InputObject $disk -Name 'SerialNumber')
+                    $candidates += [string](Get-HcsProperty -InputObject $disk -Name 'UniqueId')
+                }
+                $mpio = Get-HcsMpioDrive -Candidates $candidates
+                if ($null -eq $mpio -and $BusType -notin @('iSCSI', 'Fibre Channel')) {
+                    # Local SAS/RAID data disks are admitted as logical units but are rarely MPIO-claimed; without a
+                    # record there is nothing to measure, and a permanent Warning on every PERC disk is noise.
+                    $pathCountState = 'NotApplicable'
+                    $pathCountStateDetail = "Disk $DiskNumber ($BusType) has no MPIO_DISK_INFO record and is treated as directly attached."
+                    $pathLossState = 'NotApplicable'
+                    $pathLossStateDetail = $pathCountStateDetail
+                }
+                elseif ($null -eq $mpio) {
+                    $pathCountState = 'Warning'
+                    $pathCountStateDetail = "No MPIO_DISK_INFO record matched disk $DiskNumber. Validate that the Multipath-IO feature is installed and that the DSM claims this device."
+                    $pathLossState = 'Warning'
+                    $pathLossStateDetail = $pathCountStateDetail
+                }
+                else {
+                    $pathCount = [int](Get-HcsProperty -InputObject $mpio -Name 'NumberPaths')
+                    $dsmName = [string](Get-HcsProperty -InputObject $mpio -Name 'DsmName')
+
+                    if ($pathCount -le $CriticalPathCount) {
+                        $pathCountState = 'Critical'
+                        $pathCountStateDetail = "Disk $DiskNumber has $pathCount MPIO path(s), at or below the critical path count of $CriticalPathCount. The device has no surviving redundancy."
+                    }
+                    elseif ($pathCount -lt $MinimumPathCount) {
+                        $pathCountState = 'Warning'
+                        $pathCountStateDetail = "Disk $DiskNumber has $pathCount MPIO path(s) through DSM '$dsmName', below the expected minimum of $MinimumPathCount."
+                    }
+                    else {
+                        $pathCountState = 'Good'
+                        $pathCountStateDetail = "Disk $DiskNumber has $pathCount MPIO path(s) through DSM '$dsmName', at or above the expected minimum of $MinimumPathCount."
+                    }
+
+                    # Path loss compares live paths against the highest count seen for this device.
+                    $observedPeak = $pathCount
+                    $peakRate = Get-HcsCounterRatePerHour -Key "mpio-$DiskNumber-peak" -CurrentValue $pathCount
+                    $null = $peakRate
+                    try {
+                        $peakRoot = Join-Path ([System.Environment]::GetFolderPath('CommonApplicationData')) 'HyperVPrivateCloud\StorageCounters'
+                        $peakFile = Join-Path $peakRoot ("mpio-peak-$DiskNumber.json")
+                        if (Test-Path -LiteralPath $peakFile) {
+                            $stored = Get-Content -LiteralPath $peakFile -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+                            $storedPeak = [int](Get-HcsProperty -InputObject $stored -Name 'Peak')
+                            if ($storedPeak -gt $observedPeak) { $observedPeak = $storedPeak }
+                        }
+                        if (-not (Test-Path -LiteralPath $peakRoot)) { [void](New-Item -ItemType Directory -Path $peakRoot -Force -ErrorAction Stop) }
+                        [pscustomobject]@{ Peak = $observedPeak } | ConvertTo-Json -Compress | Set-Content -LiteralPath $peakFile -Encoding UTF8 -ErrorAction Stop
+                    }
+                    catch { $observedPeak = $pathCount }
+
+                    if ($observedPeak -gt $pathCount) {
+                        $lost = $observedPeak - $pathCount
+                        if ($pathCount -le $CriticalPathCount) {
+                            $pathLossState = 'Critical'
+                            $pathLossStateDetail = "Disk $DiskNumber has lost $lost of $observedPeak known MPIO path(s) and only $pathCount remain(s). Restore the failed path before the device is isolated."
+                        }
+                        else {
+                            $pathLossState = 'Warning'
+                            $pathLossStateDetail = "Disk $DiskNumber has lost $lost of $observedPeak known MPIO path(s); $pathCount remain(s)."
+                        }
+                    }
+                    else {
+                        $pathLossState = 'Good'
+                        $pathLossStateDetail = "Disk $DiskNumber presents all $pathCount known MPIO path(s)."
+                    }
+
+                    # Path state imbalance across the DSM path set.
+                    $activePaths = 0
+                    $totalPaths = 0
+                    try {
+                        foreach ($pathInfo in @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_PATH_INFORMATION' -ErrorAction SilentlyContinue)) {
+                            $totalPaths += [int](Get-HcsProperty -InputObject $pathInfo -Name 'NumberPaths')
+                        }
+                    }
+                    catch { $totalPaths = 0 }
+                    $activePaths = $pathCount
+                    if ($observedPeak -le 0) {
+                        $pathBalanceState = 'NotApplicable'
+                        $pathBalanceStateDetail = "Disk $DiskNumber does not report enough MPIO data to evaluate path balance."
+                    }
+                    else {
+                        $imbalancePercent = [int][Math]::Round(((($observedPeak - $activePaths) / [double]$observedPeak) * 100), 0)
+                        if ($imbalancePercent -ge $PathImbalancePercentCritical) {
+                            $pathBalanceState = 'Critical'
+                            $pathBalanceStateDetail = "Disk $DiskNumber shows $imbalancePercent percent path imbalance against its known path set, at or above the critical threshold of $PathImbalancePercentCritical percent."
+                        }
+                        elseif ($imbalancePercent -ge $PathImbalancePercentWarning) {
+                            $pathBalanceState = 'Warning'
+                            $pathBalanceStateDetail = "Disk $DiskNumber shows $imbalancePercent percent path imbalance against its known path set, at or above the warning threshold of $PathImbalancePercentWarning percent. Review the MPIO load-balance policy and target port groups."
+                        }
+                        else {
+                            $pathBalanceState = 'Good'
+                            $pathBalanceStateDetail = "Disk $DiskNumber shows $imbalancePercent percent path imbalance, below the warning threshold of $PathImbalancePercentWarning percent."
+                        }
+                    }
+
+                    # Failover activity reported by the MPIO driver.
+                    $failovers = Get-HcsEventCount -LogName 'System' -ProviderName 'mpio' -EventId @(16, 17, 32, 33) -WindowMinutes $FailoverEventWindowMinutes
+                    if ($failovers -ge $FailoverEventCriticalCount) {
+                        $failoverState = 'Critical'
+                        $failoverStateDetail = "$failovers MPIO path failover event(s) were logged in the last $FailoverEventWindowMinutes minute(s), at or above the critical threshold of $FailoverEventCriticalCount. The fabric is unstable."
+                    }
+                    elseif ($failovers -ge $FailoverEventWarningCount) {
+                        $failoverState = 'Warning'
+                        $failoverStateDetail = "$failovers MPIO path failover event(s) were logged in the last $FailoverEventWindowMinutes minute(s), at or above the warning threshold of $FailoverEventWarningCount."
+                    }
+                    else {
+                        $failoverState = 'Good'
+                        $failoverStateDetail = "No MPIO path failover events were logged in the last $FailoverEventWindowMinutes minute(s)."
+                    }
+                }
+            }
+        }
+        'HostEventDetail' {
+            # Host-wide iScsiPrt and mpio event counts, evaluated once per host. The System-log
+            # providers do not attribute these events to a session or a disk, so per-instance
+            # evaluation raised the same alert once per iSCSI session and once per LUN (ADR 0053).
+            $errorCount = Get-HcsEventCount -LogName 'System' -ProviderName 'iScsiPrt' -EventId @(7, 9, 20, 27, 39, 40, 63, 70) -WindowMinutes 60
+            if ($errorCount -ge $IscsiConnectionErrorRatePerHourCritical) {
+                $connectionErrorState = 'Critical'
+                $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged on this host in the last hour, at or above the critical threshold of $IscsiConnectionErrorRatePerHourCritical per hour."
+            }
+            elseif ($errorCount -ge $IscsiConnectionErrorRatePerHourWarning) {
+                $connectionErrorState = 'Warning'
+                $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged on this host in the last hour, at or above the warning threshold of $IscsiConnectionErrorRatePerHourWarning per hour."
+            }
+            else {
+                $connectionErrorState = 'Good'
+                $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged on this host in the last hour, below the warning threshold of $IscsiConnectionErrorRatePerHourWarning per hour."
+            }
+
+            $authFailures = Get-HcsEventCount -LogName 'System' -ProviderName 'iScsiPrt' -EventId @(30, 31, 32) -WindowMinutes $IscsiAuthFailureWindowMinutes
+            if ($authFailures -ge $IscsiAuthFailureWarningCount) {
+                $authenticationState = 'Critical'
+                $authenticationStateDetail = "$authFailures iSCSI authentication failure event(s) were logged on this host in the last $IscsiAuthFailureWindowMinutes minute(s), at or above the threshold of $IscsiAuthFailureWarningCount. Verify CHAP secrets on the initiator and the target."
+            }
+            else {
+                $authenticationState = 'Good'
+                $authenticationStateDetail = "No iSCSI authentication failures were logged on this host in the last $IscsiAuthFailureWindowMinutes minute(s)."
+            }
+
+            $failovers = Get-HcsEventCount -LogName 'System' -ProviderName 'mpio' -EventId @(16, 17, 32, 33) -WindowMinutes $FailoverEventWindowMinutes
+            if ($failovers -ge $FailoverEventCriticalCount) {
+                $failoverState = 'Critical'
+                $failoverStateDetail = "$failovers MPIO path failover event(s) were logged on this host in the last $FailoverEventWindowMinutes minute(s), at or above the critical threshold of $FailoverEventCriticalCount. The fabric is unstable."
+            }
+            elseif ($failovers -ge $FailoverEventWarningCount) {
+                $failoverState = 'Warning'
+                $failoverStateDetail = "$failovers MPIO path failover event(s) were logged on this host in the last $FailoverEventWindowMinutes minute(s), at or above the warning threshold of $FailoverEventWarningCount."
+            }
+            else {
+                $failoverState = 'Good'
+                $failoverStateDetail = "No MPIO path failover events were logged on this host in the last $FailoverEventWindowMinutes minute(s)."
+            }
+        }
+        { $_ -in @('LogicalUnitDetail', 'DiskDetail') } {
+            if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
+                $operationalState = 'NotApplicable'
+                $operationalStateDetail = 'The Windows Storage PowerShell module is unavailable on this host, so logical unit monitoring is skipped.'
+            }
+            else {
+                $disk = Get-Disk -Number $DiskNumber -ErrorAction SilentlyContinue
+                if ($null -eq $disk) {
+                    $operationalState = 'Critical'
+                    $operationalStateDetail = "Disk $DiskNumber for storage identity '$StorageId' is no longer visible to Windows."
+                }
+                else {
+                    $health = [string](Get-HcsProperty -InputObject $disk -Name 'HealthStatus')
+                    $operational = @(Get-HcsProperty -InputObject $disk -Name 'OperationalStatus') -join ','
+                    if ($health -eq 'Unhealthy') {
+                        $operationalState = 'Critical'
+                        $operationalStateDetail = "Logical unit on disk $DiskNumber reports health '$health' and operational status '$operational'."
+                    }
+                    elseif ($health -eq 'Warning' -or [bool](Get-HcsProperty -InputObject $disk -Name 'IsReadOnly')) {
+                        $operationalState = 'Warning'
+                        $operationalStateDetail = "Logical unit on disk $DiskNumber reports health '$health' and operational status '$operational'."
+                    }
+                    else {
+                        $operationalState = 'Good'
+                        $operationalStateDetail = "Logical unit on disk $DiskNumber reports health '$health' and operational status '$operational'."
+                    }
+
+                    # Capacity used percent across every volume carved from this logical unit.
+                    $totalSize = 0.0
+                    $totalRemaining = 0.0
+                    try {
+                        foreach ($partition in @(Get-Partition -DiskNumber $DiskNumber -ErrorAction SilentlyContinue)) {
+                            $accessPaths = @(Get-HcsProperty -InputObject $partition -Name 'AccessPaths')
+                            foreach ($path in $accessPaths) {
+                                $volume = Get-Volume -Path $path -ErrorAction SilentlyContinue
+                                if ($null -eq $volume) { continue }
+                                $size = [double](Get-HcsProperty -InputObject $volume -Name 'Size')
+                                $remaining = [double](Get-HcsProperty -InputObject $volume -Name 'SizeRemaining')
+                                if ($size -gt 0) { $totalSize += $size; $totalRemaining += $remaining }
+                                break
+                            }
+                        }
+                    }
+                    catch { $totalSize = 0.0 }
+
+                    if ($totalSize -le 0) {
+                        $capacityState = 'NotApplicable'
+                        $capacityStateDetail = "Disk $DiskNumber exposes no Windows-formatted volume, so capacity used percent cannot be measured. This is expected for pass-through and raw cluster devices."
+                    }
+                    else {
+                        $usedPercent = [int][Math]::Round(((($totalSize - $totalRemaining) / $totalSize) * 100), 0)
+                        if ($usedPercent -ge $CapacityUsedCriticalPercent) {
+                            $capacityState = 'Critical'
+                            $capacityStateDetail = "Logical unit on disk $DiskNumber is $usedPercent percent used, at or above the critical threshold of $CapacityUsedCriticalPercent percent."
+                        }
+                        elseif ($usedPercent -ge $CapacityUsedWarningPercent) {
+                            $capacityState = 'Warning'
+                            $capacityStateDetail = "Logical unit on disk $DiskNumber is $usedPercent percent used, at or above the warning threshold of $CapacityUsedWarningPercent percent."
+                        }
+                        else {
+                            $capacityState = 'Good'
+                            $capacityStateDetail = "Logical unit on disk $DiskNumber is $usedPercent percent used, below the warning threshold of $CapacityUsedWarningPercent percent."
+                        }
+                    }
+
+                    # Latency and queue depth from the PhysicalDisk counter set for this disk number.
+                    $readSeconds = Get-HcsPhysicalDiskCounter -Number $DiskNumber -CounterSuffix 'Avg. Disk sec/Read'
+                    if ($null -eq $readSeconds) {
+                        $readLatencyState = 'NotApplicable'
+                        $readLatencyStateDetail = "PhysicalDisk read latency counters are unavailable for disk $DiskNumber."
+                    }
+                    else {
+                        $readMs = [Math]::Round(($readSeconds * 1000), 2)
+                        if ($readMs -ge $ReadLatencyCriticalMs) {
+                            $readLatencyState = 'Critical'
+                            $readLatencyStateDetail = "Logical unit on disk $DiskNumber shows $readMs ms average read latency, at or above the critical threshold of $ReadLatencyCriticalMs ms."
+                        }
+                        elseif ($readMs -ge $ReadLatencyWarningMs) {
+                            $readLatencyState = 'Warning'
+                            $readLatencyStateDetail = "Logical unit on disk $DiskNumber shows $readMs ms average read latency, at or above the warning threshold of $ReadLatencyWarningMs ms."
+                        }
+                        else {
+                            $readLatencyState = 'Good'
+                            $readLatencyStateDetail = "Logical unit on disk $DiskNumber shows $readMs ms average read latency, below the warning threshold of $ReadLatencyWarningMs ms."
+                        }
+                    }
+
+                    $writeSeconds = Get-HcsPhysicalDiskCounter -Number $DiskNumber -CounterSuffix 'Avg. Disk sec/Write'
+                    if ($null -eq $writeSeconds) {
+                        $writeLatencyState = 'NotApplicable'
+                        $writeLatencyStateDetail = "PhysicalDisk write latency counters are unavailable for disk $DiskNumber."
+                    }
+                    else {
+                        $writeMs = [Math]::Round(($writeSeconds * 1000), 2)
+                        if ($writeMs -ge $WriteLatencyCriticalMs) {
+                            $writeLatencyState = 'Critical'
+                            $writeLatencyStateDetail = "Logical unit on disk $DiskNumber shows $writeMs ms average write latency, at or above the critical threshold of $WriteLatencyCriticalMs ms."
+                        }
+                        elseif ($writeMs -ge $WriteLatencyWarningMs) {
+                            $writeLatencyState = 'Warning'
+                            $writeLatencyStateDetail = "Logical unit on disk $DiskNumber shows $writeMs ms average write latency, at or above the warning threshold of $WriteLatencyWarningMs ms."
+                        }
+                        else {
+                            $writeLatencyState = 'Good'
+                            $writeLatencyStateDetail = "Logical unit on disk $DiskNumber shows $writeMs ms average write latency, below the warning threshold of $WriteLatencyWarningMs ms."
+                        }
+                    }
+
+                    $queueLength = Get-HcsPhysicalDiskCounter -Number $DiskNumber -CounterSuffix 'Current Disk Queue Length'
+                    if ($null -eq $queueLength) {
+                        $queueDepthState = 'NotApplicable'
+                        $queueDepthStateDetail = "PhysicalDisk queue length counters are unavailable for disk $DiskNumber."
+                    }
+                    else {
+                        $queue = [Math]::Round($queueLength, 1)
+                        if ($queue -ge $QueueDepthCritical) {
+                            $queueDepthState = 'Critical'
+                            $queueDepthStateDetail = "Logical unit on disk $DiskNumber shows a queue depth of $queue, at or above the critical threshold of $QueueDepthCritical."
+                        }
+                        elseif ($queue -ge $QueueDepthWarning) {
+                            $queueDepthState = 'Warning'
+                            $queueDepthStateDetail = "Logical unit on disk $DiskNumber shows a queue depth of $queue, at or above the warning threshold of $QueueDepthWarning."
+                        }
+                        else {
+                            $queueDepthState = 'Good'
+                            $queueDepthStateDetail = "Logical unit on disk $DiskNumber shows a queue depth of $queue, below the warning threshold of $QueueDepthWarning."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "$ObjectKind health query failed: $($_.Exception.Message)"
+    $probeFailed = $true
+    $api.LogScriptEvent('HyperVPrivateCloud.Storage.ObjectHealth.ps1', 8404, 1, $detail)
+}
+
+# A failed detail probe must be visible: every facet state the probe never reached becomes Warning with the
+# failure text, instead of NotApplicable (which the monitor types evaluate as healthy).
+if ((Get-Variable -Name probeFailed -ValueOnly -ErrorAction SilentlyContinue) -and ($ObjectKind -like '*Detail')) {
+    foreach ($stateVariable in @('linkState', 'linkSpeedState', 'linkFailureState', 'lossOfSignalState', 'lossOfSyncState', 'crcErrorState', 'fabricLoginState', 'connectedState', 'sessionCountState', 'connectionErrorState', 'authenticationState', 'pathCountState', 'pathLossState', 'failoverState', 'operationalState', 'capacityState', 'readLatencyState', 'writeLatencyState', 'queueDepthState')) {
+        if ((Get-Variable -Name $stateVariable -ValueOnly -ErrorAction SilentlyContinue) -eq 'NotApplicable') {
+            Set-Variable -Name $stateVariable -Value 'Warning'
+            Set-Variable -Name ($stateVariable + 'Detail') -Value $detail
+        }
+    }
+}
+
+$bag.AddValue('ObjectState', $state)
+$bag.AddValue('ObjectStateDetail', $detail)
+$bag.AddValue('RedundancyState', $redundancy)
+$bag.AddValue('RedundancyStateDetail', $redundancyDetail)
+$bag.AddValue('LinkState', $linkState)
+$bag.AddValue('LinkStateDetail', $linkStateDetail)
+$bag.AddValue('LinkSpeedState', $linkSpeedState)
+$bag.AddValue('LinkSpeedStateDetail', $linkSpeedStateDetail)
+$bag.AddValue('LinkFailureState', $linkFailureState)
+$bag.AddValue('LinkFailureStateDetail', $linkFailureStateDetail)
+$bag.AddValue('LossOfSignalState', $lossOfSignalState)
+$bag.AddValue('LossOfSignalStateDetail', $lossOfSignalStateDetail)
+$bag.AddValue('LossOfSyncState', $lossOfSyncState)
+$bag.AddValue('LossOfSyncStateDetail', $lossOfSyncStateDetail)
+$bag.AddValue('CrcErrorState', $crcErrorState)
+$bag.AddValue('CrcErrorStateDetail', $crcErrorStateDetail)
+$bag.AddValue('FabricLoginState', $fabricLoginState)
+$bag.AddValue('FabricLoginStateDetail', $fabricLoginStateDetail)
+$bag.AddValue('ConnectedState', $connectedState)
+$bag.AddValue('ConnectedStateDetail', $connectedStateDetail)
+$bag.AddValue('SessionCountState', $sessionCountState)
+$bag.AddValue('SessionCountStateDetail', $sessionCountStateDetail)
+$bag.AddValue('ConnectionErrorState', $connectionErrorState)
+$bag.AddValue('ConnectionErrorStateDetail', $connectionErrorStateDetail)
+$bag.AddValue('AuthenticationState', $authenticationState)
+$bag.AddValue('AuthenticationStateDetail', $authenticationStateDetail)
+$bag.AddValue('PathCountState', $pathCountState)
+$bag.AddValue('PathCountStateDetail', $pathCountStateDetail)
+$bag.AddValue('PathLossState', $pathLossState)
+$bag.AddValue('PathLossStateDetail', $pathLossStateDetail)
+$bag.AddValue('PathBalanceState', $pathBalanceState)
+$bag.AddValue('PathBalanceStateDetail', $pathBalanceStateDetail)
+$bag.AddValue('FailoverState', $failoverState)
+$bag.AddValue('FailoverStateDetail', $failoverStateDetail)
+$bag.AddValue('OperationalState', $operationalState)
+$bag.AddValue('OperationalStateDetail', $operationalStateDetail)
+$bag.AddValue('CapacityState', $capacityState)
+$bag.AddValue('CapacityStateDetail', $capacityStateDetail)
+$bag.AddValue('ReadLatencyState', $readLatencyState)
+$bag.AddValue('ReadLatencyStateDetail', $readLatencyStateDetail)
+$bag.AddValue('WriteLatencyState', $writeLatencyState)
+$bag.AddValue('WriteLatencyStateDetail', $writeLatencyStateDetail)
+$bag.AddValue('QueueDepthState', $queueDepthState)
+$bag.AddValue('QueueDepthStateDetail', $queueDepthStateDetail)
+return $bag
+}
+
+if ($ObjectKind -eq 'HostStorageInventory') {
+    # One probe run per host feeds every keyed storage monitor: one bag per SAN disk, iSCSI session,
+    # and Fibre Channel port, keyed exactly as the discovery keys the instance (ADR 0053 cookdown).
+    $diskCount = 0
+    $sessionCount = 0
+    $portCount = 0
+    if (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk') {
+        foreach ($disk in @(Get-Disk -ErrorAction SilentlyContinue | Where-Object { -not $_.IsBoot -and -not $_.IsSystem -and [string]$_.BusType -in @('iSCSI', 'Fibre Channel', 'SAS', 'RAID') })) {
+            $identitySource = @([string]$disk.UniqueId, [string]$disk.SerialNumber) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1
+            $hostLabel = if ([string]::IsNullOrWhiteSpace($ComputerName)) { [string]$env:COMPUTERNAME } else { $ComputerName }
+            $rawStorageIdentity = if ($identitySource) { ([string]$identitySource).Trim().ToLowerInvariant() } else { "$hostLabel|$($disk.Number)|$($disk.FriendlyName)|$($disk.Size)" }
+            $instanceKey = 'lun:' + (Get-HcsStableId -Value $rawStorageIdentity)
+            $diskBag = Get-HcsFacetBag -ObjectKind 'DiskDetail' -Identity '' -DiskNumber ([int]$disk.Number) -StorageId $instanceKey -BusType ([string]$disk.BusType)
+            $diskBag.AddValue('InstanceKey', $instanceKey)
+            $api.AddItem($diskBag)
+            $diskCount++
+        }
+    }
+    if (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession') {
+        foreach ($session in @(Get-IscsiSession -ErrorAction SilentlyContinue)) {
+            $sessionId = [string](Get-HcsProperty -InputObject $session -Name 'SessionIdentifier')
+            if ([string]::IsNullOrWhiteSpace($sessionId)) { continue }
+            $sessionBag = Get-HcsFacetBag -ObjectKind 'IscsiDetail' -Identity $sessionId -DiskNumber 0 -StorageId '' -BusType 'iSCSI'
+            $sessionBag.AddValue('InstanceKey', $sessionId)
+            $api.AddItem($sessionBag)
+            $sessionCount++
+        }
+    }
+    foreach ($port in @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue)) {
+        $portId = [string](Get-HcsProperty -InputObject $port -Name 'UniquePortId')
+        if ([string]::IsNullOrWhiteSpace($portId)) { continue }
+        $portBag = Get-HcsFacetBag -ObjectKind 'FibreChannelDetail' -Identity $portId -DiskNumber 0 -StorageId '' -BusType 'Fibre Channel'
+        $portBag.AddValue('InstanceKey', $portId)
+        $api.AddItem($portBag)
+        $portCount++
+    }
+    # Heartbeat bag: proves the inventory ran even on a host with no SAN objects and satisfies the
+    # one-DataItem probe contract. No monitor matches its InstanceKey.
+    $summaryBag = Get-HcsFacetBag -ObjectKind 'InventorySummary' -Identity '' -DiskNumber 0 -StorageId '' -BusType ''
+    $summaryBag.AddValue('InstanceKey', 'host-storage-inventory')
+    $summaryBag.AddValue('InventoryDiskCount', $diskCount)
+    $summaryBag.AddValue('InventorySessionCount', $sessionCount)
+    $summaryBag.AddValue('InventoryPortCount', $portCount)
+    $api.AddItem($summaryBag)
+    $api.ReturnItems()
+}
+else {
+    $api.Return((Get-HcsFacetBag -ObjectKind $ObjectKind -Identity $Identity -DiskNumber $DiskNumber -StorageId $StorageId -BusType $BusType))
+}

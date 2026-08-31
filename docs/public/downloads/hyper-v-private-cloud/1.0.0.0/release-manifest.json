@@ -6,7 +6,7 @@
   "buildMode": "Release",
   "releaseEligible": true,
   "publicKeyToken": "54d0fb1159995c86",
-  "sourceCommit": "60b0369eb1baf8f8215754b466f6c1a5c3a7889e",
+  "sourceCommit": "eb769f5ce5a65e9425fc83266b7bc26cf32f1de9",
   "sourceDateEpoch": 315532800,
   "verification": {
     "vsae": true,
@@ -29,91 +29,91 @@
       "file": "HyperVPrivateCloud.Library.mp",
       "kind": "Library",
       "required": true,
-      "sha256": "0ff5e6b3f7ac18cef51cb5bac6a6c9202385b9cb157c7c1594728de40299f4e6"
+      "sha256": "d1ead3755e600e389f3e5f540b538cd6beeb45aa33d47c64e188e492f214c767"
     },
     {
       "id": "HyperVPrivateCloud.Discovery",
       "file": "HyperVPrivateCloud.Discovery.mp",
       "kind": "Discovery",
       "required": true,
-      "sha256": "ecf224d083108ea60d95778e690571363e98d9cce33dabd6ab1bd16d0307a6d8"
+      "sha256": "0a5805db15b0ee73e59bfb396e7fb39157e4b3cd780186791b1c2d8d0b9ad5f2"
     },
     {
       "id": "HyperVPrivateCloud.Monitoring",
       "file": "HyperVPrivateCloud.Monitoring.mp",
       "kind": "Monitoring",
       "required": true,
-      "sha256": "be56b928eaea8e4c7400a37a67f70ba2f0865cb35a0e6937f50a96e5317d5e2b"
+      "sha256": "701f3d1f4a2386a392751a6376a1dd058fa3887209e39587c75aa977d78b61d0"
     },
     {
       "id": "HyperVPrivateCloud.Presentation",
       "file": "HyperVPrivateCloud.Presentation.mp",
       "kind": "Presentation",
       "required": true,
-      "sha256": "db0f9d3cfe453e19d025d9ee2ddf0ff796f87083f77b12b12fe6a9d8f61715da"
+      "sha256": "7322c37fa03e5f182cc8eb4b439dfe3629b114817101474e5583b92dfe7630b9"
     },
     {
       "id": "HyperVPrivateCloud.Capability.Cluster",
       "file": "HyperVPrivateCloud.Capability.Cluster.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "2e370a97b5c9cc1adbf5f02337f6e934eb3fcf2bda6b646852e66f840f124fbb"
+      "sha256": "03a8028772d933fcd4a7deb0bf3ecd623327dab927d661d0790297234f853220"
     },
     {
       "id": "HyperVPrivateCloud.Capability.Storage",
       "file": "HyperVPrivateCloud.Capability.Storage.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "53654f5446584c806270e98f555099f2e24fd41a106feeae50e820d7c49d8d8d"
+      "sha256": "ce90ddbbb64b549f29761c1cf3da38b4ca3a57997eedc9fa46fa75b62fbf996e"
     },
     {
       "id": "HyperVPrivateCloud.Capability.S2D",
       "file": "HyperVPrivateCloud.Capability.S2D.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "f4f5c6697973e9cc3923e9666d76b22154bc821a8743beb0a80091c8977b77ed"
+      "sha256": "cd977d276be49d083f583940c26fbdb93436c2f249d122bd50509e4055b83172"
     },
     {
       "id": "HyperVPrivateCloud.Capability.PureStorage",
       "file": "HyperVPrivateCloud.Capability.PureStorage.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "9bdb9c582f31b4e12b54f890e07ea6ef8d44f7c3618ceb20632bc59dd7333880"
+      "sha256": "8cb434e488cd488463fae9db0767feccb203ce42b84bf272215e175994662a1b"
     },
     {
       "id": "HyperVPrivateCloud.Capability.FileServices",
       "file": "HyperVPrivateCloud.Capability.FileServices.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "070b2f395b5bcda91cb8de233d13be1a74384fc8adfd96be9e4accba030f8add"
+      "sha256": "209d04d9329e0da2e2bc348394116124c25a91edcf46017b2a6d65e1be4d2bcd"
     },
     {
       "id": "HyperVPrivateCloud.Capability.PhysicalNetwork",
       "file": "HyperVPrivateCloud.Capability.PhysicalNetwork.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "c9d85f26bd801bc93ebfe7776cdc0da0a07191b30f7ce201ec6dbaba572aa065"
+      "sha256": "5a80491cc57b7254b877b49404ebe1e7514abc5db8dc49e9003cb56ed5b47c63"
     },
     {
       "id": "HyperVPrivateCloud.Capability.NetworkATC",
       "file": "HyperVPrivateCloud.Capability.NetworkATC.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "0c8576c23a70f0d9c13e6fa400449730f0d178ae4df666807f8e07c2b66bf6f2"
+      "sha256": "28c66c0a140edf810a3843a21b8b3915d7e222a655e78d72c0d753eba46ad9ec"
     },
     {
       "id": "HyperVPrivateCloud.Capability.SDN",
       "file": "HyperVPrivateCloud.Capability.SDN.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "88e29557a17f7c5de88519955a7b06734df4e446c0612f3b8b7afe3484f992c1"
+      "sha256": "843b3188b6f9f77d88f84011c23be0fed6592944fd9e03d9b11c718a43911c3f"
     },
     {
       "id": "HyperVPrivateCloud.Capability.VMM",
       "file": "HyperVPrivateCloud.Capability.VMM.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "4a55606845c5927d6ed4bb8e2dbcde21f2b36537d7c2f0119028e3498766eaf8"
+      "sha256": "78780f3763f0be62059339430a4f06bdc3a2d3b20a5233bcd3c84977c4b50eb5"
     }
   ],
   "publicOverrides": [
@@ -121,397 +121,397 @@
       "profile": "Standalone",
       "tier": "Lab",
       "file": "Overrides/Standalone/lab/HyperVPrivateCloud.Overrides.Standalone.Lab.Discovery.xml",
-      "sha256": "4ee8bea71e4ba33f03c15def82c9fcb59c30077617566c80c85b32801a32e029"
+      "sha256": "c9e198b5b18f92fe8b271f0d4d4e0fb6e1a6952f0df1a1bd85a1907294332aac"
     },
     {
       "profile": "Standalone",
       "tier": "Lab",
       "file": "Overrides/Standalone/lab/HyperVPrivateCloud.Overrides.Standalone.Lab.Monitoring.xml",
-      "sha256": "007c809f846315200a9183471dceb8b68a765f8f5e31b7ae498593e10bb2ebb2"
+      "sha256": "ed738631e279a2ccefa2ba7b1aeac20852b0afbd1c870764d8d0edb3671529de"
     },
     {
       "profile": "Standalone",
       "tier": "Standard",
       "file": "Overrides/Standalone/standard/HyperVPrivateCloud.Overrides.Standalone.Standard.Discovery.xml",
-      "sha256": "c53c77ca9aaf5a68982805f2fa204d91bfbfa26b27329854cf70cdf81ba8c13d"
+      "sha256": "6b5df4e8ccd62a30d1bd450e95f4d9ad13f5e8c7bcc4d7294457a0bbe42814ba"
     },
     {
       "profile": "Standalone",
       "tier": "Standard",
       "file": "Overrides/Standalone/standard/HyperVPrivateCloud.Overrides.Standalone.Standard.Monitoring.xml",
-      "sha256": "403c27f21141c36368aed85770a308af34bf822608689518ca260f14a48fb8b5"
+      "sha256": "6acee84e803a45ef6bf2ab2a4fe90b943e2692a49cada32dc2dac68431d25b9f"
     },
     {
       "profile": "Standalone",
       "tier": "Strict",
       "file": "Overrides/Standalone/strict/HyperVPrivateCloud.Overrides.Standalone.Strict.Discovery.xml",
-      "sha256": "666b4a915d99eb5f0b33fd318874ed76339af0e99c8f147ac64ed141130d446e"
+      "sha256": "0d2b30eaedbe9a81ba0012928ad5adc0523c65ce7adbd1c1067f9ed14ffe541c"
     },
     {
       "profile": "Standalone",
       "tier": "Strict",
       "file": "Overrides/Standalone/strict/HyperVPrivateCloud.Overrides.Standalone.Strict.Monitoring.xml",
-      "sha256": "48e0211483aac28fa9ee8f84b12d924aca0d73adcefa4fcb7b0f0b99caec23c7"
+      "sha256": "a8b0468f50ed7b5f38f65b8c50625492da1237229cc729b82264eed0a257b15c"
     },
     {
       "profile": "ClusteredSAN",
       "tier": "Lab",
       "file": "Overrides/ClusteredSAN/lab/HyperVPrivateCloud.Overrides.ClusteredSAN.Lab.Discovery.xml",
-      "sha256": "560acf2efd18645d539b0ffa7ccce631f3b37d43b4c91ee981cabfe0a0ed7af9"
+      "sha256": "7496223efc8f46401a9e9f635d0eaf0baf08b7f12b587ba6a3d14e943145e8f3"
     },
     {
       "profile": "ClusteredSAN",
       "tier": "Lab",
       "file": "Overrides/ClusteredSAN/lab/HyperVPrivateCloud.Overrides.ClusteredSAN.Lab.Monitoring.xml",
-      "sha256": "f2e6df061098e97f78659700f4e26b07f2749f77facf3530441c02527f49c984"
+      "sha256": "cbddbddf2e357bceb26c992c590059e2e3e6deb9b631f0c96a4ad7ed6852dc2a"
     },
     {
       "profile": "ClusteredSAN",
       "tier": "Standard",
       "file": "Overrides/ClusteredSAN/standard/HyperVPrivateCloud.Overrides.ClusteredSAN.Standard.Discovery.xml",
-      "sha256": "fc056d64e76f693e78cfaa76b0bdda3d5e7594aea86960eff098ce398ae7eca5"
+      "sha256": "eb56b5f41d816e9f0e7edcb69b12cf468ca008febae579a831896778e08fd0f1"
     },
     {
       "profile": "ClusteredSAN",
       "tier": "Standard",
       "file": "Overrides/ClusteredSAN/standard/HyperVPrivateCloud.Overrides.ClusteredSAN.Standard.Monitoring.xml",
-      "sha256": "d52d1de693eaeb122b39f0673c47040b2364187443615f8b4a277b2c5fa1e6a3"
+      "sha256": "5590e85e7625e711bcd1bd28a1ed1273418230c046b2eb16ca2f3e312250637a"
     },
     {
       "profile": "ClusteredSAN",
       "tier": "Strict",
       "file": "Overrides/ClusteredSAN/strict/HyperVPrivateCloud.Overrides.ClusteredSAN.Strict.Discovery.xml",
-      "sha256": "d33540feb45eb2d05208cc7557614a306d7db6966765bd7b34221203d98e36dd"
+      "sha256": "89788ce10ccd87b4ad5bdf308c2830bc8871811cc7e22a14dcb4127ad9448700"
     },
     {
       "profile": "ClusteredSAN",
       "tier": "Strict",
       "file": "Overrides/ClusteredSAN/strict/HyperVPrivateCloud.Overrides.ClusteredSAN.Strict.Monitoring.xml",
-      "sha256": "fe0c74a3703a442837b91934a5fdbc92e715a3ef772800effee534301d184502"
+      "sha256": "c8a0e1fea56fe52c8b1aebb5e5ad6c78e46b8ad6542783b46d1f1f5ecd4ed5d9"
     },
     {
       "profile": "ClusteredPure",
       "tier": "Lab",
       "file": "Overrides/ClusteredPure/lab/HyperVPrivateCloud.Overrides.ClusteredPure.Lab.Discovery.xml",
-      "sha256": "9c351183ceb338b04248478d306b5c0f9657e1c52fd8f6bd0614d6a5d341d05d"
+      "sha256": "da0380e85efc98d30f2561f96c0460b9549e2a82ea192038bb19625b886a6f4a"
     },
     {
       "profile": "ClusteredPure",
       "tier": "Lab",
       "file": "Overrides/ClusteredPure/lab/HyperVPrivateCloud.Overrides.ClusteredPure.Lab.Monitoring.xml",
-      "sha256": "0cd7d9b284f95b47d9227e10e2eb3a5536c33e4bfe56dbe948caea588c38c6e4"
+      "sha256": "577ee39895cbe2f4d4ef7bcea54c60beec55e9d89692541244b4f734c38668f6"
     },
     {
       "profile": "ClusteredPure",
       "tier": "Standard",
       "file": "Overrides/ClusteredPure/standard/HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.xml",
-      "sha256": "4c686d4edf5b46dc8257268651a1ac8f28b6037b0deed6cacf3c85b8da36a3d0"
+      "sha256": "9dcb169338d2d790c87078292502c61b3d6d9491ee262878363dbd8a14a64941"
     },
     {
       "profile": "ClusteredPure",
       "tier": "Standard",
       "file": "Overrides/ClusteredPure/standard/HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Monitoring.xml",
-      "sha256": "09aa973afc5f6bcc2f846764598b7a10a070e803a47dae3ee4b5538d884acdec"
+      "sha256": "60404985ea64e5246e40d17435ae6bd813a9ec70ebeae393bc4c81936c1bb3bf"
     },
     {
       "profile": "ClusteredPure",
       "tier": "Strict",
       "file": "Overrides/ClusteredPure/strict/HyperVPrivateCloud.Overrides.ClusteredPure.Strict.Discovery.xml",
-      "sha256": "076c36ea1e0a638da5790ff72f834d259df9890113e6ca2aae585ea08db17bf6"
+      "sha256": "8d424413ea20c0b03f50dd677ba87844ad450df24c887da1e46a918b5858943a"
     },
     {
       "profile": "ClusteredPure",
       "tier": "Strict",
       "file": "Overrides/ClusteredPure/strict/HyperVPrivateCloud.Overrides.ClusteredPure.Strict.Monitoring.xml",
-      "sha256": "8deb7add6c5ec11f50280a1837de0c24d0b4130613fca5e3aa9fa88f00e20900"
+      "sha256": "f912a9281c2490d0e70776e1d9816ce3dd0ac1ce41990a5c668691e212bfc1b5"
     },
     {
       "profile": "ClusteredS2D",
       "tier": "Lab",
       "file": "Overrides/ClusteredS2D/lab/HyperVPrivateCloud.Overrides.ClusteredS2D.Lab.Discovery.xml",
-      "sha256": "0931299c60c83b1726e6983fc94608198b415a568f66d8da694dcd2977a019ac"
+      "sha256": "51830da5efc859ffb8fa59848aaa7292c0e47615cb22f83857661bd7eda7b2ce"
     },
     {
       "profile": "ClusteredS2D",
       "tier": "Lab",
       "file": "Overrides/ClusteredS2D/lab/HyperVPrivateCloud.Overrides.ClusteredS2D.Lab.Monitoring.xml",
-      "sha256": "392d7e37d830c8e32e152557fc8fa36144d1d1b86b07a7680197358fcfcab6a2"
+      "sha256": "81a8853926bda13cb4ce38c09f9b7f13642a5daa5e3a5d79b9beb1e04a0b5321"
     },
     {
       "profile": "ClusteredS2D",
       "tier": "Standard",
       "file": "Overrides/ClusteredS2D/standard/HyperVPrivateCloud.Overrides.ClusteredS2D.Standard.Discovery.xml",
-      "sha256": "5c86750b3976579687831cb8201fa1b38529cd6489a381205ee91327cc93eb54"
+      "sha256": "2ce06db20fc8563924ad440ab48990b5ac9b83c23d690d94a9895911c350d9d1"
     },
     {
       "profile": "ClusteredS2D",
       "tier": "Standard",
       "file": "Overrides/ClusteredS2D/standard/HyperVPrivateCloud.Overrides.ClusteredS2D.Standard.Monitoring.xml",
-      "sha256": "4c44d3bd97efa1679cd0e59921d9c88fbae32ad2309e258d93ca0cbbb8f2e574"
+      "sha256": "998e99d0aba77d674dda327c3248e9d3f47713da3a992936980476f42774571f"
     },
     {
       "profile": "ClusteredS2D",
       "tier": "Strict",
       "file": "Overrides/ClusteredS2D/strict/HyperVPrivateCloud.Overrides.ClusteredS2D.Strict.Discovery.xml",
-      "sha256": "8557e6d54779f0a6e22ae09dc399a31404e0fb3a6434e07c47cd9087ceb53552"
+      "sha256": "705d5379a117cf1d6d66ea41f7b833c5336afd88e0a2d683130f2e35222102b6"
     },
     {
       "profile": "ClusteredS2D",
       "tier": "Strict",
       "file": "Overrides/ClusteredS2D/strict/HyperVPrivateCloud.Overrides.ClusteredS2D.Strict.Monitoring.xml",
-      "sha256": "9adb9da72def1b179faafdbe9232827c128659643b85f20cacd9950ccfa5f32c"
+      "sha256": "2bedbfc6273aedc5a8dc60d658002a75cc5d4c645b0dd3f2a8195420b3b3c161"
     },
     {
       "profile": "HybridSANAndS2D",
       "tier": "Lab",
       "file": "Overrides/HybridSANAndS2D/lab/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Lab.Discovery.xml",
-      "sha256": "c6676ff4a24eb1816229e86064ac9cc2508ecd12c9ceb672dd805c06cb32c260"
+      "sha256": "4d5f0b7b18754d7c6e2f84762d90d5f5d6f3b8b2a13ebbdb8f9c3da0a51c0095"
     },
     {
       "profile": "HybridSANAndS2D",
       "tier": "Lab",
       "file": "Overrides/HybridSANAndS2D/lab/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Lab.Monitoring.xml",
-      "sha256": "e5ee6d5135c57722b4e550c8f8275061c7344133c24c8bd70d53807017b99b66"
+      "sha256": "c308f622b6d9e2503d9061b7c8cf57c826abddbe8270ea3cb8a72e9c46ad3e8e"
     },
     {
       "profile": "HybridSANAndS2D",
       "tier": "Standard",
       "file": "Overrides/HybridSANAndS2D/standard/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Standard.Discovery.xml",
-      "sha256": "02d753449bd8e3ec5f477e45904cd3f787478c01ed1ba8e85c58c099bdadc8d1"
+      "sha256": "39e8c1376ba83d97648fb35ab924004152592c60de5dd0ee0ae6b6b6caf9e594"
     },
     {
       "profile": "HybridSANAndS2D",
       "tier": "Standard",
       "file": "Overrides/HybridSANAndS2D/standard/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Standard.Monitoring.xml",
-      "sha256": "fe89255c722c1c2bccc3ceb2d33e20b2ad89c78c5cefe22a343fae6ee32a96d2"
+      "sha256": "1182c0106383daaee1c5463739dd91cc5782e1c51099298689fb6b9bdfe16037"
     },
     {
       "profile": "HybridSANAndS2D",
       "tier": "Strict",
       "file": "Overrides/HybridSANAndS2D/strict/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Strict.Discovery.xml",
-      "sha256": "1e1a474c15be282ca1ab70d03e2f66d6c151732a304dd2e0b5ba339258f8eebd"
+      "sha256": "fc51508bc857b9c41ee46ce5c5b0740c90d307aff513a12ed111c7300b50877b"
     },
     {
       "profile": "HybridSANAndS2D",
       "tier": "Strict",
       "file": "Overrides/HybridSANAndS2D/strict/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Strict.Monitoring.xml",
-      "sha256": "f832b23d4914239c922acc6cd7fae31ee204b3ad907778fe766986457371e94b"
+      "sha256": "f5df36451fbd744f624126428664ca103d5aa1c70bdaf15e8f8fb71f9e74dbd9"
     },
     {
       "profile": "HybridPureAndS2D",
       "tier": "Lab",
       "file": "Overrides/HybridPureAndS2D/lab/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Lab.Discovery.xml",
-      "sha256": "2d22db27e8b1dc393e62da8d5410a19de9838a9fbd51a1601b3ef31472ad7357"
+      "sha256": "a2a09c3979d41e099760831ac5dcb4ebb4fb491db54461ba46454080d3044eb5"
     },
     {
       "profile": "HybridPureAndS2D",
       "tier": "Lab",
       "file": "Overrides/HybridPureAndS2D/lab/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Lab.Monitoring.xml",
-      "sha256": "a1615b95814d9390e910201fc4418f51626cf6d0cd9f17c9409ba9206c5303cc"
+      "sha256": "fc5527e225e23c4ee0affb6e57cf770bc04b71e59c95f47330f62685298a8fa6"
     },
     {
       "profile": "HybridPureAndS2D",
       "tier": "Standard",
       "file": "Overrides/HybridPureAndS2D/standard/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Standard.Discovery.xml",
-      "sha256": "880af3f93325686aee140c15e145dc5328c19da5e94576012c891165786074df"
+      "sha256": "9c5ced285024035c3765a84fa27e2eb070a9487e49cab9608fedff708975a2b0"
     },
     {
       "profile": "HybridPureAndS2D",
       "tier": "Standard",
       "file": "Overrides/HybridPureAndS2D/standard/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Standard.Monitoring.xml",
-      "sha256": "208f2bc2a369e47be34dbe1c3cd89d3164fbf6471d998b2b3270a155c547c412"
+      "sha256": "75b861641a59adb90fc58784f9e1f98bf730c49be2e6d8c44443078bfc732ed5"
     },
     {
       "profile": "HybridPureAndS2D",
       "tier": "Strict",
       "file": "Overrides/HybridPureAndS2D/strict/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Strict.Discovery.xml",
-      "sha256": "09b311b542622181dcc7e1b5e1eb48eaf515ae6ca45f368ff7dd399874869e16"
+      "sha256": "2e587f798c1c2f3e156ac157fc8bc329f768d70bc5bf118025f8f1c3674a02ee"
     },
     {
       "profile": "HybridPureAndS2D",
       "tier": "Strict",
       "file": "Overrides/HybridPureAndS2D/strict/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Strict.Monitoring.xml",
-      "sha256": "9a6c94ead892dfd170f4b616eb425bf91259cf62a41155dcb3ad5d388ce3ea30"
+      "sha256": "fab35616326401cd5195b3fdcef7e4cffc1e33707bdd3ab65305552dbb693b83"
     },
     {
       "profile": "HyperVOverSMB",
       "tier": "Lab",
       "file": "Overrides/HyperVOverSMB/lab/HyperVPrivateCloud.Overrides.HyperVOverSMB.Lab.Discovery.xml",
-      "sha256": "685863346712beff23aa7cc55bd87c1ccceeea0d8afea171e69449994327249f"
+      "sha256": "59f38222853039176f87e6ce9a341d78d3958d8c9574609559dd630d50574062"
     },
     {
       "profile": "HyperVOverSMB",
       "tier": "Lab",
       "file": "Overrides/HyperVOverSMB/lab/HyperVPrivateCloud.Overrides.HyperVOverSMB.Lab.Monitoring.xml",
-      "sha256": "f2f0cbf29e6dc9acae829e1c02100e35b8aca8ed696c908310d6c7f310fb126b"
+      "sha256": "89a9c69ebbe20e8cf72bac0860b4085e2dbc276942d4eb5add3a35d6aeabe0e5"
     },
     {
       "profile": "HyperVOverSMB",
       "tier": "Standard",
       "file": "Overrides/HyperVOverSMB/standard/HyperVPrivateCloud.Overrides.HyperVOverSMB.Standard.Discovery.xml",
-      "sha256": "5eb3a7d6c1ee89c09b92778c9203281355aec81fdc6ab8b0c5716b4632dd2584"
+      "sha256": "9d4857ad1862bd23d900927173bc0312b51254909dff8669d43c66f4532abfd9"
     },
     {
       "profile": "HyperVOverSMB",
       "tier": "Standard",
       "file": "Overrides/HyperVOverSMB/standard/HyperVPrivateCloud.Overrides.HyperVOverSMB.Standard.Monitoring.xml",
-      "sha256": "44026cf1ec73b2682973ba2084305f4d18f71f461380fabc153bb1d1c3f02c60"
+      "sha256": "eb3326536f48850409d16ffc1913e482b325af0f48bf9b694567096de2da5360"
     },
     {
       "profile": "HyperVOverSMB",
       "tier": "Strict",
       "file": "Overrides/HyperVOverSMB/strict/HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery.xml",
-      "sha256": "b93afab3918e608046cfd297477e0b12462b04dcd49a0afdb9b2bf27e6013a39"
+      "sha256": "8322626fb768fa166987d668a0fb1e2b45d8a6117f35634008f358cfdba88718"
     },
     {
       "profile": "HyperVOverSMB",
       "tier": "Strict",
       "file": "Overrides/HyperVOverSMB/strict/HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Monitoring.xml",
-      "sha256": "ab55298a05d675daa9ae2a6f70678bff68e5723a4c06db06cc9e39f01634b0f1"
+      "sha256": "0d2746c1c9a395081dc2030d2b2500d40277ef5e3a0c8e43c801415796f98599"
     },
     {
       "profile": "NetworkATC",
       "tier": "Lab",
       "file": "Overrides/NetworkATC/lab/HyperVPrivateCloud.Overrides.NetworkATC.Lab.Discovery.xml",
-      "sha256": "573ab3c4df8279b5bda578f2d73e9bb5a2c2f5093bd30508f2c5441a6ffa8832"
+      "sha256": "380ceebeb05610c6fbe6047cbde1004766bcc367792b7d0084b447efd176c144"
     },
     {
       "profile": "NetworkATC",
       "tier": "Lab",
       "file": "Overrides/NetworkATC/lab/HyperVPrivateCloud.Overrides.NetworkATC.Lab.Monitoring.xml",
-      "sha256": "71c67bb54901cc4067078ab28947b9ab71f4c70b581565c38870052cdcee342e"
+      "sha256": "ea54c49405902f69092a08ed05e2dc091158da19543ab4a571d2909a9e59dca9"
     },
     {
       "profile": "NetworkATC",
       "tier": "Standard",
       "file": "Overrides/NetworkATC/standard/HyperVPrivateCloud.Overrides.NetworkATC.Standard.Discovery.xml",
-      "sha256": "79d9bbe57f1f9a8f582606aa67d45135cbd16ba8b7b63ab1dfe5f69fa05a6ded"
+      "sha256": "9618b92a72c33a01e387c684a0be7c1cb00edffcdc8305f37e773c1e7a7e7922"
     },
     {
       "profile": "NetworkATC",
       "tier": "Standard",
       "file": "Overrides/NetworkATC/standard/HyperVPrivateCloud.Overrides.NetworkATC.Standard.Monitoring.xml",
-      "sha256": "0050fdff93f25713a62e9f3bdfc739ec8d9ceb5274dd68b6c429240ef7ebcf3f"
+      "sha256": "ced5a8fbb657cc4f53eb1ad9dc66cd9624ee8ace5dc938f1738d8bb43a753597"
     },
     {
       "profile": "NetworkATC",
       "tier": "Strict",
       "file": "Overrides/NetworkATC/strict/HyperVPrivateCloud.Overrides.NetworkATC.Strict.Discovery.xml",
-      "sha256": "bd96463b5e0355b05c55e4329233ad0133a4b908ab88a2ac9c1e0808942dc4ff"
+      "sha256": "b58d123aacb3c636449cae6d5c237fbcd120298cebc3dc431c94620242878041"
     },
     {
       "profile": "NetworkATC",
       "tier": "Strict",
       "file": "Overrides/NetworkATC/strict/HyperVPrivateCloud.Overrides.NetworkATC.Strict.Monitoring.xml",
-      "sha256": "c19977e29400ff9e1fc4f8433506e45fbe2e054917f606478defca9155bcc668"
+      "sha256": "5febaa16c2d373216e9d1f0d2e3ea0022883ad6ab7f6d44fa4d3d6fef222d54d"
     },
     {
       "profile": "VMMManaged",
       "tier": "Lab",
       "file": "Overrides/VMMManaged/lab/HyperVPrivateCloud.Overrides.VMMManaged.Lab.Discovery.xml",
-      "sha256": "00d7eb36082f273a1b004bd76935dea1bf224714c6150ed13167ba08392ba61e"
+      "sha256": "6c8895f80b27060fa1235ff2a6abfd5b90f6097def39bc469994860b50738b67"
     },
     {
       "profile": "VMMManaged",
       "tier": "Lab",
       "file": "Overrides/VMMManaged/lab/HyperVPrivateCloud.Overrides.VMMManaged.Lab.Monitoring.xml",
-      "sha256": "b782b57cddb24ca48958bb5823df367b5043efdf9b77d9ce1133864a0183ffdc"
+      "sha256": "babab7a55ef5831db6a7ec7446097cc5a6ac2e85c40af5e83cfb3df67040ee0e"
     },
     {
       "profile": "VMMManaged",
       "tier": "Standard",
       "file": "Overrides/VMMManaged/standard/HyperVPrivateCloud.Overrides.VMMManaged.Standard.Discovery.xml",
-      "sha256": "9fffd7a973693f09ee6808d538447e60a10b25a48653c385df68c1f5b9537ca8"
+      "sha256": "51d345ae57998be0d8484552ea446a79d83d0120890336e8e28fdb6608b45716"
     },
     {
       "profile": "VMMManaged",
       "tier": "Standard",
       "file": "Overrides/VMMManaged/standard/HyperVPrivateCloud.Overrides.VMMManaged.Standard.Monitoring.xml",
-      "sha256": "f652d1fd23f0ee20073d54b7cbb931ad5c2fa5522cec39d8bbb4165d7fd6a4c1"
+      "sha256": "85b85ce1ca41d40f59b566baabcc7e4cb549008bcdb2175523e8a0e2cbc4e365"
     },
     {
       "profile": "VMMManaged",
       "tier": "Strict",
       "file": "Overrides/VMMManaged/strict/HyperVPrivateCloud.Overrides.VMMManaged.Strict.Discovery.xml",
-      "sha256": "b3b538b08ac4d58c2020f04880bcfab6cd56ad274d6164dcb7804274bfd49648"
+      "sha256": "f0622fe0a4b8cea812a2e5cf3ee41ca26f11ed48564a2bab775f0257188ca03b"
     },
     {
       "profile": "VMMManaged",
       "tier": "Strict",
       "file": "Overrides/VMMManaged/strict/HyperVPrivateCloud.Overrides.VMMManaged.Strict.Monitoring.xml",
-      "sha256": "84e506908fe7c13c94b21d91030e1981d03f38a8a2fee2bcad8449b1c1e28a2e"
+      "sha256": "07dbf2d1e89100a175df4e2b6ec6cf20d17a1d80c2f9239414eba554a7ebef48"
     },
     {
       "profile": "SDNEnabled",
       "tier": "Lab",
       "file": "Overrides/SDNEnabled/lab/HyperVPrivateCloud.Overrides.SDNEnabled.Lab.Discovery.xml",
-      "sha256": "2216da14d7dad606785964a86f1750020a52035641400421d5dd6a803949d76d"
+      "sha256": "f8661870b0d8a23f853b6cd06f50f662d4e1aba89ac475b3c8deb83680cc12de"
     },
     {
       "profile": "SDNEnabled",
       "tier": "Lab",
       "file": "Overrides/SDNEnabled/lab/HyperVPrivateCloud.Overrides.SDNEnabled.Lab.Monitoring.xml",
-      "sha256": "f0d9c90c66d7e2a85f2a017dddc47b0ec1d2c0e27920439a52e70679a2e9f079"
+      "sha256": "4e88e8053a49268507c01c2f64874146c8e871a60e025b1c86a59c5b7c68f88f"
     },
     {
       "profile": "SDNEnabled",
       "tier": "Standard",
       "file": "Overrides/SDNEnabled/standard/HyperVPrivateCloud.Overrides.SDNEnabled.Standard.Discovery.xml",
-      "sha256": "a770d87176e2a996b4b04970dcc5ffbc0b55c93cbe6f711003ef82a3f6a72f59"
+      "sha256": "0bd15e10c98064bbf499cd0d21ab3fdd19d51694e25993fc2d492c96c1605c15"
     },
     {
       "profile": "SDNEnabled",
       "tier": "Standard",
       "file": "Overrides/SDNEnabled/standard/HyperVPrivateCloud.Overrides.SDNEnabled.Standard.Monitoring.xml",
-      "sha256": "0a6c01f00449a23be4d89c929c05956fc9de60aed41f10add4b3e244c5329083"
+      "sha256": "72c847829c72cd664c9efdcedff64044f99afb51219ef2227263a98ce1a213c4"
     },
     {
       "profile": "SDNEnabled",
       "tier": "Strict",
       "file": "Overrides/SDNEnabled/strict/HyperVPrivateCloud.Overrides.SDNEnabled.Strict.Discovery.xml",
-      "sha256": "0909acf7fb37dfe5f1040328791005b5bed6d8ba540e940320cca4b409cd29fe"
+      "sha256": "b59d3abe70e97f7652178a3d60de930cdc2e7f1cff94fae4bcadacc95ebaf0ff"
     },
     {
       "profile": "SDNEnabled",
       "tier": "Strict",
       "file": "Overrides/SDNEnabled/strict/HyperVPrivateCloud.Overrides.SDNEnabled.Strict.Monitoring.xml",
-      "sha256": "d819a01c8f7fc48b43eb67a3de05b046ea35ba83ae3dbfd19648a03de05ce9d7"
+      "sha256": "c861855fff3eba040c2650ff9c341c0793673bd3768df341323dd3f0cbfbca20"
     },
     {
       "profile": "CompletePrivateCloud",
       "tier": "Lab",
       "file": "Overrides/CompletePrivateCloud/lab/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Lab.Discovery.xml",
-      "sha256": "1f903a518559a77c9885ffd82f114cc95078cdb4e22c52a6bbd800f126e53112"
+      "sha256": "a0c35cd9330242fc674ae2926ea38473a9eb5958356ad2dedf57c9ba45e8f606"
     },
     {
       "profile": "CompletePrivateCloud",
       "tier": "Lab",
       "file": "Overrides/CompletePrivateCloud/lab/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Lab.Monitoring.xml",
-      "sha256": "2aa8d6010da7a26d6db7b8fd7f1efe98df7a390824f83fffb977317d5edff993"
+      "sha256": "084584d4e57329ebf2051dfde90f197203385915c13f07dcf0b699081ca6cdbd"
     },
     {
       "profile": "CompletePrivateCloud",
       "tier": "Standard",
       "file": "Overrides/CompletePrivateCloud/standard/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Standard.Discovery.xml",
-      "sha256": "68d33519b843529d80e4bca6815e755cdbd298220a0a1049049524f59d517c5f"
+      "sha256": "44ec27ed0228b0d5fc290dab1882480144dd6df174635c83aa55b88ecf1f06fd"
     },
     {
       "profile": "CompletePrivateCloud",
       "tier": "Standard",
       "file": "Overrides/CompletePrivateCloud/standard/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Standard.Monitoring.xml",
-      "sha256": "aa7f949c8273b5ee2c4b9079a6bd17c568bd005f031670047e8421f3032a7a9b"
+      "sha256": "558b8c2e31994d823cc3c3a2821db9508c4221b72a8d08023cd9bb0458040ed8"
     },
     {
       "profile": "CompletePrivateCloud",
       "tier": "Strict",
       "file": "Overrides/CompletePrivateCloud/strict/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Discovery.xml",
-      "sha256": "c3ff71091ded8a20524c81a95489bb07190eba96e36eef7161beb2ed7756f2e4"
+      "sha256": "8f8480547652c6558c787fb9118da38ad992042e168227a6fd891531fb6d598e"
     },
     {
       "profile": "CompletePrivateCloud",
       "tier": "Strict",
       "file": "Overrides/CompletePrivateCloud/strict/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Monitoring.xml",
-      "sha256": "f0a6e6edf082e9214b8591863847f226a8dda88b2d8a0671c879d75db91b7a6d"
+      "sha256": "688f6c46e033d5deb9e6ba8c70268e9bc6d5af12e64f9d8699180ffcc291fa60"
     }
   ],
   "prerequisites": [
@@ -523,14 +523,21 @@
       "publicKeyToken": "31bf3856ad364e35"
     },
     {
-      "owner": "HyperVPrivateCloud.Monitoring",
+      "owner": "HyperVPrivateCloud.Capability.Cluster",
       "alias": "MSDL",
       "id": "Microsoft.SystemCenter.DataWarehouse.Library",
       "version": "7.0.8433.0",
       "publicKeyToken": "31bf3856ad364e35"
     },
     {
-      "owner": "HyperVPrivateCloud.Capability.S2D",
+      "owner": "HyperVPrivateCloud.Library",
+      "alias": "InstanceGroup",
+      "id": "Microsoft.SystemCenter.InstanceGroup.Library",
+      "version": "7.5.8501.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.Storage",
       "alias": "SC",
       "id": "Microsoft.SystemCenter.Library",
       "version": "7.0.8433.0",
@@ -607,7 +614,7 @@
       "publicKeyToken": "31bf3856ad364e35"
     },
     {
-      "owner": "HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "owner": "HyperVPrivateCloud.Library",
       "alias": "Windows",
       "id": "Microsoft.Windows.Library",
       "version": "7.5.8501.0",
@@ -635,14 +642,14 @@
       "publicKeyToken": "a9d994eedb5e7179"
     },
     {
-      "owner": "HyperVPrivateCloud.Capability.NetworkATC",
+      "owner": "HyperVPrivateCloud.Monitoring",
       "alias": "Health",
       "id": "System.Health.Library",
       "version": "7.0.8433.0",
       "publicKeyToken": "31bf3856ad364e35"
     },
     {
-      "owner": "HyperVPrivateCloud.Capability.VMM",
+      "owner": "HyperVPrivateCloud.Capability.PhysicalNetwork",
       "alias": "System",
       "id": "System.Library",
       "version": "7.5.8501.0",
@@ -656,7 +663,7 @@
       "publicKeyToken": "31bf3856ad364e35"
     },
     {
-      "owner": "HyperVPrivateCloud.Monitoring",
+      "owner": "HyperVPrivateCloud.Capability.FileServices",
       "alias": "Perf",
       "id": "System.Performance.Library",
       "version": "7.0.8433.0",
@@ -692,6 +699,21 @@
         {
           "id": "Microsoft.SystemCenter.DataWarehouse.Library",
           "version": "10.22.10118.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.InstanceGroup.Library.mp",
+      "sourceType": "mp",
+      "sha256": "2f715c9bc1daa1ced3cc91fc22fbe8bac1a2c7155db643cd383cb87230ba2af8",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.InstanceGroup.Library",
+          "version": "7.5.8501.1",
           "publicKeyToken": "31bf3856ad364e35"
         }
       ]

@@ -1,0 +1,55 @@
+#Requires -Version 7.0
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$VMMId,
+    [string]$ClusterNames
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if (-not [string]::IsNullOrWhiteSpace([string]$Value)) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    if ([string]::IsNullOrWhiteSpace($VMMId)) {
+        $api.Return($script:DiscoveryData)
+        return
+    }
+
+    $fabricBoundaryId = 'vmm:{0}' -f $ComputerName.Trim().ToLowerInvariant()
+    $fabricManagement = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponent']$")
+    Add-HcsProperty $fabricManagement "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $fabricBoundaryId
+
+    $privateCloud = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='VMMDiscovery!Microsoft.SystemCenter.VirtualMachineManager.Discovery.PrivateCloud']$")
+    Add-HcsProperty $privateCloud "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+    Add-HcsProperty $privateCloud "$MPElement[Name='VMMBase!Microsoft.SystemCenter.VirtualMachineManager.PrivateCloud']/VMMId$" $VMMId
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.ManagementContainsPrivateCloud']$" $fabricManagement $privateCloud
+
+    foreach ($clusterName in @($ClusterNames -split '[;,]' | ForEach-Object Trim | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)) {
+        $clusterManagement = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponent']$")
+        Add-HcsProperty $clusterManagement "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" ('cluster:{0}' -f $clusterName.ToLowerInvariant())
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.ManagementReferencesPrivateCloud']$" $clusterManagement $privateCloud
+    }
+    $api.Return($script:DiscoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.VMM.CloudRelationshipDiscovery.ps1', 8512, 1, $_.Exception.Message)
+    throw
+}

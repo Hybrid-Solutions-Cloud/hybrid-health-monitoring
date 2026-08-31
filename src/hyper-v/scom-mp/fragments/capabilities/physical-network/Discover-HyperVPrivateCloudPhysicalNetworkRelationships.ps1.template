@@ -1,0 +1,84 @@
+#Requires -Version 7.0
+param(
+    [Parameter(Mandatory)][string]$SourceId,
+    [Parameter(Mandatory)][string]$ManagedEntityId,
+    [Parameter(Mandatory)][string]$ComputerName,
+    [Parameter(Mandatory)][string]$BoundaryId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+function Add-HcsProperty {
+    param([Parameter(Mandatory)]$Instance, [Parameter(Mandatory)][string]$Property, [AllowNull()]$Value)
+    if ($null -ne $Value -and -not [string]::IsNullOrWhiteSpace([string]$Value)) {
+        $Instance.AddProperty($Property, $Value)
+    }
+}
+
+function Add-HcsRelationship {
+    param([Parameter(Mandatory)][string]$TypeId, [Parameter(Mandatory)]$Source, [Parameter(Mandatory)]$Target)
+    $relationship = $discoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $discoveryData.AddInstance($relationship)
+}
+
+try {
+    if (-not (Get-Command -Name Get-VMSwitch -ErrorAction SilentlyContinue)) {
+        $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.RelationshipDiscovery.ps1', 8801, 2, 'Get-VMSwitch is unavailable. Install the Hyper-V PowerShell management tools.')
+        $api.Return($discoveryData)
+        return
+    }
+    if (-not (Get-Command -Name Get-NetAdapter -ErrorAction SilentlyContinue)) {
+        $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.RelationshipDiscovery.ps1', 8801, 2, 'Get-NetAdapter is unavailable. Install the Windows network adapter management tools.')
+        $api.Return($discoveryData)
+        return
+    }
+
+    $computer = $discoveryData.CreateClassInstance("$MPElement[Name='Windows!Microsoft.Windows.Computer']$")
+    Add-HcsProperty $computer "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+
+    $networkComponent = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")
+    Add-HcsProperty $networkComponent "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+
+    $physicalAdapters = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.MacAddress) })
+    $adaptersByDescription = @{}
+    foreach ($adapter in $physicalAdapters) {
+        foreach ($candidate in @([string]$adapter.Name, [string]$adapter.InterfaceDescription)) {
+            if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+                $adaptersByDescription[$candidate.Trim().ToLowerInvariant()] = $adapter
+            }
+        }
+    }
+
+    foreach ($switch in @(Get-VMSwitch -SwitchType External -ErrorAction Stop)) {
+        $switchInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']$")
+        Add-HcsProperty $switchInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+        Add-HcsProperty $switchInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualSwitch']/SwitchId$" ([string]$switch.Id)
+
+        foreach ($description in @($switch.NetAdapterInterfaceDescriptions)) {
+            if ([string]::IsNullOrWhiteSpace([string]$description)) { continue }
+            $key = ([string]$description).Trim().ToLowerInvariant()
+            if (-not $adaptersByDescription.ContainsKey($key)) { continue }
+            $adapter = $adaptersByDescription[$key]
+
+            $windowsAdapter = $discoveryData.CreateClassInstance("$MPElement[Name='Windows!Microsoft.Windows.ComputerNetworkAdapter']$")
+            Add-HcsProperty $windowsAdapter "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+            Add-HcsProperty $windowsAdapter "$MPElement[Name='Windows!Microsoft.Windows.ComputerNetworkAdapter']/DeviceID$" ([string]$adapter.DeviceID)
+            Add-HcsProperty $windowsAdapter "$MPElement[Name='System!System.Device.NetworkAdapter']/MACAddress$" ([string]$adapter.MacAddress)
+
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkComponentContainsComputerNetworkAdapter']$" $networkComponent $windowsAdapter
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUsesComputerNetworkAdapter']$" $switchInstance $windowsAdapter
+        }
+    }
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.RelationshipDiscovery.ps1', 8802, 1, "Physical-network relationship discovery failed on '$ComputerName': $($_.Exception.Message)")
+}
+
+$api.Return($discoveryData)

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "namespace": "HyperVPrivateCloud",
+  "sourceRoot": "src/hyper-v/scom-mp",
+  "artifacts": [
+    { "id": "HyperVPrivateCloud.Library", "required": true, "kind": "Library", "dependsOn": [] },
+    { "id": "HyperVPrivateCloud.Discovery", "required": true, "kind": "Discovery", "dependsOn": ["HyperVPrivateCloud.Library"] },
+    { "id": "HyperVPrivateCloud.Monitoring", "required": true, "kind": "Monitoring", "dependsOn": ["HyperVPrivateCloud.Library"] },
+    { "id": "HyperVPrivateCloud.Presentation", "required": true, "kind": "Presentation", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Discovery", "HyperVPrivateCloud.Monitoring"] },
+    { "id": "HyperVPrivateCloud.Capability.Cluster", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "FailoverCluster", "ClusterSharedVolume"] },
+    { "id": "HyperVPrivateCloud.Capability.Storage", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation"] },
+    { "id": "HyperVPrivateCloud.Capability.PureStorage", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "HyperVPrivateCloud.Capability.Storage", "PureStorage"] },
+    { "id": "HyperVPrivateCloud.Capability.S2D", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "StorageSpacesDirect"] },
+    { "id": "HyperVPrivateCloud.Capability.FileServices", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "ScaleOutFileServer"] },
+    { "id": "HyperVPrivateCloud.Capability.NetworkATC", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation"] },
+    { "id": "HyperVPrivateCloud.Capability.PhysicalNetwork", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "PhysicalNetwork"] },
+    { "id": "HyperVPrivateCloud.Capability.SDN", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "SoftwareDefinedNetworking"] },
+    { "id": "HyperVPrivateCloud.Capability.VMM", "required": false, "kind": "Capability", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Presentation", "VirtualMachineManager"] },
+    { "id": "HyperVPrivateCloud.Reporting", "required": false, "kind": "Reporting", "dependsOn": ["HyperVPrivateCloud.Library", "HyperVPrivateCloud.Monitoring"] }
+  ],
+  "profiles": [
+    { "id": "Standalone", "capabilities": [] },
+    { "id": "ClusteredSAN", "capabilities": ["Cluster", "Storage"] },
+    { "id": "ClusteredPure", "capabilities": ["Cluster", "Storage", "PureStorage"] },
+    { "id": "ClusteredS2D", "capabilities": ["Cluster", "S2D"] },
+    { "id": "HybridSANAndS2D", "capabilities": ["Cluster", "Storage", "S2D"] },
+    { "id": "HybridPureAndS2D", "capabilities": ["Cluster", "Storage", "PureStorage", "S2D"] },
+    { "id": "HyperVOverSMB", "capabilities": ["Cluster", "FileServices"] },
+    { "id": "NetworkATC", "capabilities": ["NetworkATC"] },
+    { "id": "VMMManaged", "capabilities": ["VMM"] },
+    { "id": "SDNEnabled", "capabilities": ["SDN"] },
+    { "id": "CompletePrivateCloud", "capabilities": ["Cluster", "Storage", "PureStorage", "S2D", "FileServices", "NetworkATC", "PhysicalNetwork", "SDN", "VMM"] }
+  ],
+  "overrideTiers": ["Lab", "Standard", "Strict"]
+}

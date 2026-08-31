@@ -1,0 +1,129 @@
+#Requires -Version 7.0
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$BoundaryId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+function Resolve-HcsPrincipalName {
+    param([Parameter(Mandatory)][string]$Name)
+
+    try {
+        $entry = [System.Net.Dns]::GetHostEntry($Name)
+        if (-not [string]::IsNullOrWhiteSpace($entry.HostName)) { return $entry.HostName }
+    }
+    catch { return $Name }
+    return $Name
+}
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if ($null -ne $Value) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    if ($BoundaryId -notlike 'cluster:*') {
+        $api.Return($script:DiscoveryData)
+        return
+    }
+    if (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-Cluster')) {
+        $api.LogScriptEvent('HyperVPrivateCloud.Cluster.RelationshipDiscovery.ps1', 8301, 2, "FailoverClusters PowerShell is unavailable on '$ComputerName'; cluster relationships were not submitted.")
+        $api.Return($script:DiscoveryData)
+        return
+    }
+
+    $cluster = Get-Cluster -ErrorAction Stop
+    $clusterName = [string]$cluster.Name
+    $clusterPrincipalName = Resolve-HcsPrincipalName -Name $clusterName
+
+    $boundary = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']$")
+    Add-HcsProperty $boundary "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Boundary']/BoundaryId$" $BoundaryId
+
+    $availability = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponent']$")
+    Add-HcsProperty $availability "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+
+    $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
+    Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+
+    $clusterInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='Cluster!Microsoft.Windows.Cluster']$")
+    Add-HcsProperty $clusterInstance "$MPElement[Name='Cluster!Microsoft.Windows.Cluster']/Name$" $clusterName
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.BoundaryContainsMicrosoftCluster']$" $boundary $clusterInstance
+    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftCluster']$" $availability $clusterInstance
+
+    foreach ($node in @(Get-ClusterNode -Cluster $cluster -ErrorAction Stop)) {
+        $nodeInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Node']$")
+        Add-HcsProperty $nodeInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" (Resolve-HcsPrincipalName -Name ([string]$node.Name))
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterNode']$" $availability $nodeInstance
+    }
+
+    foreach ($group in @(Get-ClusterGroup -Cluster $cluster -ErrorAction Stop)) {
+        $groupInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Group']$")
+        Add-HcsProperty $groupInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ClusterName$" $clusterName
+        Add-HcsProperty $groupInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ObjectName$" ([string]$group.Name)
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterGroup']$" $availability $groupInstance
+    }
+
+    foreach ($network in @(Get-ClusterNetwork -Cluster $cluster -ErrorAction Stop)) {
+        # Microsoft's cluster MP does not discover networks with Role None (cluster use disabled); submitting
+        # them here would create unmonitored ghost network objects.
+        $networkRole = ''
+        try { $networkRole = [string]$network.Role } catch { $networkRole = '' }
+        if ($networkRole -match '^(None|0)$') { continue }
+        $networkInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Network']$")
+        Add-HcsProperty $networkInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ClusterName$" $clusterName
+        Add-HcsProperty $networkInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ObjectName$" ([string]$network.Name)
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsMicrosoftClusterNetwork']$" $availability $networkInstance
+    }
+
+    if (Get-Command -Name 'Get-ClusterSharedVolume' -ErrorAction SilentlyContinue) {
+        foreach ($csv in @(Get-ClusterSharedVolume -Cluster $cluster -ErrorAction Stop)) {
+            # Microsoft's CSV MP keys each volume as "<resource name>_<mount path>" (one instance per
+            # SharedVolumeInfo entry, truncated to 256). Anything else creates an unmonitored ghost CSV object.
+            $volumeInfos = @()
+            try { $volumeInfos = @($csv.SharedVolumeInfo) } catch { $volumeInfos = @() }
+            if ($volumeInfos.Count -eq 0) { continue }
+            foreach ($volumeInfo in $volumeInfos) {
+                $friendlyName = ''
+                try { $friendlyName = [string]$volumeInfo.FriendlyVolumeName } catch { $friendlyName = '' }
+                if ([string]::IsNullOrWhiteSpace($friendlyName)) { continue }
+                $csvKey = "$([string]$csv.Name)_$friendlyName"
+                if ($csvKey.Length -gt 256) { $csvKey = $csvKey.Substring(0, 256) }
+                $csvInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']$")
+                Add-HcsProperty $csvInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $clusterPrincipalName
+                Add-HcsProperty $csvInstance "$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']/ClusterSharedVolumeName$" $csvKey
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.StorageContainsMicrosoftClusterSharedVolume']$" $storage $csvInstance
+            }
+        }
+    }
+
+    $api.Return($script:DiscoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.Cluster.RelationshipDiscovery.ps1', 8302, 1, $_.Exception.Message)
+    throw
+}

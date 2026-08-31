@@ -1,0 +1,151 @@
+#Requires -Version 7.0
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$BoundaryId,
+    [string]$HostId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    try {
+        if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+        Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsStableId {
+    param([Parameter(Mandatory)][string]$Value)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Value.ToLowerInvariant())
+        return ([System.BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+    }
+    finally { $sha256.Dispose() }
+}
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if ($null -ne $Value -and -not [string]::IsNullOrWhiteSpace([string]$Value)) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+function Get-HcsUncIdentity {
+    param([string]$Path)
+    $match = [regex]::Match($Path, '^\\\\(?<server>[^\\]+)\\(?<share>[^\\]+)', 'IgnoreCase')
+    if (-not $match.Success) { return $null }
+    $server = $match.Groups['server'].Value.Trim().ToLowerInvariant()
+    $share = $match.Groups['share'].Value.Trim().ToLowerInvariant()
+    [pscustomobject]@{ Server = $server; Share = $share; Unc = "\\$server\$share"; ShareId = "smb:" + (Get-HcsStableId "$server|$share") }
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { $api.Return($script:DiscoveryData); return }
+    $hasSmbClient = Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection'
+    $hasMultichannel = Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection'
+    $connections = if ($hasSmbClient) { @(Get-SmbConnection -ErrorAction SilentlyContinue) } else { @() }
+    $channels = if ($hasMultichannel) { @(Get-SmbMultichannelConnection -ErrorAction SilentlyContinue) } else { @() }
+
+    $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
+    Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
+    $hostRole = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']$")
+    Add-HcsProperty $hostRole "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+    Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" $HostId
+
+    $shares = @{}
+    foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
+        $vmId = $vm.Id.ToString('D').ToLowerInvariant()
+        foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | Where-Object Path -Like '\\*')) {
+            $identity = Get-HcsUncIdentity $drive.Path
+            if ($null -eq $identity) { continue }
+            if (-not $shares.ContainsKey($identity.ShareId)) {
+                $connection = $connections | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($identity.Server, [StringComparison]::OrdinalIgnoreCase) -and ([string]$_.ShareName).Equals($identity.Share, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+                $dialect = if ($null -ne $connection -and $connection.PSObject.Properties['Dialect']) { $connection.Dialect } else { $null }
+                $continuouslyAvailable = if ($null -ne $connection -and $connection.PSObject.Properties['ContinuouslyAvailable']) { $connection.ContinuouslyAvailable } else { $null }
+                $share = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']$")
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/BoundaryId$" $BoundaryId
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ShareId$" $identity.ShareId
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/UncPath$" $identity.Unc
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ServerName$" $identity.Server
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ShareName$" $identity.Share
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/Dialect$" $dialect
+                Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ContinuouslyAvailable$" $continuouslyAvailable
+                Add-HcsProperty $share "$MPElement[Name='System!System.Entity']/DisplayName$" $identity.Unc
+                $script:DiscoveryData.AddInstance($share)
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.StorageContainsSmbShare']$" $storage $share
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostRoleUsesSmbShare']$" $hostRole $share
+                # The Microsoft SMB service reference moved to the opt-in MicrosoftSmbLink discovery
+                # (disabled by default). Emitting a hosted Service.SMB.10.0 instance here rejected the
+                # whole discovery batch (event 10801) whenever the file server's Windows.Computer was
+                # not in the management group, and created a phantom SMB service where Microsoft's own
+                # SMB discovery had not run. See ADR 0053.
+                $shares[$identity.ShareId] = $share
+
+                foreach ($channel in $channels | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($identity.Server, [StringComparison]::OrdinalIgnoreCase) }) {
+                    $pathId = 'smbpath:' + (Get-HcsStableId "$BoundaryId|$HostId|$($identity.ShareId)|$($channel.ClientIPAddress)|$($channel.ServerIPAddress)|$($channel.ClientInterfaceIndex)|$($channel.ServerInterfaceIndex)")
+                    $path = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']$")
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/BoundaryId$" $BoundaryId
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/PathId$" $pathId
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ShareId$" $identity.ShareId
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/HostId$" $HostId
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ClientIPAddress$" $channel.ClientIPAddress
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ServerIPAddress$" $channel.ServerIPAddress
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ClientInterfaceIndex$" $channel.ClientInterfaceIndex
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ServerInterfaceIndex$" $channel.ServerInterfaceIndex
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ClientRdmaCapable$" $channel.ClientRdmaCapable
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/ServerRdmaCapable$" $channel.ServerRdmaCapable
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/Selected$" $channel.Selected
+                    Add-HcsProperty $path "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbClientPath']/State$" $channel.State
+                    Add-HcsProperty $path "$MPElement[Name='System!System.Entity']/DisplayName$" "$($channel.ClientIPAddress) -> $($channel.ServerIPAddress)"
+                    $script:DiscoveryData.AddInstance($path)
+                    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShareContainsClientPath']$" $share $path
+                }
+            }
+
+            $diskId = if ($drive.PSObject.Properties['Id'] -and $drive.Id) { [string]$drive.Id } elseif ($drive.Path) { [string]$drive.Path } else { "$($drive.ControllerType):$($drive.ControllerNumber):$($drive.ControllerLocation)" }
+            $mappingId = 'smbmap:' + (Get-HcsStableId "$BoundaryId|$vmId|$diskId|$($identity.ShareId)")
+            $mapping = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']$")
+            Add-HcsProperty $mapping "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']/BoundaryId$" $BoundaryId
+            Add-HcsProperty $mapping "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']/MappingId$" $mappingId
+            Add-HcsProperty $mapping "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']/ShareId$" $identity.ShareId
+            Add-HcsProperty $mapping "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']/VMId$" $vmId
+            Add-HcsProperty $mapping "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']/DiskId$" $diskId
+            Add-HcsProperty $mapping "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMapping']/VhdPath$" $drive.Path
+            Add-HcsProperty $mapping "$MPElement[Name='System!System.Entity']/DisplayName$" "$($vm.Name): $($drive.Path)"
+            $script:DiscoveryData.AddInstance($mapping)
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShareContainsVhdxMapping']$" $shares[$identity.ShareId] $mapping
+
+            $vmInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']$")
+            Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/BoundaryId$" $BoundaryId
+            Add-HcsProperty $vmInstance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualMachine']/VMId$" $vmId
+            $disk = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']$")
+            Add-HcsProperty $disk "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/BoundaryId$" $BoundaryId
+            Add-HcsProperty $disk "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/VMId$" $vmId
+            Add-HcsProperty $disk "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.VirtualHardDisk']/DiskId$" $diskId
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualMachine']$" $mapping $vmInstance
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualHardDisk']$" $mapping $disk
+        }
+    }
+    $api.Return($script:DiscoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Discovery.ps1', 8701, 1, $_.Exception.Message)
+    throw
+}

@@ -1,0 +1,186 @@
+#Requires -Version 7.0
+param($CpuWarningPercent = 80, $CpuCriticalPercent = 90, $MemoryWarningMB = 4096, $MemoryCriticalMB = 2048, $PagesInputWarningPerSecond = 5, $PagesInputCriticalPerSecond = 20, $CheckpointWarningHours = 168, $CheckpointCriticalHours = 336, $Mode = 'Health')
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$bag = $api.CreatePropertyBag()
+$statesSet = @{}
+
+function Write-HcsState {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
+    $bag.AddValue($Name, $State)
+    $bag.AddValue($Name + 'Detail', $Detail)
+    $statesSet[$Name] = $true
+}
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [Parameter(Mandatory)][string]$CommandName)
+    try {
+        if ($ModuleName) {
+            if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+            if (-not (Get-Module -Name $ModuleName -ErrorAction SilentlyContinue)) { Import-Module -Name $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+        }
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsCounterMaximum {
+    param([Parameter(Mandatory)][string]$Path, [double]$Scale = 1.0, [int]$Digits = 2, [switch]$ExcludeTotal)
+    try {
+        $samples = @((Get-Counter -Counter $Path -ErrorAction Stop).CounterSamples)
+        if ($ExcludeTotal) { $samples = @($samples | Where-Object { [string]$_.InstanceName -notin @('_total', 'total') }) }
+        if (-not $samples.Count) { return -1 }
+        return [math]::Round((($samples | Measure-Object -Property CookedValue -Maximum).Maximum * $Scale), $Digits)
+    }
+    catch { return -1 }
+}
+
+function Get-HcsCounterRateMaximum {
+    param([Parameter(Mandatory)][string[]]$Paths, [int]$Digits = 2)
+    try {
+        $sets = @(Get-Counter -Counter $Paths -SampleInterval 1 -MaxSamples 2 -ErrorAction Stop)
+        if ($sets.Count -lt 2) { return -1 }
+        $baseline = @{}
+        foreach ($sample in @($sets[0].CounterSamples)) { $baseline[[string]$sample.Path] = [double]$sample.RawValue }
+        $deltaByInstance = @{}
+        foreach ($sample in @($sets[1].CounterSamples)) {
+            $key = [string]$sample.Path
+            if (-not $baseline.ContainsKey($key)) { continue }
+            $instance = [string]$sample.InstanceName
+            $delta = [double]$sample.RawValue - $baseline[$key]
+            if ($delta -lt 0) { $delta = 0 }
+            if (-not $deltaByInstance.ContainsKey($instance)) { $deltaByInstance[$instance] = 0.0 }
+            $deltaByInstance[$instance] += $delta
+        }
+        if (-not $deltaByInstance.Count) { return -1 }
+        return [math]::Round((($deltaByInstance.Values | Measure-Object -Maximum).Maximum), $Digits)
+    }
+    catch { return -1 }
+}
+
+function Get-HcsNetworkUtilizationPercent {
+    param([int]$Digits = 2)
+    try {
+        $bytesByInstance = @{}
+        foreach ($sample in @((Get-Counter -Counter '\Network Interface(*)\Bytes Total/sec' -ErrorAction Stop).CounterSamples)) {
+            $bytesByInstance[[string]$sample.InstanceName] = [double]$sample.CookedValue
+        }
+        $worst = -1.0
+        foreach ($sample in @((Get-Counter -Counter '\Network Interface(*)\Current Bandwidth' -ErrorAction Stop).CounterSamples)) {
+            $instance = [string]$sample.InstanceName
+            $bandwidth = [double]$sample.CookedValue
+            if ($bandwidth -le 0 -or -not $bytesByInstance.ContainsKey($instance)) { continue }
+            $utilization = ($bytesByInstance[$instance] * 8.0) / $bandwidth * 100.0
+            if ($utilization -gt $worst) { $worst = $utilization }
+        }
+        if ($worst -lt 0) { return -1 }
+        return [math]::Round($worst, $Digits)
+    }
+    catch { return -1 }
+}
+
+try {
+    if ($Mode -ne 'Performance') {
+        if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VMHost')) {
+            $message = 'The Hyper-V PowerShell module is missing. Install Hyper-V-PowerShell with Install-WindowsFeature Hyper-V -IncludeManagementTools.'
+            foreach ($state in @('HyperVPowerShellState', 'HypervisorState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState')) { Write-HcsState $state 'Critical' $message }
+        }
+        else {
+            Write-HcsState 'HyperVPowerShellState' 'Good' 'The Hyper-V PowerShell module and Get-VMHost command are available.'
+            # VMHost has no version property (StrictMode would throw). Hypervisor health = the
+            # hypervisor is actually loaded and VMMS answers; version comes from the VMMS binary.
+            $vmHost = Get-VMHost
+            $hypervisorPresent = $true
+            try { $hypervisorPresent = [bool](Get-CimInstance -ClassName 'Win32_ComputerSystem').HypervisorPresent } catch { $hypervisorPresent = $true }
+            $vmmsVersion = try { (Get-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\vmms.exe') -ErrorAction Stop).VersionInfo.ProductVersion } catch { 'unknown' }
+            if ($hypervisorPresent) {
+                Write-HcsState 'HypervisorState' 'Good' ("Hypervisor is running; VMMS version {0}; host {1}" -f $vmmsVersion, [string]$vmHost.Name)
+            }
+            else {
+                Write-HcsState 'HypervisorState' 'Critical' ("The hypervisor is not running on this host (HypervisorPresent=false); virtual machines cannot start. VMMS version {0}." -f $vmmsVersion)
+            }
+            $vms = @(Get-VM)
+
+            $unexpected = @($vms | Where-Object { $_.AutomaticStartAction -eq 'Start' -and $_.State -notin @('Running', 'Starting', 'Stopping', 'Saving', 'Pausing', 'Resuming') })
+            Write-HcsState 'VirtualMachineState' $(if ($unexpected.Count) { 'Critical' } else { 'Good' }) ("Unexpected auto-start VMs: {0}; total: {1}" -f $unexpected.Count, $vms.Count)
+
+            $checkpoints = @($vms | Get-VMSnapshot -ErrorAction SilentlyContinue)
+            $now = [DateTime]::UtcNow
+            $oldestHours = if ($checkpoints.Count) { [math]::Round(($now - ($checkpoints | Sort-Object CreationTime | Select-Object -First 1).CreationTime.ToUniversalTime()).TotalHours, 1) } else { 0 }
+            $checkpointState = if ($oldestHours -ge [double]$CheckpointCriticalHours) { 'Critical' } elseif ($oldestHours -ge [double]$CheckpointWarningHours) { 'Warning' } else { 'Good' }
+            Write-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
+
+            $replications = @(Get-VMReplication -ErrorAction SilentlyContinue)
+            $replicationCritical = @($replications | Where-Object { [string]$_.Health -eq 'Critical' }).Count
+            $replicationWarning = @($replications | Where-Object { [string]$_.Health -eq 'Warning' }).Count
+            $replicationState = if ($replicationCritical) { 'Critical' } elseif ($replicationWarning) { 'Warning' } else { 'Good' }
+            Write-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
+
+            $switches = @(Get-VMSwitch -ErrorAction SilentlyContinue)
+            $invalidSwitches = @($switches | Where-Object { $_.SwitchType -eq 'External' -and @($_.NetAdapterInterfaceDescriptions).Count -eq 0 })
+            Write-HcsState 'VirtualSwitchState' $(if ($invalidSwitches.Count) { 'Critical' } else { 'Good' }) ("Switches: {0}; external switches without uplinks: {1}" -f $switches.Count, $invalidSwitches.Count)
+
+            $invalidDisks = 0
+            foreach ($drive in @($vms | Get-VMHardDiskDrive -ErrorAction SilentlyContinue)) {
+                if ($drive.Path -and -not (Test-Path -LiteralPath $drive.Path -PathType Leaf)) { $invalidDisks++ }
+                elseif ($drive.Path -and -not (Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue)) { $invalidDisks++ }
+            }
+            Write-HcsState 'StorageAttachmentState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable virtual-disk attachments: {0}" -f $invalidDisks)
+        }
+
+        foreach ($serviceName in @('vmms', 'vmcompute')) {
+            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            $stateName = if ($serviceName -eq 'vmms') { 'VMMSState' } else { 'VmComputeState' }
+            if ($null -eq $service) { Write-HcsState $stateName 'Critical' ("Required service {0} is not installed." -f $serviceName) }
+            else { Write-HcsState $stateName $(if ($service.Status -eq 'Running') { 'Good' } else { 'Critical' }) ("Service {0}: {1}" -f $serviceName, $service.Status) }
+        }
+    }
+
+    $os = Get-CimInstance -ClassName 'Win32_OperatingSystem'
+    $availableMemoryMB = [math]::Round($os.FreePhysicalMemory / 1024, 0)
+    $totalMemoryMB = [math]::Round($os.TotalVisibleMemorySize / 1024, 0)
+    $memoryState = if ($availableMemoryMB -le [double]$MemoryCriticalMB) { 'Critical' } elseif ($availableMemoryMB -le [double]$MemoryWarningMB) { 'Warning' } else { 'Good' }
+    Write-HcsState 'MemoryState' $memoryState ("Available physical memory: {0} MB" -f $availableMemoryMB)
+    $bag.AddValue('AvailableMemoryMB', $availableMemoryMB)
+    $bag.AddValue('TotalPhysicalMemoryMB', $totalMemoryMB)
+    $bag.AddValue('AvailableMemoryPercent', $(if ($totalMemoryMB -gt 0) { [math]::Round((($availableMemoryMB / $totalMemoryMB) * 100.0), 2) } else { -1 }))
+
+    try { $cpu = [math]::Round((Get-Counter '\Hyper-V Hypervisor Logical Processor(_Total)\% Total Run Time').CounterSamples[0].CookedValue, 2) }
+    catch { $cpu = [math]::Round((Get-CimInstance -ClassName 'Win32_Processor' | Measure-Object -Property LoadPercentage -Average).Average, 2) }
+    $cpuState = if ($cpu -ge [double]$CpuCriticalPercent) { 'Critical' } elseif ($cpu -ge [double]$CpuWarningPercent) { 'Warning' } else { 'Good' }
+    Write-HcsState 'CpuState' $cpuState ("Hypervisor processor utilization: {0}%" -f $cpu)
+    $bag.AddValue('HypervisorCpuPercent', $cpu)
+
+    # Guarded: a localized OS or a corrupt counter registry must not abort the whole probe.
+    $pagesInput = Get-HcsCounterMaximum -Path '\Memory\Pages Input/sec'
+    $pagingState = if ($pagesInput -lt 0) { 'NotApplicable' } elseif ($pagesInput -ge [double]$PagesInputCriticalPerSecond) { 'Critical' } elseif ($pagesInput -ge [double]$PagesInputWarningPerSecond) { 'Warning' } else { 'Good' }
+    Write-HcsState 'PagingState' $pagingState ("Pages Input/sec: {0}" -f $pagesInput)
+    $bag.AddValue('PagesInputPerSecond', $pagesInput)
+
+    # Raw host resource-consumption instrumentation. Threshold evaluation for these values is performed
+    # by the Management Pack monitor types so that every threshold stays overridable per environment.
+    # A value of -1 means the counter is unavailable on this host and is treated as healthy.
+    $bag.AddValue('HypervisorLogicalProcessorPercent', (Get-HcsCounterMaximum -Path '\Hyper-V Hypervisor Logical Processor(_Total)\% Total Run Time'))
+    $bag.AddValue('RootVirtualProcessorPercent', (Get-HcsCounterMaximum -Path '\Hyper-V Hypervisor Root Virtual Processor(_Total)\% Total Run Time'))
+    $bag.AddValue('GuestVirtualProcessorPercent', (Get-HcsCounterMaximum -Path '\Hyper-V Hypervisor Virtual Processor(_Total)\% Total Run Time'))
+    $bag.AddValue('MemoryPagesPerSecond', (Get-HcsCounterMaximum -Path '\Memory\Pages/sec'))
+    $bag.AddValue('PhysicalDiskReadLatencyMs', (Get-HcsCounterMaximum -Path '\PhysicalDisk(*)\Avg. Disk sec/Read' -Scale 1000 -ExcludeTotal))
+    $bag.AddValue('PhysicalDiskWriteLatencyMs', (Get-HcsCounterMaximum -Path '\PhysicalDisk(*)\Avg. Disk sec/Write' -Scale 1000 -ExcludeTotal))
+    $bag.AddValue('PhysicalDiskQueueLength', (Get-HcsCounterMaximum -Path '\PhysicalDisk(*)\Current Disk Queue Length' -ExcludeTotal))
+    $bag.AddValue('NetworkUtilizationPercent', (Get-HcsNetworkUtilizationPercent))
+    $bag.AddValue('NetworkErrorsPerSecond', (Get-HcsCounterRateMaximum -Paths @('\Network Interface(*)\Packets Received Errors', '\Network Interface(*)\Packets Outbound Errors')))
+    $bag.AddValue('NetworkOutputQueueLength', (Get-HcsCounterMaximum -Path '\Network Interface(*)\Output Queue Length'))
+
+    Write-HcsState 'PipelineState' 'Good' ('Host health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
+}
+catch {
+    foreach ($state in @('VMMSState', 'VmComputeState', 'HyperVPowerShellState', 'HypervisorState', 'CpuState', 'MemoryState', 'PagingState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState', 'PipelineState')) {
+        if (-not $statesSet.ContainsKey($state)) { Write-HcsState $state 'Critical' $_.Exception.Message }
+    }
+    $api.LogScriptEvent('Hyper-V Private Cloud Host Health', 8201, 1, $_.Exception.ToString())
+}
+
+$api.Return($bag)

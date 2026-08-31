@@ -1,5 +1,176 @@
 # Handoff
 
+## 2026-08-31 (final) — THE REAL 1.0.0.0 RELEASED; v2 directory eliminated; version history reset
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open. **`1.0.0.0` (the first release) is sealed
+with the Key Vault key (source commit `eb769f5`), validated `releaseEligible=true`, published under
+`docs/public/downloads/hyper-v-private-cloud/1.0.0.0/` + `latest/` (commit `5a12545`).**
+VSAE 13/13, Pester 198/198, docs build clean.
+
+### The three mandates executed this session
+
+1. **Cookdown fan-out complete** (`d9e5c45`): one probe run per host feeds all 17 per-LUN/session/
+   port storage monitors (`Storage.HostInventory.DataSource` + keyed `InstanceDetail.MonitorType`),
+   all 10 per-intent ATC monitors (`IntentInventory` + `IntentDetail`), and all 15 per-VM monitors
+   plus 10 collection rules (`VmInventory` + `Instance` DS + keyed ThreeState/AboveThreshold types).
+   Probe scripts emit one all-facet bag per instance (InstanceKey/VMId keyed, heartbeat bag for the
+   DataItem contract), helpers memoized (Get-Counter/CIM/event queries once per run).
+2. **v2 directory eliminated** (`adb6a48`): product source at `src/hyper-v/scom-mp/`; pre-rename
+   legacy source archived at `archive/hyperv-scom-mp-legacy/`; contracts `packages.json` /
+   `dependencies.json`; workflow `.github/workflows/release-hyper-v.yml`; tests renamed
+   `HyperVPrivateCloud.*.Tests.ps1`. Sealed element IDs / XML aliases (HCSV2Library…) unchanged.
+   Post-flatten fix: release tooling repo-root depth `'../../../..'` (`eb769f5`).
+3. **Version reset** (`81de9f0` + publish `5a12545`): engineering builds 1.0.0.0–1.4.0.0 withdrawn,
+   download dirs removed (2.0.0.0 old-identity evidence kept); ADR 0054
+   (`0054-the-real-1000-version-reset.md`, in nav); download page carries a single release; CHANGELOG
+   leads with `[1.0.0.0] — 2026-08-31`, old sections retitled withdrawn/consolidated; operator docs
+   reset to 1.0.0.0.
+
+### The gate
+
+**No further version ships until Kris imports 1.0.0.0 into a live management group and validates it
+against a real Hyper-V host** (ADR 0054 §4). Import: complete ZIP from the download page;
+prerequisites first; cluster nodes need agent proxy.
+
+### Commands and results
+
+`release-100.ps1` (Release mode, KV key) → sealed + validated; assets → `1.0.0.0/` + `latest/`
+(SHA-identical); `Test-HyperVPrivateCloudReleasePackage -RequireReleaseEligible` → True.
+Full suite after every stage; final: Pester 198/198, VSAE 13/13.
+
+## 2026-08-31 (later still) — 1.4.0.0: host-wide facts once per host; released
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open. **`1.4.0.0` is sealed with the Key Vault
+key (source commit `d842e38`), validated `releaseEligible=true`, and published under
+`docs/public/downloads/hyper-v-private-cloud/1.4.0.0/` + `latest/`.** Pester 195/195, VSAE 13/13.
+
+### What changed
+
+- **Storage:** iSCSI connection-error, iSCSI auth-failure and MPIO failover monitors retargeted to
+  `HostRole` via new `HostEvents.MonitorType`/`.DataSource` (cookdown-identical config across the
+  three consumers — one probe run). New script branch `HostEventDetail` in
+  Get-HyperVPrivateCloudStorageObjectHealth.
+- **Network ATC:** EtsPolicyCompliance + QosTrafficClass retargeted to `HostRole` (IntentName /
+  AdapterNames dropped from config — minOccurs=0; IsStorageIntent literal false); detail strings
+  de-intent-ified.
+- **PhysicalNetwork:** AdapterLink/AdapterSpeed evaluate only vSwitch uplinks + ATC intent adapters
+  (`Get-HcsMonitoredAdapterName`); `IncludeNonUplinkAdapters` (string, default false) threaded
+  through Fabric UMT/DS schema, args, and both monitor configs.
+- **FileServices:** FileSMB emission removed from the main discovery (batch rejection, event 10801,
+  phantom SMB services); new opt-in `MicrosoftSmbLink.Discovery` (Enabled=false, HostRole target,
+  script `Discover-HyperVPrivateCloudFileServicesSmbLink.ps1.template`, token
+  `FILE_SERVICES_SMB_LINK_DISCOVERY_SCRIPT`).
+- **Catalog:** new `Storage.HostEventMonitors` target set; failover/auth/connection-error settings
+  repointed; ETS/QoS + the three storage rows context → HostRole; examples regenerated.
+- Docs: download page (current release 1.4.0.0), ADR 0053 ("Closed in 1.4.0.0" bullet; next-major
+  now only cookdown fan-out + Pure SDK), monitoring-catalog (22 discoveries, once-per-host note),
+  CHANGELOG.
+
+### Remaining next-major items (ADR 0053)
+
+1. Per-instance probe fan-out + thresholds-as-script-args defeating cookdown in the older
+   capability monitors (multi-instance property-bag redesign).
+2. Pure Storage scripts' .NET Framework SCOM SDK dependence under PS7.
+
+## 2026-08-31 (later) — 1.3.0.0: cluster-wide monitors evaluated once per cluster; released
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open against `main`
+(https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/pull/3). **`1.3.0.0` is sealed
+with the Key Vault key (source commit `b8c181f`), validated `releaseEligible=true`, and published
+under `docs/public/downloads/hyper-v-private-cloud/1.3.0.0/` + `latest/`.** `1.2.0.0`, `1.1.0.0`
+and `1.0.0.0` are retained as evidence; the download page and all doc version references point at
+`1.3.0.0`. Unit tests: 193/193 (Build subset re-verified 81/81 after test updates); VSAE test-mode
+verify+seal: 13/13 OK.
+
+### What changed
+
+- **Cluster role.** New class `HyperVPrivateCloud.Capability.Cluster.ClusterRole` hosted by
+  `Cluster!Microsoft.Windows.Cluster.VirtualServer` (discovery targets VirtualServer; key =
+  the virtual server's PrincipalName, i.e. the cluster FQDN). The 13 cluster-wide monitors, both
+  CSV capacity rules and the relationship discovery now target it — they run once, on the
+  core-group owner, and fail over with it. CSV Read/Write latency + queue depth stay on `HostRole`.
+  8 dependency monitors (5 Microsoft-object containments + Availability/Performance/Configuration
+  roll-ups of the role into the DA Availability branch). Tuning catalog `contextClassId` updated
+  (26 refs). New view: ClusterRole state; ActiveAlerts view retargeted to ClusterRole.
+- **Disabled as superseded (IDs preserved):** the four v1 storage availability monitors
+  (AttachmentAvailability, AttachmentRedundancy, IscsiSessionAvailability,
+  FibreChannelPortAvailability — superseded by depth monitors) and PhysicalNetwork VlanMismatch
+  (Windows exposes no LLDP neighbour data).
+- Docs: ADR 0053 consequence note, monitoring-catalog counts/paragraph, prerequisites agent-proxy
+  gotcha (cluster nodes need proxy for the VirtualServer-hosted discovery), download page,
+  CHANGELOG, 1.3.0.0 references in index/scom-mp/management-pack-guide/prerequisites.
+
+### Commands run and results
+
+VSAE test-mode verify+seal (throwaway key): 13/13 `VSAE-VERIFY-OK`. `Invoke-Pester tests/unit`:
+193 total, 5 stale cluster assertions updated, final Build run 81/81 → suite green.
+`release-1300` (`New-HyperVPrivateCloudReleasePackage.ps1` Release mode, Key Vault key):
+sealed + validated, `releaseEligible=true`, token `54d0fb1159995c86`; assets copied to
+`1.3.0.0/` and `latest/` (SHA-256-identical). Docs build: clean.
+
+### Blockers / open questions
+
+- None blocking.
+
+### Next steps (ADR 0053 next-major items)
+
+1. Multi-instance host probes: one `pwsh` per host emitting per-VM/LUN/intent property bags
+   (restore cookdown for the older capability monitors).
+2. Storage iSCSI/MPIO event counters and ATC ClusterIntentConsistency/ETS/QoS to host-wide
+   evaluation; File Services ghost SMB instance on non-agent file servers; PhysicalNetwork
+   link-state/speed defaults on non-uplink NICs.
+
+## 2026-08-31 — Full management pack review; 1.0.0.0 found non-functional on real hosts; fixed on feat/monitoring-depth
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open against `main`
+(https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/pull/3). **`1.2.0.0` is sealed
+with the Key Vault key (source commit `0f051d1`), validated `releaseEligible=true`, and published under
+`docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` + `latest/`.** It adds the operator task
+catalogue (63 agent tasks, 4 console tasks, 2 disabled recoveries, 1 diagnostic) and the probe smoke
+test (47 cases) on top of `1.1.0.0` (same day, retained as evidence). `1.0.0.0` could never have
+monitored a real host (ADR 0053) and is marked superseded / not for deployment on the download page.
+Unit tests: 192/192.
+
+### What changed
+
+- Every pack passes Microsoft VSAE verification and seals in Test mode (throwaway key); the ordering
+  and alias faults that blocked the `1.1.0.0` reseal are fixed.
+- Four repo-wide runtime killers fixed in all 27 scripts (non-existent `VMHost.HyperVVersion`,
+  `.NET` type literal for the COM `MOM.ScriptAPI`, `[bool]` params under `pwsh -File`, warning stream
+  on stdout) plus ~30 runtime/design defects from five parallel line-by-line reviews. Full reports
+  were in the job scratch directory; the durable summary is ADR 0053 and the CHANGELOG entry.
+- Generator: readable display names, class/discovery names, legacy duplicate monitors disabled,
+  Distributed Application roll-ups redesigned (39 in the Monitoring pack), single-brace token guard.
+- New content: 8 Hyper-V event collection rules + 10 alert rules with knowledge; product-wide
+  `HyperVPrivateCloud.Product.Group` + All Active Alerts view; SDN host-binding roll-ups + alert;
+  41 knowledge articles for Cluster/S2D/File Services; SDN tuning tiers.
+- Tests: 135/135 (two new: script hygiene, display names). Dependency doc drift check: OK.
+
+### Commands run and results
+
+`pwsh -File src/hyper-v/scom-mp/v2/tools/Build-HyperVPrivateCloudManagementPacks.ps1 -Version 1.1.0.0 -PublicKeyToken 54d0fb1159995c86 -OutputPath <tmp> -RequireComplete`
+→ 13 packs. `Invoke-Pester -Path tests/unit` → Passed=135 Failed=0. Test-mode release
+(`New-HyperVPrivateCloudReleasePackage.ps1 -BuildMode Test` with `sn -k` throwaway key and
+`D:\tmp\hcs-hyperv-deps-1.1.0.0`) → VSAE-VERIFY-OK ×13, sealed. `tools/scom/Export-MpDependencies.ps1 -Check` → OK.
+
+### Blockers / open questions
+
+- None blocking. The production reseal of `1.1.0.0` needs the Key Vault signing key and a clean
+  tree (release script refuses otherwise); the classifier has denied that command before.
+- Kris asked for a **task catalogue** to ship with the packs; the proposed list is in
+  `docs/hyper-v/monitoring-catalog.md`'s successor notes / session memory and is not yet authored.
+
+### Next steps
+
+1. Push `feat/monitoring-depth`; open the PR against `main` with ADR 0053 as the narrative.
+2. Reseal `1.1.0.0` (or `2.0.0.0` given the scale of behavioural change — decide), publish under
+   `docs/public/downloads/hyper-v-private-cloud/`, repoint `latest`, mark `1.0.0.0` as superseded
+   and not for deployment on the download page.
+3. Build the probe smoke test (run every `*.ps1.template` via `pwsh -File` with its literal
+   `<Arguments>` against a `MOM.ScriptAPI` shim) — the gap that let 1.0.0.0 ship.
+4. Author the SCOM Tasks catalogue; then the next-major items in ADR 0053 (per-host multi-instance
+   probes, host-wide facts once per cluster via a VirtualServer-hosted cluster role class).
+
 ## 2026-08-30 — Generated dependency docs, navigation restructure, product-named MP identity
 
 **Branch:** `refactor/hyperv-mp-namespace` (3 commits, not pushed). `main` carries the first two;

@@ -1,0 +1,280 @@
+#Requires -Version 7.0
+param([string]$ComputerName)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsProperty {
+    param($InputObject, [string]$Name, $Default = $null)
+    if ($null -eq $InputObject) { return $Default }
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) { return $Default }
+    if ($null -eq $property.Value) { return $Default }
+    return $property.Value
+}
+
+function Get-HcsStatusText {
+    param($InputObject, [string]$Name)
+    $value = Get-HcsProperty -InputObject $InputObject -Name $Name -Default ''
+    return (@($value) | ForEach-Object { [string]$_ }) -join ','
+}
+
+function Get-HcsNumber {
+    param($Value, [double]$Default = 0)
+    if ($null -eq $Value) { return $Default }
+    $parsed = 0.0
+    if ([double]::TryParse([string]$Value, [ref]$parsed)) { return $parsed }
+    return $Default
+}
+
+function Get-HcsSafeCollection {
+    param([scriptblock]$Query)
+    try { return @(& $Query) }
+    catch { return @() }
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$bag = $api.CreatePropertyBag()
+
+# Benign defaults. A host without S2D, or a host where a Storage query is unavailable,
+# reports zero fault counts and full free capacity so that no threshold monitor fires.
+$state = 'Good'
+$detail = "Storage Spaces Direct object health collected on '$ComputerName'."
+$subSystemCount = 0
+$subSystemUnhealthyCount = 0
+$subSystemHealthStatus = 'NotApplicable'
+$subSystemOperationalStatus = 'NotApplicable'
+$poolCount = 0
+$poolUnhealthyCount = 0
+$poolReadOnlyCount = 0
+$poolWorstFreePercent = 100.0
+$poolCapacityUsedPercent = 0.0
+$poolDetail = 'No clustered storage pool is present.'
+$virtualDiskCount = 0
+$virtualDiskUnhealthyCount = 0
+$virtualDiskDegradedCount = 0
+$virtualDiskInRepairCount = 0
+$virtualDiskIncompleteCount = 0
+$virtualDiskDetachedCount = 0
+$virtualDiskReadLatencyMs = 0.0
+$virtualDiskWriteLatencyMs = 0.0
+$virtualDiskDetail = 'No clustered virtual disk is present.'
+$physicalDiskCount = 0
+$physicalDiskUnhealthyCount = 0
+$physicalDiskFailedCount = 0
+$physicalDiskPredictiveFailureCount = 0
+$physicalDiskLostCommunicationCount = 0
+$physicalDiskRetiredCount = 0
+$physicalDiskMaxMediaErrors = 0.0
+$physicalDiskTotalMediaErrors = 0.0
+$physicalDiskDetail = 'No clustered physical disk is present.'
+$cacheDeviceCount = 0
+$cacheDeviceFailedCount = 0
+$cacheDetail = 'No Storage Spaces Direct cache device is present.'
+$storageJobCount = 0
+$storageJobRunningCount = 0
+$storageJobStalledRiskCount = 0
+$storageJobMaxElapsedMinutes = 0.0
+$storageJobMinPercentComplete = 100.0
+$repairJobPercentComplete = 100.0
+$storageJobDetail = 'No Storage Spaces Direct storage job is running.'
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-StorageSubSystem')) {
+        $state = 'NotApplicable'
+        $detail = "The Windows Storage PowerShell module is unavailable on '$ComputerName'; Storage Spaces Direct object health was not collected."
+    }
+    else {
+        $subsystems = @(Get-StorageSubSystem -ErrorAction Stop | Where-Object { [string]$_.Model -like 'Cluster*' })
+        $subSystemCount = $subsystems.Count
+        if ($subSystemCount -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No clustered Storage subsystem is visible on '$ComputerName'; Storage Spaces Direct object health is not applicable."
+        }
+        else {
+            $subSystemHealthStatus = (@($subsystems | ForEach-Object { Get-HcsStatusText -InputObject $_ -Name 'HealthStatus' }) | Sort-Object -Unique) -join ','
+            $subSystemOperationalStatus = (@($subsystems | ForEach-Object { Get-HcsStatusText -InputObject $_ -Name 'OperationalStatus' }) | Sort-Object -Unique) -join ','
+            # Only Unhealthy counts here: Warning is the normal status during a rebuild after a node reboot
+            # and Microsoft's own S2D monitors map it to Warning, not Error.
+            $subSystemUnhealthyCount = @($subsystems | Where-Object { (Get-HcsStatusText -InputObject $_ -Name 'HealthStatus') -eq 'Unhealthy' }).Count
+
+            # ---- Storage pools (scoped to the clustered subsystem, never local pools) ----------
+            $pools = Get-HcsSafeCollection { $subsystems | Get-StoragePool -IsPrimordial $false -ErrorAction Stop }
+            $poolCount = $pools.Count
+            if ($poolCount -gt 0) {
+                $poolWorstFreePercent = 100.0
+                foreach ($pool in $pools) {
+                    $size = Get-HcsNumber (Get-HcsProperty -InputObject $pool -Name 'Size' -Default 0)
+                    $allocated = Get-HcsNumber (Get-HcsProperty -InputObject $pool -Name 'AllocatedSize' -Default 0)
+                    if ($size -gt 0) {
+                        $freePercent = [math]::Round((($size - $allocated) / $size) * 100, 2)
+                        if ($freePercent -lt $poolWorstFreePercent) { $poolWorstFreePercent = $freePercent }
+                    }
+                    if ((Get-HcsStatusText -InputObject $pool -Name 'HealthStatus') -eq 'Unhealthy') { $poolUnhealthyCount++ }
+                    if ([bool](Get-HcsProperty -InputObject $pool -Name 'IsReadOnly' -Default $false)) { $poolReadOnlyCount++ }
+                }
+                $poolCapacityUsedPercent = [math]::Round(100.0 - $poolWorstFreePercent, 2)
+                $poolDetail = "$poolCount clustered storage pool(s): worst free capacity $poolWorstFreePercent%, $poolUnhealthyCount unhealthy, $poolReadOnlyCount read-only."
+            }
+
+            # ---- Virtual disks ------------------------------------------------
+            $virtualDisks = Get-HcsSafeCollection { $subsystems | Get-VirtualDisk -ErrorAction Stop }
+            $virtualDiskCount = $virtualDisks.Count
+            foreach ($virtualDisk in $virtualDisks) {
+                $health = Get-HcsStatusText -InputObject $virtualDisk -Name 'HealthStatus'
+                $operational = Get-HcsStatusText -InputObject $virtualDisk -Name 'OperationalStatus'
+                if ($health -notin @('Healthy', 'Unknown', '')) { $virtualDiskUnhealthyCount++ }
+                if ($operational -match 'Degraded') { $virtualDiskDegradedCount++ }
+                if ($operational -match 'InService|Repair|Regenerat|Resync') { $virtualDiskInRepairCount++ }
+                if ($operational -match 'Incomplete') { $virtualDiskIncompleteCount++ }
+                if ($operational -match 'Detached') { $virtualDiskDetachedCount++ }
+            }
+            if ($virtualDiskCount -gt 0) {
+                $virtualDiskDetail = "$virtualDiskCount clustered virtual disk(s): $virtualDiskDegradedCount degraded, $virtualDiskInRepairCount repairing or regenerating, $virtualDiskIncompleteCount incomplete, $virtualDiskDetachedCount detached."
+            }
+
+            # ---- Physical disks ----------------------------------------------
+            # Scoped to the clustered subsystem so a failing boot SSD on the owning node is never reported as an
+            # S2D disk failure. Reliability counters are read ONCE per disk and reused for the latency figures.
+            $physicalDisks = Get-HcsSafeCollection { $subsystems | Get-PhysicalDisk -ErrorAction Stop }
+            $physicalDiskCount = $physicalDisks.Count
+            $reliabilityCounters = [System.Collections.Generic.List[object]]::new()
+            foreach ($physicalDisk in $physicalDisks) {
+                $health = Get-HcsStatusText -InputObject $physicalDisk -Name 'HealthStatus'
+                $operational = Get-HcsStatusText -InputObject $physicalDisk -Name 'OperationalStatus'
+                $usage = Get-HcsStatusText -InputObject $physicalDisk -Name 'Usage'
+                if ($health -notin @('Healthy', 'Unknown', '')) { $physicalDiskUnhealthyCount++ }
+                if ($health -eq 'Unhealthy') { $physicalDiskFailedCount++ }
+                if ($operational -match 'Predictive Failure') { $physicalDiskPredictiveFailureCount++ }
+                if ($operational -match 'Lost Communication|Removing from Pool|Starting Maintenance') { $physicalDiskLostCommunicationCount++ }
+                if ($usage -match 'Retired') { $physicalDiskRetiredCount++ }
+                if ($usage -match 'Journal') {
+                    $cacheDeviceCount++
+                    if ($health -notin @('Healthy', 'Unknown', '')) { $cacheDeviceFailedCount++ }
+                }
+
+                $counters = Get-HcsSafeCollection { $physicalDisk | Get-StorageReliabilityCounter -ErrorAction Stop }
+                foreach ($counter in $counters) {
+                    $reliabilityCounters.Add($counter)
+                    $errors = (Get-HcsNumber (Get-HcsProperty -InputObject $counter -Name 'ReadErrorsUncorrected' -Default 0)) +
+                              (Get-HcsNumber (Get-HcsProperty -InputObject $counter -Name 'WriteErrorsUncorrected' -Default 0))
+                    $physicalDiskTotalMediaErrors += $errors
+                    if ($errors -gt $physicalDiskMaxMediaErrors) { $physicalDiskMaxMediaErrors = $errors }
+                }
+            }
+            if ($physicalDiskCount -gt 0) {
+                $physicalDiskDetail = "$physicalDiskCount physical disk(s): $physicalDiskFailedCount failed, $physicalDiskPredictiveFailureCount predictive failure, $physicalDiskLostCommunicationCount lost communication, $physicalDiskRetiredCount retired, worst uncorrected media error count $physicalDiskMaxMediaErrors."
+            }
+            if ($cacheDeviceCount -gt 0) {
+                $cacheDetail = "$cacheDeviceCount Storage Spaces Direct cache device(s): $cacheDeviceFailedCount unhealthy."
+            }
+
+            # ---- Virtual disk latency ------------------------------------------
+            # Virtual-disk reliability counters are exposed on some builds only. Where they
+            # are absent, fall back to the worst per-physical-disk latency in the pool.
+            # Get-StorageReliabilityCounter accepts PhysicalDisk/Disk input only; reuse the single sweep above.
+            # NOTE: ReadLatencyMax/WriteLatencyMax are lifetime maxima since the last counter reset, not a time
+            # series; the collection rules that publish them ship disabled and this value is informational.
+            $latencySources = @($reliabilityCounters)
+            foreach ($latencySource in $latencySources) {
+                $read = Get-HcsNumber (Get-HcsProperty -InputObject $latencySource -Name 'ReadLatencyMax' -Default 0)
+                $write = Get-HcsNumber (Get-HcsProperty -InputObject $latencySource -Name 'WriteLatencyMax' -Default 0)
+                if ($read -gt $virtualDiskReadLatencyMs) { $virtualDiskReadLatencyMs = $read }
+                if ($write -gt $virtualDiskWriteLatencyMs) { $virtualDiskWriteLatencyMs = $write }
+            }
+
+            # ---- Storage jobs ---------------------------------------------------
+            $jobs = Get-HcsSafeCollection { $subsystems | Get-StorageJob -ErrorAction Stop }
+            $storageJobCount = $jobs.Count
+            $running = @($jobs | Where-Object { (Get-HcsStatusText -InputObject $_ -Name 'JobState') -match 'Running|Starting|Suspended' })
+            $storageJobRunningCount = $running.Count
+            if ($storageJobRunningCount -gt 0) {
+                $storageJobMinPercentComplete = 100.0
+                foreach ($job in $running) {
+                    $elapsed = Get-HcsProperty -InputObject $job -Name 'ElapsedTime' -Default $null
+                    $elapsedMinutes = 0.0
+                    if ($elapsed -is [timespan]) { $elapsedMinutes = [math]::Round($elapsed.TotalMinutes, 2) }
+                    else { $elapsedMinutes = Get-HcsNumber $elapsed }
+                    if ($elapsedMinutes -gt $storageJobMaxElapsedMinutes) { $storageJobMaxElapsedMinutes = $elapsedMinutes }
+
+                    $percent = Get-HcsNumber (Get-HcsProperty -InputObject $job -Name 'PercentComplete' -Default 0)
+                    if ($percent -lt $storageJobMinPercentComplete) { $storageJobMinPercentComplete = $percent }
+
+                    $name = Get-HcsStatusText -InputObject $job -Name 'Name'
+                    if ($name -match 'Repair|Regenerat|Rebalance|Resync') { $repairJobPercentComplete = $percent }
+                    if ($elapsedMinutes -gt 0 -and $percent -le 0) { $storageJobStalledRiskCount++ }
+                }
+                $storageJobDetail = "$storageJobRunningCount running storage job(s): longest running $storageJobMaxElapsedMinutes minute(s), lowest progress $storageJobMinPercentComplete%, $storageJobStalledRiskCount job(s) at zero progress."
+            }
+
+            $detail = "Storage Spaces Direct object health collected on '$ComputerName'. $poolDetail $virtualDiskDetail $physicalDiskDetail $storageJobDetail"
+            if ($subSystemUnhealthyCount -gt 0) {
+                $state = 'Warning'
+                $detail = "$subSystemUnhealthyCount clustered Storage subsystem(s) report a non-healthy state on '$ComputerName'. $detail"
+            }
+        }
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Storage Spaces Direct object health collection failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.S2D.ObjectHealth.ps1', 8504, 1, $detail)
+}
+
+$bag.AddValue('S2DObjectHealthState', $state)
+$bag.AddValue('S2DObjectHealthDetail', $detail)
+
+$bag.AddValue('SubSystemCount', [double]$subSystemCount)
+$bag.AddValue('SubSystemUnhealthyCount', [double]$subSystemUnhealthyCount)
+$bag.AddValue('SubSystemHealthStatus', $subSystemHealthStatus)
+$bag.AddValue('SubSystemOperationalStatus', $subSystemOperationalStatus)
+
+$bag.AddValue('PoolCount', [double]$poolCount)
+$bag.AddValue('PoolUnhealthyCount', [double]$poolUnhealthyCount)
+$bag.AddValue('PoolReadOnlyCount', [double]$poolReadOnlyCount)
+$bag.AddValue('PoolWorstFreePercent', [double]$poolWorstFreePercent)
+$bag.AddValue('PoolCapacityUsedPercent', [double]$poolCapacityUsedPercent)
+$bag.AddValue('PoolDetail', $poolDetail)
+
+$bag.AddValue('VirtualDiskCount', [double]$virtualDiskCount)
+$bag.AddValue('VirtualDiskUnhealthyCount', [double]$virtualDiskUnhealthyCount)
+$bag.AddValue('VirtualDiskDegradedCount', [double]$virtualDiskDegradedCount)
+$bag.AddValue('VirtualDiskInRepairCount', [double]$virtualDiskInRepairCount)
+$bag.AddValue('VirtualDiskIncompleteCount', [double]$virtualDiskIncompleteCount)
+$bag.AddValue('VirtualDiskDetachedCount', [double]$virtualDiskDetachedCount)
+$bag.AddValue('VirtualDiskReadLatencyMs', [double]$virtualDiskReadLatencyMs)
+$bag.AddValue('VirtualDiskWriteLatencyMs', [double]$virtualDiskWriteLatencyMs)
+$bag.AddValue('VirtualDiskDetail', $virtualDiskDetail)
+
+$bag.AddValue('PhysicalDiskCount', [double]$physicalDiskCount)
+$bag.AddValue('PhysicalDiskUnhealthyCount', [double]$physicalDiskUnhealthyCount)
+$bag.AddValue('PhysicalDiskFailedCount', [double]$physicalDiskFailedCount)
+$bag.AddValue('PhysicalDiskPredictiveFailureCount', [double]$physicalDiskPredictiveFailureCount)
+$bag.AddValue('PhysicalDiskLostCommunicationCount', [double]$physicalDiskLostCommunicationCount)
+$bag.AddValue('PhysicalDiskRetiredCount', [double]$physicalDiskRetiredCount)
+$bag.AddValue('PhysicalDiskMaxMediaErrors', [double]$physicalDiskMaxMediaErrors)
+$bag.AddValue('PhysicalDiskTotalMediaErrors', [double]$physicalDiskTotalMediaErrors)
+$bag.AddValue('PhysicalDiskDetail', $physicalDiskDetail)
+
+$bag.AddValue('CacheDeviceCount', [double]$cacheDeviceCount)
+$bag.AddValue('CacheDeviceFailedCount', [double]$cacheDeviceFailedCount)
+$bag.AddValue('CacheDetail', $cacheDetail)
+
+$bag.AddValue('StorageJobCount', [double]$storageJobCount)
+$bag.AddValue('StorageJobRunningCount', [double]$storageJobRunningCount)
+$bag.AddValue('StorageJobStalledRiskCount', [double]$storageJobStalledRiskCount)
+$bag.AddValue('StorageJobMaxElapsedMinutes', [double]$storageJobMaxElapsedMinutes)
+$bag.AddValue('StorageJobMinPercentComplete', [double]$storageJobMinPercentComplete)
+$bag.AddValue('RepairJobPercentComplete', [double]$repairJobPercentComplete)
+$bag.AddValue('StorageJobDetail', $storageJobDetail)
+
+$api.Return($bag)

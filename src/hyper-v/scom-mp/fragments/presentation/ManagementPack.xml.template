@@ -1,62 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <Manifest>
-    <Identity><ID>HybridSolutionsCloud.HyperV.Presentation</ID><Version>{{VERSION}}</Version></Identity>
-    <Name>Hybrid Solutions Cloud Hyper-V Presentation</Name>
+    <Identity><ID>HyperVPrivateCloud.Presentation</ID><Version>{{VERSION}}</Version></Identity>
+    <Name>Hyper-V Private Cloud Monitoring Presentation</Name>
     <References>
       <Reference Alias="System"><ID>System.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="Windows"><ID>Microsoft.Windows.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
       <Reference Alias="SC"><ID>Microsoft.SystemCenter.Library</ID><Version>7.0.8433.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
-      <Reference Alias="HCSHyperVLibrary"><ID>HybridSolutionsCloud.HyperV.Library</ID><Version>{{VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
-      <Reference Alias="HCSHyperVMonitoring"><ID>HybridSolutionsCloud.HyperV.Monitoring</ID><Version>{{VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Library"><ID>HyperVPrivateCloud.Library</ID><Version>{{VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
+      <Reference Alias="HCSV2Monitoring"><ID>HyperVPrivateCloud.Monitoring</ID><Version>{{VERSION}}</Version><PublicKeyToken>{{PUBLIC_KEY_TOKEN}}</PublicKeyToken></Reference>
     </References>
   </Manifest>
   <Presentation>
+    <ConsoleTasks><ConsoleTask ID="HyperVPrivateCloud.Host.RemoteDesktop.ConsoleTask" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" RequireOutput="false"><Assembly>HyperVPrivateCloud.ConsoleTask.Assembly</Assembly><Handler>ShellHandler</Handler><Parameters><Argument Name="WorkingDirectory" /><Argument Name="Application">%windir%\system32\mstsc.exe</Argument><Argument>/v:$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</Argument></Parameters></ConsoleTask><ConsoleTask ID="HyperVPrivateCloud.Host.HyperVManager.ConsoleTask" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" RequireOutput="false"><Assembly>HyperVPrivateCloud.ConsoleTask.Assembly</Assembly><Handler>ShellHandler</Handler><Parameters><Argument Name="WorkingDirectory" /><Argument Name="Application">%windir%\system32\mmc.exe</Argument><Argument>%windir%\system32\virtmgmt.msc</Argument></Parameters></ConsoleTask><ConsoleTask ID="HyperVPrivateCloud.Host.FailoverClusterManager.ConsoleTask" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" RequireOutput="false"><Assembly>HyperVPrivateCloud.ConsoleTask.Assembly</Assembly><Handler>ShellHandler</Handler><Parameters><Argument Name="WorkingDirectory" /><Argument Name="Application">%windir%\system32\mmc.exe</Argument><Argument>%windir%\system32\cluadmin.msc</Argument></Parameters></ConsoleTask><ConsoleTask ID="HyperVPrivateCloud.VmRuntime.VmConnect.ConsoleTask" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" RequireOutput="false"><Assembly>HyperVPrivateCloud.ConsoleTask.Assembly</Assembly><Handler>ShellHandler</Handler><Parameters><Argument Name="WorkingDirectory" /><Argument Name="Application">%windir%\system32\vmconnect.exe</Argument><Argument>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/NetworkName$</Argument><Argument>-G</Argument><Argument>$Target/Property[Type="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime"]/VMId$</Argument></Parameters></ConsoleTask></ConsoleTasks>
     <Views>
-      <View ID="HybridSolutionsCloud.HyperV.Service.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.Service" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria><InMaintenanceMode>false</InMaintenanceMode></Criteria></View>
-      <View ID="HybridSolutionsCloud.HyperV.Host.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.VirtualMachine.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.VirtualMachine" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.ClusterSharedVolume.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.ClusterSharedVolume" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.VirtualSwitch.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.VirtualSwitch" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.NetworkAtcIntent.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.NetworkAtcIntent" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.MonitoringPipeline.State.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.MonitoringPipeline" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
-      <View ID="HybridSolutionsCloud.HyperV.Performance.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" TypeID="SC!Microsoft.SystemCenter.PerformanceViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
-      <View ID="HybridSolutionsCloud.HyperV.Event.View" Accessibility="Public" Enabled="true" Target="HCSHyperVLibrary!HybridSolutionsCloud.HyperV.HostRole" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Service.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.Service" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria><InMaintenanceMode>false</InMaintenanceMode></Criteria></View>
+      <View ID="HyperVPrivateCloud.Service.Diagram.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.Service" TypeID="SC!Microsoft.SystemCenter.DiagramViewType" Visible="true"><Category>Operations</Category><Presentation><DiagramViewCriteria><DiagramViewDisplay ShowVirtualGroup="true"><ContainmentStyle>Box</ContainmentStyle><LayoutDirection>NorthSouth</LayoutDirection><NodesPerRow>4</NodesPerRow><LevelsToShow>4</LevelsToShow><MaxNumChild>25</MaxNumChild><MinBucketSize>5</MinBucketSize><VirtualGroupThreshold>25</VirtualGroupThreshold></DiagramViewDisplay></DiagramViewCriteria></Presentation></View>
+      <View ID="HyperVPrivateCloud.Component.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.ComponentGroup" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Host.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Host.Performance.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" TypeID="SC!Microsoft.SystemCenter.PerformanceViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualMachine.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachine" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualMachineRuntime.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualMachineRuntime.Performance.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.PerformanceViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.ReplicationRelationship.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.ReplicationRelationship" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualHardDisk.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualHardDisk" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualSwitch.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualSwitch" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualNetworkAdapter" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.MonitoringPipeline.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.MonitoringPipeline" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Host.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
+      <View ID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
+      <View ID="HyperVPrivateCloud.Host.Events.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Product.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.Product.Group" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
     </Views>
     <Folders>
-      <Folder ID="HybridSolutionsCloud.HyperV.Root.Folder" Accessibility="Public" ParentFolder="SC!Microsoft.SystemCenter.Monitoring.ViewFolder.Root" />
-      <Folder ID="HybridSolutionsCloud.HyperV.Health.Folder" Accessibility="Public" ParentFolder="HybridSolutionsCloud.HyperV.Root.Folder" />
-      <Folder ID="HybridSolutionsCloud.HyperV.Inventory.Folder" Accessibility="Public" ParentFolder="HybridSolutionsCloud.HyperV.Root.Folder" />
-      <Folder ID="HybridSolutionsCloud.HyperV.Operations.Folder" Accessibility="Public" ParentFolder="HybridSolutionsCloud.HyperV.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Root.Folder" Accessibility="Public" ParentFolder="SC!Microsoft.SystemCenter.Monitoring.ViewFolder.Root" />
+      <Folder ID="HyperVPrivateCloud.Overview.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Compute.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.VirtualMachines.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Availability.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Storage.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Networking.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.MonitoringPipeline.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Operations.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
     </Folders>
     <FolderItems>
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.Service.State.View" ID="HybridSolutionsCloud.HyperV.Service.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Health.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.Host.State.View" ID="HybridSolutionsCloud.HyperV.Host.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Health.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.VirtualMachine.State.View" ID="HybridSolutionsCloud.HyperV.VirtualMachine.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Inventory.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.ClusterSharedVolume.State.View" ID="HybridSolutionsCloud.HyperV.ClusterSharedVolume.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Inventory.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.VirtualSwitch.State.View" ID="HybridSolutionsCloud.HyperV.VirtualSwitch.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Inventory.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.NetworkAtcIntent.State.View" ID="HybridSolutionsCloud.HyperV.NetworkAtcIntent.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Inventory.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.MonitoringPipeline.State.View" ID="HybridSolutionsCloud.HyperV.MonitoringPipeline.State.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Inventory.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.ActiveAlerts.View" ID="HybridSolutionsCloud.HyperV.ActiveAlerts.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Operations.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.Performance.View" ID="HybridSolutionsCloud.HyperV.Performance.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Operations.Folder" />
-      <FolderItem ElementID="HybridSolutionsCloud.HyperV.Event.View" ID="HybridSolutionsCloud.HyperV.Event.View.FolderItem" Folder="HybridSolutionsCloud.HyperV.Operations.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Service.State.View" ID="HyperVPrivateCloud.Service.State.View.FolderItem" Folder="HyperVPrivateCloud.Overview.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Service.Diagram.View" ID="HyperVPrivateCloud.Service.Diagram.View.FolderItem" Folder="HyperVPrivateCloud.Overview.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Component.State.View" ID="HyperVPrivateCloud.Component.State.View.FolderItem" Folder="HyperVPrivateCloud.Overview.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Host.State.View" ID="HyperVPrivateCloud.Host.State.View.FolderItem" Folder="HyperVPrivateCloud.Compute.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Host.Performance.View" ID="HyperVPrivateCloud.Host.Performance.View.FolderItem" Folder="HyperVPrivateCloud.Compute.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualMachine.State.View" ID="HyperVPrivateCloud.VirtualMachine.State.View.FolderItem" Folder="HyperVPrivateCloud.VirtualMachines.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.State.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.State.View.FolderItem" Folder="HyperVPrivateCloud.VirtualMachines.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Performance.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.Performance.View.FolderItem" Folder="HyperVPrivateCloud.VirtualMachines.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.ReplicationRelationship.State.View" ID="HyperVPrivateCloud.ReplicationRelationship.State.View.FolderItem" Folder="HyperVPrivateCloud.Availability.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualHardDisk.State.View" ID="HyperVPrivateCloud.VirtualHardDisk.State.View.FolderItem" Folder="HyperVPrivateCloud.Storage.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualSwitch.State.View" ID="HyperVPrivateCloud.VirtualSwitch.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View" ID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.MonitoringPipeline.State.View" ID="HyperVPrivateCloud.MonitoringPipeline.State.View.FolderItem" Folder="HyperVPrivateCloud.MonitoringPipeline.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Host.ActiveAlerts.View" ID="HyperVPrivateCloud.Host.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Host.Events.View" ID="HyperVPrivateCloud.Host.Events.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Product.ActiveAlerts.View" ID="HyperVPrivateCloud.Product.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Overview.Folder" />
     </FolderItems>
   </Presentation>
   <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Presentation"><Name>Hybrid Solutions Cloud Hyper-V Presentation</Name><Description>Operator folders and views for Hyper-V health services, hosts, inventory, alerts, events, and performance.</Description></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Root.Folder"><Name>Hybrid Solutions Cloud - Hyper-V</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Health.Folder"><Name>Health services</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Inventory.Folder"><Name>Inventory</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Operations.Folder"><Name>Operations</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Service.State.View"><Name>Hyper-V service health</Name><Description>Distributed Application roots for cluster and standalone Hyper-V boundaries.</Description></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Host.State.View"><Name>Hyper-V hosts</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.VirtualMachine.State.View"><Name>Virtual machines</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.ClusterSharedVolume.State.View"><Name>Cluster Shared Volumes</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.VirtualSwitch.State.View"><Name>Virtual switches</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.NetworkAtcIntent.State.View"><Name>Network ATC intents</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.MonitoringPipeline.State.View"><Name>Monitoring pipeline</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.ActiveAlerts.View"><Name>Active alerts</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Performance.View"><Name>Performance</Name></DisplayString>
-    <DisplayString ElementID="HybridSolutionsCloud.HyperV.Event.View"><Name>Events</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.RemoteDesktop.ConsoleTask"><Name>Remote Desktop to the Hyper-V host</Name><Description>Opens mstsc.exe against the host.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.Host.HyperVManager.ConsoleTask"><Name>Open Hyper-V Manager</Name><Description>Opens the Hyper-V Manager console on the operator workstation; connect to the host from the console.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.Host.FailoverClusterManager.ConsoleTask"><Name>Open Failover Cluster Manager</Name><Description>Opens the Failover Cluster Manager console on the operator workstation.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.VmRuntime.VmConnect.ConsoleTask"><Name>Connect to the virtual machine console</Name><Description>Opens vmconnect.exe for this VM on its current host.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Product.ActiveAlerts.View"><Name>All Active Alerts</Name><Description>Every active alert raised against any object of the Hyper-V Private Cloud product: hosts, virtual machines, clusters, storage, networking, SDN and VMM capability objects.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Presentation"><Name>Hyper-V Private Cloud Monitoring Presentation</Name><Description>Operator console hierarchy, Distributed Application diagram, health, alerts, events, performance, inventory, and monitoring coverage for Hyper-V Private Cloud Monitoring.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Root.Folder"><Name>Hyper-V Private Cloud</Name><Description>Complete operator workspace for supported Hyper-V private-cloud capabilities.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Overview.Folder"><Name>Overview</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Compute.Folder"><Name>Compute</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachines.Folder"><Name>Virtual Machines</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Availability.Folder"><Name>Availability</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Storage.Folder"><Name>Storage</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Networking.Folder"><Name>Networking</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.MonitoringPipeline.Folder"><Name>Monitoring Pipeline</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Operations.Folder"><Name>Operations</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Service.State.View"><Name>Private Cloud Health</Name><Description>Health state for every discovered standalone or clustered Hyper-V private-cloud service boundary.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Service.Diagram.View"><Name>Private Cloud Diagram</Name><Description>Distributed Application diagram showing service branches, contained resources, and their rolled-up health.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Component.State.View"><Name>Private Cloud Components</Name><Description>Health of the management, compute, VM, availability, storage, networking, and monitoring branches.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.State.View"><Name>Hyper-V Hosts</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.Performance.View"><Name>Host Performance</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachine.State.View"><Name>Virtual Machine Inventory</Name><Description>Stable logical VM identities that remain consistent across host migration.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.State.View"><Name>Virtual Machine Health</Name><Description>Agent-hosted VM runtime health on the current Hyper-V owner.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Performance.View"><Name>Virtual Machine Performance</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.ReplicationRelationship.State.View"><Name>Hyper-V Replica</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualHardDisk.State.View"><Name>Virtual Hard Disks</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualSwitch.State.View"><Name>Virtual Switches</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View"><Name>Virtual Network Adapters</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.MonitoringPipeline.State.View"><Name>Workflow Health</Name><Description>Discovery and monitoring pipeline freshness and execution health.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.ActiveAlerts.View"><Name>Active Host Alerts</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View"><Name>Active Virtual Machine Alerts</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.Events.View"><Name>Host Events</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View"><Name>Virtual Machine Events</Name></DisplayString>
   </DisplayStrings></LanguagePack></LanguagePacks>
+  <Resources><Assembly ID="HyperVPrivateCloud.ConsoleTask.Assembly" Accessibility="Internal" FileName="Res.dll" HasNullStream="true" QualifiedName="Res, Version=1.0.0.0" /></Resources>
 </ManagementPack>

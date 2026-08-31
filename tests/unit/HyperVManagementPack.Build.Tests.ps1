@@ -18,13 +18,13 @@ BeforeAll {
     $ErrorActionPreference = 'Stop'
 
     $script:RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-    $script:SourceRoot = Join-Path $script:RepositoryRoot 'src/hyper-v/scom-mp'
+    $script:SourceRoot = Join-Path $script:RepositoryRoot 'archive/hyperv-scom-mp-legacy'
     $script:BuildScript = Join-Path $script:SourceRoot 'tools/Build-HyperVManagementPacks.ps1'
     $script:ContractScript = Join-Path $script:SourceRoot 'tools/Test-HyperVManagementPacks.ps1'
     $script:OverrideScript = Join-Path $script:SourceRoot 'tools/New-HyperVOverrideManagementPacks.ps1'
     $script:OverrideExampleScript = Join-Path $script:SourceRoot 'tools/Update-HyperVOverrideExamples.ps1'
-    $script:V2DependencyContract = Join-Path $script:SourceRoot 'contracts/dependencies.v2.json'
-    $script:V2PackageContract = Join-Path $script:SourceRoot 'contracts/packages.v2.json'
+    $script:V2DependencyContract = Join-Path $script:RepositoryRoot 'src/hyper-v/scom-mp/contracts/dependencies.json'
+    $script:V2PackageContract = Join-Path $script:RepositoryRoot 'src/hyper-v/scom-mp/contracts/packages.json'
 }
 
 Describe 'Hyper-V Management Pack development build' {
@@ -89,7 +89,7 @@ Describe 'Hyper-V Management Pack development build' {
         $packages = Get-Content -LiteralPath $script:V2PackageContract -Raw | ConvertFrom-Json
         $packages.schemaVersion | Should -Be '1.0'
         $packages.namespace | Should -Be 'HyperVPrivateCloud'
-        $packages.sourceRoot | Should -Be 'src/hyper-v/scom-mp/v2'
+        $packages.sourceRoot | Should -Be 'src/hyper-v/scom-mp'
 
         $artifactIds = @($packages.artifacts.id)
         @($artifactIds | Sort-Object -Unique).Count | Should -Be $artifactIds.Count

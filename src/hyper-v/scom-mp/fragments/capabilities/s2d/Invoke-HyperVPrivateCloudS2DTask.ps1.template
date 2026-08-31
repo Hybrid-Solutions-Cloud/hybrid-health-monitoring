@@ -1,0 +1,85 @@
+#Requires -Version 7.0
+# Storage Spaces Direct operator tasks. Read-only actions first; remediation actions are separate Task elements.
+param(
+    [ValidateSet('HealthReport', 'StorageJobs', 'DiskReliability', 'Capacity', 'RepairVirtualDisk', 'RetirePhysicalDisk', 'EnableStorageMaintenanceMode', 'DisableStorageMaintenanceMode', 'ConnectVirtualDisk')]
+    [string]$Action = 'HealthReport',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+function Get-HcsSubsystem { $s = @(Get-StorageSubSystem -ErrorAction Stop | Where-Object { [string]$_.Model -like 'Cluster*' }); if ($s.Count -eq 0) { throw 'No clustered storage subsystem (Storage Spaces Direct) is visible on this node.' }; return $s }
+
+$lines.Add("Hyper-V Private Cloud S2D task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    if (-not (Get-Module -ListAvailable -Name Storage -ErrorAction SilentlyContinue)) { throw 'The Storage PowerShell module is not available on this node.' }
+    Import-Module Storage -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    switch ($Action) {
+        'HealthReport' {
+            $subsystems = Get-HcsSubsystem
+            Add-HcsSection 'Subsystem'
+            Add-HcsText ($subsystems | Select-Object FriendlyName, HealthStatus, OperationalStatus | Format-Table -AutoSize)
+            Add-HcsSection 'Active health faults (Debug-StorageSubSystem)'
+            Add-HcsText ($subsystems | Debug-StorageSubSystem -ErrorAction SilentlyContinue | Select-Object Severity, FaultingObjectDescription, Reason, RecommendedActions | Format-List)
+            Add-HcsSection 'Storage health report'
+            Add-HcsText ($subsystems | Get-StorageHealthReport -ErrorAction SilentlyContinue | Select-Object -ExpandProperty ItemValue -ErrorAction SilentlyContinue | Format-List)
+            Add-HcsSection 'Pools / virtual disks / physical disks not healthy'
+            Add-HcsText ($subsystems | Get-StoragePool -IsPrimordial $false | Select-Object FriendlyName, HealthStatus, OperationalStatus, IsReadOnly, @{ n = 'SizeTB'; e = { [math]::Round($_.Size / 1TB, 2) } }, @{ n = 'FreeTB'; e = { [math]::Round(($_.Size - $_.AllocatedSize) / 1TB, 2) } } | Format-Table -AutoSize)
+            Add-HcsText ($subsystems | Get-VirtualDisk | Select-Object FriendlyName, HealthStatus, OperationalStatus, ResiliencySettingName, @{ n = 'SizeTB'; e = { [math]::Round($_.Size / 1TB, 2) } } | Format-Table -AutoSize)
+            Add-HcsText ($subsystems | Get-PhysicalDisk | Where-Object { $_.HealthStatus -ne 'Healthy' -or $_.Usage -eq 'Retired' } | Select-Object FriendlyName, SerialNumber, MediaType, Usage, HealthStatus, OperationalStatus | Format-Table -AutoSize)
+        }
+        'StorageJobs' {
+            $subsystems = Get-HcsSubsystem
+            Add-HcsSection 'Storage jobs'
+            Add-HcsText ($subsystems | Get-StorageJob | Select-Object Name, JobState, PercentComplete, @{ n = 'ProcessedGB'; e = { [math]::Round($_.BytesProcessed / 1GB, 1) } }, @{ n = 'TotalGB'; e = { [math]::Round($_.BytesTotal / 1GB, 1) } }, ElapsedTime, IsBackgroundTask | Format-Table -AutoSize)
+        }
+        'DiskReliability' {
+            $subsystems = Get-HcsSubsystem
+            Add-HcsSection 'Physical disk reliability counters'
+            Add-HcsText ($subsystems | Get-PhysicalDisk | Sort-Object FriendlyName | ForEach-Object { $d = $_; $c = $d | Get-StorageReliabilityCounter -ErrorAction SilentlyContinue; [pscustomobject]@{ Disk = $d.FriendlyName; Serial = $d.SerialNumber; Media = $d.MediaType; Usage = $d.Usage; Health = $d.HealthStatus; Temp = $c.Temperature; Wear = $c.Wear; ReadErrUncorr = $c.ReadErrorsUncorrected; WriteErrUncorr = $c.WriteErrorsUncorrected; PowerOnHours = $c.PowerOnHours } } | Format-Table -AutoSize)
+        }
+        'Capacity' {
+            $subsystems = Get-HcsSubsystem
+            Add-HcsSection 'Pool capacity'
+            Add-HcsText ($subsystems | Get-StoragePool -IsPrimordial $false | Select-Object FriendlyName, @{ n = 'SizeTB'; e = { [math]::Round($_.Size / 1TB, 2) } }, @{ n = 'AllocatedTB'; e = { [math]::Round($_.AllocatedSize / 1TB, 2) } }, @{ n = 'FreePercent'; e = { [math]::Round((($_.Size - $_.AllocatedSize) / $_.Size) * 100, 1) } } | Format-Table -AutoSize)
+            Add-HcsSection 'Volumes'
+            Add-HcsText ($subsystems | Get-VirtualDisk | Get-Disk -ErrorAction SilentlyContinue | Get-Partition -ErrorAction SilentlyContinue | Get-Volume -ErrorAction SilentlyContinue | Where-Object FileSystemLabel | Select-Object FileSystemLabel, FileSystem, @{ n = 'SizeTB'; e = { [math]::Round($_.Size / 1TB, 2) } }, @{ n = 'FreePercent'; e = { [math]::Round(($_.SizeRemaining / $_.Size) * 100, 1) } }, HealthStatus | Format-Table -AutoSize)
+        }
+        'RepairVirtualDisk' {
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the virtual disk friendly name.' }
+            Repair-VirtualDisk -FriendlyName $Parameter -AsJob -ErrorAction Stop | Out-Null
+            Add-HcsText (Get-StorageJob | Where-Object Name -like '*Repair*' | Select-Object Name, JobState, PercentComplete | Format-Table -AutoSize)
+        }
+        'RetirePhysicalDisk' {
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the physical disk serial number.' }
+            $disk = Get-PhysicalDisk -SerialNumber $Parameter -ErrorAction Stop
+            Set-PhysicalDisk -InputObject $disk -Usage Retired -ErrorAction Stop
+            Add-HcsText (Get-PhysicalDisk -SerialNumber $Parameter | Select-Object FriendlyName, SerialNumber, Usage, HealthStatus | Format-Table -AutoSize)
+        }
+        'EnableStorageMaintenanceMode' {
+            $node = if ([string]::IsNullOrWhiteSpace($Parameter)) { $env:COMPUTERNAME } else { $Parameter }
+            Get-StorageFaultDomain -Type StorageScaleUnit -ErrorAction Stop | Where-Object FriendlyName -eq $node | Enable-StorageMaintenanceMode -ErrorAction Stop
+            $lines.Add("Storage maintenance mode enabled on $node.")
+        }
+        'DisableStorageMaintenanceMode' {
+            $node = if ([string]::IsNullOrWhiteSpace($Parameter)) { $env:COMPUTERNAME } else { $Parameter }
+            Get-StorageFaultDomain -Type StorageScaleUnit -ErrorAction Stop | Where-Object FriendlyName -eq $node | Disable-StorageMaintenanceMode -ErrorAction Stop
+            $lines.Add("Storage maintenance mode disabled on $node.")
+        }
+        'ConnectVirtualDisk' {
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the virtual disk friendly name.' }
+            Connect-VirtualDisk -FriendlyName $Parameter -ErrorAction Stop
+            Add-HcsText (Get-VirtualDisk -FriendlyName $Parameter | Select-Object FriendlyName, HealthStatus, OperationalStatus | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

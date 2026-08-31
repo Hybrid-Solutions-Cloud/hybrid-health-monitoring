@@ -1,0 +1,61 @@
+#Requires -Version 7.0
+# SDN host-side operator tasks. Local, read-only evidence only; never calls Network Controller REST.
+param(
+    [ValidateSet('HostAgentStatus', 'CertificateStatus', 'HostAgentEvents', 'RestartHostAgents')]
+    [string]$Action = 'HostAgentStatus',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+
+$lines.Add("Hyper-V Private Cloud SDN task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    switch ($Action) {
+        'HostAgentStatus' {
+            Add-HcsSection 'Host agent services'
+            Add-HcsText (Get-Service NcHostAgent, SlbHostAgent -ErrorAction SilentlyContinue | Select-Object Name, Status, StartType | Format-Table -AutoSize)
+            Add-HcsSection 'Host agent configuration (registry)'
+            Add-HcsText (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -ErrorAction SilentlyContinue | Select-Object HostId, Connections, HostAgentCertificateCName, PeerCertificateCName | Format-List)
+            Add-HcsSection 'Established connections owned by the host agents'
+            $pids = @(Get-Process -Name NcHostAgent, SlbHostAgent -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+            if ($pids.Count -gt 0) { Add-HcsText (Get-NetTCPConnection -OwningProcess $pids -ErrorAction SilentlyContinue | Select-Object LocalAddress, LocalPort, RemoteAddress, RemotePort, State, OwningProcess | Format-Table -AutoSize) } else { $lines.Add('  (host agent processes not running)') }
+            Add-HcsSection 'VFP switch extension'
+            if (Get-Module -ListAvailable -Name Hyper-V -ErrorAction SilentlyContinue) {
+                Import-Module Hyper-V -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+                Add-HcsText (Get-VMSwitch -ErrorAction SilentlyContinue | Get-VMSwitchExtension -ErrorAction SilentlyContinue | Where-Object Name -like '*Virtual Filtering Platform*' | Select-Object SwitchName, Name, Enabled, Running | Format-Table -AutoSize)
+            }
+        }
+        'CertificateStatus' {
+            $parameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -ErrorAction SilentlyContinue
+            $names = @()
+            foreach ($n in @('HostAgentCertificateCName', 'PeerCertificateCName')) { if ($null -ne $parameters -and $parameters.PSObject.Properties[$n] -and $parameters.$n) { $names += ([string]$parameters.$n).ToLowerInvariant() } }
+            Add-HcsSection "SDN certificates (CN in: $($names -join ', '))"
+            $certs = Get-ChildItem Cert:\LocalMachine\My -ErrorAction SilentlyContinue | Where-Object { $subject = ($_.Subject -replace '(?i)^CN=([^,]+).*$', '$1').ToLowerInvariant(); $names -contains $subject }
+            Add-HcsText ($certs | ForEach-Object { $chain = [System.Security.Cryptography.X509Certificates.X509Chain]::new(); $chain.ChainPolicy.RevocationMode = 'NoCheck'; $trusted = $chain.Build($_); $chain.Dispose(); [pscustomobject]@{ Subject = $_.Subject; Thumbprint = $_.Thumbprint; NotAfter = $_.NotAfter; DaysLeft = [int]($_.NotAfter - (Get-Date)).TotalDays; Issuer = $_.Issuer; ChainTrusted = $trusted; HasPrivateKey = $_.HasPrivateKey } } | Format-List)
+        }
+        'HostAgentEvents' {
+            $max = if ($Parameter -match '^\d+$') { [int]$Parameter } else { 25 }
+            foreach ($log in @(Get-WinEvent -ListLog 'Microsoft-Windows-NetworkController-NcHostAgent*', 'Microsoft-Windows-Hyper-V-VfpExt*', 'Microsoft-Windows-SoftwareLoadBalancer*' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty LogName)) {
+                Add-HcsSection "$log (last $max errors/warnings)"
+                try { Add-HcsText (Get-WinEvent -FilterHashtable @{ LogName = $log; Level = @(1, 2, 3) } -MaxEvents $max -ErrorAction Stop | Select-Object TimeCreated, Id, LevelDisplayName, @{ n = 'Message'; e = { ($_.Message -split "`n")[0] } } | Format-Table -AutoSize -Wrap) } catch { $lines.Add('  (none)') }
+            }
+        }
+        'RestartHostAgents' {
+            foreach ($service in @('NcHostAgent', 'SlbHostAgent')) {
+                if (Get-Service -Name $service -ErrorAction SilentlyContinue) { Restart-Service -Name $service -Force -ErrorAction Stop; $lines.Add("$service restarted.") }
+            }
+            Add-HcsText (Get-Service NcHostAgent, SlbHostAgent -ErrorAction SilentlyContinue | Select-Object Name, Status | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine
