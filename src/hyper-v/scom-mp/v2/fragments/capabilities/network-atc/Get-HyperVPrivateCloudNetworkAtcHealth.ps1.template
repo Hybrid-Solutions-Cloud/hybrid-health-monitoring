@@ -1,13 +1,29 @@
 #Requires -Version 7.0
 param(
-    [Parameter(Mandatory)][ValidateSet('Capability', 'Intent', 'Adapter', 'Global')][string]$Mode,
+    [Parameter(Mandatory)][ValidateSet(
+        'Capability', 'Intent', 'Adapter', 'Global',
+        'ProvisioningDrift', 'ComplianceDrift', 'ApplyFailure', 'AdapterSymmetry',
+        'RdmaState', 'RdmaConfigurationDrift', 'DcbPfc', 'EtsPolicy',
+        'QosTrafficClass', 'VmSwitch', 'ClusterConsistency', 'GlobalDrift')][string]$Mode,
     [Parameter(Mandatory)][string]$ComputerName,
     [string]$IntentName,
     [string]$AdapterNames,
     [bool]$IsStorageIntent = $false,
     [bool]$RequireNetworkATC = $false,
     [bool]$RequireRdmaForStorage = $true,
-    [int]$MaxTransitionalMinutes = 30
+    [int]$MaxTransitionalMinutes = 30,
+    [int]$ComplianceToleranceMinutes = 60,
+    [int]$MaxRetryCount = 3,
+    [bool]$RequireRdma = $true,
+    [bool]$RequireDcb = $true,
+    [int]$ExpectedPfcPriority = 3,
+    [int]$ExpectedClusterPriority = 7,
+    [int]$MinimumEtsBandwidthPercent = 50,
+    [int]$ExpectedTrafficClassCount = 2,
+    [int]$MinimumAdapterSpeedGbps = 10,
+    [int]$MaxAdapterSpeedVariancePercent = 0,
+    [bool]$RequireVmSwitchForComputeIntent = $true,
+    [int]$MaxNodesOutOfCompliance = 0
 )
 
 Set-StrictMode -Version Latest
@@ -66,6 +82,73 @@ function Get-HcsStatusState {
     return [pscustomobject]@{ State = 'Warning'; Detail = "$detail The returned state is not recognized by this Management Pack version." }
 }
 
+function Test-HcsCommand {
+    param([Parameter(Mandatory)][string]$Name)
+    return $null -ne (Get-Command -Name $Name -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsAdapterNameList {
+    param([AllowNull()][string]$Names)
+    if ([string]::IsNullOrWhiteSpace($Names)) { return @() }
+    return @($Names -split '[,;]' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+}
+
+function Get-HcsMinutesSince {
+    param([AllowNull()]$Value)
+    if ($null -eq $Value) { return -1 }
+    $parsed = [datetime]::MinValue
+    if (-not [datetime]::TryParse([string]$Value, [ref]$parsed)) { return -1 }
+    if ($parsed -eq [datetime]::MinValue) { return -1 }
+    return [math]::Max(0, ((Get-Date) - $parsed).TotalMinutes)
+}
+
+function Test-HcsSameHost {
+    param([AllowNull()]$Record, [Parameter(Mandatory)][string]$Computer)
+    $hostValue = [string](Get-HcsPropertyValue -InputObject $Record -Name @('Host', 'ComputerName', 'PSComputerName'))
+    if ([string]::IsNullOrWhiteSpace($hostValue)) { return $true }
+    return $hostValue.Split('.')[0].Equals($Computer.Split('.')[0], [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Get-HcsIntentStatusRecord {
+    param([AllowNull()][string]$Name, [Parameter(Mandatory)][string]$Computer, [switch]$GlobalOverrides)
+    $records = if ($GlobalOverrides.IsPresent) {
+        @(Get-NetIntentStatus -ComputerName $Computer -GlobalOverrides -ErrorAction Stop)
+    }
+    else {
+        @(Get-NetIntentStatus -Name $Name -ComputerName $Computer -ErrorAction Stop)
+    }
+    return @($records | Where-Object { Test-HcsSameHost -Record $_ -Computer $Computer }) | Select-Object -First 1
+}
+
+function Get-HcsAdapterSpeedMbps {
+    param([AllowNull()]$Adapter)
+    if ($null -eq $Adapter) { return 0 }
+    $speed = Get-HcsPropertyValue -InputObject $Adapter -Name @('Speed')
+    if ($null -ne $speed) {
+        $bits = 0.0
+        if ([double]::TryParse([string]$speed, [ref]$bits) -and $bits -gt 0) { return [math]::Round($bits / 1000000.0) }
+    }
+    $linkSpeed = [string](Get-HcsPropertyValue -InputObject $Adapter -Name @('LinkSpeed'))
+    if ([string]::IsNullOrWhiteSpace($linkSpeed)) { return 0 }
+    $parts = $linkSpeed.Trim() -split '\s+'
+    $value = 0.0
+    if (-not [double]::TryParse($parts[0], [ref]$value)) { return 0 }
+    $unit = if ($parts.Count -gt 1) { $parts[1].ToLowerInvariant() } else { 'mbps' }
+    switch -Wildcard ($unit) {
+        'tbps*' { return [math]::Round($value * 1000000) }
+        'gbps*' { return [math]::Round($value * 1000) }
+        'mbps*' { return [math]::Round($value) }
+        'kbps*' { return [math]::Round($value / 1000) }
+        'bps*' { return [math]::Round($value / 1000000) }
+        default { return [math]::Round($value) }
+    }
+}
+
+function New-HcsResult {
+    param([Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
+    return [pscustomobject]@{ State = $State; Detail = $Detail }
+}
+
 $api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
 $bag = $api.CreatePropertyBag()
 $state = 'Good'
@@ -75,7 +158,7 @@ try {
     $hasIntent = Test-HcsCapability -ModuleName 'NetworkATC' -CommandName 'Get-NetIntent'
     $hasStatus = $null -ne (Get-Command -Name Get-NetIntentStatus -ErrorAction SilentlyContinue)
     if (-not $hasIntent -or -not $hasStatus) {
-        if ($RequireNetworkATC -or $Mode -ne 'Capability') {
+        if ($RequireNetworkATC -or $Mode -in @('Intent', 'Adapter', 'Global')) {
             throw 'The NetworkATC module or Get-NetIntentStatus is unavailable. Install the NetworkATC Windows feature with management tools.'
         }
         $state = 'NotApplicable'
@@ -150,6 +233,416 @@ try {
             }
             else {
                 $detail = "All participating adapters for network intent '$IntentName' are present and Up" + $(if ($IsStorageIntent -and $RequireRdmaForStorage) { ' with RDMA enabled.' } else { '.' })
+            }
+        }
+    }
+    elseif ($Mode -eq 'ProvisioningDrift') {
+        $status = Get-HcsIntentStatusRecord -Name $IntentName -Computer $ComputerName
+        if ($null -eq $status) {
+            $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' returned no provisioning status record for '$ComputerName'."
+        }
+        else {
+            $provisioning = [string](Get-HcsPropertyValue -InputObject $status -Name @('ProvisioningStatus'))
+            $progress = [string](Get-HcsPropertyValue -InputObject $status -Name @('Progress'))
+            $ageMinutes = Get-HcsMinutesSince (Get-HcsPropertyValue -InputObject $status -Name @('LastUpdated', 'LastSuccess'))
+            $ageText = if ($ageMinutes -lt 0) { 'unknown' } else { "$([math]::Round($ageMinutes)) minute(s)" }
+            if ($provisioning -in @('Completed', '')) {
+                $result = New-HcsResult -State 'Good' -Detail "Network intent '$IntentName' provisioning on '$ComputerName' is '$provisioning'; last update $ageText ago."
+            }
+            elseif ($ageMinutes -ge 0 -and $ageMinutes -ge $ComplianceToleranceMinutes) {
+                $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' provisioning on '$ComputerName' is '$provisioning' (progress '$progress') and has not completed for $ageText, beyond the $ComplianceToleranceMinutes minute tolerance window."
+            }
+            else {
+                $result = New-HcsResult -State 'Warning' -Detail "Network intent '$IntentName' provisioning on '$ComputerName' is '$provisioning' (progress '$progress') for $ageText, still inside the $ComplianceToleranceMinutes minute tolerance window."
+            }
+        }
+        $state = $result.State
+        $detail = $result.Detail
+    }
+    elseif ($Mode -eq 'ComplianceDrift') {
+        $status = Get-HcsIntentStatusRecord -Name $IntentName -Computer $ComputerName
+        if ($null -eq $status) {
+            $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' returned no configuration status record for '$ComputerName'; the intent request and the applied configuration cannot be compared."
+        }
+        else {
+            $configuration = [string](Get-HcsPropertyValue -InputObject $status -Name @('ConfigurationStatus', 'Status'))
+            $lastSuccessMinutes = Get-HcsMinutesSince (Get-HcsPropertyValue -InputObject $status -Name @('LastSuccess', 'LastConfigApplied', 'LastUpdated'))
+            $successText = if ($lastSuccessMinutes -lt 0) { 'never reported' } else { "$([math]::Round($lastSuccessMinutes)) minute(s) ago" }
+            if ($configuration -eq 'Success') {
+                $result = New-HcsResult -State 'Good' -Detail "Network intent '$IntentName' on '$ComputerName' is compliant with the requested configuration; last successful apply $successText."
+            }
+            elseif ($lastSuccessMinutes -lt 0 -or $lastSuccessMinutes -ge $ComplianceToleranceMinutes) {
+                $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' on '$ComputerName' reports configuration '$configuration' and the applied configuration has drifted from the requested intent for longer than the $ComplianceToleranceMinutes minute tolerance window (last successful apply $successText)."
+            }
+            else {
+                $result = New-HcsResult -State 'Warning' -Detail "Network intent '$IntentName' on '$ComputerName' reports configuration '$configuration'; drift is inside the $ComplianceToleranceMinutes minute tolerance window (last successful apply $successText)."
+            }
+        }
+        $state = $result.State
+        $detail = $result.Detail
+    }
+    elseif ($Mode -eq 'ApplyFailure') {
+        $status = Get-HcsIntentStatusRecord -Name $IntentName -Computer $ComputerName
+        if ($null -eq $status) {
+            $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' returned no status record for '$ComputerName'; apply failures cannot be evaluated."
+        }
+        else {
+            $errorCode = [string](Get-HcsPropertyValue -InputObject $status -Name @('Error', 'ErrorCode'))
+            $retryValue = Get-HcsPropertyValue -InputObject $status -Name @('RetryCount')
+            $retries = 0
+            if ($null -ne $retryValue) { [void][int]::TryParse([string]$retryValue, [ref]$retries) }
+            if (-not [string]::IsNullOrWhiteSpace($errorCode)) {
+                $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' apply failed on '$ComputerName' with error '$errorCode' after $retries retry attempt(s); the retry limit is $MaxRetryCount."
+            }
+            elseif ($retries -ge [math]::Max(1, $MaxRetryCount)) {
+                $result = New-HcsResult -State 'Critical' -Detail "Network intent '$IntentName' on '$ComputerName' has been retried $retries time(s), at or beyond the retry limit of $MaxRetryCount."
+            }
+            elseif ($retries -gt 0) {
+                $result = New-HcsResult -State 'Warning' -Detail "Network intent '$IntentName' on '$ComputerName' has been retried $retries time(s); the retry limit is $MaxRetryCount."
+            }
+            else {
+                $result = New-HcsResult -State 'Good' -Detail "Network intent '$IntentName' applied on '$ComputerName' with no error and no retry."
+            }
+        }
+        $state = $result.State
+        $detail = $result.Detail
+    }
+    elseif ($Mode -eq 'AdapterSymmetry') {
+        $names = Get-HcsAdapterNameList -Names $AdapterNames
+        if ($names.Count -eq 0) {
+            $state = 'Warning'
+            $detail = "Network intent '$IntentName' did not expose participating adapter names, so adapter symmetry cannot be evaluated on '$ComputerName'."
+        }
+        elseif (-not (Test-HcsCommand -Name 'Get-NetAdapter')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-NetAdapter is unavailable; adapter symmetry is not evaluated on this host.'
+        }
+        else {
+            $minimumMbps = [math]::Max(0, $MinimumAdapterSpeedGbps) * 1000
+            $speeds = [System.Collections.Generic.List[double]]::new()
+            $models = [System.Collections.Generic.List[string]]::new()
+            $problems = [System.Collections.Generic.List[string]]::new()
+            $warnings = [System.Collections.Generic.List[string]]::new()
+            foreach ($name in $names) {
+                $adapter = Get-NetAdapter -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $adapter) { $problems.Add("adapter '$name' declared by the intent is missing on this node"); continue }
+                $speedMbps = Get-HcsAdapterSpeedMbps -Adapter $adapter
+                $speeds.Add([double]$speedMbps)
+                $models.Add([string](Get-HcsPropertyValue -InputObject $adapter -Name @('InterfaceDescription', 'DriverDescription')))
+                if ($minimumMbps -gt 0 -and $speedMbps -gt 0 -and $speedMbps -lt $minimumMbps) {
+                    $problems.Add("adapter '$name' links at $speedMbps Mbps, below the $MinimumAdapterSpeedGbps Gbps minimum")
+                }
+            }
+            if ($speeds.Count -gt 1) {
+                $maximum = ($speeds | Measure-Object -Maximum).Maximum
+                $minimum = ($speeds | Measure-Object -Minimum).Minimum
+                if ($maximum -gt 0) {
+                    $variance = [math]::Round((($maximum - $minimum) / $maximum) * 100, 1)
+                    if ($variance -gt $MaxAdapterSpeedVariancePercent) {
+                        $problems.Add("participating adapter link speeds vary by $variance percent, beyond the $MaxAdapterSpeedVariancePercent percent allowance")
+                    }
+                }
+            }
+            $distinctModels = @($models | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+            if ($distinctModels.Count -gt 1) {
+                $warnings.Add("participating adapters are not the same model: $($distinctModels -join ' | ')")
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "Network intent '$IntentName' adapter symmetry failed on '$ComputerName': $($problems -join '; ')."
+            }
+            elseif ($warnings.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "Network intent '$IntentName' adapter symmetry warning on '$ComputerName': $($warnings -join '; ')."
+            }
+            else {
+                $detail = "Network intent '$IntentName' participating adapters on '$ComputerName' are symmetric at or above $MinimumAdapterSpeedGbps Gbps within $MaxAdapterSpeedVariancePercent percent speed variance."
+            }
+        }
+    }
+    elseif ($Mode -eq 'RdmaState') {
+        $names = Get-HcsAdapterNameList -Names $AdapterNames
+        if (-not $RequireRdma -or -not $IsStorageIntent) {
+            $state = 'NotApplicable'
+            $detail = "RDMA is not evaluated for network intent '$IntentName' because RequireRdma is $RequireRdma and the intent carries storage traffic: $IsStorageIntent."
+        }
+        elseif ($names.Count -eq 0) {
+            $state = 'Warning'
+            $detail = "Network intent '$IntentName' did not expose participating adapter names, so RDMA state cannot be evaluated."
+        }
+        elseif (-not (Test-HcsCommand -Name 'Get-NetAdapterRdma')) {
+            $state = 'Warning'
+            $detail = 'Get-NetAdapterRdma is unavailable; install Data-Center-Bridging and the network adapter management tools to evaluate RDMA state.'
+        }
+        else {
+            $problems = [System.Collections.Generic.List[string]]::new()
+            foreach ($name in $names) {
+                $rdma = Get-NetAdapterRdma -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $rdma) { $problems.Add("adapter '$name' does not expose an RDMA configuration"); continue }
+                if (-not [bool](Get-HcsPropertyValue -InputObject $rdma -Name @('Enabled'))) { $problems.Add("adapter '$name' has RDMA disabled"); continue }
+                $operational = Get-HcsPropertyValue -InputObject $rdma -Name @('OperationalState', 'RdmaAdapterOperationalState')
+                if ($null -ne $operational -and [string]$operational -notin @('Up', 'Enabled', 'True', '1')) {
+                    $problems.Add("adapter '$name' reports RDMA operational state '$operational'")
+                }
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "RDMA is not operational for network intent '$IntentName' on '$ComputerName': $($problems -join '; ')."
+            }
+            else {
+                $detail = "RDMA is enabled and operational on every participating adapter for network intent '$IntentName'."
+            }
+        }
+    }
+    elseif ($Mode -eq 'RdmaConfigurationDrift') {
+        $names = Get-HcsAdapterNameList -Names $AdapterNames
+        if (-not $RequireRdma -or -not $IsStorageIntent) {
+            $state = 'NotApplicable'
+            $detail = "RDMA configuration drift is not evaluated for network intent '$IntentName' because RequireRdma is $RequireRdma and the intent carries storage traffic: $IsStorageIntent."
+        }
+        elseif ($names.Count -eq 0 -or -not (Test-HcsCommand -Name 'Get-NetAdapterQos')) {
+            $state = 'NotApplicable'
+            $detail = 'Participating adapter names or Get-NetAdapterQos are unavailable; RDMA configuration drift is not evaluated on this host.'
+        }
+        else {
+            $problems = [System.Collections.Generic.List[string]]::new()
+            foreach ($name in $names) {
+                $qos = Get-NetAdapterQos -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $qos) { $problems.Add("adapter '$name' does not expose a QoS configuration"); continue }
+                if (-not [bool](Get-HcsPropertyValue -InputObject $qos -Name @('Enabled'))) { $problems.Add("adapter '$name' has QoS disabled"); continue }
+                $flowControl = [string](Get-HcsPropertyValue -InputObject $qos -Name @('OperationalFlowControl'))
+                if (-not [string]::IsNullOrWhiteSpace($flowControl) -and $flowControl -notmatch "(?i)priorit(y|ies)\D*$ExpectedPfcPriority\b") {
+                    $problems.Add("adapter '$name' does not report priority flow control enabled for priority $ExpectedPfcPriority (operational flow control: '$flowControl')")
+                }
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "RDMA configuration has drifted from the intent contract for network intent '$IntentName' on '$ComputerName': $($problems -join '; ')."
+            }
+            else {
+                $detail = "RDMA priority flow control on priority $ExpectedPfcPriority matches the intent contract for network intent '$IntentName'."
+            }
+        }
+    }
+    elseif ($Mode -eq 'DcbPfc') {
+        $names = Get-HcsAdapterNameList -Names $AdapterNames
+        if (-not $RequireDcb) {
+            $state = 'NotApplicable'
+            $detail = "DCB and PFC policy compliance is not evaluated for network intent '$IntentName' because RequireDcb is false."
+        }
+        elseif ($names.Count -eq 0 -or -not (Test-HcsCommand -Name 'Get-NetAdapterQos')) {
+            $state = 'NotApplicable'
+            $detail = 'Participating adapter names or Get-NetAdapterQos are unavailable; DCB and PFC policy compliance is not evaluated on this host.'
+        }
+        else {
+            $problems = [System.Collections.Generic.List[string]]::new()
+            $warnings = [System.Collections.Generic.List[string]]::new()
+            foreach ($name in $names) {
+                $qos = Get-NetAdapterQos -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -eq $qos) { $problems.Add("adapter '$name' does not expose a DCB configuration"); continue }
+                if (-not [bool](Get-HcsPropertyValue -InputObject $qos -Name @('Enabled'))) { $problems.Add("adapter '$name' has DCB or QoS disabled"); continue }
+                $willing = Get-HcsPropertyValue -InputObject $qos -Name @('OperationalFlowControlWilling', 'Willing')
+                if ($null -ne $willing -and [bool]$willing) {
+                    $warnings.Add("adapter '$name' is in DCBX willing mode and accepts switch-supplied policy")
+                }
+                $operationalTc = [string](Get-HcsPropertyValue -InputObject $qos -Name @('OperationalTrafficClasses'))
+                if (-not [string]::IsNullOrWhiteSpace($operationalTc) -and $operationalTc -notmatch "(?i)\b$ExpectedPfcPriority\b") {
+                    $warnings.Add("adapter '$name' does not list priority $ExpectedPfcPriority in its operational traffic classes")
+                }
+            }
+            if ($problems.Count -gt 0) {
+                $state = 'Critical'
+                $detail = "DCB and PFC policy compliance failed for network intent '$IntentName' on '$ComputerName': $($problems -join '; ')."
+            }
+            elseif ($warnings.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "DCB and PFC policy warnings for network intent '$IntentName' on '$ComputerName': $($warnings -join '; ')."
+            }
+            else {
+                $detail = "DCB is enabled and priority $ExpectedPfcPriority flow control is present on every participating adapter for network intent '$IntentName'."
+            }
+        }
+    }
+    elseif ($Mode -eq 'EtsPolicy') {
+        if (-not $RequireDcb) {
+            $state = 'NotApplicable'
+            $detail = 'ETS bandwidth policy compliance is not evaluated because RequireDcb is false.'
+        }
+        elseif (-not (Test-HcsCommand -Name 'Get-NetQosTrafficClass')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-NetQosTrafficClass is unavailable; ETS bandwidth policy compliance is not evaluated on this host.'
+        }
+        else {
+            $classes = @(Get-NetQosTrafficClass -ErrorAction SilentlyContinue)
+            if ($classes.Count -eq 0) {
+                $state = 'Warning'
+                $detail = "No QoS traffic class is defined on '$ComputerName', so the ETS bandwidth reservation required by network intent '$IntentName' is not in effect."
+            }
+            else {
+                $problems = [System.Collections.Generic.List[string]]::new()
+                $storageClass = @($classes | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Priority')) -match "(^|\D)$ExpectedPfcPriority(\D|$)" }) | Select-Object -First 1
+                $clusterClass = @($classes | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Priority')) -match "(^|\D)$ExpectedClusterPriority(\D|$)" }) | Select-Object -First 1
+                if ($null -eq $storageClass) {
+                    $problems.Add("no traffic class carries the storage priority $ExpectedPfcPriority")
+                }
+                else {
+                    $bandwidth = 0
+                    [void][int]::TryParse([string](Get-HcsPropertyValue -InputObject $storageClass -Name @('BandwidthPercentage', 'Bandwidth')), [ref]$bandwidth)
+                    if ($bandwidth -lt $MinimumEtsBandwidthPercent) {
+                        $problems.Add("the storage traffic class reserves $bandwidth percent bandwidth, below the $MinimumEtsBandwidthPercent percent minimum")
+                    }
+                    $algorithm = [string](Get-HcsPropertyValue -InputObject $storageClass -Name @('Algorithm'))
+                    if (-not [string]::IsNullOrWhiteSpace($algorithm) -and $algorithm -ne 'ETS') {
+                        $problems.Add("the storage traffic class uses algorithm '$algorithm' instead of ETS")
+                    }
+                }
+                if ($null -eq $clusterClass) {
+                    $problems.Add("no traffic class carries the cluster heartbeat priority $ExpectedClusterPriority")
+                }
+                if ($problems.Count -gt 0) {
+                    $state = 'Warning'
+                    $detail = "ETS bandwidth policy on '$ComputerName' does not match the intent contract: $($problems -join '; ')."
+                }
+                else {
+                    $detail = "ETS bandwidth policy on '$ComputerName' reserves at least $MinimumEtsBandwidthPercent percent for priority $ExpectedPfcPriority and carries cluster priority $ExpectedClusterPriority."
+                }
+            }
+        }
+    }
+    elseif ($Mode -eq 'QosTrafficClass') {
+        if (-not (Test-HcsCommand -Name 'Get-NetQosTrafficClass')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-NetQosTrafficClass is unavailable; QoS traffic class configuration is not evaluated on this host.'
+        }
+        else {
+            $classes = @(Get-NetQosTrafficClass -ErrorAction SilentlyContinue)
+            $userDefined = @($classes | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Name')) -ne 'Default' })
+            $totalBandwidth = 0
+            foreach ($class in $classes) {
+                $value = 0
+                [void][int]::TryParse([string](Get-HcsPropertyValue -InputObject $class -Name @('BandwidthPercentage', 'Bandwidth')), [ref]$value)
+                $totalBandwidth += $value
+            }
+            if ($userDefined.Count -lt $ExpectedTrafficClassCount) {
+                $state = 'Warning'
+                $detail = "'$ComputerName' defines $($userDefined.Count) non-default QoS traffic class(es); network intent '$IntentName' expects at least $ExpectedTrafficClassCount."
+            }
+            elseif ($totalBandwidth -gt 100) {
+                $state = 'Critical'
+                $detail = "QoS traffic classes on '$ComputerName' reserve $totalBandwidth percent bandwidth in total, which exceeds 100 percent and cannot be honoured."
+            }
+            else {
+                $detail = "'$ComputerName' defines $($userDefined.Count) non-default QoS traffic class(es) reserving $totalBandwidth percent bandwidth in total, at or above the expected $ExpectedTrafficClassCount class(es)."
+            }
+        }
+    }
+    elseif ($Mode -eq 'VmSwitch') {
+        if (-not $RequireVmSwitchForComputeIntent) {
+            $state = 'NotApplicable'
+            $detail = "Virtual switch compliance is not evaluated for network intent '$IntentName' because RequireVmSwitchForComputeIntent is false."
+        }
+        elseif (-not (Test-HcsCommand -Name 'Get-VMSwitch')) {
+            $state = 'NotApplicable'
+            $detail = 'Get-VMSwitch is unavailable; virtual switch compliance against the intent is not evaluated on this host.'
+        }
+        else {
+            $names = Get-HcsAdapterNameList -Names $AdapterNames
+            $switches = @(Get-VMSwitch -ErrorAction SilentlyContinue | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('SwitchType')) -eq 'External' })
+            if ($switches.Count -eq 0) {
+                $state = 'Critical'
+                $detail = "Network intent '$IntentName' requires an external virtual switch on '$ComputerName' but none is present."
+            }
+            else {
+                $problems = [System.Collections.Generic.List[string]]::new()
+                $matched = $false
+                foreach ($switch in $switches) {
+                    $uplinks = @(Get-HcsPropertyValue -InputObject $switch -Name @('NetAdapterInterfaceDescriptions'))
+                    $uplinkNames = @(Get-HcsPropertyValue -InputObject $switch -Name @('NetAdapterInterfaceDescription'))
+                    $identifiers = @(@($uplinks) + @($uplinkNames) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+                    if ($identifiers.Count -eq 0) {
+                        $problems.Add("external switch '$(Get-HcsPropertyValue -InputObject $switch -Name @('Name'))' has no physical uplink bound")
+                        continue
+                    }
+                    if ($names.Count -eq 0) { $matched = $true; continue }
+                    foreach ($name in $names) {
+                        $adapter = Get-NetAdapter -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if ($null -eq $adapter) { continue }
+                        $description = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('InterfaceDescription'))
+                        if ($identifiers | Where-Object { [string]$_ -eq $description -or [string]$_ -eq $name }) { $matched = $true }
+                    }
+                    if ($names.Count -gt 1 -and -not [bool](Get-HcsPropertyValue -InputObject $switch -Name @('EmbeddedTeamingEnabled'))) {
+                        $problems.Add("external switch '$(Get-HcsPropertyValue -InputObject $switch -Name @('Name'))' does not use Switch Embedded Teaming although the intent declares $($names.Count) adapters")
+                    }
+                }
+                if (-not $matched -and $names.Count -gt 0) {
+                    $problems.Add("no external virtual switch uses the adapters declared by network intent '$IntentName'")
+                }
+                if ($problems.Count -gt 0) {
+                    $state = 'Warning'
+                    $detail = "Virtual switch configuration on '$ComputerName' does not match network intent '$IntentName': $($problems -join '; ')."
+                }
+                else {
+                    $detail = "The external virtual switch configuration on '$ComputerName' matches network intent '$IntentName'."
+                }
+            }
+        }
+    }
+    elseif ($Mode -eq 'ClusterConsistency') {
+        $records = @(Get-NetIntentStatus -ComputerName $ComputerName -ErrorAction SilentlyContinue)
+        if ($records.Count -eq 0) {
+            $state = 'NotApplicable'
+            $detail = "No Network ATC intent status is published for the cluster that contains '$ComputerName'."
+        }
+        else {
+            $inconsistent = [System.Collections.Generic.List[string]]::new()
+            $transitional = [System.Collections.Generic.List[string]]::new()
+            foreach ($record in $records) {
+                $node = [string](Get-HcsPropertyValue -InputObject $record -Name @('Host', 'ComputerName', 'PSComputerName'))
+                if ([string]::IsNullOrWhiteSpace($node)) { $node = $ComputerName }
+                $name = [string](Get-HcsPropertyValue -InputObject $record -Name @('IntentName', 'Name'))
+                $configuration = [string](Get-HcsPropertyValue -InputObject $record -Name @('ConfigurationStatus', 'Status'))
+                $errorCode = [string](Get-HcsPropertyValue -InputObject $record -Name @('Error', 'ErrorCode'))
+                if ($configuration -eq 'Success' -and [string]::IsNullOrWhiteSpace($errorCode)) { continue }
+                if ($configuration -in @('Failed', 'Error') -or -not [string]::IsNullOrWhiteSpace($errorCode)) {
+                    $inconsistent.Add("$node/$name='$configuration'")
+                }
+                else {
+                    $transitional.Add("$node/$name='$configuration'")
+                }
+            }
+            if ($inconsistent.Count -gt $MaxNodesOutOfCompliance) {
+                $state = 'Critical'
+                $detail = "$($inconsistent.Count) cluster node intent record(s) are out of compliance, beyond the allowance of ${MaxNodesOutOfCompliance}: $($inconsistent -join '; ')."
+            }
+            elseif ($inconsistent.Count -gt 0 -or $transitional.Count -gt 0) {
+                $state = 'Warning'
+                $detail = "Cluster-wide intent consistency is degraded but within the allowance of $MaxNodesOutOfCompliance node(s): $((@($inconsistent) + @($transitional)) -join '; ')."
+            }
+            else {
+                $detail = "All $($records.Count) cluster node intent record(s) report a consistent, successful Network ATC configuration."
+            }
+        }
+    }
+    elseif ($Mode -eq 'GlobalDrift') {
+        $status = Get-HcsIntentStatusRecord -Computer $ComputerName -GlobalOverrides
+        if ($null -eq $status) {
+            $state = 'NotApplicable'
+            $detail = "No Network ATC global override status is present on '$ComputerName'."
+        }
+        else {
+            $configuration = [string](Get-HcsPropertyValue -InputObject $status -Name @('ConfigurationStatus', 'Status'))
+            $ageMinutes = Get-HcsMinutesSince (Get-HcsPropertyValue -InputObject $status -Name @('LastSuccess', 'LastUpdated'))
+            $ageText = if ($ageMinutes -lt 0) { 'never reported' } else { "$([math]::Round($ageMinutes)) minute(s) ago" }
+            if ($configuration -eq 'Success') {
+                $detail = "Network ATC global overrides on '$ComputerName' are applied; last successful apply $ageText."
+            }
+            elseif ($ageMinutes -lt 0 -or $ageMinutes -ge $ComplianceToleranceMinutes) {
+                $state = 'Critical'
+                $detail = "Network ATC global overrides on '$ComputerName' report '$configuration' and have drifted for longer than the $ComplianceToleranceMinutes minute tolerance window (last successful apply $ageText)."
+            }
+            else {
+                $state = 'Warning'
+                $detail = "Network ATC global overrides on '$ComputerName' report '$configuration' inside the $ComplianceToleranceMinutes minute tolerance window (last successful apply $ageText)."
             }
         }
     }

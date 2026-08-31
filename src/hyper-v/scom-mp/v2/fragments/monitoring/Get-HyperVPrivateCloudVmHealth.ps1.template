@@ -1,5 +1,5 @@
 #Requires -Version 7.0
-param($VMId, $ExpectedState, $CheckpointWarningHours, $CheckpointCriticalHours)
+param($VMId, $ExpectedState, $CheckpointWarningHours = 168, $CheckpointCriticalHours = 336, $Mode = 'Health')
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -14,6 +14,24 @@ function Write-HcsState {
     $statesSet[$Name] = $true
 }
 
+function Get-HcsCounterSamples {
+    param([Parameter(Mandatory)][string]$Path)
+    try { return @((Get-Counter -Counter $Path -ErrorAction Stop).CounterSamples) }
+    catch { return @() }
+}
+
+function Measure-HcsSamples {
+    param([Parameter(Mandatory)][AllowEmptyCollection()][double[]]$Values, [Parameter(Mandatory)][ValidateSet('Maximum', 'Average', 'Sum')][string]$Aggregate, [double]$Scale = 1.0, [int]$Digits = 2)
+    if (-not $Values.Count) { return -1 }
+    $measured = $Values | Measure-Object -Maximum -Average -Sum
+    $value = switch ($Aggregate) {
+        'Maximum' { $measured.Maximum }
+        'Average' { $measured.Average }
+        'Sum' { $measured.Sum }
+    }
+    return [math]::Round(([double]$value * $Scale), $Digits)
+}
+
 try {
     if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) {
         if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue }
@@ -22,50 +40,116 @@ try {
     $vm = Get-VM -Id $VMId
     $isRunning = [string]$vm.State -eq 'Running'
 
-    if ($ExpectedState -eq 'Running') {
-        Write-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vm.State)
+    if ($Mode -ne 'Performance') {
+        if ($ExpectedState -eq 'Running') {
+            Write-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vm.State)
+        }
+        else {
+            Write-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vm.State)
+        }
+
+        if ($isRunning) {
+            $services = @(Get-VMIntegrationService -VM $vm -ErrorAction SilentlyContinue | Where-Object Enabled)
+            $heartbeat = $services | Where-Object Name -eq 'Heartbeat' | Select-Object -First 1
+            $heartbeatState = if ($null -eq $heartbeat) { 'Warning' } elseif ([string]$heartbeat.PrimaryStatusDescription -match 'OK') { 'Good' } else { 'Critical' }
+            Write-HcsState 'HeartbeatState' $heartbeatState $(if ($heartbeat) { [string]$heartbeat.PrimaryStatusDescription } else { 'Heartbeat integration service is unavailable.' })
+            $unhealthyServices = @($services | Where-Object { [string]$_.PrimaryStatusDescription -notmatch 'OK' })
+            Write-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}" -f $services.Count, $unhealthyServices.Count)
+        }
+        else {
+            Write-HcsState 'HeartbeatState' 'NotApplicable' 'Heartbeat is not applicable while the VM is not running.'
+            Write-HcsState 'IntegrationServicesState' 'NotApplicable' 'Runtime integration-service health is not applicable while the VM is not running.'
+        }
+
+        $checkpoints = @(Get-VMSnapshot -VM $vm -ErrorAction SilentlyContinue)
+        $oldestHours = if ($checkpoints.Count) { [math]::Round(([DateTime]::UtcNow - ($checkpoints | Sort-Object CreationTime | Select-Object -First 1).CreationTime.ToUniversalTime()).TotalHours, 1) } else { 0 }
+        $checkpointState = if ($oldestHours -ge [double]$CheckpointCriticalHours) { 'Critical' } elseif ($oldestHours -ge [double]$CheckpointWarningHours) { 'Warning' } else { 'Good' }
+        Write-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
+
+        $replications = @(Get-VMReplication -VM $vm -ErrorAction SilentlyContinue)
+        $replicationCritical = @($replications | Where-Object { [string]$_.Health -eq 'Critical' }).Count
+        $replicationWarning = @($replications | Where-Object { [string]$_.Health -eq 'Warning' }).Count
+        $replicationState = if ($replicationCritical) { 'Critical' } elseif ($replicationWarning) { 'Warning' } elseif (-not $replications.Count) { 'NotApplicable' } else { 'Good' }
+        Write-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
+
+        $invalidDisks = 0
+        foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue)) {
+            if ($drive.Path -and -not (Test-Path -LiteralPath $drive.Path -PathType Leaf)) { $invalidDisks++ }
+            elseif ($drive.Path -and -not (Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue)) { $invalidDisks++ }
+        }
+        Write-HcsState 'StorageState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable disk attachments: {0}" -f $invalidDisks)
+
+        $adapters = @(Get-VMNetworkAdapter -VM $vm -ErrorAction SilentlyContinue)
+        $disconnected = @($adapters | Where-Object { -not $_.SwitchName -or ([string]$_.Status -notin @('Ok', 'Degraded', '')) })
+        Write-HcsState 'NetworkState' $(if ($disconnected.Count) { 'Warning' } else { 'Good' }) ("Adapters: {0}; disconnected or unhealthy: {1}" -f $adapters.Count, $disconnected.Count)
+
+        $memoryState = if (-not $vm.DynamicMemoryEnabled -or -not $isRunning) { 'NotApplicable' } elseif ([string]$vm.MemoryStatus -match 'Low|Warning') { 'Warning' } elseif ([string]$vm.MemoryStatus -match 'Critical') { 'Critical' } else { 'Good' }
+        Write-HcsState 'MemoryPressureState' $memoryState ("Dynamic Memory: {0}; status: {1}; assigned MB: {2}" -f $vm.DynamicMemoryEnabled, $vm.MemoryStatus, [int]($vm.MemoryAssigned / 1MB))
     }
-    else {
-        Write-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vm.State)
+
+    # Raw per-VM resource-consumption instrumentation. Guest workload internals are deliberately out of
+    # scope: only the resources the VM draws from the host are measured. Threshold evaluation is performed
+    # by the Management Pack monitor types so that every threshold stays overridable per environment.
+    # A value of -1 means the measurement is unavailable (usually because the VM is not running) and is
+    # treated as healthy by every threshold monitor.
+    $vmName = [string]$vm.Name
+    $vmInstanceName = ($vmName -replace '[\\/()#]', '_')
+
+    $processorValues = [System.Collections.Generic.List[double]]::new()
+    foreach ($sample in (Get-HcsCounterSamples -Path '\Hyper-V Hypervisor Virtual Processor(*)\% Total Run Time')) {
+        $instance = [string]$sample.InstanceName
+        if ($instance -like ($vmName + ':*') -or $instance -like ($vmInstanceName + ':*')) { $processorValues.Add([double]$sample.CookedValue) }
     }
+    $bag.AddValue('VirtualProcessorCount', $processorValues.Count)
+    $bag.AddValue('VirtualProcessorTotalRunTimePercent', (Measure-HcsSamples -Values $processorValues -Aggregate 'Average'))
+    $bag.AddValue('VirtualProcessorPeakRunTimePercent', (Measure-HcsSamples -Values $processorValues -Aggregate 'Maximum'))
 
-    if ($isRunning) {
-        $services = @(Get-VMIntegrationService -VM $vm -ErrorAction SilentlyContinue | Where-Object Enabled)
-        $heartbeat = $services | Where-Object Name -eq 'Heartbeat' | Select-Object -First 1
-        $heartbeatState = if ($null -eq $heartbeat) { 'Warning' } elseif ([string]$heartbeat.PrimaryStatusDescription -match 'OK') { 'Good' } else { 'Critical' }
-        Write-HcsState 'HeartbeatState' $heartbeatState $(if ($heartbeat) { [string]$heartbeat.PrimaryStatusDescription } else { 'Heartbeat integration service is unavailable.' })
-        $unhealthyServices = @($services | Where-Object { [string]$_.PrimaryStatusDescription -notmatch 'OK' })
-        Write-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}" -f $services.Count, $unhealthyServices.Count)
+    $assignedMemoryMB = [math]::Round(([double]$vm.MemoryAssigned / 1MB), 0)
+    $demandMemoryMB = [math]::Round(([double]$vm.MemoryDemand / 1MB), 0)
+    $maximumMemoryMB = [math]::Round(([double]$vm.MemoryMaximum / 1MB), 0)
+    $bag.AddValue('AssignedMemoryMB', $assignedMemoryMB)
+    $bag.AddValue('MemoryDemandMB', $demandMemoryMB)
+    $bag.AddValue('MemoryPressurePercent', $(if ($assignedMemoryMB -gt 0) { [math]::Round((($demandMemoryMB / $assignedMemoryMB) * 100.0), 2) } else { -1 }))
+    $bag.AddValue('MemoryDemandPercentOfMaximum', $(if ($maximumMemoryMB -gt 0 -and $isRunning) { [math]::Round((($demandMemoryMB / $maximumMemoryMB) * 100.0), 2) } else { -1 }))
+
+    $diskPaths = @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | ForEach-Object { [string]$_.Path } | Where-Object { $_ })
+    $diskInstanceKeys = @($diskPaths | ForEach-Object { ($_ -replace '[:\\/]', '-').ToLowerInvariant() })
+    $diskLeafNames = @($diskPaths | ForEach-Object { ([System.IO.Path]::GetFileName($_)).ToLowerInvariant() })
+    $storageValues = @{}
+    foreach ($counterName in @('Latency', 'Queue Length', 'Read Bytes/sec', 'Write Bytes/sec', 'Error Count')) {
+        $matched = [System.Collections.Generic.List[double]]::new()
+        foreach ($sample in (Get-HcsCounterSamples -Path ('\Hyper-V Virtual Storage Device(*)\' + $counterName))) {
+            $instance = ([string]$sample.InstanceName).ToLowerInvariant()
+            $isMatch = $false
+            foreach ($key in $diskInstanceKeys) { if ($instance -eq $key) { $isMatch = $true; break } }
+            if (-not $isMatch) {
+                foreach ($leaf in $diskLeafNames) { if ($leaf -and $instance.EndsWith($leaf)) { $isMatch = $true; break } }
+            }
+            if ($isMatch) { $matched.Add([double]$sample.CookedValue) }
+        }
+        $storageValues[$counterName] = $matched
     }
-    else {
-        Write-HcsState 'HeartbeatState' 'NotApplicable' 'Heartbeat is not applicable while the VM is not running.'
-        Write-HcsState 'IntegrationServicesState' 'NotApplicable' 'Runtime integration-service health is not applicable while the VM is not running.'
+    # The Hyper-V Virtual Storage Device Latency counter reports microseconds; scale it to milliseconds.
+    $bag.AddValue('VirtualStorageLatencyMs', (Measure-HcsSamples -Values $storageValues['Latency'] -Aggregate 'Maximum' -Scale 0.001))
+    $bag.AddValue('VirtualStorageQueueLength', (Measure-HcsSamples -Values $storageValues['Queue Length'] -Aggregate 'Maximum'))
+    $bag.AddValue('VirtualStorageReadBytesPerSecond', (Measure-HcsSamples -Values $storageValues['Read Bytes/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualStorageWriteBytesPerSecond', (Measure-HcsSamples -Values $storageValues['Write Bytes/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualStorageErrorCount', (Measure-HcsSamples -Values $storageValues['Error Count'] -Aggregate 'Sum' -Digits 0))
+
+    $adapterValues = @{}
+    foreach ($counterName in @('Bytes Sent/sec', 'Bytes Received/sec', 'Packets Sent/sec', 'Packets Received/sec')) {
+        $matched = [System.Collections.Generic.List[double]]::new()
+        foreach ($sample in (Get-HcsCounterSamples -Path ('\Hyper-V Virtual Network Adapter(*)\' + $counterName))) {
+            $instance = [string]$sample.InstanceName
+            if ($instance -like ($vmName + '*') -or $instance -like ($vmInstanceName + '*')) { $matched.Add([double]$sample.CookedValue) }
+        }
+        $adapterValues[$counterName] = $matched
     }
+    $bag.AddValue('VirtualNetworkBytesSentPerSecond', (Measure-HcsSamples -Values $adapterValues['Bytes Sent/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualNetworkBytesReceivedPerSecond', (Measure-HcsSamples -Values $adapterValues['Bytes Received/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualNetworkPacketsSentPerSecond', (Measure-HcsSamples -Values $adapterValues['Packets Sent/sec'] -Aggregate 'Sum' -Digits 0))
+    $bag.AddValue('VirtualNetworkPacketsReceivedPerSecond', (Measure-HcsSamples -Values $adapterValues['Packets Received/sec'] -Aggregate 'Sum' -Digits 0))
 
-    $checkpoints = @(Get-VMSnapshot -VM $vm -ErrorAction SilentlyContinue)
-    $oldestHours = if ($checkpoints.Count) { [math]::Round(([DateTime]::UtcNow - ($checkpoints | Sort-Object CreationTime | Select-Object -First 1).CreationTime.ToUniversalTime()).TotalHours, 1) } else { 0 }
-    $checkpointState = if ($oldestHours -ge [double]$CheckpointCriticalHours) { 'Critical' } elseif ($oldestHours -ge [double]$CheckpointWarningHours) { 'Warning' } else { 'Good' }
-    Write-HcsState 'CheckpointState' $checkpointState ("Checkpoints: {0}; oldest age: {1} hours" -f $checkpoints.Count, $oldestHours)
-
-    $replications = @(Get-VMReplication -VM $vm -ErrorAction SilentlyContinue)
-    $replicationCritical = @($replications | Where-Object { [string]$_.Health -eq 'Critical' }).Count
-    $replicationWarning = @($replications | Where-Object { [string]$_.Health -eq 'Warning' }).Count
-    $replicationState = if ($replicationCritical) { 'Critical' } elseif ($replicationWarning) { 'Warning' } elseif (-not $replications.Count) { 'NotApplicable' } else { 'Good' }
-    Write-HcsState 'ReplicationState' $replicationState ("Relationships: {0}; critical: {1}; warning: {2}" -f $replications.Count, $replicationCritical, $replicationWarning)
-
-    $invalidDisks = 0
-    foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue)) {
-        if ($drive.Path -and -not (Test-Path -LiteralPath $drive.Path -PathType Leaf)) { $invalidDisks++ }
-        elseif ($drive.Path -and -not (Get-VHD -Path $drive.Path -ErrorAction SilentlyContinue)) { $invalidDisks++ }
-    }
-    Write-HcsState 'StorageState' $(if ($invalidDisks) { 'Critical' } else { 'Good' }) ("Unavailable or unreadable disk attachments: {0}" -f $invalidDisks)
-
-    $adapters = @(Get-VMNetworkAdapter -VM $vm -ErrorAction SilentlyContinue)
-    $disconnected = @($adapters | Where-Object { -not $_.SwitchName -or ([string]$_.Status -notin @('Ok', 'Degraded', '')) })
-    Write-HcsState 'NetworkState' $(if ($disconnected.Count) { 'Warning' } else { 'Good' }) ("Adapters: {0}; disconnected or unhealthy: {1}" -f $adapters.Count, $disconnected.Count)
-
-    $memoryState = if (-not $vm.DynamicMemoryEnabled -or -not $isRunning) { 'NotApplicable' } elseif ([string]$vm.MemoryStatus -match 'Low|Warning') { 'Warning' } elseif ([string]$vm.MemoryStatus -match 'Critical') { 'Critical' } else { 'Good' }
-    Write-HcsState 'MemoryPressureState' $memoryState ("Dynamic Memory: {0}; status: {1}; assigned MB: {2}" -f $vm.DynamicMemoryEnabled, $vm.MemoryStatus, [int]($vm.MemoryAssigned / 1MB))
     Write-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
 }
 catch {

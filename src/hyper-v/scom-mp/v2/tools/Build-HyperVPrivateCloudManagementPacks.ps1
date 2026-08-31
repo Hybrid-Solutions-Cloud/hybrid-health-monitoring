@@ -570,6 +570,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $scriptTokens = [ordered]@{
             CLUSTER_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudClusterRelationships.ps1.template'
             CLUSTER_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudClusterIntegrationHealth.ps1.template'
+            CLUSTER_CSV_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudClusterCsvHealth.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -617,6 +618,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $scriptTokens = [ordered]@{
             S2D_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudS2DRelationships.ps1.template'
             S2D_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudS2DIntegrationHealth.ps1.template'
+            S2D_OBJECT_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudS2DObjectHealth.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value

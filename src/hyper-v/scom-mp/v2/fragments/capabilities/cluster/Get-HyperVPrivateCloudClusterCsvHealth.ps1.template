@@ -1,0 +1,292 @@
+#Requires -Version 7.0
+param([string]$ComputerName, [string]$BoundaryId, [int]$FailoverWindowHours = 24)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    catch { return $false }
+    return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+}
+
+function Get-HcsProperty {
+    param($InputObject, [string]$Name, $Default = $null)
+    if ($null -eq $InputObject) { return $Default }
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) { return $Default }
+    if ($null -eq $property.Value) { return $Default }
+    return $property.Value
+}
+
+function Get-HcsStatusText {
+    param($InputObject, [string]$Name)
+    $value = Get-HcsProperty -InputObject $InputObject -Name $Name -Default ''
+    return (@($value) | ForEach-Object { [string]$_ }) -join ','
+}
+
+function Get-HcsNumber {
+    param($Value, [double]$Default = 0)
+    if ($null -eq $Value) { return $Default }
+    $parsed = 0.0
+    if ([double]::TryParse([string]$Value, [ref]$parsed)) { return $parsed }
+    return $Default
+}
+
+function Get-HcsSafeCollection {
+    param([scriptblock]$Query)
+    try { return @(& $Query) }
+    catch { return @() }
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+
+if ($FailoverWindowHours -le 0) { $FailoverWindowHours = 24 }
+
+# Benign defaults. A standalone host, or a host without the FailoverClusters module,
+# reports zero fault counts and full free capacity so that no threshold monitor fires.
+$state = 'Good'
+$detail = "Failover Cluster and CSV depth metrics collected on '$ComputerName'."
+$csvCount = 0
+$csvOfflineCount = 0
+$csvPausedCount = 0
+$csvRedirectedCount = 0
+$csvBackupInProgressCount = 0
+$csvWorstFreePercent = 100.0
+$csvUsedPercent = 0.0
+$csvMaxReadLatencyMs = 0.0
+$csvMaxWriteLatencyMs = 0.0
+$csvMaxQueueDepth = 0.0
+$csvDetail = 'No Cluster Shared Volume is present.'
+$nodeCount = 0
+$nodeDownCount = 0
+$nodePausedCount = 0
+$nodeDetail = 'No cluster node information is available.'
+$quorumType = 'NotApplicable'
+$quorumWitnessType = 'NotApplicable'
+$quorumWitnessState = 'NotApplicable'
+$quorumWitnessFailedCount = 0
+$quorumAssignedVotes = 0.0
+$quorumCurrentVotes = 0.0
+$quorumVoteMarginCount = 99.0
+$quorumDetail = 'No cluster quorum information is available.'
+$networkCount = 0
+$networkDownCount = 0
+$networkPartitionedCount = 0
+$networkUnavailableCount = 0
+$networkDetail = 'No cluster network information is available.'
+$groupCount = 0
+$groupOfflineCount = 0
+$groupFailedCount = 0
+$groupFailoverEventCount = 0
+$groupDetail = 'No cluster role information is available.'
+
+try {
+    if ($BoundaryId -notlike 'cluster:*') {
+        $state = 'NotApplicable'
+        $detail = 'This Hyper-V host belongs to a standalone boundary; Failover Cluster and CSV depth monitoring is not applicable.'
+    }
+    elseif (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-Cluster')) {
+        $state = 'NotApplicable'
+        $detail = 'The FailoverClusters PowerShell module is unavailable; Failover Cluster and CSV depth metrics were not collected. Install RSAT-Clustering-PowerShell.'
+    }
+    else {
+        $cluster = Get-Cluster -ErrorAction Stop
+
+        # ---- Cluster nodes ---------------------------------------------------
+        $nodes = Get-HcsSafeCollection { Get-ClusterNode -Cluster $cluster -ErrorAction Stop }
+        $nodeCount = $nodes.Count
+        foreach ($node in $nodes) {
+            $nodeState = Get-HcsStatusText -InputObject $node -Name 'State'
+            if ($nodeState -match 'Down|Joining|Unknown') { $nodeDownCount++ }
+            if ($nodeState -match 'Paused') { $nodePausedCount++ }
+        }
+        if ($nodeCount -gt 0) {
+            $nodeDetail = "Cluster '$($cluster.Name)' has $nodeCount node(s): $nodeDownCount not up, $nodePausedCount paused."
+        }
+
+        # ---- Quorum and witness ----------------------------------------------
+        $quorum = $null
+        try { $quorum = Get-ClusterQuorum -Cluster $cluster -ErrorAction Stop } catch { $quorum = $null }
+        if ($null -ne $quorum) {
+            $quorumType = Get-HcsStatusText -InputObject $quorum -Name 'QuorumType'
+            $witness = Get-HcsProperty -InputObject $quorum -Name 'QuorumResource' -Default $null
+            if ($null -ne $witness) {
+                $quorumWitnessType = Get-HcsStatusText -InputObject $witness -Name 'ResourceType'
+                $quorumWitnessState = Get-HcsStatusText -InputObject $witness -Name 'State'
+                if ($quorumWitnessState -notmatch 'Online') { $quorumWitnessFailedCount = 1 }
+            }
+            else {
+                $quorumWitnessType = 'None'
+                $quorumWitnessState = 'NotConfigured'
+            }
+        }
+
+        $witnessVote = if ($quorumWitnessType -in @('NotApplicable', 'None')) { 0.0 } else { 1.0 }
+        foreach ($node in $nodes) {
+            $weight = Get-HcsNumber (Get-HcsProperty -InputObject $node -Name 'NodeWeight' -Default 1) 1
+            $quorumAssignedVotes += $weight
+            if ((Get-HcsStatusText -InputObject $node -Name 'State') -match 'Up') { $quorumCurrentVotes += $weight }
+        }
+        $quorumAssignedVotes += $witnessVote
+        if ($quorumWitnessFailedCount -eq 0) { $quorumCurrentVotes += $witnessVote }
+
+        if ($quorumAssignedVotes -gt 0) {
+            # Votes that may still be lost before the cluster loses quorum.
+            $majority = [math]::Floor($quorumAssignedVotes / 2) + 1
+            $quorumVoteMarginCount = $quorumCurrentVotes - $majority
+            $quorumDetail = "Quorum model '$quorumType' with witness '$quorumWitnessType' in state '$quorumWitnessState'. $quorumCurrentVotes of $quorumAssignedVotes vote(s) present; $quorumVoteMarginCount further vote loss(es) survivable."
+        }
+
+        # ---- Cluster networks -------------------------------------------------
+        $networks = Get-HcsSafeCollection { Get-ClusterNetwork -Cluster $cluster -ErrorAction Stop }
+        $networkCount = $networks.Count
+        foreach ($network in $networks) {
+            $networkState = Get-HcsStatusText -InputObject $network -Name 'State'
+            if ($networkState -match 'Down') { $networkDownCount++ }
+            if ($networkState -match 'Partitioned') { $networkPartitionedCount++ }
+            if ($networkState -match 'Unavailable|Unknown') { $networkUnavailableCount++ }
+        }
+        if ($networkCount -gt 0) {
+            $networkDetail = "$networkCount cluster network(s): $networkDownCount down, $networkPartitionedCount partitioned, $networkUnavailableCount unavailable."
+        }
+
+        # ---- Cluster groups and failover churn ---------------------------------
+        $groups = Get-HcsSafeCollection { Get-ClusterGroup -Cluster $cluster -ErrorAction Stop }
+        $groupCount = $groups.Count
+        foreach ($group in $groups) {
+            $groupState = Get-HcsStatusText -InputObject $group -Name 'State'
+            if ($groupState -match 'Offline') { $groupOfflineCount++ }
+            if ($groupState -match 'Failed|PartialOnline') { $groupFailedCount++ }
+        }
+        $windowStart = (Get-Date).AddHours(-1 * $FailoverWindowHours)
+        $failoverEvents = Get-HcsSafeCollection {
+            Get-WinEvent -FilterHashtable @{
+                LogName      = 'System'
+                ProviderName = 'Microsoft-Windows-FailoverClustering'
+                Id           = @(1069, 1177, 1205, 1254)
+                StartTime    = $windowStart
+            } -ErrorAction Stop
+        }
+        $groupFailoverEventCount = $failoverEvents.Count
+        if ($groupCount -gt 0) {
+            $groupDetail = "$groupCount cluster role(s): $groupOfflineCount offline, $groupFailedCount failed or partially online. $groupFailoverEventCount failover event(s) in the last $FailoverWindowHours hour(s)."
+        }
+
+        # ---- Cluster Shared Volumes -------------------------------------------
+        if (Get-Command -Name 'Get-ClusterSharedVolume' -ErrorAction SilentlyContinue) {
+            $csvs = Get-HcsSafeCollection { Get-ClusterSharedVolume -Cluster $cluster -ErrorAction Stop }
+            $csvCount = $csvs.Count
+            if ($csvCount -gt 0) {
+                $csvWorstFreePercent = 100.0
+                foreach ($csv in $csvs) {
+                    $csvState = Get-HcsStatusText -InputObject $csv -Name 'State'
+                    if ($csvState -match 'Offline|Failed') { $csvOfflineCount++ }
+                    if ($csvState -match 'Paused') { $csvPausedCount++ }
+
+                    $volumeInfos = @(Get-HcsProperty -InputObject $csv -Name 'SharedVolumeInfo' -Default @())
+                    foreach ($volumeInfo in $volumeInfos) {
+                        if ([bool](Get-HcsProperty -InputObject $volumeInfo -Name 'RedirectedAccess' -Default $false)) { $csvRedirectedCount++ }
+                        if ([bool](Get-HcsProperty -InputObject $volumeInfo -Name 'BackupInProgress' -Default $false)) { $csvBackupInProgressCount++ }
+
+                        $partition = Get-HcsProperty -InputObject $volumeInfo -Name 'Partition' -Default $null
+                        if ($null -ne $partition) {
+                            $size = Get-HcsNumber (Get-HcsProperty -InputObject $partition -Name 'Size' -Default 0)
+                            $free = Get-HcsNumber (Get-HcsProperty -InputObject $partition -Name 'FreeSpace' -Default 0)
+                            if ($size -gt 0) {
+                                $freePercent = [math]::Round(($free / $size) * 100, 2)
+                                if ($freePercent -lt $csvWorstFreePercent) { $csvWorstFreePercent = $freePercent }
+                            }
+                        }
+                    }
+                }
+                $csvUsedPercent = [math]::Round(100.0 - $csvWorstFreePercent, 2)
+                $csvDetail = "$csvCount Cluster Shared Volume(s): worst free space $csvWorstFreePercent%, $csvRedirectedCount in redirected access, $csvOfflineCount offline or failed, $csvPausedCount paused, $csvBackupInProgressCount in backup."
+            }
+        }
+
+        # ---- CSV I/O latency and queue depth -----------------------------------
+        # Cluster CSV latency counters are published in seconds and are normalised to
+        # milliseconds here so that thresholds read naturally to an operator.
+        $counterSet = Get-HcsSafeCollection { Get-Counter -ListSet 'Cluster CSV File System' -ErrorAction Stop }
+        if ($counterSet.Count -eq 0) {
+            $counterSet = Get-HcsSafeCollection { Get-Counter -ListSet 'Cluster CSV Volume Manager' -ErrorAction Stop }
+        }
+        if ($counterSet.Count -gt 0) {
+            $paths = @(Get-HcsProperty -InputObject $counterSet[0] -Name 'Paths' -Default @())
+            $wanted = @($paths | Where-Object { $_ -match 'Read Latency|Write Latency|Queue Length' })
+            if ($wanted.Count -gt 0) {
+                $samples = Get-HcsSafeCollection { (Get-Counter -Counter $wanted -ErrorAction Stop).CounterSamples }
+                foreach ($sample in $samples) {
+                    $path = Get-HcsStatusText -InputObject $sample -Name 'Path'
+                    $value = Get-HcsNumber (Get-HcsProperty -InputObject $sample -Name 'CookedValue' -Default 0)
+                    if ($path -match 'Read Latency') {
+                        $milliseconds = [math]::Round($value * 1000, 3)
+                        if ($milliseconds -gt $csvMaxReadLatencyMs) { $csvMaxReadLatencyMs = $milliseconds }
+                    }
+                    elseif ($path -match 'Write Latency') {
+                        $milliseconds = [math]::Round($value * 1000, 3)
+                        if ($milliseconds -gt $csvMaxWriteLatencyMs) { $csvMaxWriteLatencyMs = $milliseconds }
+                    }
+                    elseif ($path -match 'Queue Length') {
+                        if ($value -gt $csvMaxQueueDepth) { $csvMaxQueueDepth = [math]::Round($value, 3) }
+                    }
+                }
+            }
+        }
+
+        $detail = "Failover Cluster and CSV depth metrics collected on '$ComputerName'. $csvDetail $nodeDetail $quorumDetail $networkDetail $groupDetail"
+    }
+}
+catch {
+    $state = 'Critical'
+    $detail = "Failover Cluster and CSV depth collection failed on '$ComputerName': $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.Cluster.CsvHealth.ps1', 8304, 1, $detail)
+}
+
+$bag.AddValue('ClusterCsvHealthState', $state)
+$bag.AddValue('ClusterCsvHealthDetail', $detail)
+
+$bag.AddValue('CsvCount', [double]$csvCount)
+$bag.AddValue('CsvOfflineCount', [double]$csvOfflineCount)
+$bag.AddValue('CsvPausedCount', [double]$csvPausedCount)
+$bag.AddValue('CsvRedirectedCount', [double]$csvRedirectedCount)
+$bag.AddValue('CsvBackupInProgressCount', [double]$csvBackupInProgressCount)
+$bag.AddValue('CsvWorstFreePercent', [double]$csvWorstFreePercent)
+$bag.AddValue('CsvUsedPercent', [double]$csvUsedPercent)
+$bag.AddValue('CsvMaxReadLatencyMs', [double]$csvMaxReadLatencyMs)
+$bag.AddValue('CsvMaxWriteLatencyMs', [double]$csvMaxWriteLatencyMs)
+$bag.AddValue('CsvMaxQueueDepth', [double]$csvMaxQueueDepth)
+$bag.AddValue('CsvDetail', $csvDetail)
+
+$bag.AddValue('NodeCount', [double]$nodeCount)
+$bag.AddValue('NodeDownCount', [double]$nodeDownCount)
+$bag.AddValue('NodePausedCount', [double]$nodePausedCount)
+$bag.AddValue('NodeDetail', $nodeDetail)
+
+$bag.AddValue('QuorumType', $quorumType)
+$bag.AddValue('QuorumWitnessType', $quorumWitnessType)
+$bag.AddValue('QuorumWitnessState', $quorumWitnessState)
+$bag.AddValue('QuorumWitnessFailedCount', [double]$quorumWitnessFailedCount)
+$bag.AddValue('QuorumAssignedVotes', [double]$quorumAssignedVotes)
+$bag.AddValue('QuorumCurrentVotes', [double]$quorumCurrentVotes)
+$bag.AddValue('QuorumVoteMarginCount', [double]$quorumVoteMarginCount)
+$bag.AddValue('QuorumDetail', $quorumDetail)
+
+$bag.AddValue('NetworkCount', [double]$networkCount)
+$bag.AddValue('NetworkDownCount', [double]$networkDownCount)
+$bag.AddValue('NetworkPartitionedCount', [double]$networkPartitionedCount)
+$bag.AddValue('NetworkUnavailableCount', [double]$networkUnavailableCount)
+$bag.AddValue('NetworkDetail', $networkDetail)
+
+$bag.AddValue('GroupCount', [double]$groupCount)
+$bag.AddValue('GroupOfflineCount', [double]$groupOfflineCount)
+$bag.AddValue('GroupFailedCount', [double]$groupFailedCount)
+$bag.AddValue('GroupFailoverEventCount', [double]$groupFailoverEventCount)
+$bag.AddValue('GroupFailoverWindowHours', [double]$FailoverWindowHours)
+$bag.AddValue('GroupDetail', $groupDetail)
+
+$api.Return($bag)

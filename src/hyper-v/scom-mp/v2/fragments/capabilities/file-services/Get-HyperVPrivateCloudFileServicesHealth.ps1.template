@@ -1,5 +1,22 @@
 #Requires -Version 7.0
-param([string]$RequireRdma)
+param(
+    [string]$RequireRdma,
+    [ValidateSet('Legacy', 'Detail')][string]$Facet = 'Legacy',
+    [int]$MinimumMultichannelPaths = 2,
+    [int]$SessionErrorWindowMinutes = 60,
+    [int]$ClientSessionErrorWarningCount = 5,
+    [int]$ClientSessionErrorCriticalCount = 20,
+    [int]$ServerSessionErrorWarningCount = 5,
+    [int]$ServerSessionErrorCriticalCount = 20,
+    [string]$RequireSigning = 'false',
+    [string]$RequireEncryption = 'false',
+    [string]$RequireContinuousAvailability = 'true',
+    [string]$RequireWitness = 'false',
+    [double]$SmbReadLatencyWarningMs = 20,
+    [double]$SmbReadLatencyCriticalMs = 50,
+    [double]$SmbWriteLatencyWarningMs = 20,
+    [double]$SmbWriteLatencyCriticalMs = 50
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -14,6 +31,24 @@ function Test-HcsCapability {
     catch { return $false }
 }
 
+function Get-HcsProperty {
+    param($InputObject, [string]$Name)
+    if ($null -eq $InputObject) { return $null }
+    try {
+        $property = $InputObject.PSObject.Properties[$Name]
+        if ($null -eq $property) { return $null }
+        return $property.Value
+    }
+    catch { return $null }
+}
+
+function ConvertTo-HcsBoolean {
+    param([string]$Value, [bool]$Default = $false)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $Default }
+    try { return [System.Convert]::ToBoolean($Value) }
+    catch { return $Default }
+}
+
 function Get-HcsRequiredShare {
     $result = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
@@ -25,41 +60,362 @@ function Get-HcsRequiredShare {
     return $result
 }
 
+function Get-HcsEventCount {
+    param([string]$LogName, [string]$ProviderName, [int[]]$EventId, [int]$WindowMinutes)
+    try {
+        $filter = @{ LogName = $LogName; StartTime = (Get-Date).AddMinutes(-$WindowMinutes) }
+        if (-not [string]::IsNullOrWhiteSpace($ProviderName)) { $filter['ProviderName'] = $ProviderName }
+        if ($EventId.Count -gt 0) { $filter['Id'] = $EventId }
+        return @(Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue).Count
+    }
+    catch { return 0 }
+}
+
+function Get-HcsSmbCounterAverage {
+    param([string]$CounterPath)
+    try {
+        $samples = @((Get-Counter -Counter $CounterPath -SampleInterval 1 -MaxSamples 1 -ErrorAction Stop).CounterSamples)
+        $values = @($samples | ForEach-Object { [double](Get-HcsProperty -InputObject $_ -Name 'CookedValue') } | Where-Object { $_ -ge 0 })
+        if ($values.Count -eq 0) { return $null }
+        return ($values | Measure-Object -Average).Average
+    }
+    catch { return $null }
+}
+
 $api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
 $bag = $api.CreatePropertyBag()
+
+# Shipped v1 property bag values. Their names and semantics must not change.
 $state = 'Good'
 $detail = 'Hyper-V over SMB client connectivity is operational.'
-$requireRdmaEnabled = [System.Convert]::ToBoolean($RequireRdma)
+
+# Detail facet values.
+$serviceState = 'NotApplicable'
+$serviceStateDetail = 'SMB service state is not evaluated for this workflow.'
+$shareAvailabilityState = 'NotApplicable'
+$shareAvailabilityStateDetail = 'SMB share availability is not evaluated for this workflow.'
+$clientSessionErrorState = 'NotApplicable'
+$clientSessionErrorStateDetail = 'SMB client session errors are not evaluated for this workflow.'
+$serverSessionErrorState = 'NotApplicable'
+$serverSessionErrorStateDetail = 'SMB server session errors are not evaluated for this workflow.'
+$signingState = 'NotApplicable'
+$signingStateDetail = 'SMB signing state is not evaluated for this workflow.'
+$encryptionState = 'NotApplicable'
+$encryptionStateDetail = 'SMB encryption state is not evaluated for this workflow.'
+$continuousAvailabilityState = 'NotApplicable'
+$continuousAvailabilityStateDetail = 'SMB continuous availability is not evaluated for this workflow.'
+$witnessState = 'NotApplicable'
+$witnessStateDetail = 'SMB Witness registration is not evaluated for this workflow.'
+$multichannelPathState = 'NotApplicable'
+$multichannelPathStateDetail = 'SMB Multichannel path count is not evaluated for this workflow.'
+$readLatencyState = 'NotApplicable'
+$readLatencyStateDetail = 'SMB client read latency is not evaluated for this workflow.'
+$writeLatencyState = 'NotApplicable'
+$writeLatencyStateDetail = 'SMB client write latency is not evaluated for this workflow.'
 
 try {
-    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { throw 'The Hyper-V PowerShell module is unavailable. Install Hyper-V-PowerShell.' }
-    $required = Get-HcsRequiredShare
-    if ($required.Count -eq 0) { $state = 'NotApplicable'; $detail = 'No Hyper-V virtual hard disk uses a UNC path on this host.' }
-    elseif (-not (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection')) { throw 'The SMB client PowerShell capability is unavailable. Install the Windows file-services management tools.' }
+    if ($Facet -eq 'Legacy') {
+        $requireRdmaEnabled = ConvertTo-HcsBoolean -Value $RequireRdma -Default $false
+        if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { throw 'The Hyper-V PowerShell module is unavailable. Install Hyper-V-PowerShell.' }
+        $required = Get-HcsRequiredShare
+        if ($required.Count -eq 0) { $state = 'NotApplicable'; $detail = 'No Hyper-V virtual hard disk uses a UNC path on this host.' }
+        elseif (-not (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection')) { throw 'The SMB client PowerShell capability is unavailable. Install the Windows file-services management tools.' }
+        else {
+            $connections = @(Get-SmbConnection -ErrorAction Stop)
+            $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction Stop) } else { @() }
+            $problems = [System.Collections.Generic.List[string]]::new()
+            foreach ($key in $required) {
+                $parts = $key.Split('|', 2)
+                $connection = $connections | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and ([string]$_.ShareName).Equals($parts[1], [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+                if ($null -eq $connection) { $problems.Add("No active SMB connection for \\$($parts[0])\$($parts[1])."); continue }
+                if ($connection.PSObject.Properties['ContinuouslyAvailable'] -and -not [bool]$connection.ContinuouslyAvailable) { $problems.Add("\\$($parts[0])\$($parts[1]) is not continuously available.") }
+                if ($requireRdmaEnabled) {
+                    $rdma = @($channels | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and $_.Selected -and $_.ClientRdmaCapable -and $_.ServerRdmaCapable })
+                    if ($rdma.Count -eq 0) { $problems.Add("\\$($parts[0])\$($parts[1]) has no selected RDMA-capable SMB path.") }
+                }
+            }
+            if ($problems.Count -gt 0) { $state = 'Critical'; $detail = $problems -join ' ' }
+            else { $detail = "$($required.Count) required SMB share connection(s) are active; $($channels.Count) Multichannel path(s) are visible." }
+        }
+    }
     else {
-        $connections = @(Get-SmbConnection -ErrorAction Stop)
-        $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction Stop) } else { @() }
-        $problems = [System.Collections.Generic.List[string]]::new()
-        foreach ($key in $required) {
-            $parts = $key.Split('|', 2)
-            $connection = $connections | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and ([string]$_.ShareName).Equals($parts[1], [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
-            if ($null -eq $connection) { $problems.Add("No active SMB connection for \\$($parts[0])\$($parts[1])."); continue }
-            if ($connection.PSObject.Properties['ContinuouslyAvailable'] -and -not [bool]$connection.ContinuouslyAvailable) { $problems.Add("\\$($parts[0])\$($parts[1]) is not continuously available.") }
-            if ($requireRdmaEnabled) {
-                $rdma = @($channels | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and $_.Selected -and $_.ClientRdmaCapable -and $_.ServerRdmaCapable })
-                if ($rdma.Count -eq 0) { $problems.Add("\\$($parts[0])\$($parts[1]) has no selected RDMA-capable SMB path.") }
+        $signingRequired = ConvertTo-HcsBoolean -Value $RequireSigning -Default $false
+        $encryptionRequired = ConvertTo-HcsBoolean -Value $RequireEncryption -Default $false
+        $caRequired = ConvertTo-HcsBoolean -Value $RequireContinuousAvailability -Default $true
+        $witnessRequired = ConvertTo-HcsBoolean -Value $RequireWitness -Default $false
+
+        # SMB service state. The workstation service is always required; the server service is
+        # evaluated only where it is installed, so a compute-only host does not alert.
+        $serviceProblems = [System.Collections.Generic.List[string]]::new()
+        $serviceNotes = [System.Collections.Generic.List[string]]::new()
+        $workstation = Get-Service -Name 'LanmanWorkstation' -ErrorAction SilentlyContinue
+        if ($null -eq $workstation) { $serviceNotes.Add('The LanmanWorkstation service is not present on this host.') }
+        elseif ([string]$workstation.Status -ne 'Running') { $serviceProblems.Add("The SMB client service (LanmanWorkstation) is '$($workstation.Status)'.") }
+        else { $serviceNotes.Add('The SMB client service (LanmanWorkstation) is Running.') }
+
+        $server = Get-Service -Name 'LanmanServer' -ErrorAction SilentlyContinue
+        if ($null -eq $server) { $serviceNotes.Add('The LanmanServer service is not present on this host.') }
+        elseif ([string]$server.StartType -eq 'Disabled') { $serviceNotes.Add('The SMB server service (LanmanServer) is disabled by policy.') }
+        elseif ([string]$server.Status -ne 'Running') { $serviceProblems.Add("The SMB server service (LanmanServer) is '$($server.Status)'.") }
+        else { $serviceNotes.Add('The SMB server service (LanmanServer) is Running.') }
+
+        if ($serviceProblems.Count -gt 0) { $serviceState = 'Critical'; $serviceStateDetail = $serviceProblems -join ' ' }
+        else { $serviceState = 'Good'; $serviceStateDetail = $serviceNotes -join ' ' }
+
+        if (-not (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection')) {
+            $shareAvailabilityState = 'NotApplicable'
+            $shareAvailabilityStateDetail = 'The SMB PowerShell capability is unavailable on this host, so SMB detail monitoring is skipped.'
+        }
+        else {
+            $required = if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') { Get-HcsRequiredShare } else { [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase) }
+            $connections = @(Get-SmbConnection -ErrorAction SilentlyContinue)
+            $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction SilentlyContinue) } else { @() }
+            $localShares = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbShare') { @(Get-SmbShare -ErrorAction SilentlyContinue | Where-Object { -not [bool](Get-HcsProperty -InputObject $_ -Name 'Special') }) } else { @() }
+
+            # Share availability across every UNC path that backs a virtual hard disk.
+            if ($required.Count -eq 0) {
+                $shareAvailabilityState = 'NotApplicable'
+                $shareAvailabilityStateDetail = 'No Hyper-V virtual hard disk uses a UNC path on this host.'
+            }
+            else {
+                $missing = [System.Collections.Generic.List[string]]::new()
+                foreach ($key in $required) {
+                    $parts = $key.Split('|', 2)
+                    $connection = $connections | Where-Object { ([string](Get-HcsProperty -InputObject $_ -Name 'ServerName')).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and ([string](Get-HcsProperty -InputObject $_ -Name 'ShareName')).Equals($parts[1], [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+                    if ($null -eq $connection) { $missing.Add("\\$($parts[0])\$($parts[1])") }
+                }
+                if ($missing.Count -gt 0) {
+                    $shareAvailabilityState = 'Critical'
+                    $shareAvailabilityStateDetail = "$($missing.Count) required SMB share(s) have no active client connection: $($missing -join ', '). Check the file server, DNS, and the cluster role owner."
+                }
+                else {
+                    $shareAvailabilityState = 'Good'
+                    $shareAvailabilityStateDetail = "All $($required.Count) required SMB share connection(s) are active."
+                }
+            }
+
+            # Continuous availability, which Hyper-V over SMB requires for Scale-Out File Server shares.
+            $caProblems = [System.Collections.Generic.List[string]]::new()
+            $caChecked = 0
+            foreach ($key in $required) {
+                $parts = $key.Split('|', 2)
+                $connection = $connections | Where-Object { ([string](Get-HcsProperty -InputObject $_ -Name 'ServerName')).TrimStart('\\').Equals($parts[0], [StringComparison]::OrdinalIgnoreCase) -and ([string](Get-HcsProperty -InputObject $_ -Name 'ShareName')).Equals($parts[1], [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+                if ($null -eq $connection) { continue }
+                $caChecked++
+                $caValue = Get-HcsProperty -InputObject $connection -Name 'ContinuouslyAvailable'
+                if ($null -ne $caValue -and -not [bool]$caValue) { $caProblems.Add("\\$($parts[0])\$($parts[1])") }
+            }
+            foreach ($share in $localShares) {
+                $caValue = Get-HcsProperty -InputObject $share -Name 'ContinuouslyAvailable'
+                if ($null -eq $caValue) { continue }
+                $caChecked++
+                if (-not [bool]$caValue) { $caProblems.Add("local share '$([string](Get-HcsProperty -InputObject $share -Name 'Name'))'") }
+            }
+            if ($caChecked -eq 0) {
+                $continuousAvailabilityState = 'NotApplicable'
+                $continuousAvailabilityStateDetail = 'No SMB share on this host reports a continuous-availability setting.'
+            }
+            elseif ($caProblems.Count -eq 0) {
+                $continuousAvailabilityState = 'Good'
+                $continuousAvailabilityStateDetail = "All $caChecked evaluated SMB share(s) are continuously available."
+            }
+            elseif ($caRequired) {
+                $continuousAvailabilityState = 'Critical'
+                $continuousAvailabilityStateDetail = "$($caProblems.Count) SMB share(s) are not continuously available: $($caProblems -join ', '). Transparent failover will not protect these paths."
+            }
+            else {
+                $continuousAvailabilityState = 'Warning'
+                $continuousAvailabilityStateDetail = "$($caProblems.Count) SMB share(s) are not continuously available: $($caProblems -join ', '). Continuous availability is not required by the current override."
+            }
+
+            # Multichannel path count.
+            if ($channels.Count -eq 0) {
+                $multichannelPathState = if ($required.Count -eq 0) { 'NotApplicable' } else { 'Warning' }
+                $multichannelPathStateDetail = if ($required.Count -eq 0) { 'SMB Multichannel reports no connections and no SMB-backed virtual hard disk is present.' } else { 'SMB Multichannel reports no connections while SMB-backed virtual hard disks are in use. Validate client and server network interfaces.' }
+            }
+            else {
+                $selected = @($channels | Where-Object { [bool](Get-HcsProperty -InputObject $_ -Name 'Selected') })
+                if ($selected.Count -lt $MinimumMultichannelPaths) {
+                    $multichannelPathState = 'Warning'
+                    $multichannelPathStateDetail = "SMB Multichannel has $($selected.Count) selected path(s), below the expected minimum of $MinimumMultichannelPaths. Redundancy and throughput are reduced."
+                }
+                else {
+                    $multichannelPathState = 'Good'
+                    $multichannelPathStateDetail = "SMB Multichannel has $($selected.Count) selected path(s), at or above the expected minimum of $MinimumMultichannelPaths."
+                }
+            }
+
+            # Signing and encryption posture.
+            $serverConfig = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbServerConfiguration') { Get-SmbServerConfiguration -ErrorAction SilentlyContinue } else { $null }
+            $clientConfig = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbClientConfiguration') { Get-SmbClientConfiguration -ErrorAction SilentlyContinue } else { $null }
+            if ($null -eq $serverConfig -and $null -eq $clientConfig) {
+                $signingState = 'NotApplicable'
+                $signingStateDetail = 'SMB signing configuration is not exposed on this host.'
+                $encryptionState = 'NotApplicable'
+                $encryptionStateDetail = 'SMB encryption configuration is not exposed on this host.'
+            }
+            else {
+                $serverSigning = [bool](Get-HcsProperty -InputObject $serverConfig -Name 'RequireSecuritySignature')
+                $clientSigning = [bool](Get-HcsProperty -InputObject $clientConfig -Name 'RequireSecuritySignature')
+                if ($signingRequired -and -not ($serverSigning -and $clientSigning)) {
+                    $signingState = 'Warning'
+                    $signingStateDetail = "SMB signing is required by policy but RequireSecuritySignature is server=$serverSigning, client=$clientSigning."
+                }
+                elseif ($signingRequired) {
+                    $signingState = 'Good'
+                    $signingStateDetail = 'SMB signing is required on both the SMB server and the SMB client.'
+                }
+                else {
+                    $signingState = 'Good'
+                    $signingStateDetail = "SMB signing is not required by the current override; RequireSecuritySignature is server=$serverSigning, client=$clientSigning."
+                }
+
+                $serverEncryption = [bool](Get-HcsProperty -InputObject $serverConfig -Name 'EncryptData')
+                $unencryptedShares = @($localShares | Where-Object { $null -ne (Get-HcsProperty -InputObject $_ -Name 'EncryptData') -and -not [bool](Get-HcsProperty -InputObject $_ -Name 'EncryptData') })
+                if ($encryptionRequired -and -not $serverEncryption -and $unencryptedShares.Count -gt 0) {
+                    $encryptionState = 'Warning'
+                    $encryptionStateDetail = "SMB encryption is required by policy but $($unencryptedShares.Count) share(s) do not encrypt data and the server default is disabled."
+                }
+                elseif ($encryptionRequired) {
+                    $encryptionState = 'Good'
+                    $encryptionStateDetail = 'SMB encryption is enforced for the evaluated shares.'
+                }
+                else {
+                    $encryptionState = 'Good'
+                    $encryptionStateDetail = "SMB encryption is not required by the current override; the SMB server default EncryptData is $serverEncryption."
+                }
+            }
+
+            # Witness registration for Scale-Out File Server transparent failover.
+            if (-not (Test-HcsCapability -ModuleName 'SmbWitness' -CommandName 'Get-SmbWitnessClient')) {
+                $witnessState = 'NotApplicable'
+                $witnessStateDetail = 'The SMB Witness PowerShell capability is unavailable on this host.'
+            }
+            else {
+                $witnessClients = @(Get-SmbWitnessClient -ErrorAction SilentlyContinue)
+                if ($witnessClients.Count -gt 0) {
+                    $witnessState = 'Good'
+                    $witnessStateDetail = "$($witnessClients.Count) SMB Witness registration(s) are active, so transparent failover is monitored."
+                }
+                elseif ($witnessRequired -and $required.Count -gt 0) {
+                    $witnessState = 'Warning'
+                    $witnessStateDetail = 'No SMB Witness registration is active while SMB-backed virtual hard disks are in use. Transparent failover will fall back to timeout-based recovery.'
+                }
+                else {
+                    $witnessState = 'NotApplicable'
+                    $witnessStateDetail = 'No SMB Witness registration is active and none is required by the current override.'
+                }
+            }
+
+            # Client and server session errors from the SMB operational channels.
+            $clientErrors = Get-HcsEventCount -LogName 'Microsoft-Windows-SmbClient/Connectivity' -ProviderName '' -EventId @(30800, 30803, 30804, 30805, 30806, 30807, 30808, 30809) -WindowMinutes $SessionErrorWindowMinutes
+            if ($clientErrors -ge $ClientSessionErrorCriticalCount) {
+                $clientSessionErrorState = 'Critical'
+                $clientSessionErrorStateDetail = "$clientErrors SMB client session error(s) were logged in the last $SessionErrorWindowMinutes minute(s), at or above the critical threshold of $ClientSessionErrorCriticalCount."
+            }
+            elseif ($clientErrors -ge $ClientSessionErrorWarningCount) {
+                $clientSessionErrorState = 'Warning'
+                $clientSessionErrorStateDetail = "$clientErrors SMB client session error(s) were logged in the last $SessionErrorWindowMinutes minute(s), at or above the warning threshold of $ClientSessionErrorWarningCount."
+            }
+            else {
+                $clientSessionErrorState = 'Good'
+                $clientSessionErrorStateDetail = "$clientErrors SMB client session error(s) were logged in the last $SessionErrorWindowMinutes minute(s), below the warning threshold of $ClientSessionErrorWarningCount."
+            }
+
+            $serverErrors = Get-HcsEventCount -LogName 'Microsoft-Windows-SMBServer/Operational' -ProviderName '' -EventId @(551, 1010, 1020, 1022, 1024, 1026) -WindowMinutes $SessionErrorWindowMinutes
+            if ($serverErrors -ge $ServerSessionErrorCriticalCount) {
+                $serverSessionErrorState = 'Critical'
+                $serverSessionErrorStateDetail = "$serverErrors SMB server session error(s) were logged in the last $SessionErrorWindowMinutes minute(s), at or above the critical threshold of $ServerSessionErrorCriticalCount."
+            }
+            elseif ($serverErrors -ge $ServerSessionErrorWarningCount) {
+                $serverSessionErrorState = 'Warning'
+                $serverSessionErrorStateDetail = "$serverErrors SMB server session error(s) were logged in the last $SessionErrorWindowMinutes minute(s), at or above the warning threshold of $ServerSessionErrorWarningCount."
+            }
+            else {
+                $serverSessionErrorState = 'Good'
+                $serverSessionErrorStateDetail = "$serverErrors SMB server session error(s) were logged in the last $SessionErrorWindowMinutes minute(s), below the warning threshold of $ServerSessionErrorWarningCount."
+            }
+
+            # SMB client latency.
+            $readSeconds = Get-HcsSmbCounterAverage -CounterPath '\SMB Client Shares(*)\Avg. sec/Read'
+            if ($null -eq $readSeconds) {
+                $readLatencyState = 'NotApplicable'
+                $readLatencyStateDetail = 'The SMB Client Shares counter set is unavailable on this host.'
+            }
+            else {
+                $readMs = [Math]::Round(($readSeconds * 1000), 2)
+                if ($readMs -ge $SmbReadLatencyCriticalMs) {
+                    $readLatencyState = 'Critical'
+                    $readLatencyStateDetail = "SMB client read latency averages $readMs ms, at or above the critical threshold of $SmbReadLatencyCriticalMs ms."
+                }
+                elseif ($readMs -ge $SmbReadLatencyWarningMs) {
+                    $readLatencyState = 'Warning'
+                    $readLatencyStateDetail = "SMB client read latency averages $readMs ms, at or above the warning threshold of $SmbReadLatencyWarningMs ms."
+                }
+                else {
+                    $readLatencyState = 'Good'
+                    $readLatencyStateDetail = "SMB client read latency averages $readMs ms, below the warning threshold of $SmbReadLatencyWarningMs ms."
+                }
+            }
+
+            $writeSeconds = Get-HcsSmbCounterAverage -CounterPath '\SMB Client Shares(*)\Avg. sec/Write'
+            if ($null -eq $writeSeconds) {
+                $writeLatencyState = 'NotApplicable'
+                $writeLatencyStateDetail = 'The SMB Client Shares counter set is unavailable on this host.'
+            }
+            else {
+                $writeMs = [Math]::Round(($writeSeconds * 1000), 2)
+                if ($writeMs -ge $SmbWriteLatencyCriticalMs) {
+                    $writeLatencyState = 'Critical'
+                    $writeLatencyStateDetail = "SMB client write latency averages $writeMs ms, at or above the critical threshold of $SmbWriteLatencyCriticalMs ms."
+                }
+                elseif ($writeMs -ge $SmbWriteLatencyWarningMs) {
+                    $writeLatencyState = 'Warning'
+                    $writeLatencyStateDetail = "SMB client write latency averages $writeMs ms, at or above the warning threshold of $SmbWriteLatencyWarningMs ms."
+                }
+                else {
+                    $writeLatencyState = 'Good'
+                    $writeLatencyStateDetail = "SMB client write latency averages $writeMs ms, below the warning threshold of $SmbWriteLatencyWarningMs ms."
+                }
             }
         }
-        if ($problems.Count -gt 0) { $state = 'Critical'; $detail = $problems -join ' ' }
-        else { $detail = "$($required.Count) required SMB share connection(s) are active; $($channels.Count) Multichannel path(s) are visible." }
     }
 }
 catch {
-    $state = 'Critical'
-    $detail = "Hyper-V over SMB query failed: $($_.Exception.Message)"
-    $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $detail)
+    if ($Facet -eq 'Legacy') {
+        $state = 'Critical'
+        $detail = "Hyper-V over SMB query failed: $($_.Exception.Message)"
+        $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $detail)
+    }
+    else {
+        $serviceState = 'Critical'
+        $serviceStateDetail = "SMB detail query failed: $($_.Exception.Message)"
+        $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $serviceStateDetail)
+    }
 }
 
 $bag.AddValue('FileServicesState', $state)
 $bag.AddValue('FileServicesStateDetail', $detail)
+$bag.AddValue('ServiceState', $serviceState)
+$bag.AddValue('ServiceStateDetail', $serviceStateDetail)
+$bag.AddValue('ShareAvailabilityState', $shareAvailabilityState)
+$bag.AddValue('ShareAvailabilityStateDetail', $shareAvailabilityStateDetail)
+$bag.AddValue('ClientSessionErrorState', $clientSessionErrorState)
+$bag.AddValue('ClientSessionErrorStateDetail', $clientSessionErrorStateDetail)
+$bag.AddValue('ServerSessionErrorState', $serverSessionErrorState)
+$bag.AddValue('ServerSessionErrorStateDetail', $serverSessionErrorStateDetail)
+$bag.AddValue('SigningState', $signingState)
+$bag.AddValue('SigningStateDetail', $signingStateDetail)
+$bag.AddValue('EncryptionState', $encryptionState)
+$bag.AddValue('EncryptionStateDetail', $encryptionStateDetail)
+$bag.AddValue('ContinuousAvailabilityState', $continuousAvailabilityState)
+$bag.AddValue('ContinuousAvailabilityStateDetail', $continuousAvailabilityStateDetail)
+$bag.AddValue('WitnessState', $witnessState)
+$bag.AddValue('WitnessStateDetail', $witnessStateDetail)
+$bag.AddValue('MultichannelPathState', $multichannelPathState)
+$bag.AddValue('MultichannelPathStateDetail', $multichannelPathStateDetail)
+$bag.AddValue('ReadLatencyState', $readLatencyState)
+$bag.AddValue('ReadLatencyStateDetail', $readLatencyStateDetail)
+$bag.AddValue('WriteLatencyState', $writeLatencyState)
+$bag.AddValue('WriteLatencyStateDetail', $writeLatencyStateDetail)
 $api.Return($bag)
