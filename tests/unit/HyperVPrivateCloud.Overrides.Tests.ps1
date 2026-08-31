@@ -63,9 +63,10 @@ Describe 'Hyper-V Private Cloud Monitoring override generation' {
         $actualRelative = @($actual | ForEach-Object { [System.IO.Path]::GetRelativePath($script:RegeneratedExamples, $_.FullName) } | Sort-Object)
         $actualRelative | Should -Be $expectedRelative
         foreach ($relativePath in $expectedRelative) {
-            $expectedHash = (Get-FileHash -LiteralPath (Join-Path $script:CommittedExamples $relativePath) -Algorithm SHA256).Hash
-            $actualHash = (Get-FileHash -LiteralPath (Join-Path $script:RegeneratedExamples $relativePath) -Algorithm SHA256).Hash
-            $actualHash | Should -Be $expectedHash -Because "'$relativePath' must be generated, never hand-maintained"
+            # Newline-insensitive: checkout and platform newline conventions vary, content must not.
+            $expectedText = (Get-Content -LiteralPath (Join-Path $script:CommittedExamples $relativePath) -Raw) -replace "`r`n", "`n"
+            $actualText = (Get-Content -LiteralPath (Join-Path $script:RegeneratedExamples $relativePath) -Raw) -replace "`r`n", "`n"
+            $actualText | Should -Be $expectedText -Because "'$relativePath' must be generated, never hand-maintained"
         }
     }
 

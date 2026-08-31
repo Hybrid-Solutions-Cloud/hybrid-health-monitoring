@@ -62,7 +62,10 @@ try {
                     throw "Missing generated override example: $destination"
                 }
                 $actual = [System.IO.File]::ReadAllText($destination)
-                if (-not [string]::Equals($actual, $expected, [StringComparison]::Ordinal)) {
+                # Newline-insensitive: checkout and platform newline conventions vary, content must not.
+                $actual = $actual.Replace("`r`n", "`n")
+                $normalizedExpected = $expected.Replace("`r`n", "`n")
+                if (-not [string]::Equals($actual, $normalizedExpected, [StringComparison]::Ordinal)) {
                     throw "Generated override example drift detected: $destination. Run Update-HyperVOverrideExamples.ps1."
                 }
                 Write-Host "Verified override example: $destination" -ForegroundColor Green
