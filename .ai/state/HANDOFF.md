@@ -1,5 +1,39 @@
 # Handoff
 
+## 2026-08-31 (later still) — 1.4.0.0: host-wide facts once per host; released
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open. **`1.4.0.0` is sealed with the Key Vault
+key (source commit `d842e38`), validated `releaseEligible=true`, and published under
+`docs/public/downloads/hyper-v-private-cloud/1.4.0.0/` + `latest/`.** Pester 195/195, VSAE 13/13.
+
+### What changed
+
+- **Storage:** iSCSI connection-error, iSCSI auth-failure and MPIO failover monitors retargeted to
+  `HostRole` via new `HostEvents.MonitorType`/`.DataSource` (cookdown-identical config across the
+  three consumers — one probe run). New script branch `HostEventDetail` in
+  Get-HyperVPrivateCloudStorageObjectHealth.
+- **Network ATC:** EtsPolicyCompliance + QosTrafficClass retargeted to `HostRole` (IntentName /
+  AdapterNames dropped from config — minOccurs=0; IsStorageIntent literal false); detail strings
+  de-intent-ified.
+- **PhysicalNetwork:** AdapterLink/AdapterSpeed evaluate only vSwitch uplinks + ATC intent adapters
+  (`Get-HcsMonitoredAdapterName`); `IncludeNonUplinkAdapters` (string, default false) threaded
+  through Fabric UMT/DS schema, args, and both monitor configs.
+- **FileServices:** FileSMB emission removed from the main discovery (batch rejection, event 10801,
+  phantom SMB services); new opt-in `MicrosoftSmbLink.Discovery` (Enabled=false, HostRole target,
+  script `Discover-HyperVPrivateCloudFileServicesSmbLink.ps1.template`, token
+  `FILE_SERVICES_SMB_LINK_DISCOVERY_SCRIPT`).
+- **Catalog:** new `Storage.HostEventMonitors` target set; failover/auth/connection-error settings
+  repointed; ETS/QoS + the three storage rows context → HostRole; examples regenerated.
+- Docs: download page (current release 1.4.0.0), ADR 0053 ("Closed in 1.4.0.0" bullet; next-major
+  now only cookdown fan-out + Pure SDK), monitoring-catalog (22 discoveries, once-per-host note),
+  CHANGELOG.
+
+### Remaining next-major items (ADR 0053)
+
+1. Per-instance probe fan-out + thresholds-as-script-args defeating cookdown in the older
+   capability monitors (multi-instance property-bag redesign).
+2. Pure Storage scripts' .NET Framework SCOM SDK dependence under PS7.
+
 ## 2026-08-31 (later) — 1.3.0.0: cluster-wide monitors evaluated once per cluster; released
 
 **Branch:** `feat/monitoring-depth` — pushed; PR #3 open against `main`
