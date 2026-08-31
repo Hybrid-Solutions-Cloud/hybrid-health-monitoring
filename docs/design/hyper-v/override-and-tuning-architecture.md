@@ -195,7 +195,7 @@ Generate a customer-owned pair with:
   -OrganizationId Contoso `
   -OrganizationName 'Contoso' `
   -Version 1.0.0.0 `
-  -ProductVersion 2.0.0.0 `
+  -ProductVersion 1.0.0.0 `
   -PublicKeyToken 0123456789abcdef `
   -OutputPath ./out/contoso-overrides
 ```

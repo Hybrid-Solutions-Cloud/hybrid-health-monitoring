@@ -19,7 +19,7 @@ their capability MP and class expectations rather than weakening the core lane.
 ```powershell
 ./tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1 `
     -ManagementServer 'scom-ms.example.test' `
-    -ProductVersion '2.0.0.0' `
+    -ProductVersion '1.0.0.0' `
     -PublicKeyToken '<PERMANENT_PRODUCT_TOKEN>' `
     -ExpectationPath ./tests/integration/expectations/core-standalone.example.json `
     -OutputPath D:/evidence/hyper-v-v2/core-standalone

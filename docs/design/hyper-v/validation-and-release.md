@@ -188,7 +188,7 @@ Run a non-publishable packaging exercise with a transient key:
 
 ```powershell
 ./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
-  -Version 2.0.0.0 `
+  -Version 1.0.0.0 `
   -SigningKeyPath D:/temporary-signing/transient-test.snk `
   -OutputPath D:/temporary-release/hyper-v-v2 `
   -BuildMode Test `

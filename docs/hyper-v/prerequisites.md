@@ -25,7 +25,7 @@ then obtain only the prerequisites on that list.
 ## Before anything else: get the packs from the right place
 
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
-from `docs/public/downloads/hyper-v-private-cloud/2.0.0.0/`.
+from `docs/public/downloads/hyper-v-private-cloud/1.0.0.0/`.
 
 ::: warning Upgrading from 2.0.0.0
 This page documents the **`HyperVPrivateCloud.*`** identities used from `1.0.0.0` onward. The

@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.0.0.0] — 2026-08-30
+
+First release of Hyper-V Private Cloud Monitoring under its own product-named identity.
+
+### Changed
+
+* **BREAKING.** Management Pack identities are named for the product rather than the publisher:
+  `HybridSolutionsCloud.HyperVPrivateCloud.*` becomes `HyperVPrivateCloud.*`. Publisher attribution
+  moves to the sealed pack `Company`/`Copyright` metadata and the documentation. SCOM treats a
+  renamed Management Pack as an unrelated pack, so there is **no in-place upgrade** from `2.0.0.0`:
+  the old packs must be removed before these are imported, discarding stored overrides and
+  accumulated health state. See ADR 0049.
+* **BREAKING.** The version line restarts at `1.0.0.0`. The new identity has no prior release, and
+  no `1.0` was ever officially released under the old one.
+* Published override starters drop the organization prefix and are named
+  `HyperVPrivateCloud.Overrides.<Profile>.<Tier>.<Kind>`. Customer-generated overrides keep the
+  conventional `<Org>.HyperVPrivateCloud.Overrides.*` form from `-OrganizationId`.
+
+### Added
+
+* Generated prerequisite documentation: `tools/scom/Export-MpDependencies.ps1` extracts every
+  `<References>` block from Management Pack source, classifies each dependency, and renders it into
+  the prerequisite pages. `tests/unit/MpDependencies.Docs.Tests.ps1` fails the build on drift, so
+  the documented dependencies can no longer diverge from the packs.
+* Operator prerequisite pages for Hyper-V and Azure Local SCOM, plus a `start-here` entry point.
+
+### Fixed
+
+* Documented the external Microsoft and vendor Management Packs each capability requires — the most
+  common cause of a failed import — including `Microsoft.Windows.Cluster.Library` `6.0.6278.0`, the
+  two File Services packs at two distinct versions, and Pure Storage's separate publisher token and
+  lack of SCOM 2025 support.
+
+### Documentation
+
+* Azure Local documentation nested under `docs/azure-local/{scom,azure-monitor}/`, with redirects
+  from the previous `/scom-mp/` and `/azure-monitor/` URLs.
+* Navigation restructured task-first; architecture decision records moved to their own themed
+  section.
+
 ## [Unreleased]
 
 * Move the project to `Hybrid-Solutions-Cloud/hybrid-health-monitoring` and publish documentation

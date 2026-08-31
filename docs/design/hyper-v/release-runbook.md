@@ -30,7 +30,7 @@ From a clean `main` worktree, run:
 
 ```powershell
 ./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
-  -Version 2.0.0.0 `
+  -Version 1.0.0.0 `
   -SigningKeyPath '<TEMPORARY_KEY_PATH>' `
   -DependencyPath '<CURATED_DEPENDENCY_DIRECTORY_1>','<CURATED_DEPENDENCY_DIRECTORY_2>' `
   -OutputPath '<EMPTY_OUTPUT_DIRECTORY>' `
@@ -51,7 +51,7 @@ product token, missing override, unsafe archive path, checksum mismatch, or sign
 Copy the complete validated `assets` directory without rebuilding it to:
 
 ```text
-docs/public/downloads/hyper-v-private-cloud/2.0.0.0/
+docs/public/downloads/hyper-v-private-cloud/1.0.0.0/
 ```
 
 Copy the current public entry assets to:

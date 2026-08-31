@@ -156,7 +156,7 @@ sealed-product version and token:
   -OrganizationId Contoso `
   -OrganizationName 'Contoso' `
   -Version 1.0.0.0 `
-  -ProductVersion 2.0.0.0 `
+  -ProductVersion 1.0.0.0 `
   -PublicKeyToken 0123456789abcdef `
   -OutputPath ./out/contoso-overrides
 ```
@@ -182,7 +182,7 @@ Build the currently authored artifacts with PowerShell 7:
 
 ```powershell
 ./tools/Build-HyperVPrivateCloudManagementPacks.ps1 `
-  -Version 2.0.0.0 `
+  -Version 1.0.0.0 `
   -PublicKeyToken 0123456789abcdef
 ```
 

@@ -187,6 +187,6 @@ ADR 0027 resolves the logical artifact boundary. Each release must still record:
 5. language-pack strategy; and
 6. release and test signing identities.
 
-For v2 `2.0.0.0`, these facts are resolved by ADRs 0039–0048 and the published
+For `1.0.0.0`, these facts are resolved by ADRs 0039–0048 and the published
 `release-manifest.json`; Reporting is not a v2 core artifact, the product is distributed as sealed
 `.mp` files, and the permanent public key token is `54d0fb1159995c86`.
