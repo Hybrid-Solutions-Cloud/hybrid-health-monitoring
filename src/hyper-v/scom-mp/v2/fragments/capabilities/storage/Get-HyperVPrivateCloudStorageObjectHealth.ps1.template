@@ -1,10 +1,11 @@
 #Requires -Version 7.0
 param(
-    [ValidateSet('Attachment', 'IscsiSession', 'FibreChannelPort', 'FibreChannelDetail', 'IscsiDetail', 'MultipathDetail', 'LogicalUnitDetail', 'HostEventDetail')][string]$ObjectKind,
+    [ValidateSet('Attachment', 'IscsiSession', 'FibreChannelPort', 'FibreChannelDetail', 'IscsiDetail', 'MultipathDetail', 'LogicalUnitDetail', 'HostEventDetail', 'HostStorageInventory')][string]$ObjectKind,
     [string]$Identity,
     [int]$DiskNumber,
     [string]$StorageId,
     [string]$BusType,
+    [string]$ComputerName,
     [int]$MinimumPathCount,
     [int]$MinimumLinkSpeedGbps = 8,
     [double]$LinkFailureRatePerHourWarning = 1,
@@ -59,10 +60,20 @@ function Get-HcsProperty {
     catch { return $null }
 }
 
+function Get-HcsStableId {
+    param([Parameter(Mandatory)][string]$Value)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try { return ([Convert]::ToHexString($sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value)))).ToLowerInvariant() }
+    finally { $sha256.Dispose() }
+}
+
 function Get-HcsMpioDrive {
     param([string[]]$Candidates)
     try {
-        foreach ($mpio in @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_DISK_INFO' -ErrorAction SilentlyContinue)) {
+        if ($null -eq (Get-Variable -Name HcsMpioDiskInfoCache -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:HcsMpioDiskInfoCache = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MPIO_DISK_INFO' -ErrorAction SilentlyContinue)
+        }
+        foreach ($mpio in $script:HcsMpioDiskInfoCache) {
             foreach ($drive in @($mpio.DriveInfo)) {
                 $serial = ([string](Get-HcsProperty -InputObject $drive -Name 'SerialNumber')).Trim().ToLowerInvariant()
                 foreach ($candidate in $Candidates) {
@@ -159,7 +170,10 @@ function ConvertTo-HcsFibrePortStateName {
 function Get-HcsFibrePort {
     param([string]$PortId)
     try {
-        $ports = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue)
+        if ($null -eq (Get-Variable -Name HcsFibrePortCache -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:HcsFibrePortCache = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue)
+        }
+        $ports = $script:HcsFibrePortCache
         if ($ports.Count -eq 0) { return $null }
         $match = $ports | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'UniquePortId') -eq $PortId } | Select-Object -First 1
         return $match
@@ -170,7 +184,10 @@ function Get-HcsFibrePort {
 function Get-HcsFibrePortStatistics {
     param([string]$PortId)
     try {
-        $stats = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAStatistics' -ErrorAction SilentlyContinue)
+        if ($null -eq (Get-Variable -Name HcsFibreStatsCache -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:HcsFibreStatsCache = @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAStatistics' -ErrorAction SilentlyContinue)
+        }
+        $stats = $script:HcsFibreStatsCache
         if ($stats.Count -eq 0) { return $null }
         $match = $stats | Where-Object { [string](Get-HcsProperty -InputObject $_ -Name 'UniquePortId') -eq $PortId } | Select-Object -First 1
         if ($null -eq $match) { return $null }
@@ -181,11 +198,16 @@ function Get-HcsFibrePortStatistics {
 
 function Get-HcsEventCount {
     param([string]$LogName, [string]$ProviderName, [int[]]$EventId, [int]$WindowMinutes)
+    $cacheKey = "$LogName|$ProviderName|$($EventId -join '-')|$WindowMinutes"
+    if ($null -eq (Get-Variable -Name HcsEventCountCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsEventCountCache = @{} }
+    if ($script:HcsEventCountCache.ContainsKey($cacheKey)) { return $script:HcsEventCountCache[$cacheKey] }
     try {
         $filter = @{ LogName = $LogName; StartTime = (Get-Date).AddMinutes(-$WindowMinutes) }
         if (-not [string]::IsNullOrWhiteSpace($ProviderName)) { $filter['ProviderName'] = $ProviderName }
         if ($EventId.Count -gt 0) { $filter['Id'] = $EventId }
-        return @(Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue).Count
+        $count = @(Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue).Count
+        $script:HcsEventCountCache[$cacheKey] = $count
+        return $count
     }
     catch { return 0 }
 }
@@ -193,7 +215,11 @@ function Get-HcsEventCount {
 function Get-HcsPhysicalDiskCounter {
     param([int]$Number, [string]$CounterSuffix)
     try {
-        $samples = @((Get-Counter -Counter "\PhysicalDisk(*)\$CounterSuffix" -SampleInterval 1 -MaxSamples 1 -ErrorAction Stop).CounterSamples)
+        if ($null -eq (Get-Variable -Name HcsDiskCounterCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsDiskCounterCache = @{} }
+        if (-not $script:HcsDiskCounterCache.ContainsKey($CounterSuffix)) {
+            $script:HcsDiskCounterCache[$CounterSuffix] = @((Get-Counter -Counter "\PhysicalDisk(*)\$CounterSuffix" -SampleInterval 1 -MaxSamples 1 -ErrorAction Stop).CounterSamples)
+        }
+        $samples = $script:HcsDiskCounterCache[$CounterSuffix]
         foreach ($sample in $samples) {
             $instance = [string](Get-HcsProperty -InputObject $sample -Name 'InstanceName')
             if ([string]::IsNullOrWhiteSpace($instance)) { continue }
@@ -207,6 +233,12 @@ function Get-HcsPhysicalDiskCounter {
 }
 
 $api = New-Object -ComObject 'MOM.ScriptAPI'
+
+# Evaluates one storage object's facets and returns a fully-populated property bag. Every facet the
+# evaluation does not reach stays NotApplicable, so every bag carries every property and the keyed
+# monitor-type filters never hit a missing property.
+function Get-HcsFacetBag {
+param([string]$ObjectKind, [string]$Identity, [int]$DiskNumber, [string]$StorageId, [string]$BusType)
 $bag = $api.CreatePropertyBag()
 
 # Shipped v1 property bag values. Their names and semantics must not change.
@@ -479,7 +511,7 @@ try {
                 }
             }
         }
-        'MultipathDetail' {
+        { $_ -in @('MultipathDetail', 'DiskDetail') } {
             if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
                 $pathCountState = 'NotApplicable'
                 $pathCountStateDetail = 'The Windows Storage PowerShell module is unavailable on this host, so multipath monitoring is skipped.'
@@ -649,7 +681,7 @@ try {
                 $failoverStateDetail = "No MPIO path failover events were logged on this host in the last $FailoverEventWindowMinutes minute(s)."
             }
         }
-        'LogicalUnitDetail' {
+        { $_ -in @('LogicalUnitDetail', 'DiskDetail') } {
             if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) {
                 $operationalState = 'NotApplicable'
                 $operationalStateDetail = 'The Windows Storage PowerShell module is unavailable on this host, so logical unit monitoring is skipped.'
@@ -844,4 +876,55 @@ $bag.AddValue('WriteLatencyState', $writeLatencyState)
 $bag.AddValue('WriteLatencyStateDetail', $writeLatencyStateDetail)
 $bag.AddValue('QueueDepthState', $queueDepthState)
 $bag.AddValue('QueueDepthStateDetail', $queueDepthStateDetail)
-$api.Return($bag)
+return $bag
+}
+
+if ($ObjectKind -eq 'HostStorageInventory') {
+    # One probe run per host feeds every keyed storage monitor: one bag per SAN disk, iSCSI session,
+    # and Fibre Channel port, keyed exactly as the discovery keys the instance (ADR 0053 cookdown).
+    $diskCount = 0
+    $sessionCount = 0
+    $portCount = 0
+    if (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk') {
+        foreach ($disk in @(Get-Disk -ErrorAction SilentlyContinue | Where-Object { -not $_.IsBoot -and -not $_.IsSystem -and [string]$_.BusType -in @('iSCSI', 'Fibre Channel', 'SAS', 'RAID') })) {
+            $identitySource = @([string]$disk.UniqueId, [string]$disk.SerialNumber) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1
+            $hostLabel = if ([string]::IsNullOrWhiteSpace($ComputerName)) { [string]$env:COMPUTERNAME } else { $ComputerName }
+            $rawStorageIdentity = if ($identitySource) { ([string]$identitySource).Trim().ToLowerInvariant() } else { "$hostLabel|$($disk.Number)|$($disk.FriendlyName)|$($disk.Size)" }
+            $instanceKey = 'lun:' + (Get-HcsStableId -Value $rawStorageIdentity)
+            $diskBag = Get-HcsFacetBag -ObjectKind 'DiskDetail' -Identity '' -DiskNumber ([int]$disk.Number) -StorageId $instanceKey -BusType ([string]$disk.BusType)
+            $diskBag.AddValue('InstanceKey', $instanceKey)
+            $api.AddItem($diskBag)
+            $diskCount++
+        }
+    }
+    if (Test-HcsCapability -ModuleName 'iSCSI' -CommandName 'Get-IscsiSession') {
+        foreach ($session in @(Get-IscsiSession -ErrorAction SilentlyContinue)) {
+            $sessionId = [string](Get-HcsProperty -InputObject $session -Name 'SessionIdentifier')
+            if ([string]::IsNullOrWhiteSpace($sessionId)) { continue }
+            $sessionBag = Get-HcsFacetBag -ObjectKind 'IscsiDetail' -Identity $sessionId -DiskNumber 0 -StorageId '' -BusType 'iSCSI'
+            $sessionBag.AddValue('InstanceKey', $sessionId)
+            $api.AddItem($sessionBag)
+            $sessionCount++
+        }
+    }
+    foreach ($port in @(Get-CimInstance -Namespace 'root/wmi' -ClassName 'MSFC_FibrePortHBAAttributes' -ErrorAction SilentlyContinue)) {
+        $portId = [string](Get-HcsProperty -InputObject $port -Name 'UniquePortId')
+        if ([string]::IsNullOrWhiteSpace($portId)) { continue }
+        $portBag = Get-HcsFacetBag -ObjectKind 'FibreChannelDetail' -Identity $portId -DiskNumber 0 -StorageId '' -BusType 'Fibre Channel'
+        $portBag.AddValue('InstanceKey', $portId)
+        $api.AddItem($portBag)
+        $portCount++
+    }
+    # Heartbeat bag: proves the inventory ran even on a host with no SAN objects and satisfies the
+    # one-DataItem probe contract. No monitor matches its InstanceKey.
+    $summaryBag = Get-HcsFacetBag -ObjectKind 'InventorySummary' -Identity '' -DiskNumber 0 -StorageId '' -BusType ''
+    $summaryBag.AddValue('InstanceKey', 'host-storage-inventory')
+    $summaryBag.AddValue('InventoryDiskCount', $diskCount)
+    $summaryBag.AddValue('InventorySessionCount', $sessionCount)
+    $summaryBag.AddValue('InventoryPortCount', $portCount)
+    $api.AddItem($summaryBag)
+    $api.ReturnItems()
+}
+else {
+    $api.Return((Get-HcsFacetBag -ObjectKind $ObjectKind -Identity $Identity -DiskNumber $DiskNumber -StorageId $StorageId -BusType $BusType))
+}
