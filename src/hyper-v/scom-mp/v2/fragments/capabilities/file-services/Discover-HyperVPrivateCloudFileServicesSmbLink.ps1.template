@@ -1,0 +1,106 @@
+#Requires -Version 7.0
+# Opt-in link discovery: relates each SMB share carrying VM storage to the Microsoft File Services
+# SMB service object (Microsoft.Windows.FileServices.Service.SMB.10.0) on the file server.
+#
+# This is a separate discovery, disabled by default, because the SMB service instance is HOSTED by
+# the file server's Windows.Computer object. If that computer is not in the management group, the
+# whole discovery-data batch is rejected with event 10801 (unresolved host); and where the computer
+# exists but Microsoft's own SMB discovery never ran, a phantom SMB service object would start
+# Microsoft's SMB monitors against it. Enable this discovery only when every SMB file server that
+# backs VM storage is itself a SCOM-managed Windows file server (for example a SOFS cluster with
+# agents). See ADR 0053.
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$BoundaryId,
+    [string]$HostId
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    try {
+        if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+        Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsStableId {
+    param([Parameter(Mandatory)][string]$Value)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Value.ToLowerInvariant())
+        return ([System.BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+    }
+    finally { $sha256.Dispose() }
+}
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if ($null -ne $Value -and -not [string]::IsNullOrWhiteSpace([string]$Value)) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+function Add-HcsRelationship {
+    param([string]$TypeId, $Source, $Target)
+    $relationship = $script:DiscoveryData.CreateRelationshipInstance($TypeId)
+    $relationship.Source = $Source
+    $relationship.Target = $Target
+    $script:DiscoveryData.AddInstance($relationship)
+}
+
+function Get-HcsUncIdentity {
+    param([string]$Path)
+    $match = [regex]::Match($Path, '^\\\\(?<server>[^\\]+)\\(?<share>[^\\]+)', 'IgnoreCase')
+    if (-not $match.Success) { return $null }
+    $server = $match.Groups['server'].Value.Trim().ToLowerInvariant()
+    $share = $match.Groups['share'].Value.Trim().ToLowerInvariant()
+    [pscustomobject]@{ Server = $server; Share = $share; Unc = "\\$server\$share"; ShareId = "smb:" + (Get-HcsStableId "$server|$share") }
+}
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { $api.Return($script:DiscoveryData); return }
+
+    $linked = @{}
+    foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
+        foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | Where-Object Path -Like '\\*')) {
+            $identity = Get-HcsUncIdentity $drive.Path
+            if ($null -eq $identity -or $linked.ContainsKey($identity.ShareId)) { continue }
+            $linked[$identity.ShareId] = $true
+
+            $serverPrincipal = ''
+            try { $serverPrincipal = ([System.Net.Dns]::GetHostEntry($identity.Server)).HostName.ToLowerInvariant() }
+            catch {
+                $api.LogScriptEvent('HyperVPrivateCloud.FileServices.SmbLinkDiscovery.ps1', 8704, 2, "Could not resolve SMB server '$($identity.Server)' to a host name: $($_.Exception.Message)")
+                continue
+            }
+
+            $share = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']$")
+            Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/BoundaryId$" $BoundaryId
+            Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ShareId$" $identity.ShareId
+            Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/UncPath$" $identity.Unc
+            Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ServerName$" $identity.Server
+            Add-HcsProperty $share "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShare']/ShareName$" $identity.Share
+            Add-HcsProperty $share "$MPElement[Name='System!System.Entity']/DisplayName$" $identity.Unc
+            $script:DiscoveryData.AddInstance($share)
+
+            $microsoftSmb = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='FileSMB!Microsoft.Windows.FileServices.Service.SMB.10.0']$")
+            Add-HcsProperty $microsoftSmb "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $serverPrincipal
+            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService']$" $share $microsoftSmb
+        }
+    }
+
+    $api.Return($script:DiscoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.FileServices.SmbLinkDiscovery.ps1', 8705, 1, $_.Exception.Message)
+    throw
+}

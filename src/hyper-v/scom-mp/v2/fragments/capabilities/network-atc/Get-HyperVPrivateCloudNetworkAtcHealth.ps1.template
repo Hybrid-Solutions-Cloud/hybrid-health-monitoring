@@ -486,7 +486,7 @@ try {
             $classes = @(Get-NetQosTrafficClass -ErrorAction SilentlyContinue)
             if ($classes.Count -eq 0) {
                 $state = 'Warning'
-                $detail = "No QoS traffic class is defined on '$ComputerName', so the ETS bandwidth reservation required by network intent '$IntentName' is not in effect."
+                $detail = "No QoS traffic class is defined on '$ComputerName', so the ETS bandwidth reservation required by the Network ATC intent contract is not in effect."
             }
             else {
                 $problems = [System.Collections.Generic.List[string]]::new()
@@ -535,7 +535,7 @@ try {
             }
             if ($userDefined.Count -lt $ExpectedTrafficClassCount) {
                 $state = 'Warning'
-                $detail = "'$ComputerName' defines $($userDefined.Count) non-default QoS traffic class(es); network intent '$IntentName' expects at least $ExpectedTrafficClassCount."
+                $detail = "'$ComputerName' defines $($userDefined.Count) non-default QoS traffic class(es); the Network ATC intent contract expects at least $ExpectedTrafficClassCount."
             }
             elseif ($totalBandwidth -gt 100) {
                 $state = 'Critical'

@@ -14,7 +14,7 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.3.0.0
+## Current release: 1.4.0.0
 
 All 13 product Management Packs are sealed with the permanent public key token
 `54d0fb1159995c86`, verified by Microsoft VSAE, strong-name checked, and covered by the published
@@ -24,7 +24,12 @@ deterministic bundles: 162 unit monitors, 96 dependency roll-ups, 80 rules, 21 d
 Failover Clustering, CSV, Storage Spaces Direct, SAN (Fibre Channel, iSCSI, MPIO), SMB/SOFS,
 Network ATC, physical networking, SDN host binding, VMM and Pure Storage.
 
-`1.3.0.0` supersedes `1.2.0.0`: cluster-wide facts (CSV state, quorum, node, network and role
+`1.4.0.0` supersedes `1.3.0.0`: host-wide facts (iSCSI/MPIO event counts, Network ATC ETS and QoS
+policy) are evaluated once per host instead of once per session, LUN or intent; the Physical Network
+link monitors watch only vSwitch-uplink and intent adapters by default; and the File Services link to
+Microsoft's SMB service objects is an opt-in discovery, so a NAS-backed deployment no longer loses
+its whole File Services topology to an unresolvable host reference.
+`1.3.0.0` superseded `1.2.0.0`: cluster-wide facts (CSV state, quorum, node, network and role
 state) are now evaluated once per cluster on a cluster-hosted role instead of once per node, and the
 four original storage availability monitors plus the inert VLAN-mismatch monitor ship disabled as
 superseded. The [`1.2.0.0`](/downloads/hyper-v-private-cloud/1.2.0.0/release-assets.json) and
@@ -37,7 +42,7 @@ The full pack review recorded in
 runtime defects that stopped every `1.0.0.0` probe and discovery script before its first statement.
 That release could never have monitored a real host. Its files stay under
 [`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json) as release evidence only.
-If it was imported, upgrade in place to `1.3.0.0`: every element ID is preserved, so overrides carry
+If it was imported, upgrade in place to `1.4.0.0`: every element ID is preserved, so overrides carry
 forward.
 :::
 
@@ -67,7 +72,7 @@ The version line restarts at `1.0.0.0` because this is a new pack identity with 
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.3.0.0`](/downloads/hyper-v-private-cloud/1.3.0.0/release-assets.json). The `latest` directory
+[`1.4.0.0`](/downloads/hyper-v-private-cloud/1.4.0.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
 
 The superseded [`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json) assets are

@@ -28,10 +28,10 @@ superseded.
 | Capability.NetworkATC | 16 | 4 | 0 | 1 | 7 |
 | Capability.SDN (host side only) | 15 (1 disabled) | 15 | 0 | 1 | 16 |
 | Capability.VMM | 13 | 10 | 6 | 3 | 20 |
-| Capability.FileServices (SMB / SOFS) | 12 | 3 | 9 | 1 | 7 |
+| Capability.FileServices (SMB / SOFS) | 12 | 3 | 9 | 2 | 7 |
 | Capability.PhysicalNetwork | 9 (1 disabled, no LLDP data) | 2 | 6 | 1 | 8 |
 | Capability.PureStorage | 1 | 4 | 0 | 1 | 11 |
-| **Total** | **162** | **96** | **80** | **21** | **112** |
+| **Total** | **162** | **96** | **80** | **22** | **112** |
 
 The Distributed Application (`HyperVPrivateCloud.Service`, one per cluster or standalone host) has
 seven branches. Each branch rolls up the monitors of its own domain — Storage carries VM virtual-disk
@@ -50,6 +50,12 @@ failures), the two CSV capacity rules and the relationship discovery target
 workflows run on the node that owns the core group and fail over with it. Only the node-local CSV
 latency and queue-depth monitors stay on the per-host role. This needs agent proxy on every cluster
 node, as Microsoft's Cluster pack already does.
+
+Host-wide facts are evaluated **once per host**: the storage iSCSI/MPIO event-count monitors and the
+Network ATC ETS/QoS monitors target the host role (one probe run, one alert), the Physical Network
+link monitors watch only vSwitch-uplink and intent adapters by default, and the File Services link
+to Microsoft's SMB service objects is an opt-in discovery (`MicrosoftSmbLink`, disabled by default)
+because it requires every SMB file server to be SCOM-managed.
 
 ### Operator tasks
 

@@ -100,12 +100,25 @@ availability aggregate, event views with no event rules, no product-wide alert s
   `FibreChannelPortAvailability`) ship disabled as superseded by the depth monitors, and the inert
   VLAN-mismatch monitor ships disabled with its reason. A 63-task operator catalogue and a probe
   smoke test were added in 1.2.0.0.
+- Closed in 1.4.0.0: **host-wide facts are evaluated once per host.** The three storage event-count
+  monitors (iSCSI connection errors, iSCSI authentication failures, MPIO path failovers) target the
+  host role through a shared `HostEvents` monitor type whose three consumers carry identical data
+  source configuration, so one probe run feeds all three (the events carry no session or disk
+  attribution, so per-instance targeting had raised the same alert once per session and once per
+  LUN). The Network ATC ETS and QoS traffic-class monitors likewise target the host role —
+  `Get-NetQosTrafficClass` is host-global. The Physical Network link-state and link-speed monitors
+  evaluate only external-vSwitch uplinks and Network ATC intent adapters by default (the
+  `IncludeNonUplinkAdapters` override restores the old behaviour), so a dark port on a multi-port
+  NIC no longer holds the host Warning forever. The File Services discovery no longer emits a
+  Microsoft SMB service instance for the file servers it sees — that emission rejected the whole
+  discovery batch (event 10801) whenever the file server's computer object was not in the
+  management group, and created a phantom SMB service where it was; the reference now ships as a
+  separate `MicrosoftSmbLink` discovery, disabled by default, for deployments whose SMB file
+  servers are themselves SCOM-managed.
 - Recorded but deliberately not changed yet (next major): per-instance probe fan-out (one
   `pwsh.exe` per VM / LUN / intent per interval) and thresholds evaluated in-script for the older
-  capability monitors, which together defeat cookdown; host-wide facts still evaluated per instance
-  in the Storage (iSCSI/MPIO event counters) and Network ATC (cluster consistency, ETS/QoS) packs;
-  the File Services discovery creating an SMB service instance for non-agent file servers; and the
-  Pure Storage scripts' dependence on the .NET Framework SCOM SDK under PowerShell 7.
+  capability monitors, which together defeat cookdown; and the Pure Storage scripts' dependence on
+  the .NET Framework SCOM SDK under PowerShell 7.
 - **Lesson recorded for the authoring standard:** a green Pester run and a clean VSAE seal prove the
   XML, not the product. Every probe must be executed at least once under `pwsh -File` with its
   literal `<Arguments>` before a release is cut; a probe smoke test that does this is the next test

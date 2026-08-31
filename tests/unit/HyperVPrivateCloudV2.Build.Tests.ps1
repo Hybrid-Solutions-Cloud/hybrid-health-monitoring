@@ -657,9 +657,17 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $scriptText | Should -Match 'Get-VMHardDiskDrive'
         $scriptText | Should -Match 'Get-SmbMultichannelConnection'
         $scriptText | Should -Match 'Get-HcsStableId'
-        $scriptText | Should -Match 'System\.Net\.Dns.*GetHostEntry'
-        $scriptText | Should -Match 'FileSMB!Microsoft\.Windows\.FileServices\.Service\.SMB\.10\.0'
+        # The Microsoft SMB service reference moved to the opt-in MicrosoftSmbLink discovery: emitting a
+        # hosted foreign instance from the main discovery rejected the whole batch on unresolved hosts.
+        $scriptText | Should -Not -Match 'GetHostEntry'
+        $scriptText | Should -Not -Match 'FileSMB!Microsoft\.Windows\.FileServices\.Service\.SMB\.10\.0'
         $scriptText | Should -Not -Match 'New-Smb|Set-Smb|Remove-Smb|Invoke-RestMethod'
+        $linkDiscovery = $script:FileServicesCapability.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.Capability.FileServices.MicrosoftSmbLink.Discovery']")
+        $linkDiscovery.Enabled | Should -Be 'false'
+        $linkDiscovery.Target | Should -Be 'HCSV2Library!HyperVPrivateCloud.HostRole'
+        $linkText = $linkDiscovery.SelectSingleNode('.//ScriptBody').InnerText
+        $linkText | Should -Match 'System\.Net\.Dns.*GetHostEntry'
+        $linkText | Should -Match 'FileSMB!Microsoft\.Windows\.FileServices\.Service\.SMB\.10\.0'
     }
 
     It 'monitors required SMB connections, continuous availability, and optional RDMA without duplicate Microsoft alerts' {

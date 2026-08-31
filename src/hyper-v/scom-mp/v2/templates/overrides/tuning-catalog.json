@@ -193,11 +193,11 @@
       "targets": [
         { "id": "AdapterSymmetry", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.AdapterSymmetry.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "DcbPfcCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.DcbPfcCompliance.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
-        { "id": "EtsPolicyCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.EtsPolicyCompliance.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
+        { "id": "EtsPolicyCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.EtsPolicyCompliance.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
         { "id": "IntentApplyFailure", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentApplyFailure.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "IntentComplianceDrift", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentComplianceDrift.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "IntentProvisioningDrift", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentProvisioningDrift.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
-        { "id": "QosTrafficClass", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.QosTrafficClass.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
+        { "id": "QosTrafficClass", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.QosTrafficClass.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
         { "id": "RdmaConfigurationDrift", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.RdmaConfigurationDrift.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "RdmaState", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.RdmaState.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "VmSwitchCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.VmSwitchCompliance.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" }
@@ -302,9 +302,16 @@
       ]
     },
     {
+      "id": "Storage.HostEventMonitors", "capability": "Storage", "kind": "Monitor",
+      "targets": [
+        { "id": "IscsiAuthenticationFailure", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiAuthenticationFailure.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "IscsiConnectionErrorRate", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiConnectionErrorRate.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "MultipathFailoverEvent", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathFailoverEvent.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" }
+      ]
+    },
+    {
       "id": "Storage.MultipathMonitors", "capability": "Storage", "kind": "Monitor",
       "targets": [
-        { "id": "MultipathFailoverEvent", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathFailoverEvent.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostAttachment" },
         { "id": "MultipathPathCount", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathPathCount.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostAttachment" },
         { "id": "MultipathPathImbalance", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathPathImbalance.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostAttachment" },
         { "id": "MultipathPathLoss", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathPathLoss.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostAttachment" }
@@ -325,8 +332,6 @@
     {
       "id": "Storage.IscsiMonitors", "capability": "Storage", "kind": "Monitor",
       "targets": [
-        { "id": "IscsiAuthenticationFailure", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiAuthenticationFailure.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.IscsiSession" },
-        { "id": "IscsiConnectionErrorRate", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiConnectionErrorRate.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.IscsiSession" },
         { "id": "IscsiSessionConnectedState", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiSessionConnectedState.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.IscsiSession" },
         { "id": "IscsiTargetSessionCount", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiTargetSessionCount.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.IscsiSession" }
       ]
@@ -560,9 +565,9 @@
     { "id": "Storage.LogicalUnit.CapacityUsedCritical", "targetSet": "Storage.LogicalUnitMonitors", "type": "Configuration", "parameter": "CapacityUsedCriticalPercent", "values": { "Lab": 95, "Standard": 90, "Strict": 85 } },
     { "id": "Storage.Multipath.MinimumPathCount", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "MinimumPathCount", "values": { "Lab": 1, "Standard": 2, "Strict": 2 } },
     { "id": "Storage.Multipath.CriticalPathCount", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "CriticalPathCount", "values": { "Lab": 1, "Standard": 1, "Strict": 1 } },
-    { "id": "Storage.Multipath.FailoverEventWarning", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "FailoverEventWarningCount", "values": { "Lab": 5, "Standard": 1, "Strict": 1 } },
-    { "id": "Storage.Multipath.FailoverEventCritical", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "FailoverEventCriticalCount", "values": { "Lab": 20, "Standard": 5, "Strict": 3 } },
-    { "id": "Storage.Multipath.FailoverEventWindow", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "FailoverEventWindowMinutes", "values": { "Lab": 15, "Standard": 60, "Strict": 120 } },
+    { "id": "Storage.Multipath.FailoverEventWarning", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "FailoverEventWarningCount", "values": { "Lab": 5, "Standard": 1, "Strict": 1 } },
+    { "id": "Storage.Multipath.FailoverEventCritical", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "FailoverEventCriticalCount", "values": { "Lab": 20, "Standard": 5, "Strict": 3 } },
+    { "id": "Storage.Multipath.FailoverEventWindow", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "FailoverEventWindowMinutes", "values": { "Lab": 15, "Standard": 60, "Strict": 120 } },
     { "id": "Storage.Multipath.PathImbalanceWarning", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "PathImbalancePercentWarning", "values": { "Lab": 60, "Standard": 40, "Strict": 30 } },
     { "id": "Storage.Multipath.PathImbalanceCritical", "targetSet": "Storage.MultipathMonitors", "type": "Configuration", "parameter": "PathImbalancePercentCritical", "values": { "Lab": 85, "Standard": 70, "Strict": 55 } },
     { "id": "Storage.FibreChannel.MinimumLinkSpeed", "targetSet": "Storage.FibreChannelPortMonitors", "type": "Configuration", "parameter": "MinimumLinkSpeedGbps", "values": { "Lab": 2, "Standard": 8, "Strict": 8 } },
@@ -575,10 +580,10 @@
     { "id": "Storage.FibreChannel.LossOfSyncRateWarning", "targetSet": "Storage.FibreChannelPortMonitors", "type": "Configuration", "parameter": "LossOfSyncRatePerHourWarning", "values": { "Lab": 5, "Standard": 1, "Strict": 1 } },
     { "id": "Storage.FibreChannel.LossOfSyncRateCritical", "targetSet": "Storage.FibreChannelPortMonitors", "type": "Configuration", "parameter": "LossOfSyncRatePerHourCritical", "values": { "Lab": 20, "Standard": 5, "Strict": 2 } },
     { "id": "Storage.Iscsi.MinimumSessionsPerTarget", "targetSet": "Storage.IscsiMonitors", "type": "Configuration", "parameter": "MinimumSessionsPerTarget", "values": { "Lab": 1, "Standard": 2, "Strict": 2 } },
-    { "id": "Storage.Iscsi.AuthFailureWarning", "targetSet": "Storage.IscsiMonitors", "type": "Configuration", "parameter": "IscsiAuthFailureWarningCount", "values": { "Lab": 5, "Standard": 1, "Strict": 1 } },
-    { "id": "Storage.Iscsi.AuthFailureWindow", "targetSet": "Storage.IscsiMonitors", "type": "Configuration", "parameter": "IscsiAuthFailureWindowMinutes", "values": { "Lab": 15, "Standard": 60, "Strict": 120 } },
-    { "id": "Storage.Iscsi.ConnectionErrorRateWarning", "targetSet": "Storage.IscsiMonitors", "type": "Configuration", "parameter": "IscsiConnectionErrorRatePerHourWarning", "values": { "Lab": 12, "Standard": 3, "Strict": 1 } },
-    { "id": "Storage.Iscsi.ConnectionErrorRateCritical", "targetSet": "Storage.IscsiMonitors", "type": "Configuration", "parameter": "IscsiConnectionErrorRatePerHourCritical", "values": { "Lab": 48, "Standard": 12, "Strict": 6 } },
+    { "id": "Storage.Iscsi.AuthFailureWarning", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "IscsiAuthFailureWarningCount", "values": { "Lab": 5, "Standard": 1, "Strict": 1 } },
+    { "id": "Storage.Iscsi.AuthFailureWindow", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "IscsiAuthFailureWindowMinutes", "values": { "Lab": 15, "Standard": 60, "Strict": 120 } },
+    { "id": "Storage.Iscsi.ConnectionErrorRateWarning", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "IscsiConnectionErrorRatePerHourWarning", "values": { "Lab": 12, "Standard": 3, "Strict": 1 } },
+    { "id": "Storage.Iscsi.ConnectionErrorRateCritical", "targetSet": "Storage.HostEventMonitors", "type": "Configuration", "parameter": "IscsiConnectionErrorRatePerHourCritical", "values": { "Lab": 48, "Standard": 12, "Strict": 6 } },
     { "id": "VMM.Discovery.Interval", "targetSet": "VMM.Discovery", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 900, "Standard": 14400, "Strict": 3600 } },
     { "id": "VMM.Monitor.Interval", "targetSet": "VMM.Monitors", "type": "Configuration", "parameter": "IntervalSeconds", "values": { "Lab": 60, "Standard": 300, "Strict": 180 } },
     { "id": "VMM.Monitor.Lookback", "targetSet": "VMM.Monitors", "type": "Configuration", "parameter": "JobLookbackHours", "values": { "Lab": 4, "Standard": 24, "Strict": 48 } },

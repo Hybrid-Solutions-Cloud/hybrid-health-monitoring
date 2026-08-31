@@ -91,15 +91,11 @@ try {
                 $script:DiscoveryData.AddInstance($share)
                 Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.StorageContainsSmbShare']$" $storage $share
                 Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostRoleUsesSmbShare']$" $hostRole $share
-                try {
-                    $serverPrincipal = ([System.Net.Dns]::GetHostEntry($identity.Server)).HostName.ToLowerInvariant()
-                    $microsoftSmb = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='FileSMB!Microsoft.Windows.FileServices.Service.SMB.10.0']$")
-                    Add-HcsProperty $microsoftSmb "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $serverPrincipal
-                    Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService']$" $share $microsoftSmb
-                }
-                catch {
-                    $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Discovery.ps1', 8703, 2, "Could not resolve SMB server '$($identity.Server)' to a Microsoft File Services object: $($_.Exception.Message)")
-                }
+                # The Microsoft SMB service reference moved to the opt-in MicrosoftSmbLink discovery
+                # (disabled by default). Emitting a hosted Service.SMB.10.0 instance here rejected the
+                # whole discovery batch (event 10801) whenever the file server's Windows.Computer was
+                # not in the management group, and created a phantom SMB service where Microsoft's own
+                # SMB discovery had not run. See ADR 0053.
                 $shares[$identity.ShareId] = $share
 
                 foreach ($channel in $channels | Where-Object { ([string]$_.ServerName).TrimStart('\\').Equals($identity.Server, [StringComparison]::OrdinalIgnoreCase) }) {

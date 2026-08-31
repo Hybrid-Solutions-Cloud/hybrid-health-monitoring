@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 param(
-    [ValidateSet('Attachment', 'IscsiSession', 'FibreChannelPort', 'FibreChannelDetail', 'IscsiDetail', 'MultipathDetail', 'LogicalUnitDetail')][string]$ObjectKind,
+    [ValidateSet('Attachment', 'IscsiSession', 'FibreChannelPort', 'FibreChannelDetail', 'IscsiDetail', 'MultipathDetail', 'LogicalUnitDetail', 'HostEventDetail')][string]$ObjectKind,
     [string]$Identity,
     [int]$DiskNumber,
     [string]$StorageId,
@@ -605,6 +605,48 @@ try {
                         $failoverStateDetail = "No MPIO path failover events were logged in the last $FailoverEventWindowMinutes minute(s)."
                     }
                 }
+            }
+        }
+        'HostEventDetail' {
+            # Host-wide iScsiPrt and mpio event counts, evaluated once per host. The System-log
+            # providers do not attribute these events to a session or a disk, so per-instance
+            # evaluation raised the same alert once per iSCSI session and once per LUN (ADR 0053).
+            $errorCount = Get-HcsEventCount -LogName 'System' -ProviderName 'iScsiPrt' -EventId @(7, 9, 20, 27, 39, 40, 63, 70) -WindowMinutes 60
+            if ($errorCount -ge $IscsiConnectionErrorRatePerHourCritical) {
+                $connectionErrorState = 'Critical'
+                $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged on this host in the last hour, at or above the critical threshold of $IscsiConnectionErrorRatePerHourCritical per hour."
+            }
+            elseif ($errorCount -ge $IscsiConnectionErrorRatePerHourWarning) {
+                $connectionErrorState = 'Warning'
+                $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged on this host in the last hour, at or above the warning threshold of $IscsiConnectionErrorRatePerHourWarning per hour."
+            }
+            else {
+                $connectionErrorState = 'Good'
+                $connectionErrorStateDetail = "$errorCount iSCSI connection error or retry event(s) were logged on this host in the last hour, below the warning threshold of $IscsiConnectionErrorRatePerHourWarning per hour."
+            }
+
+            $authFailures = Get-HcsEventCount -LogName 'System' -ProviderName 'iScsiPrt' -EventId @(30, 31, 32) -WindowMinutes $IscsiAuthFailureWindowMinutes
+            if ($authFailures -ge $IscsiAuthFailureWarningCount) {
+                $authenticationState = 'Critical'
+                $authenticationStateDetail = "$authFailures iSCSI authentication failure event(s) were logged on this host in the last $IscsiAuthFailureWindowMinutes minute(s), at or above the threshold of $IscsiAuthFailureWarningCount. Verify CHAP secrets on the initiator and the target."
+            }
+            else {
+                $authenticationState = 'Good'
+                $authenticationStateDetail = "No iSCSI authentication failures were logged on this host in the last $IscsiAuthFailureWindowMinutes minute(s)."
+            }
+
+            $failovers = Get-HcsEventCount -LogName 'System' -ProviderName 'mpio' -EventId @(16, 17, 32, 33) -WindowMinutes $FailoverEventWindowMinutes
+            if ($failovers -ge $FailoverEventCriticalCount) {
+                $failoverState = 'Critical'
+                $failoverStateDetail = "$failovers MPIO path failover event(s) were logged on this host in the last $FailoverEventWindowMinutes minute(s), at or above the critical threshold of $FailoverEventCriticalCount. The fabric is unstable."
+            }
+            elseif ($failovers -ge $FailoverEventWarningCount) {
+                $failoverState = 'Warning'
+                $failoverStateDetail = "$failovers MPIO path failover event(s) were logged on this host in the last $FailoverEventWindowMinutes minute(s), at or above the warning threshold of $FailoverEventWarningCount."
+            }
+            else {
+                $failoverState = 'Good'
+                $failoverStateDetail = "No MPIO path failover events were logged on this host in the last $FailoverEventWindowMinutes minute(s)."
             }
         }
         'LogicalUnitDetail' {

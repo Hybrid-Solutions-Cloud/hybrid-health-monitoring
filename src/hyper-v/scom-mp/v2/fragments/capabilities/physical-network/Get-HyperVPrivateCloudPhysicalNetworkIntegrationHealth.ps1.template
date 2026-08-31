@@ -12,6 +12,7 @@ param(
     [int]$CriticalUtilizationPercent = 90,
     [string]$RequireLldpCorrelation = 'false',
     [string]$RequireVlanMatch = 'false',
+    [string]$IncludeNonUplinkAdapters = 'false',
     [int]$SampleSeconds = 10
 )
 
@@ -23,6 +24,7 @@ $WarningPreference = 'SilentlyContinue'
 # the data-source Arguments pass. Declare them as strings and coerce once here; empty means false.
 [bool]$RequireLldpCorrelation = ([string]$RequireLldpCorrelation) -match '^(?i)(true|1|yes)$'
 [bool]$RequireVlanMatch = ([string]$RequireVlanMatch) -match '^(?i)(true|1|yes)$'
+[bool]$IncludeNonUplinkAdapters = ([string]$IncludeNonUplinkAdapters) -match '^(?i)(true|1|yes)$'
 
 function Get-HcsPropertyValue {
     param([AllowNull()]$InputObject, [Parameter(Mandatory)][string[]]$Name)
@@ -166,6 +168,31 @@ function Get-HcsUplinkAdapterName {
     return @($names)
 }
 
+function Get-HcsMonitoredAdapterName {
+    # Physical adapters that actually carry Hyper-V traffic: external vSwitch uplinks plus adapters
+    # participating in a Network ATC intent. Unused ports on multi-port NICs are excluded so a
+    # dark port does not hold the host Warning forever (ADR 0053).
+    $names = [System.Collections.Generic.List[string]]::new()
+    foreach ($name in @(Get-HcsUplinkAdapterName)) {
+        if (-not [string]::IsNullOrWhiteSpace($name) -and -not $names.Contains($name)) { $names.Add($name) }
+    }
+    if (Test-HcsCommand -Name 'Get-NetIntent') {
+        try {
+            foreach ($intent in @(Get-NetIntent -ErrorAction Stop)) {
+                $value = Get-HcsPropertyValue -InputObject $intent -Name @('NetAdapterNamesAsList', 'NetAdapterNames', 'AdapterNames')
+                foreach ($entry in @($value)) {
+                    foreach ($part in ([string]$entry -split '[,;]')) {
+                        $trimmed = $part.Trim()
+                        if ($trimmed -and -not $names.Contains($trimmed)) { $names.Add($trimmed) }
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+    return @($names)
+}
+
 $api = New-Object -ComObject 'MOM.ScriptAPI'
 
 if ($Mode -eq 'Performance') {
@@ -273,10 +300,14 @@ try {
         }
     }
     elseif ($Mode -eq 'AdapterLink') {
-        $adapters = Get-HcsPhysicalAdapter
+        $adapters = @(Get-HcsPhysicalAdapter)
+        if (-not $IncludeNonUplinkAdapters) {
+            $monitored = @(Get-HcsMonitoredAdapterName)
+            $adapters = if ($monitored.Count -eq 0) { @() } else { @($adapters | Where-Object { $monitored -contains [string]$_.Name }) }
+        }
         if ($adapters.Count -eq 0) {
             $state = 'NotApplicable'
-            $detail = "No physical network adapter is exposed on '$ComputerName'."
+            $detail = "No uplink or intent-bound physical adapter is present on '$ComputerName'. Set the IncludeNonUplinkAdapters override to evaluate every physical adapter."
         }
         else {
             $down = [System.Collections.Generic.List[string]]::new()
@@ -306,9 +337,13 @@ try {
     }
     elseif ($Mode -eq 'AdapterSpeed') {
         $adapters = @(Get-HcsPhysicalAdapter | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Up' })
+        if (-not $IncludeNonUplinkAdapters) {
+            $monitored = @(Get-HcsMonitoredAdapterName)
+            $adapters = if ($monitored.Count -eq 0) { @() } else { @($adapters | Where-Object { $monitored -contains [string]$_.Name }) }
+        }
         if ($adapters.Count -eq 0) {
             $state = 'NotApplicable'
-            $detail = "No physical network adapter on '$ComputerName' is Up, so link speed is not evaluated."
+            $detail = "No uplink or intent-bound physical adapter on '$ComputerName' is Up, so link speed is not evaluated. Set the IncludeNonUplinkAdapters override to evaluate every physical adapter."
         }
         elseif ($MinimumLinkSpeedMbps -le 0) {
             $state = 'NotApplicable'

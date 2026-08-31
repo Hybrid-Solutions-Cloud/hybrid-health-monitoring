@@ -748,6 +748,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $capabilityDirectory = Split-Path -Parent $sourcePath
         $scriptTokens = [ordered]@{
             FILE_SERVICES_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudFileServices.ps1.template'
+            FILE_SERVICES_SMB_LINK_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudFileServicesSmbLink.ps1.template'
             FILE_SERVICES_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudFileServicesHealth.ps1.template'
             FILE_SERVICES_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudFileServicesTask.ps1.template'
         }

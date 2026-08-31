@@ -66,11 +66,11 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 
 ### Added
 
-* Publish Hyper-V Private Cloud Monitoring `1.3.0.0`: 13 permanently sealed MPs (token
+* Publish Hyper-V Private Cloud Monitoring `1.4.0.0`: 13 permanently sealed MPs (token
   `54d0fb1159995c86`), 66 public override packs, 14 bundles, manifests and SHA-256 checksums under
-  `docs/public/downloads/hyper-v-private-cloud/1.3.0.0/` and `latest/`: 162 unit monitors, 96
-  dependency roll-ups, 80 rules, 21 discoveries, 112 views, 63 agent tasks, 4 console tasks and
-  234 knowledge articles. `1.2.0.0` and `1.1.0.0` (same day, before the cluster role and the task
+  `docs/public/downloads/hyper-v-private-cloud/1.4.0.0/` and `latest/`: 162 unit monitors, 96
+  dependency roll-ups, 80 rules, 22 discoveries, 112 views, 63 agent tasks, 4 console tasks and
+  234 knowledge articles. `1.3.0.0`, `1.2.0.0` and `1.1.0.0` (same day, before the cluster role and the task
   catalogue respectively) and `1.0.0.0` (non-functional, ADR 0053) are retained as evidence only;
   `1.0.0.0` is marked not for deployment.
 * Operator task catalogue: 63 agent tasks across the Monitoring, Cluster, S2D, Storage, File
@@ -89,6 +89,19 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 
 ### Changed
 
+* Host-wide facts are evaluated once per host. The storage iSCSI connection-error, iSCSI
+  authentication-failure and MPIO path-failover monitors target the host role through a shared
+  `HostEvents` monitor type with cookdown-identical configuration (one probe run feeds all three);
+  the Network ATC ETS and QoS traffic-class monitors target the host role (`Get-NetQosTrafficClass`
+  is host-global). Previously each iSCSI session, each LUN and each intent raised the same alert.
+* Physical Network link-state and link-speed monitors evaluate only external-vSwitch uplinks and
+  Network ATC intent adapters by default; the new `IncludeNonUplinkAdapters` override restores the
+  old behaviour. A dark port on a multi-port NIC no longer holds the host Warning forever.
+* The File Services discovery no longer emits a Microsoft SMB service instance for the file servers
+  it sees — that emission rejected the whole discovery batch (event 10801) when the file server's
+  computer object was not in the management group, and created a phantom SMB service where it was.
+  The reference ships as a separate `MicrosoftSmbLink` discovery, disabled by default, for
+  deployments whose SMB file servers are SCOM-managed.
 * Cluster-wide facts are evaluated once per cluster. The 13 cluster-scoped monitors (CSV state,
   free space and redirected access, quorum, node, network and group state), the two CSV capacity
   rules and the cluster relationship discovery now target
