@@ -255,6 +255,8 @@ const decisionsSidebar = [
       { text: '0047 — Explicit PowerShell 7 execution', link: '/design/decisions/0047-hyper-v-v2-explicit-powershell-7-execution' },
       { text: '0048 — Governed sealing and release assets', link: '/design/decisions/0048-hyper-v-v2-governed-sealing-and-release-assets' },
       { text: '0050 — Prerequisite acquisition and preflight', link: '/design/decisions/0050-prerequisite-acquisition-and-preflight' },
+      { text: '0051 — Dependency currency and platform validation', link: '/design/decisions/0051-dependency-currency-and-platform-validation' },
+      { text: '0052 — Pure Storage monitoring strategy', link: '/design/decisions/0052-pure-storage-monitoring-strategy' },
     ],
   },
   {

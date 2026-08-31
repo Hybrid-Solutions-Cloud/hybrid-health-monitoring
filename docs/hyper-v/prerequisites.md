@@ -79,7 +79,6 @@ Versions shown are the **minimum** each pack hard-references. Importing a newer 
 | `Microsoft.SystemCenter.VirtualMachineManager.Monitoring` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://learn.microsoft.com/en-us/system-center/vmm/) | VMM |
 | `Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library` | 10.25.1200.0 | `31bf3856ad364e35` | [Official media](https://learn.microsoft.com/en-us/system-center/vmm/) | VMM |
 | `Microsoft.Windows.10.SDNMonitoring` | 10.0.0.2 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=54300) | SDN |
-| `Microsoft.Windows.Cluster.Library` | 6.0.6278.0 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=54701) | Cluster |
 | `Microsoft.Windows.Cluster.Management.Library` | 10.1.0.0 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=54701) | Cluster |
 | `Microsoft.Windows.FileServices` | 10.1.0.3 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=57594) | FileServices |
 | `Microsoft.Windows.FileServices.SMB.2016` | 10.1.0.4 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=57594) | FileServices |
@@ -143,7 +142,7 @@ external pack that specific import was waiting on.
 | 2 | `HyperVPrivateCloud.Discovery` | _none beyond the SCOM base packs_ |
 | 3 | `HyperVPrivateCloud.Monitoring` | _none beyond the SCOM base packs_ |
 | 4 | `HyperVPrivateCloud.Presentation` | _none beyond the SCOM base packs_ |
-| 5 | `HyperVPrivateCloud.Capability.Cluster` | `Microsoft.Windows.Cluster.Library` 6.0.6278.0<br>`Microsoft.Windows.Cluster.Management.Library` 10.1.0.0<br>`Microsoft.Windows.Server.ClusterSharedVolumeMonitoring` 10.1.2.2 |
+| 5 | `HyperVPrivateCloud.Capability.Cluster` | `Microsoft.Windows.Cluster.Management.Library` 10.1.0.0<br>`Microsoft.Windows.Server.ClusterSharedVolumeMonitoring` 10.1.2.2 |
 | 6 | `HyperVPrivateCloud.Capability.FileServices` | `Microsoft.Windows.FileServices` 10.1.0.3<br>`Microsoft.Windows.FileServices.SMB.2016` 10.1.0.4 |
 | 7 | `HyperVPrivateCloud.Capability.NetworkATC` | _none beyond the SCOM base packs_ |
 | 8 | `HyperVPrivateCloud.Capability.PhysicalNetwork` | _none beyond the SCOM base packs_ |

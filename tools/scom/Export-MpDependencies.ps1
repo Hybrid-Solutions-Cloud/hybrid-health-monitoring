@@ -29,21 +29,69 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
-# Management packs present in a default SCOM management group. An operator never downloads these,
-# so they are reported as satisfied rather than as prerequisites to obtain.
-$ShipsWithScom = @(
-    'System.Library'
-    'System.Health.Library'
-    'System.Performance.Library'
-    'System.NetworkManagement.Library'
-    'System.Snmp.Library'
-    'System.ApplicationLog.Library'
-    'Microsoft.Windows.Library'
-    'Microsoft.SystemCenter.Library'
+# Management packs present in a default SCOM management group. An operator never downloads these, so
+# they are reported as satisfied rather than as prerequisites to obtain.
+#
+# Preferred source is the VSAE reference folder, which IS the set of packs that ship with SCOM — the
+# authoritative answer rather than a guess. The literal list below is the fallback for machines
+# without VSAE, and is the OM2022 folder's contents.
+#
+# This previously omitted Microsoft.Windows.Cluster.Library, which caused the prerequisites page to
+# tell operators to download a pack that already ships with SCOM.
+$VsaeReferenceRoot = 'C:\Program Files (x86)\System Center Visual Studio 2022 Authoring Extensions\References'
+
+$ShipsWithScomFallback = @(
     'Microsoft.SystemCenter.DataWarehouse.Library'
-    'Microsoft.SystemCenter.ServiceDesigner.Library'
+    'Microsoft.SystemCenter.DataWarehouse.Report.Library'
+    'Microsoft.SystemCenter.DataWarehouse.Reports'
+    'Microsoft.SystemCenter.DataWarehouse.ServiceLevel.Report.Library'
+    'Microsoft.SystemCenter.Image.Library'
     'Microsoft.SystemCenter.InstanceGroup.Library'
+    'Microsoft.SystemCenter.Library'
+    'Microsoft.SystemCenter.NTService.Library'
+    'Microsoft.SystemCenter.NetworkDevice.Library'
+    'Microsoft.SystemCenter.OperationsManager.Library'
+    'Microsoft.SystemCenter.ProcessMonitoring.Library'
+    'Microsoft.SystemCenter.ServiceDesigner.Library'
+    'Microsoft.SystemCenter.SyntheticTransactions.Library'
+    'Microsoft.SystemCenter.Visualization.Configuration.Library'
+    'Microsoft.SystemCenter.Visualization.Library'
+    'Microsoft.SystemCenter.Visualization.Network.Library'
+    'Microsoft.SystemCenter.WSManagement.Library'
+    'Microsoft.SystemCenter.WebApplication.Library'
+    'Microsoft.SystemCenter.WorkflowFoundation.Library'
+    'Microsoft.Windows.Cluster.Library'
+    'Microsoft.Windows.Image.Library'
+    'Microsoft.Windows.Library'
+    'Microsoft.Windows.Server.Library'
+    'System.AdminItem.Library'
+    'System.ApplicationLog.Library'
+    'System.Hardware.Library'
+    'System.Health.Library'
+    'System.Image.Library'
+    'System.Library'
+    'System.NetworkManagement.Library'
+    'System.Performance.Library'
+    'System.Snmp.Library'
+    'System.Software.Library'
+    'System.Virtualization.Library'
 )
+
+function Get-ShipsWithScomSet {
+    # Union every OMxxxx folder VSAE provides, so a reference satisfied by any supported SCOM
+    # version is recognised. Falls back to the literal list when VSAE is absent.
+    if (-not (Test-Path -LiteralPath $VsaeReferenceRoot)) { return $ShipsWithScomFallback }
+
+    $found = Get-ChildItem -LiteralPath $VsaeReferenceRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'OM*' } |
+        ForEach-Object { Get-ChildItem -LiteralPath $_.FullName -Filter '*.mp' -File -ErrorAction SilentlyContinue } |
+        ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_.Name) }
+
+    if (-not $found) { return $ShipsWithScomFallback }
+    return @($found | Sort-Object -Unique)
+}
+
+$ShipsWithScom = Get-ShipsWithScomSet
 
 $MicrosoftToken = '31bf3856ad364e35'
 

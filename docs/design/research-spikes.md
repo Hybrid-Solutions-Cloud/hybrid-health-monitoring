@@ -10,6 +10,9 @@ when it merely collects links.
 |---|---|---|
 | Independent SCOM packaging contract | Both SCOM products | Separate artifact/namespace ownership, no-dependency reference graphs, signing, coexistence, upgrade, and removal evidence |
 | Prerequisite redistribution rights and acquisition | Both SCOM products | Actual licence terms for every referenced Microsoft and vendor Management Pack, evidence of what comparable SCOM vendors ship, supported acquisition and preflight patterns, and the operator cost of the current link-only stance |
+| SDN monitoring on Windows Server 2025 | Hyper-V / SCOM | Lab evidence that `Microsoft.Windows.10.SDNMonitoring` discovers and monitors a Failover Clustering-hosted Network Controller, or a decision to constrain or withdraw the SDN capability |
+| Declared reference minimum validation | Both SCOM products | The oldest Microsoft and vendor Management Pack version each capability is validated against, with lab evidence, replacing minimums inherited from the build |
+| Pure Storage monitoring replacement | Hyper-V / SCOM | Vendor support position on SCOM 2025, comparison of the native Purity OpenMetrics endpoint against a first-party REST 2.x capability pack, and a sized authoring estimate |
 | Hyper-V SCOM monitoring catalog and DA refinement | Hyper-V / SCOM | Complete raw signal inventory, prior-MP research, SCOM workflow mapping, DA boundary/membership/rollup inputs, threshold evidence, lab validation, curated defaults, and successor ADR inputs |
 | Azure Local SCOM local monitoring catalog | Azure Local / SCOM | Local API, Health Service, cluster, storage, Network ATC, registration, lifecycle, event, and performance inventory; curation and threshold evidence |
 | Azure Local Health Models API and signal revalidation | Azure Local / Azure Monitor | Current API versions, preview limits, identity and RBAC contract, signal-source delta report |
@@ -34,7 +37,59 @@ flowchart LR
     S4 --> Arc[Go / defer / no-go<br/>ADR 0023]
     Pkg --> Redist[Prerequisite redistribution<br/>and acquisition spike]
     Redist --> Pre[Acquisition and preflight<br/>ADR 0050 proposed]
+    Redist --> Cur[Dependency currency<br/>ADR 0051 proposed]
+    Cur --> SDNv[SDN on WS2025 spike]
+    Cur --> Minv[Reference minimum spike]
+    Cur --> PureR[Pure replacement spike]
+    PureR --> PureA[Pure strategy<br/>ADR 0052 proposed]
 ```
+
+## Dependency currency and supported-platform validation
+
+The audit behind [ADR 0051](decisions/0051-dependency-currency-and-platform-validation.md) found that
+the referenced Microsoft packs are **current, not stale** — four were re-released in May 2025, six
+months after Windows Server 2025 and SCOM 2025 became generally available, and each explicitly states
+support for both. "2016 and above" is version-agnostic naming, not a support ceiling. Three follow-on
+spikes remain.
+
+### SDN monitoring on Windows Server 2025
+
+`Microsoft.Windows.10.SDNMonitoring` `10.0.0.2` is the only referenced pack whose download page does
+**not** enumerate SCOM 2025 — it states only "SCOM 2016 and higher". Independently, Windows Server
+2025 moved the Network Controller from Service Fabric hosted in virtual machines to a Failover
+Clustering service on the host, and the pack's object model still describes the Service Fabric shape.
+
+| # | Question | Evidence that closes it |
+|---|---|---|
+| 1 | Does the pack discover a Failover Clustering-hosted Network Controller? | Lab: Windows Server 2025 SDN stamp, FC-hosted Network Controller, SCOM 2025. Discovery results for `NetworkControllerClusterNode`, `Stamp`, `Gateway`, `LoadBalancerMux`, `VirtualNetwork`. |
+| 2 | Do the 23 classes we consume all populate? | Instance counts per class against a known stamp topology. |
+| 3 | Does health roll up correctly? | Fault injection on a Network Controller node and a Mux; observed state change. |
+| 4 | Is the Run As profile contract unchanged on 2025? | `Microsoft.Windows.10.SDNMonitoring.NCRunAsProfile` configured against a 2025 Network Controller with REST certificate trust. |
+| 5 | If it does not work, what is the fallback? | Decide: constrain the capability to Service Fabric deployments, or withdraw it. |
+
+### Declared reference minimum validation
+
+Declared minimums were inherited from whatever we happened to build against, not established by test.
+Two are already known to be lower than the sealed-against version — `Microsoft.Storage.Library`
+`1.0.0.0` against `1.0.47.4`, and `Microsoft.Windows.FileServices` `10.1.0.3` against `10.1.0.4`.
+
+| # | Question | Evidence that closes it |
+|---|---|---|
+| 1 | What is the oldest version of each referenced pack the capability actually works against? | Import and functional test per capability against successively older publisher packages. |
+| 2 | What are the real VMM management pack versions? | Read them from `…\Virtual Machine Manager\ManagementPacks` on System Center 2025 VMM media. Microsoft does not publish these. Our declaration is inconsistent — `PRO.V2.Library` at `10.25.1200.0` is the VMM 2025 GA build, the other three at `11.19.0.3` have no public attestation. |
+| 3 | Which declared references are unused and removable? | Already identified: `Microsoft.Windows.FileServices` in `Capability.FileServices` and `Microsoft.Storage.Library` in `Capability.S2D` are declared and never consumed. Confirm no others, then remove in the next version. |
+
+### Pure Storage monitoring replacement
+
+The vendor pack states support for SCOM 2016, 2019 and 2022 only, and has had no commit since
+2 October 2024. See [ADR 0052](decisions/0052-pure-storage-monitoring-strategy.md).
+
+| # | Question | Evidence that closes it |
+|---|---|---|
+| 1 | Will Pure support SCOM 2025? | A written position from Pure. Escalate — the absence of a "no" is not a "yes". |
+| 2 | Native Purity OpenMetrics endpoint or our own REST 2.x capability pack? | Metric coverage comparison against what the vendor pack exposes today, and against what `Capability.PureStorage` actually consumes: `PureArray`, `PureHost`, `PurePort`, `PureVolume`. |
+| 3 | What would authoring our own cost? | Sized estimate covering discovery model, class hierarchy, monitors, rollup, views, alert knowledge, overrides, and management-server targeting — the last being where the vendor pack is defective. |
+| 4 | Does the everpuredata.com rebrand affect vendor support? | Establish what changed and whether SCOM support survives it. |
 
 ## Prerequisite redistribution rights and acquisition
 

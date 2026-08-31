@@ -84,17 +84,6 @@
         ]
       },
       {
-        "Id": "Microsoft.Windows.Cluster.Library",
-        "Version": "6.0.6278.0",
-        "Token": "31bf3856ad364e35",
-        "Class": "MicrosoftDownload",
-        "Download": "https://www.microsoft.com/en-us/download/details.aspx?id=54701",
-        "OfficialMedia": null,
-        "RequiredBy": [
-          "HyperVPrivateCloud.Capability.Cluster"
-        ]
-      },
-      {
         "Id": "Microsoft.Windows.Cluster.Management.Library",
         "Version": "10.1.0.0",
         "Token": "31bf3856ad364e35",
