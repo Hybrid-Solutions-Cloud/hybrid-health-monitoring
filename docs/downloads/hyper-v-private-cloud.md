@@ -32,18 +32,6 @@ Management Packs are named for the product — `HyperVPrivateCloud.Library`,
 `HyperVPrivateCloud.Capability.Cluster`, and so on. Publisher attribution is carried in the sealed
 pack `Company` and `Copyright` metadata rather than in the pack ID.
 
-::: warning Upgrading from 2.0.0.0 is not an in-place upgrade
-The earlier `2.0.0.0` package used `HybridSolutionsCloud.HyperVPrivateCloud.*` identities. SCOM
-treats a renamed Management Pack as an unrelated pack, so the old packs must be **removed** before
-these are imported — which discards stored overrides and accumulated health state.
-
-Export any customer-owned override Management Packs first, then re-apply them against the new pack
-IDs after importing. Reasoning and detail in
-[ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
-
-The version line starts at `1.0.0.0` because this is a new pack identity with no prior release.
-:::
-
 ## Download now
 
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — all four core MPs, all nine capability MPs, and all 66 public override MPs.
@@ -58,11 +46,6 @@ The immutable versioned files are also retained under
 serves the same exact bytes and changes only when a newer validated version is published.
 Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
 ([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
-
-The superseded [`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json) assets are
-retained unchanged as release evidence. They carry the previous
-`HybridSolutionsCloud.HyperVPrivateCloud.*` identities and should not be imported for a new
-deployment.
 
 ## Deployment-profile bundles
 

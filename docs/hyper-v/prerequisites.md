@@ -27,16 +27,6 @@ then obtain only the prerequisites on that list.
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
 from `docs/public/downloads/hyper-v-private-cloud/1.0.0.0/`.
 
-::: warning Upgrading from 2.0.0.0
-This page documents the **`HyperVPrivateCloud.*`** identities used from `1.0.0.0` onward. The
-superseded `2.0.0.0` package used `HybridSolutionsCloud.HyperVPrivateCloud.*`.
-
-The prerequisite packs, versions, and import order are identical either way — only the HCS pack
-names differ. SCOM treats the two as unrelated management packs, so the old packs must be removed
-before the new ones are imported; export any customer-owned overrides first. See
-[ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
-:::
-
 ::: danger Do not import from a local build directory
 If you build from source, `src/hyper-v/scom-mp/out/development/` may contain a **partial** build.
 A partial build is missing `Presentation`, which all nine capability packs reference — so every
