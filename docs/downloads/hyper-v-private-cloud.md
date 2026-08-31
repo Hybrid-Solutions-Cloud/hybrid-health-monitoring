@@ -8,35 +8,34 @@ description: Sealed SCOM Management Packs, public override packs, manifests, and
 Sealed SCOM Management Packs for Hyper-V private cloud infrastructure — four required core packs,
 nine optional capability packs, and public override starters for 11 deployment profiles.
 
-::: warning A renamed release is being prepared
-The package currently hosted here is `2.0.0.0`, which uses the older
-`HybridSolutionsCloud.HyperVPrivateCloud.*` Management Pack identities.
-
-The next release, `1.0.0.0`, names the packs for the product instead — `HyperVPrivateCloud.*` — with
-publisher attribution carried in the sealed pack metadata rather than in the pack ID. The version
-line restarts because that is a new pack identity with no prior release.
-
-SCOM treats a renamed Management Pack as an unrelated pack, so there is **no in-place upgrade**: the
-old packs must be removed and the new ones imported, which discards stored overrides and accumulated
-health state. Reasoning and migration detail are in
-[ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
-
-If you are deploying for the first time, wait for `1.0.0.0` rather than importing `2.0.0.0` and
-migrating later.
-:::
-
 ::: tip Read the prerequisites first
 The Microsoft and vendor Management Packs each capability requires are **not** redistributed here,
 and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Currently published: 2.0.0.0
+## Current release: 1.0.0.0
 
 All 13 product Management Packs are sealed with the permanent public key token
-`54d0fb1159995c86`. The downloads were built offline from source commit
-`992ebc51d5dd09ee4d8807b9daf379efc97ed8c7`, verified by Microsoft VSAE, strong-name checked, and
-covered by the published SHA-256 manifest.
+`54d0fb1159995c86`, verified by Microsoft VSAE, strong-name checked, and covered by the published
+SHA-256 manifest. The release contains 13 sealed Management Packs, 66 public override packs, and 14
+deterministic bundles.
+
+Management Packs are named for the product — `HyperVPrivateCloud.Library`,
+`HyperVPrivateCloud.Capability.Cluster`, and so on. Publisher attribution is carried in the sealed
+pack `Company` and `Copyright` metadata rather than in the pack ID.
+
+::: warning Upgrading from 2.0.0.0 is not an in-place upgrade
+The earlier `2.0.0.0` package used `HybridSolutionsCloud.HyperVPrivateCloud.*` identities. SCOM
+treats a renamed Management Pack as an unrelated pack, so the old packs must be **removed** before
+these are imported — which discards stored overrides and accumulated health state.
+
+Export any customer-owned override Management Packs first, then re-apply them against the new pack
+IDs after importing. Reasoning and detail in
+[ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
+
+The version line restarts at `1.0.0.0` because this is a new pack identity with no prior release.
+:::
 
 ## Download now
 
@@ -48,8 +47,13 @@ covered by the published SHA-256 manifest.
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json). The `latest` directory
+[`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
+
+The superseded [`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json) assets are
+retained unchanged as release evidence. They carry the previous
+`HybridSolutionsCloud.HyperVPrivateCloud.*` identities and should not be imported for a new
+deployment.
 
 ## Deployment-profile bundles
 

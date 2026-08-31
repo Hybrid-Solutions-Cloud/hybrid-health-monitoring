@@ -27,14 +27,13 @@ then obtain only the prerequisites on that list.
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
 from `docs/public/downloads/hyper-v-private-cloud/2.0.0.0/`.
 
-::: warning Management pack identities changed in 1.0.0.0
-This page documents the **`HyperVPrivateCloud.*`** identities introduced in `1.0.0.0`. The currently
-published release `2.0.0.0` uses the previous `HybridSolutionsCloud.HyperVPrivateCloud.*` identities.
+::: warning Upgrading from 2.0.0.0
+This page documents the **`HyperVPrivateCloud.*`** identities used from `1.0.0.0` onward. The
+superseded `2.0.0.0` package used `HybridSolutionsCloud.HyperVPrivateCloud.*`.
 
-The prerequisite packs, versions, and import order are the same either way — only the HCS pack names
-differ. If you are importing `2.0.0.0`, prefix each pack name below with `HybridSolutionsCloud.`.
-
-SCOM treats the two as unrelated management packs, so there is no in-place upgrade between them. See
+The prerequisite packs, versions, and import order are identical either way — only the HCS pack
+names differ. SCOM treats the two as unrelated management packs, so the old packs must be removed
+before the new ones are imported; export any customer-owned overrides first. See
 [ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
 :::
 
