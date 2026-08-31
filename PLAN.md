@@ -1,11 +1,15 @@
 # Implementation plan — Hybrid Infrastructure Health Monitoring
 
-> Last updated: August 29, 2026
+> Last updated: August 30, 2026
 >
-> Status: Azure Local is under development. Hyper-V Private Cloud Monitoring v2 `2.0.0.0` is
-> permanently sealed and published in the repository with verified direct downloads; the published
-> Hyper-V `0.1` lab preview is superseded. Remaining product work is operator post-installation SCOM
-> certification and version-increased correction of any verified defects.
+> Status: Azure Local is under development. Hyper-V Private Cloud Monitoring `1.0.0.0` is permanently
+> sealed and published in the repository with verified direct downloads, under the product-named
+> `HyperVPrivateCloud.*` identity; the earlier `2.0.0.0` package and the `0.1` lab preview are both
+> superseded. The topology model, Distributed Application, presentation layer, and override system
+> are complete. **The primary remaining product work is monitoring depth** — the shipped release
+> carries 12 unit monitors and 12 rules, where the stated ambition requires monitors and rules in the
+> low hundreds. Secondary work is SDN validation on Windows Server 2025, the Pure Storage
+> replacement, and post-installation SCOM certification.
 > Published roadmap: <https://labs.hybridsolutions.cloud/hybrid-health-monitoring/project/roadmap>
 
 ## Objective
@@ -16,7 +20,73 @@ platform first and monitoring surface second:
 | Platform | SCOM Management Pack | Azure Monitor Health Models |
 |---|---|---|
 | **Azure Local** | Under development; not the active delivery priority | Under development |
-| **Hyper-V** | V2 `2.0.0.0` permanently sealed and repository-published; post-install certification follows | Constrained development through Azure Arc-enabled SCVMM and Arc-enabled Servers |
+| **Hyper-V** | `1.0.0.0` permanently sealed and repository-published; monitoring depth and post-install certification follow | Constrained development through Azure Arc-enabled SCVMM and Arc-enabled Servers |
+
+### Product ambition
+
+The Hyper-V product is a **comprehensive** private-cloud monitoring solution, not a topology map with
+sample monitors. It must cover every material component of a Hyper-V private cloud:
+
+- **Storage** — Storage Spaces Direct, SAN, and **both together** in a hybrid estate; iSCSI **and**
+  Fibre Channel; CSV health through to S2D health; disk through to volume.
+- **Networking** — Network ATC **and** traditional SCVMM-managed networking; SDN where deployed;
+  physical adapter to switch port.
+- **Compute** — hosts, virtual machines, and their resource consumption. We monitor what a VM is
+  pulling in CPU, memory, disk and network.
+- **Everything from the disk up to the operating system.**
+
+**Explicitly out of scope:** the internals of workloads running inside guests. We report what a
+virtual machine consumes; we do not monitor the applications inside it.
+
+Every threshold ships overridable, through the deployment-profile and tuning-tier override system.
+
+### Layering — what we author versus what we reference
+
+Settled by [ADR 0051](docs/design/decisions/0051-dependency-currency-and-platform-validation.md):
+**reference Microsoft's management packs wherever they are current, author only the private-cloud
+layer that no one else provides.** Operating-system-level health comes from the Windows Server
+Operating System pack (`10.1.2.2`, re-released May 2025 with explicit Windows Server 2025 and SCOM
+2025 support). Cluster, CSV, S2D, File Services, SDN and VMM objects likewise come from their
+publishers.
+
+Duplicating that discovery would produce a second class hierarchy for the same physical objects —
+two rollups, two alert sources, doubled agent load — and would forfeit the correlation this product
+exists to provide. Our contribution is the private-cloud model above those objects: membership,
+relationships, cross-domain correlation, rollup, and the thresholds that matter for a Hyper-V private
+cloud specifically.
+
+The exceptions are where no current publisher pack exists: SAN host-side storage and Network ATC are
+already authored entirely by us with no external dependency, and Pure Storage array-side monitoring
+will join them ([ADR 0052](docs/design/decisions/0052-pure-storage-monitoring-strategy.md)).
+
+### The gap between the shipped release and the ambition
+
+Measured from v2 source on 2026-08-30. **Structure is strong; health detection is a skeleton.**
+
+| Element | Authored | Assessment |
+|---|---|---|
+| Classes | 32 | Solid topology model |
+| Relationships | 93 | Rich |
+| Views / folders | 75 / 11 | Complete presentation layer |
+| Discoveries | 12 | Reasonable |
+| Dependency monitors | 35 | Rollup plumbing, not detection |
+| **Unit monitors** | **12** | **The gap** |
+| **Rules** | **12** | All in the Monitoring pack |
+| Aggregate monitors | 0 | None authored |
+
+Unit monitors by capability: SDN 12, VMM 12, Network ATC 8, Cluster 6, Physical Network 3, Storage 3,
+File Services 1, Pure Storage 1, **S2D 1** — the S2D capability is currently a stub with no classes
+and no discoveries of its own.
+
+A product of this ambition needs monitors and rules in the low hundreds once the operating-system
+layer is excluded. The override system — 11 profiles, three tiers, 66 packs — is already built and
+waiting; there is simply little to override yet.
+
+**Closing this gap is the primary remaining work on the Hyper-V product.** The plan for it already
+exists as the phase-one child spike programme under "Research plan": Windows Server, Hyper-V and VMs,
+Failover Clustering, Storage and Replica, Networking, SCOM workflow mapping, threshold engineering,
+lab validation, and catalog curation. Those spikes produce the catalog; the catalog produces the
+monitors.
 
 The product can reuse research, health terminology, authoring knowledge, and non-runtime engineering
 tooling. Azure Local and Hyper-V remain completely independent SCOM runtime products; they do not
@@ -44,11 +114,23 @@ test-sealed binaries.
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | Authored: 11 profiles, three tiers, 66 generated Discovery/Monitoring examples; semantic resolution, drift, cookdown, version separation, invalid-profile, same-MP group, and VSAE gates pass | Governed release packaging emits import-ready XML with the signed product version/token, then representative import/export/upgrade/removal labs pass |
 | Runtime certification | Explicit public command-executor wrappers now launch the PowerShell 7 MSI path; SCOM 2016/2022 library contracts and static workflow tests pass; a read-only management-group collector now produces lane-specific identity, topology, workflow, DA/view, alert, and recent diagnostic-task snapshots plus an unapproved evidence draft | HealthService task evidence and every embedded/capability script run under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
-| Governed release and public download | Complete: version `2.0.0.0` built from commit `992ebc5` with permanent identity `54d0fb1159995c86`; 13 MPs, 66 overrides, 14 bundles, manifests, and checksums independently validated, pushed, and verified through the passing Pages workflow and live SHA-256 comparison | Preserve immutable versioned assets and advance `latest` only through a version-increased validated package |
+| Governed release and public download | Complete: version `1.0.0.0` sealed under the product-named `HyperVPrivateCloud.*` identity with permanent token `54d0fb1159995c86`; 13 MPs, 66 overrides, 14 bundles, manifests, and checksums validated and published | Preserve immutable versioned assets and advance `latest` only through a version-increased validated package |
+| **Monitoring depth** | **Skeleton: 12 unit monitors, 12 rules, 0 aggregate monitors across the whole product** | **A curated catalog of monitors, rules, and thresholds covering every component named under "Product ambition", each overridable, each backed by spike evidence** |
+| Dependency currency | Audited 2026-08-30: five referenced Microsoft packs current and stated for Windows Server 2025 and SCOM 2025; SDN unproven; Pure dead-ended | SDN validated in a Windows Server 2025 lab or the capability constrained; Pure replacement delivered; declared minimums established by test rather than inherited from the build |
 
 Execute the remaining work in this order:
 
-1. After installation, run the representative SCOM topology, fault, recovery, scale, upgrade,
+1. **Close the monitoring-depth gap.** Run the phase-one child spikes to produce the curated
+   catalog, then author the monitors, rules, and thresholds it specifies. This is the difference
+   between a topology map and the product described under "Product ambition", and it is the largest
+   remaining body of work.
+2. Validate the SDN capability against a Windows Server 2025 Failover Clustering-hosted Network
+   Controller, and constrain or withdraw it if it does not discover.
+3. Deliver Pure Storage array-side monitoring against an interface the vendor maintains, replacing
+   the dead-ended vendor management pack.
+4. Establish declared reference minimums by test, and remove the two references that are declared
+   but never consumed.
+5. After installation, run the representative SCOM topology, fault, recovery, scale, upgrade,
    migration, coexistence, and removal checks, including the PowerShell execution-host gate, and
    correct verified defects in a version-increased patch release.
 
@@ -280,7 +362,7 @@ parity where supported Azure telemetry does not exist.
 6. Keep the separate SCOM Metrics connector disabled unless Metric Intelligence licensing, Data
    Warehouse access, value, cost, and scale are explicitly approved.
 
-## Hyper-V Private Cloud Monitoring v2
+## Hyper-V Private Cloud Monitoring
 
 ### Product outcome
 
