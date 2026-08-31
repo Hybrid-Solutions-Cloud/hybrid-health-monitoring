@@ -38,6 +38,51 @@ Only artifacts with `"sealed": true` from a completed release are importable.
 
 ---
 
+## The fast path: one command
+
+Every external management pack this product needs can be downloaded, extracted, and imported by
+one script, straight from the publishers' official links (nothing is redistributed):
+
+```powershell
+# from the repository root, on a machine with the SCOM console or a management server
+./src/hyper-v/scom-mp/tools/Install-HyperVPrivateCloudPrerequisites.ps1 -Import
+
+# or only what you use, e.g. a clustered SAN deployment:
+./src/hyper-v/scom-mp/tools/Install-HyperVPrivateCloudPrerequisites.ps1 -Capability Cluster, CSV -Import
+```
+
+Then, in order:
+
+1. **PowerShell 7 (machine-wide MSI) on every Hyper-V host** —
+   [download](https://github.com/PowerShell/PowerShell/releases/latest) and install the `win-x64.msi`.
+   The per-user or Store install does not work; every workflow launches
+   `%ProgramFiles%\PowerShell\7\pwsh.exe` by absolute path.
+2. **SCOM agent on every host**, and on cluster nodes tick **Allow this agent to act as a proxy**.
+3. Import the four **core** Hyper-V Private Cloud packs, then only the **capability** packs you use.
+
+::: details Why can't the SCOM console just resolve these itself?
+The console's "resolve" only works for packs in Microsoft's online catalog, and these
+infrastructure packs are not published there — they ship as Download Center MSIs. The script above
+is the resolve button this product actually needed.
+:::
+
+If you would rather click, these are the exact downloads the script uses:
+
+| Needed for | Package | Get it |
+|---|---|---|
+| Cluster capability | Windows Server Cluster MP 10.1.0.0 | [page](https://www.microsoft.com/en-us/download/details.aspx?id=54701) · [direct MSI](https://download.microsoft.com/download/b/d/5/bd59d8e4-4bf7-4dac-819a-1ac12e21c965/Microsoft%20SC%20MP%20for%20WS%20Cluster%202016%20and%201709%20Plus.msi) |
+| Cluster capability (CSV) | Windows Server 2016+ MP 10.1.2.2 | [page](https://www.microsoft.com/en-us/download/details.aspx?id=54303) · [direct MSI](https://download.microsoft.com/download/c0becab2-ada7-435e-9215-42ef7dd44727/Microsoft%20System%20Center%20Management%20Pack%20for%20Windows%20Server%202016%20and%201709%20Plus.msi) |
+| S2D capability | Storage Spaces Direct MP 1.0.47.4 | [page](https://www.microsoft.com/en-us/download/details.aspx?id=100782) · [direct MSI](https://download.microsoft.com/download/7/0/5/70509486-2d0f-4e53-a99f-f6db413e7df6/Microsoft%20System%20Center%20Management%20Pack%20for%20StorageSpacesDirect.msi) |
+| SDN capability | SDN Monitoring MP 10.0.0.2 | [page](https://www.microsoft.com/en-us/download/details.aspx?id=54300) · [direct MSI](https://download.microsoft.com/download/a/3/0/a30bf7cc-78c9-4702-b3f2-3859ca824dc5/Microsoft%20System%20Center%20Management%20Pack%20for%20SDN%20Monitoring.msi) |
+| File Services capability | File and iSCSI Services MP 10.1.0.4 | [page](https://www.microsoft.com/en-us/download/details.aspx?id=57594) · [direct MSI](https://download.microsoft.com/download/a/0/7/a071e8d0-d188-4ed8-8a8c-84dfdc1ac675/Microsoft%20SCMP%20for%20File%20and%20iSCSI%20Services%202016%20and%20above.msi) |
+| VMM capability | VMM console MPs 11.19.0.3 | your VMM installation media (`ManagementPacks` folder) |
+| Pure Storage capability (optional) | FlashArray MP 2.0.120.0 | [GitHub release](https://github.com/PureStorage-Connect/SCOM-Management-Pack/releases/tag/v2.0.120.0) — not supported on SCOM 2025 |
+
+Extract each MSI (or install it and collect the `.mp` files) and import them **before** the
+matching Hyper-V Private Cloud capability pack. Core needs none of these.
+
+---
+
 ## Summary
 
 | # | Prerequisite | Why it's needed | Blocking / Recommended |
