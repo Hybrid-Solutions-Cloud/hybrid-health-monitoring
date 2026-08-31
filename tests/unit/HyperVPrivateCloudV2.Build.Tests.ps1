@@ -146,10 +146,38 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'builds a core Discovery MP with host seed and staged topology workflows' {
         $discoveries = @($script:Discovery.SelectNodes('/ManagementPack/Monitoring/Discoveries/Discovery'))
-        $discoveries.Count | Should -Be 2
+        $discoveries.Count | Should -Be 3
         @($discoveries.ID) | Should -Contain 'HyperVPrivateCloud.HostRole.Seed.Discovery'
         @($discoveries.ID) | Should -Contain 'HyperVPrivateCloud.Topology.Discovery'
+        @($discoveries.ID) | Should -Contain 'HyperVPrivateCloud.Product.Group.Discovery'
+        $groupPopulator = $script:Discovery.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.Product.Group.Discovery']//DataSource")
+        $groupPopulator.TypeID | Should -Be 'SC!Microsoft.SystemCenter.GroupPopulator'
+        $groupPopulator.GroupInstanceId | Should -Be '$MPElement[Name="HCSV2Library!HyperVPrivateCloud.Product.Group"]$'
         $script:Discovery.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.HostRole.Seed.Discovery']//Setting/Name[contains(text(),'HostRole') and contains(text(),'/HostId')]") | Should -Not -BeNullOrEmpty
+    }
+
+    It 'keeps every probe script runnable under pwsh -File on a SCOM agent' {
+        # Defects found by the 2026-08-31 review: a .NET type literal for the COM script API, [bool] parameters that
+        # cannot bind the string "true" that pwsh -File passes, and the warning stream (WinPS compatibility module
+        # loads) reaching stdout ahead of the property bag. Each one killed a probe before its first statement.
+        $scripts = @(Get-ChildItem -Path (Join-Path $script:V2Root 'fragments') -Recurse -Filter '*.ps1.template')
+        $scripts.Count | Should -BeGreaterThan 20
+        foreach ($scriptFile in $scripts) {
+            $text = Get-Content -LiteralPath $scriptFile.FullName -Raw
+            $text | Should -Not -Match 'EnterpriseManagement\.Mom\.ScriptAPI' -Because "$($scriptFile.Name) must use New-Object -ComObject 'MOM.ScriptAPI'"
+            $text | Should -Match "\`$WarningPreference = 'SilentlyContinue'" -Because "$($scriptFile.Name) must keep module-load warnings off stdout"
+            $paramBlock = if ($text -match '(?s)^\s*#Requires[^\n]*\n\s*param\((.*?)\n\)') { $Matches[1] } else { '' }
+            $paramBlock | Should -Not -Match '\[(bool|switch)\]\$' -Because "$($scriptFile.Name): pwsh -File cannot bind [bool]/[switch] parameters from string arguments"
+        }
+    }
+
+    It 'generates readable display names' {
+        $buildScript = Get-Content -LiteralPath $script:BuildTool -Raw
+        $buildScript | Should -Match "-creplace '\(\[a-z0-9\]\)\(\[A-Z\]\)'"
+        foreach ($displayString in @($script:Library.SelectNodes('//DisplayString[@SubElementID]'))) {
+            $displayString.Name | Should -Not -Match '\b[A-Za-z]\b [a-z]{2}\b' -Because "property $($displayString.SubElementID) must not be split letter by letter"
+        }
+        $script:Library.SelectSingleNode("//DisplayString[@ElementID='HyperVPrivateCloud.Boundary' and @SubElementID='BoundaryId']").Name | Should -Be 'Boundary Id'
     }
 
     It 'resolves every Discovery class and relationship against the v2 Library' {
@@ -159,6 +187,8 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             ($typeId -replace '^HCSV2Library!', '') | Should -BeIn $classIds
         }
         foreach ($typeId in @($script:Discovery.SelectNodes('//DiscoveryTypes/DiscoveryRelationship') | ForEach-Object TypeID)) {
+            # Relationships owned by Microsoft libraries (InstanceGroup!...) are verified by VSAE, not the v2 Library.
+            if ($typeId -notlike 'HCSV2Library!*') { continue }
             ($typeId -replace '^HCSV2Library!', '') | Should -BeIn $relationshipIds
         }
     }
@@ -187,10 +217,19 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'implements core host and agent-hosted per-VM monitoring' {
         @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 39
-        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 14
-        @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 24
+        # 21 Service-level rollups (7 branches x Availability/Performance/Configuration) + 18 domain-specific component rollups.
+        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 39
+        # 24 performance collection + 8 Hyper-V event collection + 10 Hyper-V event alert rules.
+        @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 42
+        @($script:Monitoring.SelectNodes("//Rule[Category='EventCollection']")).Count | Should -Be 8
+        @($script:Monitoring.SelectNodes("//Rule[Category='Alert']")).Count | Should -Be 10
         @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 1
-        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 39
+        # Every unit monitor and every alert rule carries operator knowledge.
+        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 49
+        # Legacy monitors superseded by the threshold-type depth monitors ship disabled so one condition never alerts twice.
+        foreach ($legacy in @('HyperVPrivateCloud.Host.Cpu.Monitor', 'HyperVPrivateCloud.Host.Memory.Monitor', 'HyperVPrivateCloud.Host.Paging.Monitor', 'HyperVPrivateCloud.VmRuntime.MemoryPressure.Monitor')) {
+            $script:Monitoring.SelectSingleNode("//UnitMonitor[@ID='$legacy']").Enabled | Should -Be 'false'
+        }
         @($script:Monitoring.SelectNodes("//UnitMonitor[starts-with(@ID,'HyperVPrivateCloud.VmRuntime.')]")).Count | Should -Be 15
     }
 
@@ -751,12 +790,18 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'adds service impact and the missing Network Controller security rollup without duplicate leaf alerts' {
         @($script:SdnCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 15
-        @($script:SdnCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 11
+        # 11 Microsoft-class rollups + 4 HostBinding rollups (Availability/Configuration/Security/Performance) into Networking.
+        @($script:SdnCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 15
+        foreach ($aspect in @('Availability', 'Configuration', 'Security', 'Performance')) {
+            $script:SdnCapability.SelectSingleNode("//DependencyMonitor[@ID='HyperVPrivateCloud.Capability.SDN.HostBinding.$aspect.Dependency.Monitor']").RelationshipType | Should -Be 'HyperVPrivateCloud.Capability.SDN.NetworkContainsHostBinding'
+        }
         @($script:SdnCapability.SelectNodes('//Rule')).Count | Should -Be 0
         $monitor = $script:SdnCapability.SelectSingleNode("//UnitMonitor[@ID='HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor']")
         $monitor.Configuration.RequireSDN | Should -Be 'false'
         $monitor.Configuration.RequireSlbHostAgent | Should -Be 'false'
-        $monitor.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
+        # RequireSDN=true with no SDN, or a missing host agent, must alert rather than stay a silent state change.
+        $monitor.SelectSingleNode('AlertSettings') | Should -Not -BeNullOrEmpty
+        $monitor.AlertSettings.AlertMessage | Should -Be 'HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor.Message'
         $securityRollup = $script:SdnCapability.SelectSingleNode("//DependencyMonitor[@ID='HyperVPrivateCloud.Capability.SDN.NetworkControllerGroup.Security.Dependency.Monitor']")
         $securityRollup.RelationshipType | Should -Be 'SDN!SDNMonitoringMP.SDNMonitoring.NetworkControllerClusterNodeGroupHostsNetworkControllerClusterNode'
         $securityRollup.MemberMonitor | Should -Be 'Health!System.Health.SecurityState'

@@ -29,6 +29,7 @@
       <View ID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
       <View ID="HyperVPrivateCloud.Host.Events.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
       <View ID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Product.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.Product.Group" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
     </Views>
     <Folders>
       <Folder ID="HyperVPrivateCloud.Root.Folder" Accessibility="Public" ParentFolder="SC!Microsoft.SystemCenter.Monitoring.ViewFolder.Root" />
@@ -59,9 +60,11 @@
       <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Host.Events.View" ID="HyperVPrivateCloud.Host.Events.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Product.ActiveAlerts.View" ID="HyperVPrivateCloud.Product.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Overview.Folder" />
     </FolderItems>
   </Presentation>
   <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings>
+    <DisplayString ElementID="HyperVPrivateCloud.Product.ActiveAlerts.View"><Name>All Active Alerts</Name><Description>Every active alert raised against any object of the Hyper-V Private Cloud product: hosts, virtual machines, clusters, storage, networking, SDN and VMM capability objects.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Presentation"><Name>Hyper-V Private Cloud Monitoring Presentation</Name><Description>Operator console hierarchy, Distributed Application diagram, health, alerts, events, performance, inventory, and monitoring coverage for Hyper-V Private Cloud Monitoring.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Root.Folder"><Name>Hyper-V Private Cloud</Name><Description>Complete operator workspace for supported Hyper-V private-cloud capabilities.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Overview.Folder"><Name>Overview</Name></DisplayString>

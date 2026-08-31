@@ -14,7 +14,7 @@
     <Overrides>
       <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.NetworkATC.Lab.Discovery.Core.Seed.Frequency.HostRoleSeed.Override" Context="Windows!Microsoft.Windows.Server.OperatingSystem" Enforced="false" Discovery="HCSV2Discovery!HyperVPrivateCloud.HostRole.Seed.Discovery" Module="RegistrySeed" Parameter="Frequency"><Value>3600</Value></DiscoveryConfigurationOverride>
       <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.NetworkATC.Lab.Discovery.Core.Topology.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2Discovery!HyperVPrivateCloud.Topology.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>300</Value></DiscoveryConfigurationOverride>
-      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.NetworkATC.Lab.Discovery.NetworkATC.Discovery.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2NetworkATC!HyperVPrivateCloud.Capability.NetworkATC.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>300</Value></DiscoveryConfigurationOverride>
+      <DiscoveryConfigurationOverride ID="HyperVPrivateCloud.Overrides.NetworkATC.Lab.Discovery.NetworkATC.Discovery.Interval.Topology.Override" Context="HCSV2Library!HyperVPrivateCloud.HostRole" Enforced="false" Discovery="HCSV2NetworkATC!HyperVPrivateCloud.Capability.NetworkATC.Discovery" Module="PowerShellDiscovery" Parameter="IntervalSeconds"><Value>900</Value></DiscoveryConfigurationOverride>
     </Overrides>
   </Monitoring>
   <LanguagePacks><LanguagePack ID="ENU" IsDefault="true"><DisplayStrings>

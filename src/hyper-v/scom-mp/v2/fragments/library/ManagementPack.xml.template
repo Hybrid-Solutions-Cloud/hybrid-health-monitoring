@@ -10,6 +10,7 @@
       <Reference Alias="System"><ID>System.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
       <Reference Alias="Windows"><ID>Microsoft.Windows.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
       <Reference Alias="ServiceDesigner"><ID>Microsoft.SystemCenter.ServiceDesigner.Library</ID><Version>7.0.8433.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
+      <Reference Alias="InstanceGroup"><ID>Microsoft.SystemCenter.InstanceGroup.Library</ID><Version>7.5.8501.0</Version><PublicKeyToken>31bf3856ad364e35</PublicKeyToken></Reference>
     </References>
   </Manifest>
   <TypeDefinitions>
@@ -121,6 +122,7 @@
         <ClassType ID="HyperVPrivateCloud.StorageComponent" Accessibility="Public" Abstract="false" Base="HyperVPrivateCloud.ComponentGroup" Hosted="false" Singleton="false" Extension="false" />
         <ClassType ID="HyperVPrivateCloud.NetworkComponent" Accessibility="Public" Abstract="false" Base="HyperVPrivateCloud.ComponentGroup" Hosted="false" Singleton="false" Extension="false" />
         <ClassType ID="HyperVPrivateCloud.MonitoringComponent" Accessibility="Public" Abstract="false" Base="HyperVPrivateCloud.ComponentGroup" Hosted="false" Singleton="false" Extension="false" />
+        <ClassType ID="HyperVPrivateCloud.Product.Group" Accessibility="Public" Abstract="false" Base="InstanceGroup!Microsoft.SystemCenter.InstanceGroup" Hosted="false" Singleton="true" Extension="false" />
       </ClassTypes>
       <RelationshipTypes>
         <RelationshipType ID="HyperVPrivateCloud.BoundaryContainsHostRole" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Boundary" Type="HyperVPrivateCloud.Boundary" MinCardinality="0" MaxCardinality="1" /><Target ID="HostRole" Type="HyperVPrivateCloud.HostRole" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
@@ -260,6 +262,7 @@
   <LanguagePacks>
     <LanguagePack ID="ENU" IsDefault="true">
       <DisplayStrings>
+        <DisplayString ElementID="HyperVPrivateCloud.Product.Group"><Name>Hyper-V Private Cloud Objects</Name><Description>Every object contained in a Hyper-V Private Cloud Distributed Application: hosts, virtual machines, storage, networking and capability objects. Scope views, notifications and overrides to this group to cover the whole product.</Description></DisplayString>
         <DisplayString ElementID="HyperVPrivateCloud.Library"><Name>Hyper-V Private Cloud Monitoring Library</Name><Description>Core classes and relationships for complete Hyper-V private-cloud health monitoring.</Description></DisplayString>
         <DisplayString ElementID="HyperVPrivateCloud.Boundary"><Name>Hyper-V Private Cloud Boundary</Name></DisplayString>
         <DisplayString ElementID="HyperVPrivateCloud.HostRole"><Name>Hyper-V Host</Name></DisplayString>
