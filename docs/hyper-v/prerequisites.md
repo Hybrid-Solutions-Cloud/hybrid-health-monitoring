@@ -64,6 +64,8 @@ Then, in order:
    `%ProgramFiles%\PowerShell\7\pwsh.exe` by absolute path.
 2. **SCOM agent on every host**, and on cluster nodes tick **Allow this agent to act as a proxy**.
 3. Import the four **core** Hyper-V Private Cloud packs, then only the **capability** packs you use.
+4. Apply one tuning profile (see [the download page](../downloads/hyper-v-private-cloud.md#apply-a-tuning-profile-in-one-command)):
+   `./Install-HyperVPrivateCloudOverrides.ps1 -DeploymentProfile <yourProfile> -TuningTier Standard -Import`
 
 ::: details Why can't the SCOM console just resolve these itself?
 The console's "resolve" only works for packs in Microsoft's online catalog, and these
