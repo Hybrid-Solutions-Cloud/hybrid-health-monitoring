@@ -47,6 +47,20 @@ serves the same exact bytes and changes only when a newer validated version is p
 Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
 ([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 
+## Apply a tuning profile in one command
+
+After the core and capability packs are in, apply one deployment profile's tuning tier without
+digging through the zip:
+
+```powershell
+iwr https://labs.hybridsolutions.cloud/hybrid-health-monitoring/downloads/hyper-v-private-cloud/tools/Install-HyperVPrivateCloudOverrides.ps1 -OutFile Install-HyperVPrivateCloudOverrides.ps1
+./Install-HyperVPrivateCloudOverrides.ps1 -DeploymentProfile ClusteredSAN -TuningTier Standard -Import
+```
+
+Run it as a file (not pasted line-by-line). Pick the profile matching the capability packs you
+imported; import exactly one Discovery + Monitoring pair per management group. `Standard` is the
+coded defaults made explicit; `Lab` is forgiving; `Strict` is tight.
+
 ## Deployment-profile bundles
 
 Use a profile bundle when you want only the sealed MPs and six starter override files for one
