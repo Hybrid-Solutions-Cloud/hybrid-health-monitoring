@@ -51,7 +51,7 @@
               <ProbeAction ID="Probe" TypeID="HCSV2Library!HyperVPrivateCloud.Pwsh.PropertyBagProbe">
                 <ScriptName>HyperVPrivateCloud.HostHealth.Probe.ps1</ScriptName>
                 <ScriptBody><![CDATA[{{HOST_HEALTH_SCRIPT}}]]></ScriptBody>
-                <Arguments>-CpuWarningPercent "$Config/CpuWarningPercent$" -CpuCriticalPercent "$Config/CpuCriticalPercent$" -MemoryWarningMB "$Config/MemoryWarningMB$" -MemoryCriticalMB "$Config/MemoryCriticalMB$" -PagesInputWarningPerSecond "$Config/PagesInputWarningPerSecond$" -PagesInputCriticalPerSecond "$Config/PagesInputCriticalPerSecond$" -CheckpointWarningHours "$Config/CheckpointWarningHours$" -CheckpointCriticalHours "$Config/CheckpointCriticalHours$"</Arguments>
+                <Arguments>-CpuWarningPercent "$Config/CpuWarningPercent$" -CpuCriticalPercent "$Config/CpuCriticalPercent$" -MemoryWarningMB "$Config/MemoryWarningMB$" -MemoryCriticalMB "$Config/MemoryCriticalMB$" -PagesInputWarningPerSecond "$Config/PagesInputWarningPerSecond$" -PagesInputCriticalPerSecond "$Config/PagesInputCriticalPerSecond$" -CheckpointWarningHours "$Config/CheckpointWarningHours$" -CheckpointCriticalHours "$Config/CheckpointCriticalHours$" -Mode "Health"</Arguments>
                 <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
               </ProbeAction>
             </MemberModules>
@@ -82,7 +82,7 @@
           <ProbeAction ID="Probe" TypeID="HCSV2Library!HyperVPrivateCloud.Pwsh.PropertyBagProbe">
             <ScriptName>HyperVPrivateCloud.VmHealth.Probe.ps1</ScriptName>
             <ScriptBody><![CDATA[{{VM_HEALTH_SCRIPT}}]]></ScriptBody>
-            <Arguments>-VMId "$Config/VMId$" -ExpectedState "$Config/ExpectedState$" -CheckpointWarningHours "$Config/CheckpointWarningHours$" -CheckpointCriticalHours "$Config/CheckpointCriticalHours$"</Arguments>
+            <Arguments>-VMId "$Config/VMId$" -ExpectedState "$Config/ExpectedState$" -CheckpointWarningHours "$Config/CheckpointWarningHours$" -CheckpointCriticalHours "$Config/CheckpointCriticalHours$" -Mode "Health"</Arguments>
             <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
           </ProbeAction>
         </MemberModules><Composition><Node ID="Probe"><Node ID="Scheduler" /></Node></Composition></Composite></ModuleImplementation>

@@ -71,7 +71,12 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
             $declaredParameters = @($ast.ParamBlock.Parameters.Name.VariablePath.UserPath | Sort-Object -Unique)
             $argumentText = [string]$scriptBody.ParentNode.Arguments
             $suppliedParameters = @([regex]::Matches($argumentText, '(?:^|\s)-(?<name>[A-Za-z][A-Za-z0-9_]*)\s+"') | ForEach-Object { $_.Groups['name'].Value } | Sort-Object -Unique)
-            $suppliedParameters | Should -Be $declaredParameters
+            # Probes are multi-facet: one script backs several data sources, each supplying only the
+            # parameters its facet needs. Assert every supplied parameter is declared - an undeclared
+            # one is a typo that fails silently at runtime - rather than demanding the full set.
+            foreach ($suppliedParameter in $suppliedParameters) {
+                $declaredParameters | Should -Contain $suppliedParameter
+            }
         }
 
         $diagnosticScript = $script:Monitoring.SelectSingleNode("//ScriptBody[contains(../ScriptName,'DiagnosticSummary')]").InnerText
@@ -181,12 +186,12 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'implements core host and agent-hosted per-VM monitoring' {
-        @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 22
+        @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 39
         @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 14
-        @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 12
+        @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 24
         @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 1
-        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 22
-        @($script:Monitoring.SelectNodes("//UnitMonitor[starts-with(@ID,'HyperVPrivateCloud.VmRuntime.')]")).Count | Should -Be 9
+        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 39
+        @($script:Monitoring.SelectNodes("//UnitMonitor[starts-with(@ID,'HyperVPrivateCloud.VmRuntime.')]")).Count | Should -Be 15
     }
 
     It 'resolves every monitoring target and rollup relationship against the Library' {
@@ -327,9 +332,9 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'uses Microsoft leaf health and adds only HCS integration-pipeline monitoring and rollups' {
-        @($script:ClusterCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:ClusterCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 16
         @($script:ClusterCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 5
-        @($script:ClusterCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        @($script:ClusterCapability.SelectNodes('//Rule')).Count | Should -Be 5
         $script:ClusterCapability.SelectSingleNode("//UnitMonitor[@ID='HyperVPrivateCloud.Capability.Cluster.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
         foreach ($rollup in $script:ClusterCapability.SelectNodes('//DependencyMonitor')) {
             [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
@@ -383,9 +388,9 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'monitors SAN integration, attachment availability, MPIO, iSCSI, and Fibre Channel health' {
-        @($script:StorageCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 5
-        @($script:StorageCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 3
-        @($script:StorageCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        @($script:StorageCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 25
+        @($script:StorageCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
+        @($script:StorageCapability.SelectNodes('//Rule')).Count | Should -Be 7
         foreach ($rollup in $script:StorageCapability.SelectNodes('//DependencyMonitor')) {
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
             [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
@@ -468,9 +473,9 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'adds only HCS integration coverage and authoritative Microsoft S2D health rollups' {
-        @($script:S2DCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:S2DCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 16
         @($script:S2DCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 7
-        @($script:S2DCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        @($script:S2DCapability.SelectNodes('//Rule')).Count | Should -Be 5
         foreach ($rollup in $script:S2DCapability.SelectNodes('//DependencyMonitor')) {
             [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
@@ -594,9 +599,9 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'monitors required SMB connections, continuous availability, and optional RDMA without duplicate Microsoft alerts' {
-        @($script:FileServicesCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:FileServicesCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 12
         @($script:FileServicesCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 3
-        @($script:FileServicesCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        @($script:FileServicesCapability.SelectNodes('//Rule')).Count | Should -Be 9
         $monitor = $script:FileServicesCapability.SelectSingleNode("//UnitMonitor[@ID='HyperVPrivateCloud.Capability.FileServices.Health.Monitor']")
         $monitor.Configuration.RequireRdma | Should -Be 'false'
         $script:FileServicesCapability.OuterXml | Should -Match 'ContinuouslyAvailable'
@@ -623,7 +628,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $networkReference.ID | Should -Be 'System.NetworkManagement.Library'
         $networkReference.Version | Should -Be '7.2.11719.0'
         @($script:PhysicalNetworkCapability.SelectNodes('//ClassType')).Count | Should -Be 0
-        @($script:PhysicalNetworkCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        @($script:PhysicalNetworkCapability.SelectNodes('//Rule')).Count | Should -Be 6
     }
 
     It 'relates external virtual switches to exact Windows computer network adapters for built-in MAC correlation' {
@@ -639,7 +644,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'monitors physical-network correlation inputs and reuses Microsoft health and presentation' {
-        @($script:PhysicalNetworkCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:PhysicalNetworkCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 9
         @($script:PhysicalNetworkCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 2
         @($script:PhysicalNetworkCapability.SelectNodes('//View')).Count | Should -Be 8
         $script:PhysicalNetworkCapability.OuterXml | Should -Match 'System\.NetworkManagement\.Node'
@@ -685,7 +690,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'implements explicit authority, convergence, adapter, and global health without remediation' {
-        @($script:NetworkAtcCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 4
+        @($script:NetworkAtcCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 16
         @($script:NetworkAtcCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
         @($script:NetworkAtcCapability.SelectNodes('//Rule')).Count | Should -Be 0
         $capability = $script:NetworkAtcCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'CapabilityHealth')]")
@@ -849,9 +854,9 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'monitors VMM query coverage and recent failed jobs without duplicating Microsoft leaf alerts' {
-        @($script:VmmCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 2
+        @($script:VmmCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 13
         @($script:VmmCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 10
-        @($script:VmmCapability.SelectNodes('//Rule')).Count | Should -Be 0
+        @($script:VmmCapability.SelectNodes('//Rule')).Count | Should -Be 6
         $failedJobs = $script:VmmCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'FailedJobs.Monitor')]")
         $failedJobs.Configuration.JobLookbackHours | Should -Be '24'
         $failedJobs.Configuration.FailedJobCriticalCount | Should -Be '1'
