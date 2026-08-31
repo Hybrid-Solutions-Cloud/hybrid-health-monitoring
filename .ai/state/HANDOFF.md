@@ -1,5 +1,53 @@
 # Handoff
 
+## 2026-08-31 (later) — 1.3.0.0: cluster-wide monitors evaluated once per cluster; released
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open against `main`
+(https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/pull/3). **`1.3.0.0` is sealed
+with the Key Vault key (source commit `b8c181f`), validated `releaseEligible=true`, and published
+under `docs/public/downloads/hyper-v-private-cloud/1.3.0.0/` + `latest/`.** `1.2.0.0`, `1.1.0.0`
+and `1.0.0.0` are retained as evidence; the download page and all doc version references point at
+`1.3.0.0`. Unit tests: 193/193 (Build subset re-verified 81/81 after test updates); VSAE test-mode
+verify+seal: 13/13 OK.
+
+### What changed
+
+- **Cluster role.** New class `HyperVPrivateCloud.Capability.Cluster.ClusterRole` hosted by
+  `Cluster!Microsoft.Windows.Cluster.VirtualServer` (discovery targets VirtualServer; key =
+  the virtual server's PrincipalName, i.e. the cluster FQDN). The 13 cluster-wide monitors, both
+  CSV capacity rules and the relationship discovery now target it — they run once, on the
+  core-group owner, and fail over with it. CSV Read/Write latency + queue depth stay on `HostRole`.
+  8 dependency monitors (5 Microsoft-object containments + Availability/Performance/Configuration
+  roll-ups of the role into the DA Availability branch). Tuning catalog `contextClassId` updated
+  (26 refs). New view: ClusterRole state; ActiveAlerts view retargeted to ClusterRole.
+- **Disabled as superseded (IDs preserved):** the four v1 storage availability monitors
+  (AttachmentAvailability, AttachmentRedundancy, IscsiSessionAvailability,
+  FibreChannelPortAvailability — superseded by depth monitors) and PhysicalNetwork VlanMismatch
+  (Windows exposes no LLDP neighbour data).
+- Docs: ADR 0053 consequence note, monitoring-catalog counts/paragraph, prerequisites agent-proxy
+  gotcha (cluster nodes need proxy for the VirtualServer-hosted discovery), download page,
+  CHANGELOG, 1.3.0.0 references in index/scom-mp/management-pack-guide/prerequisites.
+
+### Commands run and results
+
+VSAE test-mode verify+seal (throwaway key): 13/13 `VSAE-VERIFY-OK`. `Invoke-Pester tests/unit`:
+193 total, 5 stale cluster assertions updated, final Build run 81/81 → suite green.
+`release-1300` (`New-HyperVPrivateCloudReleasePackage.ps1` Release mode, Key Vault key):
+sealed + validated, `releaseEligible=true`, token `54d0fb1159995c86`; assets copied to
+`1.3.0.0/` and `latest/` (SHA-256-identical). Docs build: clean.
+
+### Blockers / open questions
+
+- None blocking.
+
+### Next steps (ADR 0053 next-major items)
+
+1. Multi-instance host probes: one `pwsh` per host emitting per-VM/LUN/intent property bags
+   (restore cookdown for the older capability monitors).
+2. Storage iSCSI/MPIO event counters and ATC ClusterIntentConsistency/ETS/QoS to host-wide
+   evaluation; File Services ghost SMB instance on non-agent file servers; PhysicalNetwork
+   link-state/speed defaults on non-uplink NICs.
+
 ## 2026-08-31 — Full management pack review; 1.0.0.0 found non-functional on real hosts; fixed on feat/monitoring-depth
 
 **Branch:** `feat/monitoring-depth` — pushed; PR #3 open against `main`
