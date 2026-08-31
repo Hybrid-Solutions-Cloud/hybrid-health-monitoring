@@ -25,10 +25,10 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Describe 'Hyper-V Private Cloud Monitoring v2 probe smoke test' {
+Describe 'Hyper-V Private Cloud Monitoring probe smoke test' {
     # ---- Discovery phase: build the packs and enumerate every (script, arguments) pair so each becomes its own test.
     $discoveryRepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-    $discoveryBuildTool = Join-Path $discoveryRepoRoot 'src/hyper-v/scom-mp/v2/tools/Build-HyperVPrivateCloudManagementPacks.ps1'
+    $discoveryBuildTool = Join-Path $discoveryRepoRoot 'src/hyper-v/scom-mp/tools/Build-HyperVPrivateCloudManagementPacks.ps1'
     $discoveryBuilt = Join-Path ([System.IO.Path]::GetTempPath()) ("hcs-hyperv-v2-smoke-built-" + [guid]::NewGuid().ToString('N'))
     & $discoveryBuildTool -Version '2.0.0.0' -PublicKeyToken '0123456789abcdef' -OutputPath $discoveryBuilt | Out-Null
     $discoveryCases = [System.Collections.Generic.List[object]]::new()

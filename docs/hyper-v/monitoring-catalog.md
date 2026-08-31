@@ -124,7 +124,7 @@ object inventory, alerts, performance, and events.
 ::: warning Earlier baseline defaults
 These values describe the superseded `HybridSolutionsCloud.HyperV` baseline, not the current product.
 For Hyper-V Private Cloud Monitoring, use the release manifest and the explicit
-`src/hyper-v/scom-mp/v2/templates/overrides/tuning-catalog.json` contract. All defaults remain
+`src/hyper-v/scom-mp/templates/overrides/tuning-catalog.json` contract. All defaults remain
 overrideable and require representative operator validation before production enablement.
 :::
 

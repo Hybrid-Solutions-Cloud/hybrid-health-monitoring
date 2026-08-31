@@ -98,8 +98,8 @@ $MicrosoftToken = '31bf3856ad364e35'
 $Solutions = @{
     'hyper-v'     = @{
         DisplayName  = 'Hyper-V Private Cloud Monitoring'
-        FragmentRoot = 'src/hyper-v/scom-mp/v2/fragments'
-        Contract     = 'src/hyper-v/scom-mp/contracts/dependencies.v2.json'
+        FragmentRoot = 'src/hyper-v/scom-mp/fragments'
+        Contract     = 'src/hyper-v/scom-mp/contracts/dependencies.json'
         DocPage      = 'docs/hyper-v/prerequisites.md'
     }
     'azure-local' = @{

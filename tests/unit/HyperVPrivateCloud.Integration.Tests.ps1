@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-Describe 'Hyper-V Private Cloud v2 management-group certification collector' {
+Describe 'Hyper-V Private Cloud management-group certification collector' {
     BeforeAll {
         $script:RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
         $script:CollectorPath = Join-Path $script:RepositoryRoot 'tests/integration/Get-HyperVPrivateCloudCertificationSnapshot.ps1'

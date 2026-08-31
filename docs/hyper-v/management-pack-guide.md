@@ -352,7 +352,7 @@ republishes the same pack IDs and your changes are lost. Instead, either create 
 described above, or generate a customer-owned set:
 
 ```powershell
-./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
     -OrganizationId 'Contoso' -OrganizationName 'Contoso Ltd' `
     -DeploymentProfile ClusteredS2D -TuningTier Standard `
     -OutputPath 'D:\overrides'
@@ -413,7 +413,7 @@ Then select one tuning tier:
 Generate a customer-owned pair with:
 
 ```powershell
-./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
     -DeploymentProfile ClusteredS2D `
     -TuningTier Standard `
     -OrganizationId Contoso `

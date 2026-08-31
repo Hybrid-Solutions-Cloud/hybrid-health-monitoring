@@ -1,48 +1,125 @@
 {
   "schemaVersion": "1.0",
-  "namespace": "HybridSolutionsCloud.HyperV",
-  "developmentVersion": "0.1.0.0",
-  "status": "Development",
+  "namespace": "HyperVPrivateCloud",
+  "developmentVersion": "1.0.0.0",
+  "productName": "Hyper-V Private Cloud Monitoring",
   "artifacts": [
     {
-      "id": "HybridSolutionsCloud.HyperV.Library",
+      "id": "HyperVPrivateCloud.Library",
       "source": "fragments/library/ManagementPack.xml.template",
-      "output": "HybridSolutionsCloud.HyperV.Library.xml",
+      "output": "HyperVPrivateCloud.Library.xml",
       "releaseForm": "sealed-mp",
-      "required": true
+      "kind": "Library",
+      "required": true,
+      "implementationStatus": "Authored"
     },
     {
-      "id": "HybridSolutionsCloud.HyperV.Discovery",
+      "id": "HyperVPrivateCloud.Discovery",
       "source": "fragments/discovery/ManagementPack.xml.template",
-      "output": "HybridSolutionsCloud.HyperV.Discovery.xml",
+      "output": "HyperVPrivateCloud.Discovery.xml",
       "releaseForm": "sealed-mp",
-      "required": true
+      "kind": "Discovery",
+      "required": true,
+      "implementationStatus": "Authored"
     },
     {
-      "id": "HybridSolutionsCloud.HyperV.Monitoring",
+      "id": "HyperVPrivateCloud.Monitoring",
       "source": "fragments/monitoring/ManagementPack.xml.template",
-      "output": "HybridSolutionsCloud.HyperV.Monitoring.xml",
+      "output": "HyperVPrivateCloud.Monitoring.xml",
       "releaseForm": "sealed-mp",
-      "required": true
+      "kind": "Monitoring",
+      "required": true,
+      "implementationStatus": "Authored"
     },
     {
-      "id": "HybridSolutionsCloud.HyperV.Presentation",
+      "id": "HyperVPrivateCloud.Presentation",
       "source": "fragments/presentation/ManagementPack.xml.template",
-      "output": "HybridSolutionsCloud.HyperV.Presentation.xml",
+      "output": "HyperVPrivateCloud.Presentation.xml",
       "releaseForm": "sealed-mp",
-      "required": true
+      "kind": "Presentation",
+      "required": true,
+      "implementationStatus": "Authored"
     },
     {
-      "id": "HybridSolutionsCloud.HyperV.Reporting",
-      "source": "fragments/reporting/ManagementPack.xml.template",
-      "output": "HybridSolutionsCloud.HyperV.Reporting.xml",
-      "releaseForm": "optional-sealed-mp",
-      "required": false
+      "id": "HyperVPrivateCloud.Capability.Cluster",
+      "source": "fragments/capabilities/cluster/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.Cluster.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.Storage",
+      "source": "fragments/capabilities/storage/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.Storage.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.S2D",
+      "source": "fragments/capabilities/s2d/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.S2D.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.PureStorage",
+      "source": "fragments/capabilities/pure-storage/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.PureStorage.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.FileServices",
+      "source": "fragments/capabilities/file-services/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.FileServices.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "source": "fragments/capabilities/physical-network/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.PhysicalNetwork.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.NetworkATC",
+      "source": "fragments/capabilities/network-atc/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.NetworkATC.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.SDN",
+      "source": "fragments/capabilities/sdn/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.SDN.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.VMM",
+      "source": "fragments/capabilities/vmm/ManagementPack.xml.template",
+      "output": "HyperVPrivateCloud.Capability.VMM.xml",
+      "releaseForm": "sealed-mp",
+      "kind": "Capability",
+      "required": false,
+      "implementationStatus": "Authored"
     }
-  ],
-  "prohibitedReferences": [
-    "Microsoft.SystemCenter.VirtualMachineManager.2019",
-    "Microsoft.Windows.HyperV.2019",
-    "HybridSolutionsCloud.AzureLocal"
   ]
 }

@@ -3,10 +3,10 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
+Describe 'Hyper-V Private Cloud Monitoring core build' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-        $script:V2Root = Join-Path $script:RepoRoot 'src/hyper-v/scom-mp/v2'
+        $script:V2Root = Join-Path $script:RepoRoot 'src/hyper-v/scom-mp'
         $script:BuildTool = Join-Path $script:V2Root 'tools/Build-HyperVPrivateCloudManagementPacks.ps1'
         $script:Manifest = Get-Content -LiteralPath (Join-Path $script:V2Root 'build/build-manifest.json') -Raw | ConvertFrom-Json
         $script:Output = Join-Path ([System.IO.Path]::GetTempPath()) "hcs-hyperv-v2-$([guid]::NewGuid().ToString('N'))"

@@ -38,7 +38,7 @@ before the new ones are imported; export any customer-owned overrides first. See
 :::
 
 ::: danger Do not import from a local build directory
-If you build from source, `src/hyper-v/scom-mp/v2/out/development/` may contain a **partial** build.
+If you build from source, `src/hyper-v/scom-mp/out/development/` may contain a **partial** build.
 A partial build is missing `Presentation`, which all nine capability packs reference — so every
 capability import fails even though your management group is configured correctly.
 

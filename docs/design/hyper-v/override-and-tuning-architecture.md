@@ -179,7 +179,7 @@ settings. Templates never contain credentials, notification endpoints, Run As as
 company-specific groups.
 
 The committed `.xml.example` files are generated artifacts, not hand-maintained samples. Run
-`src/hyper-v/scom-mp/v2/tools/Update-HyperVPrivateCloudOverrideExamples.ps1` after changing the
+`src/hyper-v/scom-mp/tools/Update-HyperVPrivateCloudOverrideExamples.ps1` after changing the
 generator, catalog, or package profile. CI regenerates the entire 66-file matrix in a temporary
 directory and rejects any byte difference. It also builds all 13 product MPs and resolves every
 generated workflow, context, module, property, parameter, and reference. Generated examples use
@@ -189,7 +189,7 @@ replace them with the real release identities before publishing import-ready `.x
 Generate a customer-owned pair with:
 
 ```powershell
-./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
+./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
   -DeploymentProfile ClusteredS2D `
   -TuningTier Standard `
   -OrganizationId Contoso `

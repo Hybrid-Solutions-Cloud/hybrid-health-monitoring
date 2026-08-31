@@ -1,14 +1,14 @@
 #Requires -Version 7.0
 
-Describe 'Hyper-V Private Cloud v2 release tooling' {
+Describe 'Hyper-V Private Cloud release tooling' {
     BeforeAll {
         $script:RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-        $script:V2Root = Join-Path $script:RepositoryRoot 'src/hyper-v/scom-mp/v2'
+        $script:V2Root = Join-Path $script:RepositoryRoot 'src/hyper-v/scom-mp'
         $script:PackageTool = Join-Path $script:V2Root 'tools/New-HyperVPrivateCloudReleasePackage.ps1'
         $script:ValidationTool = Join-Path $script:V2Root 'tools/Test-HyperVPrivateCloudReleasePackage.ps1'
         $script:SealProject = Join-Path $script:RepositoryRoot 'tools/scom/SealManagementPack.proj'
         $script:EvidenceExample = Join-Path $script:V2Root 'release/release-evidence.example.json'
-        $script:ReleaseWorkflow = Join-Path $script:RepositoryRoot '.github/workflows/release-hyper-v-v2.yml'
+        $script:ReleaseWorkflow = Join-Path $script:RepositoryRoot '.github/workflows/release-hyper-v.yml'
         $script:PackageText = Get-Content -LiteralPath $script:PackageTool -Raw
         $script:ValidationText = Get-Content -LiteralPath $script:ValidationTool -Raw
         $script:WorkflowText = Get-Content -LiteralPath $script:ReleaseWorkflow -Raw

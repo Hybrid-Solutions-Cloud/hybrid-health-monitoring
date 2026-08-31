@@ -187,14 +187,14 @@ VMM bundles validate as Microsoft-signed; Pure's official `2.0.120.0` GitHub bun
 Run a non-publishable packaging exercise with a transient key:
 
 ```powershell
-./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
+./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
   -Version 1.0.0.0 `
   -SigningKeyPath D:/temporary-signing/transient-test.snk `
   -OutputPath D:/temporary-release/hyper-v-v2 `
   -BuildMode Test `
   -SkipSdkVerification
 
-./src/hyper-v/scom-mp/v2/tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
+./src/hyper-v/scom-mp/tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
   -PackagePath D:/temporary-release/hyper-v-v2
 ```
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "namespace": "HyperVPrivateCloud",
-  "sourceRoot": "src/hyper-v/scom-mp/v2",
+  "sourceRoot": "src/hyper-v/scom-mp",
   "artifacts": [
     { "id": "HyperVPrivateCloud.Library", "required": true, "kind": "Library", "dependsOn": [] },
     { "id": "HyperVPrivateCloud.Discovery", "required": true, "kind": "Discovery", "dependsOn": ["HyperVPrivateCloud.Library"] },

@@ -10,7 +10,7 @@
     is independent from the customer override MP version.
 
 .PARAMETER DeploymentProfile
-    Supported capability composition from packages.v2.json, such as Standalone, ClusteredS2D, or
+    Supported capability composition from packages.json, such as Standalone, ClusteredS2D, or
     CompletePrivateCloud.
 
 .PARAMETER TuningTier
@@ -231,7 +231,7 @@ function Get-HcsOverrideElement {
 
 $v2Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $catalogFile = if ($CatalogPath) { (Resolve-Path -LiteralPath $CatalogPath).Path } else { Join-Path $v2Root 'templates/overrides/tuning-catalog.json' }
-$contractFile = if ($ContractPath) { (Resolve-Path -LiteralPath $ContractPath).Path } else { Join-Path $v2Root '../contracts/packages.v2.json' }
+$contractFile = if ($ContractPath) { (Resolve-Path -LiteralPath $ContractPath).Path } else { Join-Path $v2Root 'contracts/packages.json' }
 $catalog = Get-Content -LiteralPath $catalogFile -Raw | ConvertFrom-Json
 $contract = Get-Content -LiteralPath $contractFile -Raw | ConvertFrom-Json
 

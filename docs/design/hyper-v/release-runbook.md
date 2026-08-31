@@ -29,7 +29,7 @@ curated directories containing the exact supported Microsoft and vendor prerequi
 From a clean `main` worktree, run:
 
 ```powershell
-./src/hyper-v/scom-mp/v2/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
+./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
   -Version 1.0.0.0 `
   -SigningKeyPath '<TEMPORARY_KEY_PATH>' `
   -DependencyPath '<CURATED_DEPENDENCY_DIRECTORY_1>','<CURATED_DEPENDENCY_DIRECTORY_2>' `
@@ -37,7 +37,7 @@ From a clean `main` worktree, run:
   -BuildMode Release `
   -ApprovedReleaseSigningIdentity
 
-./src/hyper-v/scom-mp/v2/tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
+./src/hyper-v/scom-mp/tools/Test-HyperVPrivateCloudReleasePackage.ps1 `
   -PackagePath '<EMPTY_OUTPUT_DIRECTORY>' `
   -RequireReleaseEligible
 ```

@@ -3,15 +3,15 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Describe 'Hyper-V Private Cloud Monitoring v2 override generation' {
+Describe 'Hyper-V Private Cloud Monitoring override generation' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-        $script:V2Root = Join-Path $script:RepoRoot 'src/hyper-v/scom-mp/v2'
+        $script:V2Root = Join-Path $script:RepoRoot 'src/hyper-v/scom-mp'
         $script:BuildTool = Join-Path $script:V2Root 'tools/Build-HyperVPrivateCloudManagementPacks.ps1'
         $script:Generator = Join-Path $script:V2Root 'tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1'
         $script:ExampleUpdater = Join-Path $script:V2Root 'tools/Update-HyperVPrivateCloudOverrideExamples.ps1'
         $script:CatalogPath = Join-Path $script:V2Root 'templates/overrides/tuning-catalog.json'
-        $script:ContractPath = Join-Path $script:V2Root '../contracts/packages.v2.json'
+        $script:ContractPath = Join-Path $script:V2Root 'contracts/packages.json'
         $script:CommittedExamples = Join-Path $script:V2Root 'templates/overrides/public'
         $script:Catalog = Get-Content -LiteralPath $script:CatalogPath -Raw | ConvertFrom-Json
         $script:Contract = Get-Content -LiteralPath $script:ContractPath -Raw | ConvertFrom-Json

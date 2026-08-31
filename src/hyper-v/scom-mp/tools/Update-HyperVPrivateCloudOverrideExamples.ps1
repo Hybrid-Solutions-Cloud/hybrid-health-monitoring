@@ -29,7 +29,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $v2Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$contractPath = Join-Path $v2Root '../contracts/packages.v2.json'
+$contractPath = Join-Path $v2Root 'contracts/packages.json'
 $generatorPath = Join-Path $PSScriptRoot 'New-HyperVPrivateCloudOverrideManagementPacks.ps1'
 $contract = Get-Content -LiteralPath $contractPath -Raw | ConvertFrom-Json
 if ([string]$contract.schemaVersion -ne '1.0') {
