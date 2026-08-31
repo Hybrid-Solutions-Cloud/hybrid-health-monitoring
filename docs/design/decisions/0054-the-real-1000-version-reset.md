@@ -1,6 +1,6 @@
 ---
-title: ADR 0054 — The real 1.0.0.0 - version reset and source-tree cleanup
-description: Why the never-deployed 1.0.0.0-1.4.0.0 download artifacts were withdrawn, the product re-released as a single true 1.0.0.0, and the "v2" source directory eliminated.
+title: ADR 0054 - The real 1.0.0.0 - version reset and source-tree cleanup
+description: Why every never-deployed download artifact was withdrawn, the product released as a single true 1.0.0.0, and the "v2" source directory eliminated.
 ---
 
 # ADR 0054 — The real 1.0.0.0: version reset and source-tree cleanup
@@ -19,7 +19,9 @@ into a management group.** The original `1.0.0.0` could not have monitored a rea
 every successor was published before anyone had tested its predecessor. The product owner's verdict:
 "we have yet to release a 1.0 — that shit never worked." A version history with four supersessions
 and a health warning on its own first release describes engineering churn, not releases, and forces
-every operator page to carry supersession caveats for versions nobody ever ran.
+every operator page to carry supersession caveats for versions nobody ever ran. The same verdict
+applies to the still-earlier `2.0.0.0` build under the abandoned `HybridSolutionsCloud.*` identity:
+never deployed, never a release.
 
 Separately, the current product's source lived in `src/hyper-v/scom-mp/v2/` — a folder named for the
 long-abandoned `HybridSolutionsCloud.*` `2.0.0.0` era (ADR 0049 renamed the identity and restarted
@@ -33,11 +35,10 @@ version line that does not exist.
    monitors, the per-intent Network ATC monitors, and every per-VM monitor and collection rule) —
    is sealed and published as `1.0.0.0`. It is the first release of Hyper-V Private Cloud
    Monitoring.
-2. **The never-deployed artifacts are withdrawn.** The `1.0.0.0`–`1.4.0.0` directories under
-   `docs/public/downloads/hyper-v-private-cloud/` are removed; `latest/` serves the new `1.0.0.0`.
-   They were engineering builds, retained until now only as evidence; the evidence lives on in git
-   history and the CHANGELOG. The `2.0.0.0` directory (the old identity) remains as the only
-   historical artifact, because ADR 0049 references it.
+2. **Every never-deployed artifact is withdrawn.** The `1.0.0.0`–`1.4.0.0` directories under
+   `docs/public/downloads/hyper-v-private-cloud/` are removed, and so are the old-identity
+   `2.0.0.0` artifacts — never deployed, never a release. `latest/` serves the one real `1.0.0.0`.
+   Git history is the only archive of the engineering builds.
    This consciously sets aside the "downloads are immutable evidence" convention for artifacts that
    were never releases — a decision made explicitly by the product owner.
 3. **No folder called `v2`.** The product source moved from `src/hyper-v/scom-mp/v2/` to
@@ -53,8 +54,9 @@ version line that does not exist.
 
 ## Consequences
 
-- Operators see a single download with no supersession warnings. A fresh management group imports
-  `1.0.0.0`; there is no in-place-upgrade story to document because nothing earlier was deployed.
+- Operators see a single download with no supersession warnings and no upgrade folklore about
+  versions nobody ever ran. A fresh management group imports `1.0.0.0`; there is no in-place-upgrade
+  story to document because nothing earlier was deployed.
 - Anyone who did import an engineering build (none known) must remove it before importing the real
   `1.0.0.0`, because SCOM will refuse a same-or-lower version import against the sealed token.
 - The CHANGELOG keeps the engineering history under an explicit "withdrawn engineering builds"
