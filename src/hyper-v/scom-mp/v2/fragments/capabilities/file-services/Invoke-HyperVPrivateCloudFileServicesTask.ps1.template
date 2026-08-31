@@ -1,0 +1,56 @@
+#Requires -Version 7.0
+# Hyper-V over SMB operator tasks. Read-only: SMB client connections, multichannel, witness, share posture, latency.
+param(
+    [ValidateSet('SmbReport', 'SmbLatency')]
+    [string]$Action = 'SmbReport',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+
+$lines.Add("Hyper-V Private Cloud SMB task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    if (-not (Get-Module -ListAvailable -Name SmbShare -ErrorAction SilentlyContinue)) { throw 'The SmbShare PowerShell module is not available on this host.' }
+    Import-Module SmbShare -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    switch ($Action) {
+        'SmbReport' {
+            Add-HcsSection 'Services'
+            Add-HcsText (Get-Service LanmanWorkstation, LanmanServer -ErrorAction SilentlyContinue | Select-Object Name, Status, StartType | Format-Table -AutoSize)
+            Add-HcsSection 'Client connections'
+            Add-HcsText (Get-SmbConnection -ErrorAction SilentlyContinue | Select-Object ServerName, ShareName, Dialect, NumOpens, Signed, Encrypted, ContinuouslyAvailable | Format-Table -AutoSize)
+            Add-HcsSection 'Multichannel connections'
+            Add-HcsText (Get-SmbMultichannelConnection -ErrorAction SilentlyContinue | Select-Object ServerName, ClientInterfaceFriendlyName, ClientIpAddress, ServerIpAddress, ClientRdmaCapable, ServerRdmaCapable, CurrentChannels, MaxChannels, Selected | Format-Table -AutoSize)
+            Add-HcsSection 'Client network interfaces'
+            Add-HcsText (Get-SmbClientNetworkInterface -ErrorAction SilentlyContinue | Select-Object FriendlyName, LinkSpeed, RdmaCapable, RssCapable, IpAddresses | Format-Table -AutoSize)
+            Add-HcsSection 'Witness registrations'
+            if (Get-Command Get-SmbWitnessClient -ErrorAction SilentlyContinue) { Add-HcsText (Get-SmbWitnessClient -ErrorAction SilentlyContinue | Select-Object ClientName, WitnessNodeName, FileServerNodeName, NetworkName, State, ShareName | Format-Table -AutoSize) }
+            Add-HcsSection 'Client and server security posture'
+            Add-HcsText (Get-SmbClientConfiguration -ErrorAction SilentlyContinue | Select-Object EnableMultiChannel, RequireSecuritySignature, EnableSecuritySignature, EnableInsecureGuestLogons | Format-List)
+            Add-HcsText (Get-SmbServerConfiguration -ErrorAction SilentlyContinue | Select-Object RequireSecuritySignature, EncryptData, RejectUnencryptedAccess, EnableSMB1Protocol, EnableSMB2Protocol | Format-List)
+            Add-HcsSection 'Local shares'
+            Add-HcsText (Get-SmbShare -ErrorAction SilentlyContinue | Where-Object { -not $_.Special } | Select-Object Name, Path, ContinuouslyAvailable, EncryptData, ScopeName | Format-Table -AutoSize)
+            Add-HcsSection 'VHDX files on UNC paths'
+            if (Get-Module -ListAvailable -Name Hyper-V -ErrorAction SilentlyContinue) {
+                Import-Module Hyper-V -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+                Add-HcsText (Get-VM -ErrorAction SilentlyContinue | Get-VMHardDiskDrive -ErrorAction SilentlyContinue | Where-Object Path -like '\\*' | Select-Object VMName, Path | Format-Table -AutoSize)
+            }
+        }
+        'SmbLatency' {
+            Add-HcsSection 'SMB client share counters'
+            try { Add-HcsText ((Get-Counter -Counter @('\SMB Client Shares(*)\Avg. sec/Read', '\SMB Client Shares(*)\Avg. sec/Write', '\SMB Client Shares(*)\Avg. Data Queue Length', '\SMB Client Shares(*)\Credit Stalls/sec') -ErrorAction Stop).CounterSamples | Select-Object InstanceName, @{ n = 'Counter'; e = { ($_.Path -split '\\')[-1] } }, @{ n = 'Value'; e = { [math]::Round($_.CookedValue, 5) } } | Format-Table -AutoSize) } catch { $lines.Add("  counters unavailable: $($_.Exception.Message)") }
+            Add-HcsSection 'Recent SMB client connectivity events'
+            try { Add-HcsText (Get-WinEvent -LogName 'Microsoft-Windows-SmbClient/Connectivity' -MaxEvents 20 -ErrorAction Stop | Select-Object TimeCreated, Id, LevelDisplayName, @{ n = 'Message'; e = { ($_.Message -split "`n")[0] } } | Format-Table -AutoSize -Wrap) } catch { $lines.Add('  (none)') }
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

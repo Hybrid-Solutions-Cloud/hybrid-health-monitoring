@@ -638,6 +638,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             HOST_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudHostHealth.ps1.template'
             VM_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudVmHealth.ps1.template'
             DIAGNOSTIC_SCRIPT = 'Get-HyperVPrivateCloudDiagnosticSummary.ps1.template'
+            HOST_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudHostTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $monitoringScriptPath = Join-Path $monitoringDirectory $entry.Value
@@ -661,6 +662,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             CLUSTER_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudClusterRelationships.ps1.template'
             CLUSTER_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudClusterIntegrationHealth.ps1.template'
             CLUSTER_CSV_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudClusterCsvHealth.ps1.template'
+            CLUSTER_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudClusterTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -676,6 +678,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             STORAGE_TOPOLOGY_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudStorageTopology.ps1.template'
             STORAGE_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudStorageIntegrationHealth.ps1.template'
             STORAGE_OBJECT_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudStorageObjectHealth.ps1.template'
+            STORAGE_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudStorageTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -709,6 +712,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             S2D_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudS2DRelationships.ps1.template'
             S2D_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudS2DIntegrationHealth.ps1.template'
             S2D_OBJECT_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudS2DObjectHealth.ps1.template'
+            S2D_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudS2DTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -742,6 +746,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $scriptTokens = [ordered]@{
             FILE_SERVICES_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudFileServices.ps1.template'
             FILE_SERVICES_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudFileServicesHealth.ps1.template'
+            FILE_SERVICES_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudFileServicesTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -761,6 +766,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $scriptTokens = [ordered]@{
             PHYSICAL_NETWORK_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudPhysicalNetworkRelationships.ps1.template'
             PHYSICAL_NETWORK_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudPhysicalNetworkIntegrationHealth.ps1.template'
+            PHYSICAL_NETWORK_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudPhysicalNetworkTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -778,6 +784,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $scriptTokens = [ordered]@{
             NETWORK_ATC_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudNetworkAtc.ps1.template'
             NETWORK_ATC_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudNetworkAtcHealth.ps1.template'
+            NETWORK_ATC_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudNetworkAtcTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -792,6 +799,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         $scriptTokens = [ordered]@{
             SDN_RELATIONSHIP_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudSdnRelationships.ps1.template'
             SDN_INTEGRATION_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudSdnIntegrationHealth.ps1.template'
+            SDN_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudSdnTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value
@@ -808,6 +816,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             VMM_HOST_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudVmmHostRelationships.ps1.template'
             VMM_CLOUD_DISCOVERY_SCRIPT = 'Discover-HyperVPrivateCloudVmmCloudRelationships.ps1.template'
             VMM_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudVmmHealth.ps1.template'
+            VMM_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudVmmTask.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $capabilityScriptPath = Join-Path $capabilityDirectory $entry.Value

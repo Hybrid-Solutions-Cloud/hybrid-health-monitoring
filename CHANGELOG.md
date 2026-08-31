@@ -70,6 +70,13 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
   `54d0fb1159995c86`), 66 public override packs, 14 bundles, manifests and SHA-256 checksums under
   `docs/public/downloads/hyper-v-private-cloud/1.1.0.0/` and `latest/`. `1.0.0.0` is retained as
   evidence only and marked not for deployment.
+* Operator task catalogue: 63 agent tasks across the Monitoring, Cluster, S2D, Storage, File
+  Services, Network ATC, Physical Network, VMM and SDN packs (read-only diagnostics plus clearly
+  labelled remediation tasks, each with knowledge), 4 console tasks (Remote Desktop, Hyper-V
+  Manager, Failover Cluster Manager, VM Connect), a VM-health diagnostic on the expected-state
+  monitor and two recoveries that ship disabled (restart VMMS, resume a paused VM).
+* Probe smoke test that runs every embedded script under `pwsh -File` with its real arguments
+  against a `MOM.ScriptAPI` shim (47 cases) — the layer whose absence let 1.0.0.0 ship.
 * Distributed Application roll-ups redesigned so each branch reflects its own domain (Storage,
   Networking, Availability, Management, Monitoring Pipeline) with Performance and Configuration
   roll-ups at both levels; Hyper-V event collection (8 channels) and alert rules (10) with operator

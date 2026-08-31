@@ -61,7 +61,8 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
                 $script:VmmCapability.SelectNodes('//ScriptBody'))) {
             $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
             $scriptBody.InnerText | Should -Match 'Set-StrictMode -Version Latest'
-            if ($scriptBody.ParentNode.ScriptName -notlike '*DiagnosticSummary*') {
+            # Task scripts (DiagnosticSummary and the *.Task.ps1 catalogue) return text through the write action, not a property bag.
+            if ($scriptBody.ParentNode.ScriptName -notlike '*DiagnosticSummary*' -and $scriptBody.ParentNode.ScriptName -notlike '*.Task.ps1' -and $scriptBody.ParentNode.ScriptName -notlike '*HostTask.ps1') {
                 $scriptBody.InnerText | Should -Match '\$api\.Return\('
             }
             $tokens = $null
@@ -223,9 +224,17 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 42
         @($script:Monitoring.SelectNodes("//Rule[Category='EventCollection']")).Count | Should -Be 8
         @($script:Monitoring.SelectNodes("//Rule[Category='Alert']")).Count | Should -Be 10
-        @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 1
-        # Every unit monitor and every alert rule carries operator knowledge.
-        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 49
+        # Diagnostic summary + 10 host tasks + 12 per-VM tasks (operator task catalogue, ADR 0053 follow-up).
+        @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 23
+        @($script:Monitoring.SelectNodes('//Recovery')).Count | Should -Be 2
+        foreach ($recovery in @($script:Monitoring.SelectNodes('//Recovery'))) { $recovery.Enabled | Should -Be 'false' -Because 'recoveries ship disabled (Holman)' }
+        @($script:Monitoring.SelectNodes('//Diagnostic')).Count | Should -Be 1
+        foreach ($task in @($script:Monitoring.SelectNodes('//Task'))) {
+            $script:Monitoring.SelectSingleNode("//DisplayString[@ElementID='$($task.ID)']/Name") | Should -Not -BeNullOrEmpty -Because "task $($task.ID) needs a display name"
+            if ($task.ID -ne 'HyperVPrivateCloud.DiagnosticSummary.Task') { $script:Monitoring.SelectSingleNode("//KnowledgeArticle[@ElementID='$($task.ID)']") | Should -Not -BeNullOrEmpty -Because "task $($task.ID) needs knowledge" }
+        }
+        # Every unit monitor (39), every alert rule (10) and every catalogue task (22) carries operator knowledge.
+        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 71
         # Legacy monitors superseded by the threshold-type depth monitors ship disabled so one condition never alerts twice.
         foreach ($legacy in @('HyperVPrivateCloud.Host.Cpu.Monitor', 'HyperVPrivateCloud.Host.Memory.Monitor', 'HyperVPrivateCloud.Host.Paging.Monitor', 'HyperVPrivateCloud.VmRuntime.MemoryPressure.Monitor')) {
             $script:Monitoring.SelectSingleNode("//UnitMonitor[@ID='$legacy']").Enabled | Should -Be 'false'
@@ -395,6 +404,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'uses non-throwing cluster capability probes and syntactically valid embedded PowerShell' {
         foreach ($scriptBody in $script:ClusterCapability.SelectNodes('//ScriptBody')) {
+            if ($scriptBody.ParentNode.ScriptName -like '*.Task.ps1') { continue }
             $scriptBody.InnerText | Should -Match 'function Test-HcsCapability'
             $scriptBody.InnerText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
             $tokens = $null
@@ -464,6 +474,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $discoveryScript = $script:StorageCapability.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.Capability.Storage.Topology.Discovery']//ScriptBody").InnerText
         $discoveryScript | Should -Match "\$storageId = 'lun:' \+ \(Get-HcsStableId"
         foreach ($scriptBody in $script:StorageCapability.SelectNodes('//ScriptBody')) {
+            if ($scriptBody.ParentNode.ScriptName -like '*.Task.ps1') { continue }
             $scriptBody.InnerText | Should -Match 'function Test-HcsCapability'
             $scriptBody.InnerText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
             $tokens = $null

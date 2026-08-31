@@ -1,0 +1,81 @@
+#Requires -Version 7.0
+# Failover Clustering operator tasks. Read-only actions first; remediation actions are separate Task elements.
+param(
+    [ValidateSet('ClusterSummary', 'ClusterLog', 'ValidateNetworkAndStorage', 'MoveCsvCoordinator', 'DrainNode', 'ResumeNode', 'ClearQuarantine', 'StartClusterGroup')]
+    [string]$Action = 'ClusterSummary',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+
+$lines.Add("Hyper-V Private Cloud cluster task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    if (-not (Get-Module -ListAvailable -Name FailoverClusters -ErrorAction SilentlyContinue)) { throw 'The FailoverClusters PowerShell module is not available on this node.' }
+    Import-Module FailoverClusters -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    $cluster = Get-Cluster -ErrorAction Stop
+    switch ($Action) {
+        'ClusterSummary' {
+            Add-HcsSection "Cluster $($cluster.Name)"
+            Add-HcsText ($cluster | Select-Object Name, Domain, ClusterFunctionalLevel, DynamicQuorum, WitnessDynamicWeight, QuarantineDuration, DrainOnShutdown, S2DEnabled | Format-List)
+            Add-HcsText (Get-ClusterQuorum -ErrorAction SilentlyContinue | Format-List)
+            Add-HcsSection 'Nodes'
+            Add-HcsText (Get-ClusterNode | Select-Object Name, State, StatusInformation, NodeWeight, DynamicWeight | Format-Table -AutoSize)
+            Add-HcsSection 'Networks'
+            Add-HcsText (Get-ClusterNetwork | Select-Object Name, State, Role, Address, Metric | Format-Table -AutoSize)
+            Add-HcsText (Get-ClusterNetworkInterface | Where-Object State -ne 'Up' | Select-Object Node, Network, Name, State | Format-Table -AutoSize)
+            Add-HcsSection 'Roles not online'
+            Add-HcsText (Get-ClusterGroup | Where-Object State -ne 'Online' | Select-Object Name, State, OwnerNode, GroupType | Format-Table -AutoSize)
+            Add-HcsSection 'Cluster Shared Volumes'
+            if (Get-Command Get-ClusterSharedVolume -ErrorAction SilentlyContinue) {
+                Add-HcsText (Get-ClusterSharedVolume | ForEach-Object { $c = $_; $c.SharedVolumeInfo | ForEach-Object { [pscustomobject]@{ Resource = $c.Name; Owner = $c.OwnerNode; State = $c.State; Path = $_.FriendlyVolumeName; FreeGB = [math]::Round($_.Partition.FreeSpace / 1GB, 1); UsedPercent = $_.Partition.PercentUsed; Redirected = $_.RedirectedAccess; MaintenanceMode = $_.MaintenanceMode; FaultState = $_.FaultState } } } | Format-Table -AutoSize)
+                Add-HcsText (Get-ClusterSharedVolumeState -ErrorAction SilentlyContinue | Where-Object StateInfo -ne 'Direct' | Select-Object Name, Node, StateInfo, VolumeFriendlyName | Format-Table -AutoSize)
+            }
+        }
+        'ClusterLog' {
+            $minutes = if ($Parameter -match '^\d+$') { [int]$Parameter } else { 30 }
+            $destination = Join-Path $env:ProgramData "HyperVPrivateCloud\ClusterLogs"
+            New-Item -ItemType Directory -Path $destination -Force | Out-Null
+            $files = Get-ClusterLog -TimeSpan $minutes -Destination $destination -ErrorAction Stop
+            Add-HcsSection "Cluster log for the last $minutes minutes"
+            Add-HcsText ($files | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize)
+        }
+        'ValidateNetworkAndStorage' {
+            Add-HcsSection 'Test-Cluster (Network, Storage Spaces Direct if present)'
+            $include = @('Network')
+            if ($cluster.S2DEnabled) { $include += 'Storage Spaces Direct' }
+            $report = Test-Cluster -Include $include -ErrorAction Stop
+            Add-HcsText ($report | Format-List)
+        }
+        'MoveCsvCoordinator' {
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the CSV resource name (see ClusterSummary).' }
+            Add-HcsText (Move-ClusterSharedVolume -Name $Parameter -ErrorAction Stop | Format-Table -AutoSize)
+        }
+        'DrainNode' {
+            $node = if ([string]::IsNullOrWhiteSpace($Parameter)) { $env:COMPUTERNAME } else { $Parameter }
+            Add-HcsText (Suspend-ClusterNode -Name $node -Drain -ErrorAction Stop | Select-Object Name, State | Format-Table -AutoSize)
+        }
+        'ResumeNode' {
+            $node = if ([string]::IsNullOrWhiteSpace($Parameter)) { $env:COMPUTERNAME } else { $Parameter }
+            Add-HcsText (Resume-ClusterNode -Name $node -Failback Immediate -ErrorAction Stop | Select-Object Name, State | Format-Table -AutoSize)
+        }
+        'ClearQuarantine' {
+            $node = if ([string]::IsNullOrWhiteSpace($Parameter)) { $env:COMPUTERNAME } else { $Parameter }
+            Add-HcsText (Start-ClusterNode -Name $node -ClearQuarantine -ErrorAction Stop | Select-Object Name, State | Format-Table -AutoSize)
+        }
+        'StartClusterGroup' {
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the cluster role (group) name.' }
+            Add-HcsText (Start-ClusterGroup -Name $Parameter -ErrorAction Stop | Select-Object Name, State, OwnerNode | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

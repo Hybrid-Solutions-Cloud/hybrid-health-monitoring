@@ -1,0 +1,55 @@
+#Requires -Version 7.0
+# Virtual Machine Manager operator tasks, run on the VMM management server under the VMM Run As profile.
+param(
+    [ValidateSet('FailedJobs', 'HostStatus', 'AgentVersions', 'LibraryStatus', 'RefreshHost')]
+    [string]$Action = 'FailedJobs',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+
+$lines.Add("Hyper-V Private Cloud VMM task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    $module = Get-Module -ListAvailable -Name VirtualMachineManager -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $module) { throw 'The VirtualMachineManager PowerShell module is not available on this server.' }
+    Import-Module -Name $module.Path -ErrorAction Stop -WarningAction SilentlyContinue
+    $vmm = Get-SCVMMServer -ComputerName $ComputerName -ErrorAction Stop
+    switch ($Action) {
+        'FailedJobs' {
+            $hours = if ($Parameter -match '^\d+$') { [int]$Parameter } else { 24 }
+            Add-HcsSection "Failed jobs in the last $hours hours"
+            Add-HcsText (Get-SCJob -VMMServer $vmm -Newest $hours -ErrorAction Stop | Where-Object Status -eq 'Failed' | Select-Object Name, ResultName, StartTime, ErrorInfo | Format-Table -AutoSize -Wrap)
+        }
+        'HostStatus' {
+            Add-HcsSection 'Hosts'
+            Add-HcsText (Get-SCVMHost -VMMServer $vmm -ErrorAction Stop | Select-Object Name, OverallState, CommunicationState, MaintenanceMode, VMHostGroup, AgentVersion, HyperVVersion, CPUPercentageUsage | Format-Table -AutoSize)
+        }
+        'AgentVersions' {
+            Add-HcsSection 'Server and agent versions'
+            $lines.Add("VMM server $($vmm.Name) version $($vmm.ProductVersion)")
+            Add-HcsText (Get-SCVMHost -VMMServer $vmm -ErrorAction Stop | Group-Object AgentVersion | Select-Object @{ n = 'AgentVersion'; e = { $_.Name } }, Count, @{ n = 'Hosts'; e = { ($_.Group.Name -join ', ') } } | Format-Table -AutoSize -Wrap)
+        }
+        'LibraryStatus' {
+            Add-HcsSection 'Library servers and shares'
+            Add-HcsText (Get-SCLibraryServer -VMMServer $vmm -ErrorAction SilentlyContinue | Select-Object Name, OverallState, CommunicationState, AgentVersion | Format-Table -AutoSize)
+            Add-HcsText (Get-SCLibraryShare -VMMServer $vmm -ErrorAction SilentlyContinue | Select-Object Name, Path, State, IsAvailableForPlacement | Format-Table -AutoSize)
+        }
+        'RefreshHost' {
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the host name as known to VMM.' }
+            $vmHost = Get-SCVMHost -VMMServer $vmm -ComputerName $Parameter -ErrorAction Stop
+            $job = Read-SCVMHost -VMHost $vmHost -RunAsynchronously -ErrorAction Stop
+            Add-HcsText ($job | Select-Object Name, OverallState, CommunicationState | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

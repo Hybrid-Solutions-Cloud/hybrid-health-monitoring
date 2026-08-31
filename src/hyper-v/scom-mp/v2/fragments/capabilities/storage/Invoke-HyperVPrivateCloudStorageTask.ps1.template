@@ -1,0 +1,78 @@
+#Requires -Version 7.0
+# SAN attach operator tasks (MPIO, iSCSI, Fibre Channel, logical units). Read-only actions first.
+param(
+    [ValidateSet('MultipathReport', 'IscsiReport', 'FibreChannelReport', 'LogicalUnitReport', 'RescanStorage', 'ReconnectIscsiTarget')]
+    [string]$Action = 'MultipathReport',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+function Import-HcsModule { param([string]$Name) if (-not (Get-Module -ListAvailable -Name $Name -ErrorAction SilentlyContinue)) { return $false }; Import-Module -Name $Name -ErrorAction SilentlyContinue -WarningAction SilentlyContinue; return $true }
+
+$lines.Add("Hyper-V Private Cloud storage task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    $null = Import-HcsModule -Name 'Storage'
+    switch ($Action) {
+        'MultipathReport' {
+            Add-HcsSection 'MPIO'
+            if (Get-Command mpclaim.exe -ErrorAction SilentlyContinue) { $lines.Add(((& mpclaim.exe -s -d 2>&1) -join [Environment]::NewLine)) } else { $lines.Add('Multipath-IO (mpclaim.exe) is not installed on this host.') }
+            if (Import-HcsModule -Name 'MPIO') {
+                Add-HcsText (Get-MSDSMGlobalDefaultLoadBalancePolicy -ErrorAction SilentlyContinue)
+                Add-HcsText (Get-MSDSMSupportedHW -ErrorAction SilentlyContinue | Format-Table -AutoSize)
+                Add-HcsText (Get-MPIOSetting -ErrorAction SilentlyContinue | Format-List)
+            }
+            Add-HcsSection 'MPIO disk paths (WMI)'
+            Add-HcsText (Get-CimInstance -Namespace root/wmi -ClassName MPIO_DISK_INFO -ErrorAction SilentlyContinue | ForEach-Object { $_.DriveInfo } | Select-Object Name, SerialNumber, NumberPaths, DsmName | Format-Table -AutoSize)
+        }
+        'IscsiReport' {
+            Add-HcsSection 'iSCSI initiator'
+            if (Import-HcsModule -Name 'iSCSI') {
+                Add-HcsText (Get-Service MSiSCSI -ErrorAction SilentlyContinue | Select-Object Name, Status, StartType | Format-Table -AutoSize)
+                Add-HcsText (Get-IscsiTargetPortal -ErrorAction SilentlyContinue | Select-Object TargetPortalAddress, TargetPortalPortNumber, InitiatorPortalAddress | Format-Table -AutoSize)
+                Add-HcsText (Get-IscsiTarget -ErrorAction SilentlyContinue | Select-Object NodeAddress, IsConnected | Format-Table -AutoSize)
+                Add-HcsText (Get-IscsiSession -ErrorAction SilentlyContinue | Select-Object TargetNodeAddress, IsConnected, IsPersistent, NumberOfConnections, SessionIdentifier | Format-Table -AutoSize)
+                Add-HcsText (Get-IscsiConnection -ErrorAction SilentlyContinue | Select-Object ConnectionIdentifier, InitiatorAddress, TargetAddress, TargetPortNumber | Format-Table -AutoSize)
+            }
+            else { $lines.Add('The iSCSI module is not available on this host.') }
+            Add-HcsSection 'Recent iScsiPrt errors'
+            try { Add-HcsText (Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'iScsiPrt'; Level = @(1, 2, 3) } -MaxEvents 20 -ErrorAction Stop | Select-Object TimeCreated, Id, LevelDisplayName, @{ n = 'Message'; e = { ($_.Message -split "`n")[0] } } | Format-Table -AutoSize -Wrap) } catch { $lines.Add('  (none)') }
+        }
+        'FibreChannelReport' {
+            Add-HcsSection 'Fibre Channel ports'
+            Add-HcsText (Get-InitiatorPort -ErrorAction SilentlyContinue | Where-Object ConnectionType -eq 'Fibre Channel' | Select-Object InstanceName, NodeAddress, PortAddress, OperationalStatus | Format-Table -AutoSize)
+            Add-HcsText (Get-CimInstance -Namespace root/wmi -ClassName MSFC_FibrePortHBAAttributes -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Attributes -ErrorAction SilentlyContinue | Select-Object PortWWN, PortState, PortSpeed, PortSupportedSpeed, FabricName | Format-Table -AutoSize)
+            Add-HcsSection 'Fibre Channel port statistics'
+            Add-HcsText (Get-CimInstance -Namespace root/wmi -ClassName MSFC_FibrePortHBAStatistics -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Statistics -ErrorAction SilentlyContinue | Select-Object LinkFailureCount, LossOfSignalCount, LossOfSyncCount, InvalidCRCCount, ErrorFrames, TxFrames, RxFrames | Format-Table -AutoSize)
+            Add-HcsSection 'HBA adapters'
+            Add-HcsText (Get-CimInstance -Namespace root/wmi -ClassName MSFC_FCAdapterHBAAttributes -ErrorAction SilentlyContinue | Select-Object Manufacturer, Model, DriverName, DriverVersion, FirmwareVersion, NodeWWN | Format-Table -AutoSize)
+        }
+        'LogicalUnitReport' {
+            Add-HcsSection 'SAN disks'
+            Add-HcsText (Get-Disk -ErrorAction SilentlyContinue | Where-Object BusType -in @('iSCSI', 'Fibre Channel', 'SAS', 'RAID') | Select-Object Number, FriendlyName, SerialNumber, BusType, OperationalStatus, HealthStatus, IsClustered, IsOffline, IsReadOnly, @{ n = 'SizeGB'; e = { [math]::Round($_.Size / 1GB, 1) } } | Format-Table -AutoSize)
+            Add-HcsSection 'Physical disk latency (current)'
+            try { Add-HcsText ((Get-Counter -Counter @('\PhysicalDisk(*)\Avg. Disk sec/Read', '\PhysicalDisk(*)\Avg. Disk sec/Write', '\PhysicalDisk(*)\Current Disk Queue Length') -ErrorAction Stop).CounterSamples | Where-Object InstanceName -ne '_total' | Select-Object InstanceName, @{ n = 'Counter'; e = { ($_.Path -split '\\')[-1] } }, @{ n = 'Value'; e = { [math]::Round($_.CookedValue, 4) } } | Format-Table -AutoSize) } catch { }
+        }
+        'RescanStorage' {
+            Update-HostStorageCache -ErrorAction Stop
+            $lines.Add('Host storage cache refreshed (Update-HostStorageCache).')
+            Add-HcsText (Get-Disk | Select-Object Number, FriendlyName, BusType, OperationalStatus | Format-Table -AutoSize)
+        }
+        'ReconnectIscsiTarget' {
+            if (-not (Import-HcsModule -Name 'iSCSI')) { throw 'The iSCSI module is not available on this host.' }
+            if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the target IQN (NodeAddress).' }
+            Connect-IscsiTarget -NodeAddress $Parameter -IsPersistent $true -IsMultipathEnabled $true -ErrorAction Stop | Out-Null
+            Add-HcsText (Get-IscsiSession | Where-Object TargetNodeAddress -eq $Parameter | Select-Object TargetNodeAddress, IsConnected, NumberOfConnections | Format-Table -AutoSize)
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

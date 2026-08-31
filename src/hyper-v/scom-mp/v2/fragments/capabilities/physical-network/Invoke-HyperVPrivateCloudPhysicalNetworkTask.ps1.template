@@ -1,0 +1,54 @@
+#Requires -Version 7.0
+# Physical host networking operator tasks (read-only).
+param(
+    [ValidateSet('AdapterInventory', 'AdapterErrors', 'SwitchUplinks')]
+    [string]$Action = 'AdapterInventory',
+    [string]$Parameter = '',
+    [string]$ComputerName = $env:COMPUTERNAME
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$lines = [System.Collections.Generic.List[string]]::new()
+function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
+function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
+
+$lines.Add("Hyper-V Private Cloud physical network task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
+try {
+    switch ($Action) {
+        'AdapterInventory' {
+            Add-HcsSection 'Physical adapters'
+            Add-HcsText (Get-NetAdapter -Physical -ErrorAction Stop | Sort-Object Name | Select-Object Name, InterfaceDescription, Status, MediaConnectionState, LinkSpeed, FullDuplex, MacAddress, DriverProvider, DriverVersion, DriverDate, MtuSize | Format-Table -AutoSize)
+            Add-HcsSection 'Hardware and offload'
+            Add-HcsText (Get-NetAdapterHardwareInfo -ErrorAction SilentlyContinue | Select-Object Name, Bus, Device, Function, Slot, PcieLinkSpeed, PcieLinkWidth | Format-Table -AutoSize)
+            Add-HcsText (Get-NetAdapterRss -ErrorAction SilentlyContinue | Select-Object Name, Enabled, NumberOfReceiveQueues | Format-Table -AutoSize)
+            Add-HcsText (Get-NetAdapterVmq -ErrorAction SilentlyContinue | Select-Object Name, Enabled, NumberOfReceiveQueues | Format-Table -AutoSize)
+            Add-HcsText (Get-NetAdapterSriov -ErrorAction SilentlyContinue | Select-Object Name, Enabled, NumVFs | Format-Table -AutoSize)
+            Add-HcsText (Get-NetAdapterAdvancedProperty -ErrorAction SilentlyContinue | Where-Object RegistryKeyword -like '*JumboPacket*' | Select-Object Name, DisplayValue | Format-Table -AutoSize)
+        }
+        'AdapterErrors' {
+            Add-HcsSection 'Adapter statistics'
+            Add-HcsText (Get-NetAdapterStatistics -ErrorAction Stop | Select-Object Name, ReceivedBytes, SentBytes, ReceivedPacketErrors, OutboundPacketErrors, ReceivedDiscardedPackets, OutboundDiscardedPackets | Format-Table -AutoSize)
+            Add-HcsSection 'Virtual switch drops'
+            try { Add-HcsText ((Get-Counter -Counter @('\Hyper-V Virtual Switch(*)\Dropped Packets Incoming/sec', '\Hyper-V Virtual Switch(*)\Dropped Packets Outgoing/sec') -ErrorAction Stop).CounterSamples | Select-Object InstanceName, @{ n = 'Counter'; e = { ($_.Path -split '\\')[-1] } }, CookedValue | Format-Table -AutoSize) } catch { $lines.Add('  (virtual switch counters unavailable)') }
+        }
+        'SwitchUplinks' {
+            if (Get-Module -ListAvailable -Name Hyper-V -ErrorAction SilentlyContinue) {
+                Import-Module Hyper-V -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+                Add-HcsSection 'External switches and uplinks'
+                Add-HcsText (Get-VMSwitch -ErrorAction SilentlyContinue | Where-Object SwitchType -eq 'External' | Select-Object Name, EmbeddedTeamingEnabled, NetAdapterInterfaceDescriptions | Format-List)
+                Add-HcsText (Get-VMSwitchTeam -ErrorAction SilentlyContinue | Format-List)
+                Add-HcsText (Get-VMNetworkAdapterTeamMapping -ManagementOS -ErrorAction SilentlyContinue | Format-Table -AutoSize)
+            }
+            else { $lines.Add('The Hyper-V module is not available on this host.') }
+            Add-HcsSection 'LBFO teams (legacy)'
+            if (Get-Command Get-NetLbfoTeam -ErrorAction SilentlyContinue) { Add-HcsText (Get-NetLbfoTeam -ErrorAction SilentlyContinue | Select-Object Name, Status, TeamingMode, LoadBalancingAlgorithm, Members | Format-Table -AutoSize) }
+        }
+    }
+}
+catch {
+    $lines.Add("FAILED: $($_.Exception.Message)")
+}
+$lines -join [Environment]::NewLine

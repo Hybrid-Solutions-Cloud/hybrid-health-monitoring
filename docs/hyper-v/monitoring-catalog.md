@@ -43,6 +43,32 @@ and every branch rolls Availability, Performance and Configuration into the serv
 `Hyper-V Private Cloud Objects` group contains everything inside any Distributed Application and
 backs the **All Active Alerts** view.
 
+### Operator tasks
+
+Every pack carries a task runner (one PowerShell 7 script per capability, `-Action` selects the
+task) so operators can diagnose and, where labelled **Remediation**, act from the console without
+leaving SCOM. Read-only tasks change nothing; remediation tasks are separate elements the console
+confirms before running, and their knowledge states the blast radius. `Parameter` is overridable at
+run time where a task needs a name (VM, CSV, node, virtual disk, target IQN, intent).
+
+| Target | Read-only | Remediation |
+|---|---|---|
+| Hyper-V host | VM inventory · host headroom · Hyper-V event tail · live-migration settings and recent migrations · virtual switch / SET / uplink configuration · pending reboot · monitoring pipeline self-test · Hyper-V BPA · diagnostic summary | restart VMMS · restart Host Compute Service |
+| Virtual machine | detail (config, integration services, vNICs, VHD chain, checkpoints) · performance snapshot · Replica status | start · shut down · save · resume · restart · merge checkpoints · create checkpoint · resume replication · live migrate to best node |
+| Failover cluster | cluster summary (quorum, nodes, networks, roles, CSV state) · cluster log · validate network/S2D | move CSV coordinator · drain node · resume node · clear quarantine · start cluster role |
+| Storage Spaces Direct | health report and faults · storage jobs · disk reliability counters · capacity | repair virtual disk · retire physical disk · storage maintenance mode on/off · reattach detached virtual disk |
+| SAN (FC / iSCSI / MPIO) | MPIO path report · iSCSI initiator report · Fibre Channel port report · SAN disks and latency | rescan storage · reconnect iSCSI target |
+| SMB / SOFS | SMB client and share report · SMB latency and connectivity events | — |
+| Network ATC | intent status · RDMA / DCB / SMB Direct health | retry intent on this node |
+| Physical network | adapter inventory · adapter errors and discards · switch uplinks and team members | — |
+| VMM | failed jobs · host status · agent versions · library status | refresh host in VMM |
+| SDN host binding | host agent status · certificate status · host agent events | restart host agents |
+| Console tasks | Remote Desktop to host · Hyper-V Manager · Failover Cluster Manager · VM Connect | — |
+
+Two recoveries ship **disabled** (restart VMMS when its monitor is critical; resume a paused VM when
+the expected-state monitor is critical) and one diagnostic runs automatically (VM health detail on
+expected-state failure).
+
 Known limitations carried into the next major release are listed in ADR 0053: per-instance probe
 fan-out and in-script thresholds in the older capability monitors (cookdown), host-wide facts still
 evaluated per LUN/session/intent in the Storage and Network ATC packs, and the inert VLAN-mismatch
