@@ -399,7 +399,7 @@ function Invoke-HcsSeal {
     Invoke-HcsNativeTool -FilePath $MsBuild -ArgumentList $arguments -FailureMessage "Microsoft VSAE sealing failed for '$(Split-Path -Leaf $ManagementPackPath)'." | Write-Output
 }
 
-$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../../..')).Path
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 $resolvedKeyPath = (Resolve-Path -LiteralPath $SigningKeyPath).Path
 $repositoryPrefix = $repositoryRoot.TrimEnd('\') + '\'
 if ($resolvedKeyPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
