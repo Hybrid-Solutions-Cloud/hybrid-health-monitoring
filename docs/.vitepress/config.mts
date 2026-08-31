@@ -112,6 +112,7 @@ const azureLocalSidebar = [
       { text: 'Prerequisites', link: '/azure-local/scom/prerequisites' },
       { text: 'Download lab preview', link: '/downloads/scom-lab-preview' },
       { text: 'Administration guide', link: '/azure-local/scom/management-pack-guide' },
+      { text: 'Operations guide', link: '/azure-local/scom/operations-guide' },
       { text: 'Monitoring catalog', link: '/azure-local/scom/monitoring-catalog' },
       { text: 'Health-rollup tree', link: '/azure-local/scom/diagrams/health-tree' },
       { text: 'SquaredUp Dashboard Server', link: '/azure-local/scom/squaredup/' },
@@ -122,6 +123,7 @@ const azureLocalSidebar = [
     items: [
       { text: 'Overview', link: '/azure-local/azure-monitor/' },
       { text: 'Prerequisites', link: '/azure-local/azure-monitor/prerequisites' },
+      { text: 'Operations guide', link: '/azure-local/azure-monitor/operations-guide' },
       { text: 'Entity graph', link: '/azure-local/azure-monitor/diagrams/entity-graph' },
       { text: 'SquaredUp Cloud', link: '/azure-local/azure-monitor/squaredup/' },
     ],
