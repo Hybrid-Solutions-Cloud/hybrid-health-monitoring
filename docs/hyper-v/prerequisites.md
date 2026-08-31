@@ -25,7 +25,7 @@ then obtain only the prerequisites on that list.
 ## Before anything else: get the packs from the right place
 
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
-from `docs/public/downloads/hyper-v-private-cloud/1.4.0.0/`.
+from `docs/public/downloads/hyper-v-private-cloud/1.0.0.0/`.
 
 ::: warning Upgrading from 2.0.0.0
 This page documents the **`HyperVPrivateCloud.*`** identities used from `1.0.0.0` onward. The
@@ -221,7 +221,7 @@ selectively in the past you may have the management library without the base lib
 
 ### Cluster nodes need agent proxy enabled
 
-From 1.3.0.0 the cluster-wide monitors, the CSV capacity rules and the cluster relationship discovery
+The cluster-wide monitors, the CSV capacity rules and the cluster relationship discovery
 target `HyperVPrivateCloud.Capability.Cluster.ClusterRole`, which is hosted by the cluster core
 virtual server (`Microsoft.Windows.Cluster.VirtualServer`) — the same object Microsoft's own
 Cluster and CSV packs use. A node can only submit discovery data for an object it does not host

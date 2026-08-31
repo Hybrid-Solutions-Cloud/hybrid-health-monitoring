@@ -14,37 +14,19 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.4.0.0
+## Current release: 1.0.0.0
 
-All 13 product Management Packs are sealed with the permanent public key token
-`54d0fb1159995c86`, verified by Microsoft VSAE, strong-name checked, and covered by the published
-SHA-256 manifest. The release contains 13 sealed Management Packs, 66 public override packs, and 14
-deterministic bundles: 162 unit monitors, 96 dependency roll-ups, 80 rules, 21 discoveries,
-112 views, 63 operator tasks plus 4 console tasks, and 234 knowledge articles across host, VM,
-Failover Clustering, CSV, Storage Spaces Direct, SAN (Fibre Channel, iSCSI, MPIO), SMB/SOFS,
-Network ATC, physical networking, SDN host binding, VMM and Pure Storage.
-
-`1.4.0.0` supersedes `1.3.0.0`: host-wide facts (iSCSI/MPIO event counts, Network ATC ETS and QoS
-policy) are evaluated once per host instead of once per session, LUN or intent; the Physical Network
-link monitors watch only vSwitch-uplink and intent adapters by default; and the File Services link to
-Microsoft's SMB service objects is an opt-in discovery, so a NAS-backed deployment no longer loses
-its whole File Services topology to an unresolvable host reference.
-`1.3.0.0` superseded `1.2.0.0`: cluster-wide facts (CSV state, quorum, node, network and role
-state) are now evaluated once per cluster on a cluster-hosted role instead of once per node, and the
-four original storage availability monitors plus the inert VLAN-mismatch monitor ship disabled as
-superseded. The [`1.2.0.0`](/downloads/hyper-v-private-cloud/1.2.0.0/release-assets.json) and
-[`1.1.0.0`](/downloads/hyper-v-private-cloud/1.1.0.0/release-assets.json) files stay published as
-release evidence.
-
-::: danger 1.0.0.0 is superseded and must not be deployed
-The full pack review recorded in
-[ADR 0053](../design/decisions/0053-management-pack-review-and-runtime-correctness.md) found four
-runtime defects that stopped every `1.0.0.0` probe and discovery script before its first statement.
-That release could never have monitored a real host. Its files stay under
-[`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json) as release evidence only.
-If it was imported, upgrade in place to `1.4.0.0`: every element ID is preserved, so overrides carry
-forward.
-:::
+This is the **first release** of Hyper-V Private Cloud Monitoring. All 13 product Management Packs
+are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
+strong-name checked, and covered by the published SHA-256 manifest. The release contains 13 sealed
+Management Packs, 66 public override packs, and 14 deterministic bundles: 162 unit monitors, 96
+dependency roll-ups, 80 rules, 22 discoveries, 112 views, 63 operator tasks plus 4 console tasks,
+and 234 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
+(Fibre Channel, iSCSI, MPIO), SMB/SOFS, Network ATC, physical networking, SDN host binding, VMM and
+Pure Storage. Cluster-wide facts are evaluated once per cluster, host-wide facts once per host, and
+one probe run per host feeds every per-VM, per-LUN, per-session, per-port and per-intent monitor
+([ADR 0053](../design/decisions/0053-management-pack-review-and-runtime-correctness.md),
+[ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 
 Management Packs are named for the product — `HyperVPrivateCloud.Library`,
 `HyperVPrivateCloud.Capability.Cluster`, and so on. Publisher attribution is carried in the sealed
@@ -59,7 +41,7 @@ Export any customer-owned override Management Packs first, then re-apply them ag
 IDs after importing. Reasoning and detail in
 [ADR 0049](../design/decisions/0049-product-named-management-pack-identity.md).
 
-The version line restarts at `1.0.0.0` because this is a new pack identity with no prior release.
+The version line starts at `1.0.0.0` because this is a new pack identity with no prior release.
 :::
 
 ## Download now
@@ -72,8 +54,10 @@ The version line restarts at `1.0.0.0` because this is a new pack identity with 
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.4.0.0`](/downloads/hyper-v-private-cloud/1.4.0.0/release-assets.json). The `latest` directory
+[`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
+Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
+([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 
 The superseded [`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json) assets are
 retained unchanged as release evidence. They carry the previous

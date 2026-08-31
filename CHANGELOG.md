@@ -1,6 +1,29 @@
 # Changelog
 
-## [1.0.0.0] — 2026-08-30
+## [1.0.0.0] — 2026-08-31
+
+**The first release of Hyper-V Private Cloud Monitoring.** 13 permanently sealed Management Packs
+(token `54d0fb1159995c86`), 66 public override packs, 14 deterministic bundles, manifests and
+SHA-256 checksums under `docs/public/downloads/hyper-v-private-cloud/1.0.0.0/` and `latest/`:
+162 unit monitors, 96 dependency roll-ups, 80 rules, 22 discoveries, 112 views, 63 agent tasks,
+4 console tasks and 234 knowledge articles.
+
+This release consolidates everything below. The sealed builds published briefly during
+2026-08-30/31 under versions `1.0.0.0`–`1.4.0.0` were engineering iterations that were never
+deployed to any management group; they were withdrawn and their download artifacts removed
+([ADR 0054](docs/design/decisions/0054-the-real-1000-version-reset.md)). The source tree also lost
+its misleading `v2` directory: the product lives at `src/hyper-v/scom-mp/`, with the abandoned
+pre-rename pack source under `archive/hyperv-scom-mp-legacy/`.
+
+Highlights on top of the section below: cluster-wide facts evaluated once per cluster on a
+cluster-hosted role; host-wide facts (iSCSI/MPIO event counts, ATC ETS/QoS) once per host; **one
+probe run per host** feeding every per-VM, per-LUN, per-session, per-port and per-intent monitor
+and collection rule (cookdown restored across the board); Physical Network link monitors scoped to
+vSwitch-uplink and intent adapters by default; the File Services link to Microsoft's SMB service
+objects as an opt-in discovery; a 63-task operator catalogue; and a probe smoke test that runs
+every embedded script under `pwsh -File` before a release can be cut.
+
+## Withdrawn: engineering build — 2026-08-30 (never deployed; see ADR 0054)
 
 First release of Hyper-V Private Cloud Monitoring under its own product-named identity.
 
@@ -40,7 +63,7 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 * Navigation restructured task-first; architecture decision records moved to their own themed
   section.
 
-## [Unreleased]
+## Consolidated engineering notes (2026-08-30/31, released as 1.0.0.0 above)
 
 * Move the project to `Hybrid-Solutions-Cloud/hybrid-health-monitoring` and publish documentation
   at `https://labs.hybridsolutions.cloud/hybrid-health-monitoring/`.
