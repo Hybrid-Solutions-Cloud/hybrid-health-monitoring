@@ -3,6 +3,7 @@ param($CpuWarningPercent = 80, $CpuCriticalPercent = 90, $MemoryWarningMB = 4096
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 $api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 $statesSet = @{}
@@ -19,7 +20,7 @@ function Test-HcsCapability {
     try {
         if ($ModuleName) {
             if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-            if (-not (Get-Module -Name $ModuleName -ErrorAction SilentlyContinue)) { Import-Module -Name $ModuleName -ErrorAction SilentlyContinue }
+            if (-not (Get-Module -Name $ModuleName -ErrorAction SilentlyContinue)) { Import-Module -Name $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
         }
         return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
     }
@@ -89,8 +90,18 @@ try {
         }
         else {
             Write-HcsState 'HyperVPowerShellState' 'Good' 'The Hyper-V PowerShell module and Get-VMHost command are available.'
+            # VMHost has no version property (StrictMode would throw). Hypervisor health = the
+            # hypervisor is actually loaded and VMMS answers; version comes from the VMMS binary.
             $vmHost = Get-VMHost
-            Write-HcsState 'HypervisorState' 'Good' ('Hyper-V host version: ' + [string]$vmHost.HyperVVersion)
+            $hypervisorPresent = $true
+            try { $hypervisorPresent = [bool](Get-CimInstance -ClassName 'Win32_ComputerSystem').HypervisorPresent } catch { $hypervisorPresent = $true }
+            $vmmsVersion = try { (Get-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\vmms.exe') -ErrorAction Stop).VersionInfo.ProductVersion } catch { 'unknown' }
+            if ($hypervisorPresent) {
+                Write-HcsState 'HypervisorState' 'Good' ("Hypervisor is running; VMMS version {0}; host {1}" -f $vmmsVersion, [string]$vmHost.Name)
+            }
+            else {
+                Write-HcsState 'HypervisorState' 'Critical' ("The hypervisor is not running on this host (HypervisorPresent=false); virtual machines cannot start. VMMS version {0}." -f $vmmsVersion)
+            }
             $vms = @(Get-VM)
 
             $unexpected = @($vms | Where-Object { $_.AutomaticStartAction -eq 'Start' -and $_.State -notin @('Running', 'Starting', 'Stopping', 'Saving', 'Pausing', 'Resuming') })
@@ -143,8 +154,9 @@ try {
     Write-HcsState 'CpuState' $cpuState ("Hypervisor processor utilization: {0}%" -f $cpu)
     $bag.AddValue('HypervisorCpuPercent', $cpu)
 
-    $pagesInput = [math]::Round((Get-Counter '\Memory\Pages Input/sec').CounterSamples[0].CookedValue, 2)
-    $pagingState = if ($pagesInput -ge [double]$PagesInputCriticalPerSecond) { 'Critical' } elseif ($pagesInput -ge [double]$PagesInputWarningPerSecond) { 'Warning' } else { 'Good' }
+    # Guarded: a localized OS or a corrupt counter registry must not abort the whole probe.
+    $pagesInput = Get-HcsCounterMaximum -Path '\Memory\Pages Input/sec'
+    $pagingState = if ($pagesInput -lt 0) { 'NotApplicable' } elseif ($pagesInput -ge [double]$PagesInputCriticalPerSecond) { 'Critical' } elseif ($pagesInput -ge [double]$PagesInputWarningPerSecond) { 'Warning' } else { 'Good' }
     Write-HcsState 'PagingState' $pagingState ("Pages Input/sec: {0}" -f $pagesInput)
     $bag.AddValue('PagesInputPerSecond', $pagesInput)
 

@@ -9,12 +9,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([Parameter(Mandatory)][string]$ModuleName, [Parameter(Mandatory)][string]$CommandName)
     try {
         if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-        Import-Module -Name $ModuleName -ErrorAction SilentlyContinue
+        Import-Module -Name $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
         return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
     }
     catch { return $false }
@@ -80,7 +81,7 @@ function Test-HcsLocalHost {
     return $candidate.Equals($expected, [StringComparison]::OrdinalIgnoreCase)
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {

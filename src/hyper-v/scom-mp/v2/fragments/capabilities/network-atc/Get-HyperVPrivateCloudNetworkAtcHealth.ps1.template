@@ -8,32 +8,42 @@ param(
     [Parameter(Mandatory)][string]$ComputerName,
     [string]$IntentName,
     [string]$AdapterNames,
-    [bool]$IsStorageIntent = $false,
-    [bool]$RequireNetworkATC = $false,
-    [bool]$RequireRdmaForStorage = $true,
+    [string]$IsStorageIntent = 'false',
+    [string]$RequireNetworkATC = 'false',
+    [string]$RequireRdmaForStorage = 'true',
     [int]$MaxTransitionalMinutes = 30,
     [int]$ComplianceToleranceMinutes = 60,
     [int]$MaxRetryCount = 3,
-    [bool]$RequireRdma = $true,
-    [bool]$RequireDcb = $true,
+    [string]$RequireRdma = 'true',
+    [string]$RequireDcb = 'true',
     [int]$ExpectedPfcPriority = 3,
     [int]$ExpectedClusterPriority = 7,
     [int]$MinimumEtsBandwidthPercent = 50,
     [int]$ExpectedTrafficClassCount = 2,
     [int]$MinimumAdapterSpeedGbps = 10,
     [int]$MaxAdapterSpeedVariancePercent = 0,
-    [bool]$RequireVmSwitchForComputeIntent = $true,
+    [string]$RequireVmSwitchForComputeIntent = 'true',
     [int]$MaxNodesOutOfCompliance = 0
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+# pwsh -File delivers every argument as a string, and [bool] parameters refuse the strings 'true'/'false' that
+# the data-source Arguments pass. Declare them as strings and coerce once here; empty means false.
+[bool]$IsStorageIntent = ([string]$IsStorageIntent) -match '^(?i)(true|1|yes)$'
+[bool]$RequireNetworkATC = ([string]$RequireNetworkATC) -match '^(?i)(true|1|yes)$'
+[bool]$RequireRdmaForStorage = ([string]$RequireRdmaForStorage) -match '^(?i)(true|1|yes)$'
+[bool]$RequireRdma = ([string]$RequireRdma) -match '^(?i)(true|1|yes)$'
+[bool]$RequireDcb = ([string]$RequireDcb) -match '^(?i)(true|1|yes)$'
+[bool]$RequireVmSwitchForComputeIntent = ([string]$RequireVmSwitchForComputeIntent) -match '^(?i)(true|1|yes)$'
 
 function Test-HcsCapability {
     param([Parameter(Mandatory)][string]$ModuleName, [Parameter(Mandatory)][string]$CommandName)
     try {
         if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-        Import-Module -Name $ModuleName -ErrorAction SilentlyContinue
+        Import-Module -Name $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
         return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
     }
     catch { return $false }
@@ -60,7 +70,7 @@ function Get-HcsStatusState {
     $lastUpdatedValue = Get-HcsPropertyValue -InputObject $Status -Name @('LastUpdated')
     $detail = "$Subject configuration='$configuration', provisioning='$provisioning', error='$errorCode', progress='$progress', retries='$retryCount'."
 
-    if ($configuration -eq 'Success' -and $provisioning -eq 'Completed' -and [string]::IsNullOrWhiteSpace($errorCode)) {
+    if ($configuration -eq 'Success' -and $provisioning -in @('Completed', '') -and [string]::IsNullOrWhiteSpace($errorCode)) {
         return [pscustomobject]@{ State = 'Good'; Detail = $detail }
     }
     if ($configuration -in @('Failed', 'Error') -or -not [string]::IsNullOrWhiteSpace($errorCode)) {
@@ -149,7 +159,7 @@ function New-HcsResult {
     return [pscustomobject]@{ State = $State; Detail = $Detail }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 $state = 'Good'
 $detail = 'Network ATC is healthy.'

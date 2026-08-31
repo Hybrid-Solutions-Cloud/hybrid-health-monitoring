@@ -1,8 +1,9 @@
 #Requires -Version 7.0
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 if (-not (Get-Command -Name 'Get-VMHost' -ErrorAction SilentlyContinue)) {
-    if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue }
+    if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
 }
 if (-not (Get-Command -Name 'Get-VMHost' -ErrorAction SilentlyContinue)) {
     throw 'The Hyper-V PowerShell module is unavailable. Install Hyper-V-PowerShell with Install-WindowsFeature Hyper-V -IncludeManagementTools.'
@@ -22,7 +23,10 @@ $process = Get-Process -Id $PID
     AutomationAssemblyLocation = $automationAssembly.Location
     AutomationAssemblyVersion = $automationAssembly.GetName().Version.ToString()
     Is64BitProcess = [Environment]::Is64BitProcess
-    HyperVVersion = $hostData.HyperVVersion
+    HyperVHostName = $hostData.Name
+    HypervisorPresent = $(try { [bool](Get-CimInstance -ClassName 'Win32_ComputerSystem').HypervisorPresent } catch { 'unknown' })
+    VmmsVersion = $(try { (Get-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\vmms.exe') -ErrorAction Stop).VersionInfo.ProductVersion } catch { 'unknown' })
+    SupportedVmVersions = ($hostData.SupportedVmVersions -join ', ')
     VirtualMachines = $vms.Count
     RunningVirtualMachines = @($vms | Where-Object State -eq 'Running').Count
     VirtualSwitches = $switches.Count

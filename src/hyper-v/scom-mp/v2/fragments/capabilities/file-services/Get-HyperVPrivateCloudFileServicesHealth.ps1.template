@@ -20,12 +20,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
     try {
         if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-        Import-Module $ModuleName -ErrorAction SilentlyContinue
+        Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
         return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
     }
     catch { return $false }
@@ -82,7 +83,7 @@ function Get-HcsSmbCounterAverage {
     catch { return $null }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 
 # Shipped v1 property bag values. Their names and semantics must not change.
@@ -390,7 +391,19 @@ catch {
     else {
         $serviceState = 'Critical'
         $serviceStateDetail = "SMB detail query failed: $($_.Exception.Message)"
+        $probeFailed = $true
         $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $serviceStateDetail)
+    }
+}
+
+# A failed detail probe must be visible: every facet state the probe never reached becomes Warning with the
+# failure text, instead of NotApplicable (which the monitor types evaluate as healthy).
+if ((Get-Variable -Name probeFailed -ValueOnly -ErrorAction SilentlyContinue) -and ($Facet -eq 'Detail')) {
+    foreach ($stateVariable in @('shareAvailabilityState', 'clientSessionErrorState', 'serverSessionErrorState', 'signingState', 'encryptionState', 'continuousAvailabilityState', 'witnessState', 'multichannelPathState', 'readLatencyState', 'writeLatencyState')) {
+        if ((Get-Variable -Name $stateVariable -ValueOnly -ErrorAction SilentlyContinue) -eq 'NotApplicable') {
+            Set-Variable -Name $stateVariable -Value 'Warning'
+            Set-Variable -Name ($stateVariable + 'Detail') -Value $serviceStateDetail
+        }
     }
 }
 

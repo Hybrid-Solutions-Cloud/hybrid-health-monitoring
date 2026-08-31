@@ -10,13 +10,19 @@ param(
     [int]$CriticalDiscardsPerSecond = 50,
     [int]$WarningUtilizationPercent = 70,
     [int]$CriticalUtilizationPercent = 90,
-    [bool]$RequireLldpCorrelation = $false,
-    [bool]$RequireVlanMatch = $false,
+    [string]$RequireLldpCorrelation = 'false',
+    [string]$RequireVlanMatch = 'false',
     [int]$SampleSeconds = 10
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+# pwsh -File delivers every argument as a string, and [bool] parameters refuse the strings 'true'/'false' that
+# the data-source Arguments pass. Declare them as strings and coerce once here; empty means false.
+[bool]$RequireLldpCorrelation = ([string]$RequireLldpCorrelation) -match '^(?i)(true|1|yes)$'
+[bool]$RequireVlanMatch = ([string]$RequireVlanMatch) -match '^(?i)(true|1|yes)$'
 
 function Get-HcsPropertyValue {
     param([AllowNull()]$InputObject, [Parameter(Mandatory)][string[]]$Name)

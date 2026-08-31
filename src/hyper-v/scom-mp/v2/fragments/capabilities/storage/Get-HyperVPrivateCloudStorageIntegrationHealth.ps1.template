@@ -3,16 +3,17 @@ param([string]$ComputerName)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
     if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
     catch { return $false }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 $state = 'Good'
 $detail = 'Windows SAN integration queries completed successfully.'

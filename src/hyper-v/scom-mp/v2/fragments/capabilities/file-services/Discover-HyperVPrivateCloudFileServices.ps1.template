@@ -9,12 +9,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
     try {
         if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-        Import-Module $ModuleName -ErrorAction SilentlyContinue
+        Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
         return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
     }
     catch { return $false }
@@ -52,11 +53,11 @@ function Get-HcsUncIdentity {
     [pscustomobject]@{ Server = $server; Share = $share; Unc = "\\$server\$share"; ShareId = "smb:" + (Get-HcsStableId "$server|$share") }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
-    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { $script:DiscoveryData; return }
+    if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { $api.Return($script:DiscoveryData); return }
     $hasSmbClient = Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection'
     $hasMultichannel = Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection'
     $connections = if ($hasSmbClient) { @(Get-SmbConnection -ErrorAction SilentlyContinue) } else { @() }

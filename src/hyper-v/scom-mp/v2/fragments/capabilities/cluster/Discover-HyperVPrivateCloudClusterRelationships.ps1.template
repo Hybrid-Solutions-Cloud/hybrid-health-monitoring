@@ -8,12 +8,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
 
     if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
     catch { return $false }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
@@ -42,7 +43,7 @@ function Add-HcsRelationship {
     $script:DiscoveryData.AddInstance($relationship)
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 
 try {
@@ -88,6 +89,11 @@ try {
     }
 
     foreach ($network in @(Get-ClusterNetwork -Cluster $cluster -ErrorAction Stop)) {
+        # Microsoft's cluster MP does not discover networks with Role None (cluster use disabled); submitting
+        # them here would create unmonitored ghost network objects.
+        $networkRole = ''
+        try { $networkRole = [string]$network.Role } catch { $networkRole = '' }
+        if ($networkRole -match '^(None|0)$') { continue }
         $networkInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Network']$")
         Add-HcsProperty $networkInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ClusterName$" $clusterName
         Add-HcsProperty $networkInstance "$MPElement[Name='ClusterManagement!Microsoft.Windows.Cluster.Component']/ObjectName$" ([string]$network.Name)
@@ -96,10 +102,22 @@ try {
 
     if (Get-Command -Name 'Get-ClusterSharedVolume' -ErrorAction SilentlyContinue) {
         foreach ($csv in @(Get-ClusterSharedVolume -Cluster $cluster -ErrorAction Stop)) {
-            $csvInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']$")
-            Add-HcsProperty $csvInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $clusterPrincipalName
-            Add-HcsProperty $csvInstance "$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']/ClusterSharedVolumeName$" ([string]$csv.Name)
-            Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.StorageContainsMicrosoftClusterSharedVolume']$" $storage $csvInstance
+            # Microsoft's CSV MP keys each volume as "<resource name>_<mount path>" (one instance per
+            # SharedVolumeInfo entry, truncated to 256). Anything else creates an unmonitored ghost CSV object.
+            $volumeInfos = @()
+            try { $volumeInfos = @($csv.SharedVolumeInfo) } catch { $volumeInfos = @() }
+            if ($volumeInfos.Count -eq 0) { continue }
+            foreach ($volumeInfo in $volumeInfos) {
+                $friendlyName = ''
+                try { $friendlyName = [string]$volumeInfo.FriendlyVolumeName } catch { $friendlyName = '' }
+                if ([string]::IsNullOrWhiteSpace($friendlyName)) { continue }
+                $csvKey = "$([string]$csv.Name)_$friendlyName"
+                if ($csvKey.Length -gt 256) { $csvKey = $csvKey.Substring(0, 256) }
+                $csvInstance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']$")
+                Add-HcsProperty $csvInstance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $clusterPrincipalName
+                Add-HcsProperty $csvInstance "$MPElement[Name='CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume']/ClusterSharedVolumeName$" $csvKey
+                Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.StorageContainsMicrosoftClusterSharedVolume']$" $storage $csvInstance
+            }
         }
     }
 

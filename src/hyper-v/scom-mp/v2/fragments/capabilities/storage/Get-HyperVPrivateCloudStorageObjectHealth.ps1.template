@@ -38,11 +38,12 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
     if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
     catch { return $false }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
@@ -205,7 +206,7 @@ function Get-HcsPhysicalDiskCounter {
     return $null
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 
 # Shipped v1 property bag values. Their names and semantics must not change.
@@ -268,6 +269,7 @@ try {
             if (-not (Test-HcsCapability -ModuleName 'Storage' -CommandName 'Get-Disk')) { throw 'The Windows Storage PowerShell module is unavailable.' }
             $disk = Get-Disk -Number $DiskNumber -ErrorAction SilentlyContinue
             if ($null -eq $disk) { $state = 'Critical'; $detail = "Disk $DiskNumber for storage identity '$StorageId' is no longer visible." }
+            elseif ($disk.IsOffline -and [bool](Get-HcsProperty -InputObject $disk -Name 'IsClustered')) { $state = 'NotApplicable'; $detail = "Disk $DiskNumber is a clustered disk that is offline on this node by design (owned by another node); the Cluster capability monitors its role." }
             elseif ($disk.IsOffline) { $state = 'Critical'; $detail = "Disk $DiskNumber is offline." }
             elseif ([string]$disk.HealthStatus -notin @('Healthy', 'Unknown')) { $state = 'Critical'; $detail = "Disk $DiskNumber reports health '$($disk.HealthStatus)' and operational state '$($disk.OperationalStatus -join ',')'." }
             elseif ($disk.IsReadOnly) { $state = 'Warning'; $detail = "Disk $DiskNumber is read-only." }
@@ -494,7 +496,15 @@ try {
                     $candidates += [string](Get-HcsProperty -InputObject $disk -Name 'UniqueId')
                 }
                 $mpio = Get-HcsMpioDrive -Candidates $candidates
-                if ($null -eq $mpio) {
+                if ($null -eq $mpio -and $BusType -notin @('iSCSI', 'Fibre Channel')) {
+                    # Local SAS/RAID data disks are admitted as logical units but are rarely MPIO-claimed; without a
+                    # record there is nothing to measure, and a permanent Warning on every PERC disk is noise.
+                    $pathCountState = 'NotApplicable'
+                    $pathCountStateDetail = "Disk $DiskNumber ($BusType) has no MPIO_DISK_INFO record and is treated as directly attached."
+                    $pathLossState = 'NotApplicable'
+                    $pathLossStateDetail = $pathCountStateDetail
+                }
+                elseif ($null -eq $mpio) {
                     $pathCountState = 'Warning'
                     $pathCountStateDetail = "No MPIO_DISK_INFO record matched disk $DiskNumber. Validate that the Multipath-IO feature is installed and that the DSM claims this device."
                     $pathLossState = 'Warning'
@@ -733,7 +743,19 @@ try {
 catch {
     $state = 'Critical'
     $detail = "$ObjectKind health query failed: $($_.Exception.Message)"
+    $probeFailed = $true
     $api.LogScriptEvent('HyperVPrivateCloud.Storage.ObjectHealth.ps1', 8404, 1, $detail)
+}
+
+# A failed detail probe must be visible: every facet state the probe never reached becomes Warning with the
+# failure text, instead of NotApplicable (which the monitor types evaluate as healthy).
+if ((Get-Variable -Name probeFailed -ValueOnly -ErrorAction SilentlyContinue) -and ($ObjectKind -like '*Detail')) {
+    foreach ($stateVariable in @('linkState', 'linkSpeedState', 'linkFailureState', 'lossOfSignalState', 'lossOfSyncState', 'crcErrorState', 'fabricLoginState', 'connectedState', 'sessionCountState', 'connectionErrorState', 'authenticationState', 'pathCountState', 'pathLossState', 'failoverState', 'operationalState', 'capacityState', 'readLatencyState', 'writeLatencyState', 'queueDepthState')) {
+        if ((Get-Variable -Name $stateVariable -ValueOnly -ErrorAction SilentlyContinue) -eq 'NotApplicable') {
+            Set-Variable -Name $stateVariable -Value 'Warning'
+            Set-Variable -Name ($stateVariable + 'Detail') -Value $detail
+        }
+    }
 }
 
 $bag.AddValue('ObjectState', $state)

@@ -3,11 +3,12 @@ param([string]$ComputerName)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
     if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
     catch { return $false }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
@@ -41,7 +42,7 @@ function Get-HcsSafeCollection {
     catch { return @() }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 
 # Benign defaults. A host without S2D, or a host where a Storage query is unavailable,
@@ -102,10 +103,12 @@ try {
         else {
             $subSystemHealthStatus = (@($subsystems | ForEach-Object { Get-HcsStatusText -InputObject $_ -Name 'HealthStatus' }) | Sort-Object -Unique) -join ','
             $subSystemOperationalStatus = (@($subsystems | ForEach-Object { Get-HcsStatusText -InputObject $_ -Name 'OperationalStatus' }) | Sort-Object -Unique) -join ','
-            $subSystemUnhealthyCount = @($subsystems | Where-Object { (Get-HcsStatusText -InputObject $_ -Name 'HealthStatus') -notin @('Healthy', 'Unknown', '') }).Count
+            # Only Unhealthy counts here: Warning is the normal status during a rebuild after a node reboot
+            # and Microsoft's own S2D monitors map it to Warning, not Error.
+            $subSystemUnhealthyCount = @($subsystems | Where-Object { (Get-HcsStatusText -InputObject $_ -Name 'HealthStatus') -eq 'Unhealthy' }).Count
 
-            # ---- Storage pools ------------------------------------------------
-            $pools = Get-HcsSafeCollection { Get-StoragePool -IsPrimordial $false -ErrorAction Stop }
+            # ---- Storage pools (scoped to the clustered subsystem, never local pools) ----------
+            $pools = Get-HcsSafeCollection { $subsystems | Get-StoragePool -IsPrimordial $false -ErrorAction Stop }
             $poolCount = $pools.Count
             if ($poolCount -gt 0) {
                 $poolWorstFreePercent = 100.0
@@ -116,7 +119,7 @@ try {
                         $freePercent = [math]::Round((($size - $allocated) / $size) * 100, 2)
                         if ($freePercent -lt $poolWorstFreePercent) { $poolWorstFreePercent = $freePercent }
                     }
-                    if ((Get-HcsStatusText -InputObject $pool -Name 'HealthStatus') -notin @('Healthy', 'Unknown', '')) { $poolUnhealthyCount++ }
+                    if ((Get-HcsStatusText -InputObject $pool -Name 'HealthStatus') -eq 'Unhealthy') { $poolUnhealthyCount++ }
                     if ([bool](Get-HcsProperty -InputObject $pool -Name 'IsReadOnly' -Default $false)) { $poolReadOnlyCount++ }
                 }
                 $poolCapacityUsedPercent = [math]::Round(100.0 - $poolWorstFreePercent, 2)
@@ -124,7 +127,7 @@ try {
             }
 
             # ---- Virtual disks ------------------------------------------------
-            $virtualDisks = Get-HcsSafeCollection { Get-VirtualDisk -ErrorAction Stop }
+            $virtualDisks = Get-HcsSafeCollection { $subsystems | Get-VirtualDisk -ErrorAction Stop }
             $virtualDiskCount = $virtualDisks.Count
             foreach ($virtualDisk in $virtualDisks) {
                 $health = Get-HcsStatusText -InputObject $virtualDisk -Name 'HealthStatus'
@@ -140,8 +143,11 @@ try {
             }
 
             # ---- Physical disks ----------------------------------------------
-            $physicalDisks = Get-HcsSafeCollection { Get-PhysicalDisk -ErrorAction Stop }
+            # Scoped to the clustered subsystem so a failing boot SSD on the owning node is never reported as an
+            # S2D disk failure. Reliability counters are read ONCE per disk and reused for the latency figures.
+            $physicalDisks = Get-HcsSafeCollection { $subsystems | Get-PhysicalDisk -ErrorAction Stop }
             $physicalDiskCount = $physicalDisks.Count
+            $reliabilityCounters = [System.Collections.Generic.List[object]]::new()
             foreach ($physicalDisk in $physicalDisks) {
                 $health = Get-HcsStatusText -InputObject $physicalDisk -Name 'HealthStatus'
                 $operational = Get-HcsStatusText -InputObject $physicalDisk -Name 'OperationalStatus'
@@ -158,6 +164,7 @@ try {
 
                 $counters = Get-HcsSafeCollection { $physicalDisk | Get-StorageReliabilityCounter -ErrorAction Stop }
                 foreach ($counter in $counters) {
+                    $reliabilityCounters.Add($counter)
                     $errors = (Get-HcsNumber (Get-HcsProperty -InputObject $counter -Name 'ReadErrorsUncorrected' -Default 0)) +
                               (Get-HcsNumber (Get-HcsProperty -InputObject $counter -Name 'WriteErrorsUncorrected' -Default 0))
                     $physicalDiskTotalMediaErrors += $errors
@@ -174,10 +181,10 @@ try {
             # ---- Virtual disk latency ------------------------------------------
             # Virtual-disk reliability counters are exposed on some builds only. Where they
             # are absent, fall back to the worst per-physical-disk latency in the pool.
-            $latencySources = Get-HcsSafeCollection { $virtualDisks | Get-StorageReliabilityCounter -ErrorAction Stop }
-            if ($latencySources.Count -eq 0) {
-                $latencySources = Get-HcsSafeCollection { $physicalDisks | Get-StorageReliabilityCounter -ErrorAction Stop }
-            }
+            # Get-StorageReliabilityCounter accepts PhysicalDisk/Disk input only; reuse the single sweep above.
+            # NOTE: ReadLatencyMax/WriteLatencyMax are lifetime maxima since the last counter reset, not a time
+            # series; the collection rules that publish them ship disabled and this value is informational.
+            $latencySources = @($reliabilityCounters)
             foreach ($latencySource in $latencySources) {
                 $read = Get-HcsNumber (Get-HcsProperty -InputObject $latencySource -Name 'ReadLatencyMax' -Default 0)
                 $write = Get-HcsNumber (Get-HcsProperty -InputObject $latencySource -Name 'WriteLatencyMax' -Default 0)
@@ -186,7 +193,7 @@ try {
             }
 
             # ---- Storage jobs ---------------------------------------------------
-            $jobs = Get-HcsSafeCollection { Get-StorageJob -ErrorAction Stop }
+            $jobs = Get-HcsSafeCollection { $subsystems | Get-StorageJob -ErrorAction Stop }
             $storageJobCount = $jobs.Count
             $running = @($jobs | Where-Object { (Get-HcsStatusText -InputObject $_ -Name 'JobState') -match 'Running|Starting|Suspended' })
             $storageJobRunningCount = $running.Count

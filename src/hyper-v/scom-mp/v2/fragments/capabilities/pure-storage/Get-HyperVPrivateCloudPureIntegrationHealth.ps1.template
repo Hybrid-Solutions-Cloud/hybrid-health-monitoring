@@ -3,6 +3,7 @@ param([string]$ArrayId)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Import-HcsOperationsManagerSdk {
     $roots = @(
@@ -53,7 +54,7 @@ function ConvertTo-HcsIdentifier {
 
 function ConvertTo-HcsSerial { param([string]$Value); return ($Value -replace '[^0-9a-zA-Z]', '').ToLowerInvariant() }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 $state = 'Good'
 $detail = 'Pure Storage correlation is operational.'

@@ -8,6 +8,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function ConvertTo-HcsBoolean {
     param([string]$Value)
@@ -47,7 +48,7 @@ function Get-HcsSafeCollection {
     catch { return @() }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 
 if ($Facet -eq 'HostDepth') {
@@ -108,9 +109,11 @@ if ($Facet -eq 'HostDepth') {
         try {
             $parameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -ErrorAction SilentlyContinue
             if ($null -ne $parameters -and $parameters.PSObject.Properties['Connections']) {
-                $connections = @($parameters.Connections | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                # Connections is a REG_MULTI_SZ holding the outbound NC REST endpoint(s) ('ssl:<fqdn>:6640') and the
+                # passive listener entry ('pssl:6640:'). Only the ssl: entries are Network Controller endpoints.
+                $connections = @($parameters.Connections | ForEach-Object { [string]$_ } | Where-Object { $_ -match '^(?i)ssl:' })
                 $networkControllerConnectionCount = $connections.Count
-                $hostAgentDetail = "$hostAgentDetail Configured Network Controller connections: $($connections.Count)."
+                $hostAgentDetail = "$hostAgentDetail Configured Network Controller endpoints: $($connections.Count) ($($connections -join ', '))."
             }
             else {
                 $hostAgentDetail = "$hostAgentDetail Configured Network Controller connections are not recorded locally on this platform; the measure is reported as not applicable."
@@ -172,25 +175,35 @@ if ($Facet -eq 'HostDepth') {
         # SDN candidate certificates: local computer personal store entries whose subject or subject
         # alternative name matches this computer. Absence is benign.
         try {
+            # Select the SDN certificates explicitly from the host agent's own configuration (exact CN match on
+            # HostAgentCertificateCName, plus PeerCertificateCName on NC nodes). A host-name heuristic would also
+            # pick up the VMM self-signed host certificate, WinRM and Replica certificates and alert on them.
             $names = [System.Collections.Generic.List[string]]::new()
-            $names.Add(([string]$env:COMPUTERNAME).ToLowerInvariant())
-            if (-not [string]::IsNullOrWhiteSpace($ComputerName)) {
-                $names.Add(([string]$ComputerName).ToLowerInvariant())
-                $names.Add((([string]$ComputerName) -split '\.')[0].ToLowerInvariant())
+            try {
+                $agentParameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -ErrorAction SilentlyContinue
+                foreach ($valueName in @('HostAgentCertificateCName', 'PeerCertificateCName')) {
+                    if ($null -ne $agentParameters -and $agentParameters.PSObject.Properties[$valueName]) {
+                        $cn = ([string]$agentParameters.$valueName).Trim().ToLowerInvariant()
+                        if (-not [string]::IsNullOrWhiteSpace($cn)) { $names.Add($cn) }
+                    }
+                }
             }
+            catch { }
             $candidates = [System.Collections.Generic.List[object]]::new()
-            foreach ($certificate in (Get-HcsSafeCollection { Get-ChildItem -Path 'Cert:\LocalMachine\My' -ErrorAction SilentlyContinue })) {
-                $subject = ([string]$certificate.Subject).ToLowerInvariant()
-                $dnsNames = ''
-                if ($certificate.PSObject.Properties['DnsNameList'] -and $null -ne $certificate.DnsNameList) {
-                    $dnsNames = (@($certificate.DnsNameList | ForEach-Object { [string]$_.Unicode }) -join ',').ToLowerInvariant()
+            if ($names.Count -gt 0) {
+                foreach ($certificate in (Get-HcsSafeCollection { Get-ChildItem -Path 'Cert:\LocalMachine\My' -ErrorAction SilentlyContinue })) {
+                    $subjectCn = ''
+                    if ($certificate.PSObject.Properties['Subject'] -and ([string]$certificate.Subject) -match '(?i)CN=([^,]+)') { $subjectCn = $Matches[1].Trim().ToLowerInvariant() }
+                    $dnsNames = @()
+                    if ($certificate.PSObject.Properties['DnsNameList'] -and $null -ne $certificate.DnsNameList) {
+                        $dnsNames = @($certificate.DnsNameList | ForEach-Object { ([string]$_.Unicode).ToLowerInvariant() })
+                    }
+                    $matched = $false
+                    foreach ($name in $names) {
+                        if ($subjectCn -eq $name -or $dnsNames -contains $name) { $matched = $true; break }
+                    }
+                    if ($matched) { $candidates.Add($certificate) }
                 }
-                $matched = $false
-                foreach ($name in $names) {
-                    if ([string]::IsNullOrWhiteSpace($name)) { continue }
-                    if ($subject -like "*$name*" -or $dnsNames -like "*$name*") { $matched = $true; break }
-                }
-                if ($matched) { $candidates.Add($certificate) }
             }
             $certificateCandidateCount = $candidates.Count
             if ($candidates.Count -gt 0) {

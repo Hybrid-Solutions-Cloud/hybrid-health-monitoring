@@ -3,6 +3,7 @@ param($VMId, $ExpectedState, $CheckpointWarningHours = 168, $CheckpointCriticalH
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 $api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 $statesSet = @{}
@@ -34,18 +35,36 @@ function Measure-HcsSamples {
 
 try {
     if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) {
-        if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue }
+        if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
     }
     if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) { throw 'The Hyper-V PowerShell module is unavailable.' }
-    $vm = Get-VM -Id $VMId
-    $isRunning = [string]$vm.State -eq 'Running'
+    $vm = $null
+    try { $vm = Get-VM -Id $VMId -ErrorAction Stop } catch { $vm = $null }
+    if ($null -eq $vm) {
+        # The runtime object still exists on this node but the VM is no longer registered here (live
+        # migration, quick migration, or deletion) and topology discovery has not yet removed it. This
+        # is a benign window, not a fault: report NotApplicable so no alert storm follows every migration.
+        $benign = 'The virtual machine is not registered on this host (migrated or removed); the runtime object is awaiting topology rediscovery.'
+        foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState')) { Write-HcsState $state 'NotApplicable' $benign }
+        Write-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o') + '; ' + $benign)
+        $api.Return($bag)
+        return
+    }
+    $vmState = [string]$vm.State
+    $isRunning = $vmState -eq 'Running'
+    # Any *Critical state (PausedCritical, RunningCritical, OffCritical...) means Hyper-V has flagged the VM
+    # as unable to continue, most often because the volume holding its VHDX ran out of space.
+    $isCriticalState = $vmState -like '*Critical'
 
     if ($Mode -ne 'Performance') {
-        if ($ExpectedState -eq 'Running') {
-            Write-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vm.State)
+        if ($isCriticalState) {
+            Write-HcsState 'AvailabilityState' 'Critical' ("VM is in a critical state: {0}; status: {1}. Check free space on the volume or share holding its virtual hard disks." -f $vmState, [string]$vm.Status)
+        }
+        elseif ($ExpectedState -eq 'Running') {
+            Write-HcsState 'AvailabilityState' $(if ($isRunning) { 'Good' } else { 'Critical' }) ("Expected Running; actual state: {0}" -f $vmState)
         }
         else {
-            Write-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vm.State)
+            Write-HcsState 'AvailabilityState' 'NotApplicable' ("VM state is policy-dependent; actual state: {0}" -f $vmState)
         }
 
         if ($isRunning) {
@@ -109,22 +128,26 @@ try {
     $maximumMemoryMB = [math]::Round(([double]$vm.MemoryMaximum / 1MB), 0)
     $bag.AddValue('AssignedMemoryMB', $assignedMemoryMB)
     $bag.AddValue('MemoryDemandMB', $demandMemoryMB)
-    $bag.AddValue('MemoryPressurePercent', $(if ($assignedMemoryMB -gt 0) { [math]::Round((($demandMemoryMB / $assignedMemoryMB) * 100.0), 2) } else { -1 }))
-    $bag.AddValue('MemoryDemandPercentOfMaximum', $(if ($maximumMemoryMB -gt 0 -and $isRunning) { [math]::Round((($demandMemoryMB / $maximumMemoryMB) * 100.0), 2) } else { -1 }))
+    # Memory pressure (demand/assigned) and demand vs maximum are Dynamic Memory concepts. For a static-memory
+    # VM demand routinely equals assigned (100%) and MemoryMaximum is the 1 TB default, so both ratios are
+    # meaningless and would alert on every busy static VM. Emit -1 (healthy) unless Dynamic Memory is on.
+    $dynamicMemory = $false
+    try { $dynamicMemory = [bool]$vm.DynamicMemoryEnabled } catch { $dynamicMemory = $false }
+    $bag.AddValue('MemoryPressurePercent', $(if ($dynamicMemory -and $isRunning -and $assignedMemoryMB -gt 0) { [math]::Round((($demandMemoryMB / $assignedMemoryMB) * 100.0), 2) } else { -1 }))
+    $bag.AddValue('MemoryDemandPercentOfMaximum', $(if ($dynamicMemory -and $isRunning -and $maximumMemoryMB -gt 0) { [math]::Round((($demandMemoryMB / $maximumMemoryMB) * 100.0), 2) } else { -1 }))
 
     $diskPaths = @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | ForEach-Object { [string]$_.Path } | Where-Object { $_ })
+    # Hyper-V publishes each virtual storage device instance as the full VHDX path with ':' '\' '/' replaced
+    # by '-' and prefixed with '--?-' (the \\?\ device prefix). Suffix-match on the whole transformed path,
+    # which is unique per file; a leaf-name match would aggregate every VM whose disk is called OS.vhdx.
     $diskInstanceKeys = @($diskPaths | ForEach-Object { ($_ -replace '[:\\/]', '-').ToLowerInvariant() })
-    $diskLeafNames = @($diskPaths | ForEach-Object { ([System.IO.Path]::GetFileName($_)).ToLowerInvariant() })
     $storageValues = @{}
     foreach ($counterName in @('Latency', 'Queue Length', 'Read Bytes/sec', 'Write Bytes/sec', 'Error Count')) {
         $matched = [System.Collections.Generic.List[double]]::new()
         foreach ($sample in (Get-HcsCounterSamples -Path ('\Hyper-V Virtual Storage Device(*)\' + $counterName))) {
             $instance = ([string]$sample.InstanceName).ToLowerInvariant()
             $isMatch = $false
-            foreach ($key in $diskInstanceKeys) { if ($instance -eq $key) { $isMatch = $true; break } }
-            if (-not $isMatch) {
-                foreach ($leaf in $diskLeafNames) { if ($leaf -and $instance.EndsWith($leaf)) { $isMatch = $true; break } }
-            }
+            foreach ($key in $diskInstanceKeys) { if ($key -and ($instance -eq $key -or $instance.EndsWith($key))) { $isMatch = $true; break } }
             if ($isMatch) { $matched.Add([double]$sample.CookedValue) }
         }
         $storageValues[$counterName] = $matched
@@ -141,7 +164,9 @@ try {
         $matched = [System.Collections.Generic.List[double]]::new()
         foreach ($sample in (Get-HcsCounterSamples -Path ('\Hyper-V Virtual Network Adapter(*)\' + $counterName))) {
             $instance = [string]$sample.InstanceName
-            if ($instance -like ($vmName + '*') -or $instance -like ($vmInstanceName + '*')) { $matched.Add([double]$sample.CookedValue) }
+            # Instance format is <VMName>_<AdapterName>_<GUID>--<port>; anchor on the '_' delimiter so SQL01
+            # does not also collect SQL01-B's adapters.
+            if ($instance -like ($vmName + '_*') -or $instance -like ($vmInstanceName + '_*')) { $matched.Add([double]$sample.CookedValue) }
         }
         $adapterValues[$counterName] = $matched
     }

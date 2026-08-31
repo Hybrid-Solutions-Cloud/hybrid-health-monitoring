@@ -3,11 +3,12 @@ param([string]$ComputerName, [string]$BoundaryId, [int]$FailoverWindowHours = 24
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
     if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-    try { Import-Module $ModuleName -ErrorAction SilentlyContinue }
+    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
     catch { return $false }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
@@ -41,7 +42,7 @@ function Get-HcsSafeCollection {
     catch { return @() }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$api = New-Object -ComObject 'MOM.ScriptAPI'
 $bag = $api.CreatePropertyBag()
 
 if ($FailoverWindowHours -le 0) { $FailoverWindowHours = 24 }
@@ -125,9 +126,16 @@ try {
             }
         }
 
+        # Dynamic quorum: the vote the cluster is actually using is DynamicWeight (node) and
+        # WitnessDynamicWeight (witness); NodeWeight / configured witness are the fallback on builds
+        # that do not expose them. Margin = votes that can still be lost before quorum is lost, so a
+        # healthy cluster at exact majority reports 0.
         $witnessVote = if ($quorumWitnessType -in @('NotApplicable', 'None')) { 0.0 } else { 1.0 }
+        $witnessDynamic = Get-HcsProperty -InputObject $cluster -Name 'WitnessDynamicWeight' -Default $null
+        if ($null -ne $witnessDynamic -and $witnessVote -gt 0) { $witnessVote = Get-HcsNumber $witnessDynamic 1 }
         foreach ($node in $nodes) {
-            $weight = Get-HcsNumber (Get-HcsProperty -InputObject $node -Name 'NodeWeight' -Default 1) 1
+            $dynamicWeight = Get-HcsProperty -InputObject $node -Name 'DynamicWeight' -Default $null
+            $weight = if ($null -ne $dynamicWeight) { Get-HcsNumber $dynamicWeight 1 } else { Get-HcsNumber (Get-HcsProperty -InputObject $node -Name 'NodeWeight' -Default 1) 1 }
             $quorumAssignedVotes += $weight
             if ((Get-HcsStatusText -InputObject $node -Name 'State') -match 'Up') { $quorumCurrentVotes += $weight }
         }
@@ -135,7 +143,7 @@ try {
         if ($quorumWitnessFailedCount -eq 0) { $quorumCurrentVotes += $witnessVote }
 
         if ($quorumAssignedVotes -gt 0) {
-            # Votes that may still be lost before the cluster loses quorum.
+            # Votes that may still be lost before the cluster loses quorum (0 = at exact majority).
             $majority = [math]::Floor($quorumAssignedVotes / 2) + 1
             $quorumVoteMarginCount = $quorumCurrentVotes - $majority
             $quorumDetail = "Quorum model '$quorumType' with witness '$quorumWitnessType' in state '$quorumWitnessState'. $quorumCurrentVotes of $quorumAssignedVotes vote(s) present; $quorumVoteMarginCount further vote loss(es) survivable."
@@ -167,7 +175,8 @@ try {
             Get-WinEvent -FilterHashtable @{
                 LogName      = 'System'
                 ProviderName = 'Microsoft-Windows-FailoverClustering'
-                Id           = @(1069, 1177, 1205, 1254)
+                # 1177 (quorum lost) is an outage Microsoft's cluster MP alerts on directly, not failover churn.
+                Id           = @(1069, 1205, 1254)
                 StartTime    = $windowStart
             } -ErrorAction Stop
         }
