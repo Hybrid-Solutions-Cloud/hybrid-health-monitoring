@@ -5,8 +5,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 $api = New-Object -ComObject 'MOM.ScriptAPI'
-$bag = $api.CreatePropertyBag()
-$statesSet = @{}
 
 function Write-HcsState {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
@@ -17,8 +15,57 @@ function Write-HcsState {
 
 function Get-HcsCounterSamples {
     param([Parameter(Mandatory)][string]$Path)
-    try { return @((Get-Counter -Counter $Path -ErrorAction Stop).CounterSamples) }
-    catch { return @() }
+    if ($null -eq (Get-Variable -Name HcsCounterSampleCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsCounterSampleCache = @{} }
+    if ($script:HcsCounterSampleCache.ContainsKey($Path)) { return $script:HcsCounterSampleCache[$Path] }
+    try { $samples = @((Get-Counter -Counter $Path -ErrorAction Stop).CounterSamples) }
+    catch { $samples = @() }
+    $script:HcsCounterSampleCache[$Path] = $samples
+    return $samples
+}
+
+function Test-HcsCapability {
+    param([string]$ModuleName, [string]$CommandName)
+    try {
+        if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
+        Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+        return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
+    }
+    catch { return $false }
+}
+
+function Get-HcsClusteredVmGroupStates {
+    # Returns a hashtable VMId (lower-case) -> cluster group state for clustered VM roles. Empty when
+    # the node is not clustered or the FailoverClusters module is unavailable. Never throws.
+    $states = @{}
+    try {
+        if (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-ClusterResource')) { return $states }
+        foreach ($resource in @(Get-ClusterResource -ErrorAction SilentlyContinue | Where-Object { $_.ResourceType -eq 'Virtual Machine' })) {
+            $vmIdParameter = Get-ClusterParameter -InputObject $resource -Name 'VmID' -ErrorAction SilentlyContinue
+            if ($null -eq $vmIdParameter -or [string]::IsNullOrWhiteSpace([string]$vmIdParameter.Value)) { continue }
+            $group = $resource.OwnerGroup
+            $states[([string]$vmIdParameter.Value).ToLowerInvariant()] = [string]$group.State
+        }
+    }
+    catch { }
+    return $states
+}
+
+function Get-HcsExpectedVmState {
+    # Expected = Running when Hyper-V auto-starts the VM, when StartIfRunning applies and the VM is
+    # running now, or when the VM is a clustered role whose group is Online (the cluster, not Hyper-V,
+    # owns its start policy). Anything else is PolicyDependent and evaluates NotApplicable.
+    param($Vm, [hashtable]$ClusterGroupStates)
+    $startAction = [string]$Vm.AutomaticStartAction
+    if ($startAction -eq 'Start') { return 'Running' }
+    if ($startAction -eq 'StartIfRunning' -and [string]$Vm.State -eq 'Running') { return 'Running' }
+    $isClustered = $false
+    try { $isClustered = ($Vm.PSObject.Properties['IsClustered'] -and [bool]$Vm.IsClustered) } catch { $isClustered = $false }
+    if ($isClustered) {
+        $groupState = $ClusterGroupStates[([string]$Vm.VMId).ToLowerInvariant()]
+        if ($null -ne $groupState -and $groupState -eq 'Online') { return 'Running' }
+        if ($null -eq $groupState -and [string]$Vm.State -eq 'Running') { return 'Running' }
+    }
+    return 'PolicyDependent'
 }
 
 function Measure-HcsSamples {
@@ -33,6 +80,11 @@ function Measure-HcsSamples {
     return [math]::Round(([double]$value * $Scale), $Digits)
 }
 
+# Evaluates one VM and returns a fully-populated property bag (health states plus performance values).
+function Invoke-HcsVmEvaluation {
+param([string]$VMId, [string]$ExpectedState)
+$bag = $api.CreatePropertyBag()
+$statesSet = @{}
 try {
     if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) {
         if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
@@ -47,8 +99,7 @@ try {
         $benign = 'The virtual machine is not registered on this host (migrated or removed); the runtime object is awaiting topology rediscovery.'
         foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState')) { Write-HcsState $state 'NotApplicable' $benign }
         Write-HcsState 'PipelineState' 'Good' ('VM health probe completed at ' + [DateTime]::UtcNow.ToString('o') + '; ' + $benign)
-        $api.Return($bag)
-        return
+        return $bag
     }
     $vmState = [string]$vm.State
     $isRunning = $vmState -eq 'Running'
@@ -184,4 +235,45 @@ catch {
     $api.LogScriptEvent('Hyper-V Private Cloud VM Health', 8202, 1, $_.Exception.ToString())
 }
 
-$api.Return($bag)
+return $bag
+}
+
+if ($Mode -eq 'Inventory') {
+    # One probe run per host feeds every per-VM monitor and collection rule: one bag per VM with
+    # every health state and performance value, keyed by VMId as topology discovery stamps it
+    # (ADR 0053 cookdown). Expected state is computed here with the same policy the discovery uses.
+    $vmCount = 0
+    if (-not (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue)) {
+        if (Get-Module -ListAvailable -Name 'Hyper-V' -ErrorAction SilentlyContinue) { Import-Module -Name 'Hyper-V' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
+    }
+    if (Get-Command -Name 'Get-VM' -ErrorAction SilentlyContinue) {
+        $clusterGroupStates = Get-HcsClusteredVmGroupStates
+        foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
+            $vmId = [string]$vm.VMId
+            if ([string]::IsNullOrWhiteSpace($vmId)) { continue }
+            $vmExpectedState = Get-HcsExpectedVmState -Vm $vm -ClusterGroupStates $clusterGroupStates
+            $vmBag = Invoke-HcsVmEvaluation -VMId $vmId -ExpectedState $vmExpectedState
+            $vmBag.AddValue('VMId', $vmId)
+            $api.AddItem($vmBag)
+            $vmCount++
+        }
+    }
+    # Heartbeat bag: proves the inventory ran on hosts with no VMs and satisfies the one-DataItem
+    # probe contract. It carries every property so keyed filters never hit a missing property, and
+    # no monitor matches its VMId.
+    $summaryBag = $api.CreatePropertyBag()
+    $summaryBag.AddValue('VMId', 'vm-inventory')
+    $summaryBag.AddValue('InventoryVmCount', $vmCount)
+    foreach ($state in @('AvailabilityState', 'HeartbeatState', 'IntegrationServicesState', 'CheckpointState', 'ReplicationState', 'StorageState', 'NetworkState', 'MemoryPressureState', 'PipelineState')) {
+        $summaryBag.AddValue($state, 'NotApplicable')
+        $summaryBag.AddValue($state + 'Detail', 'VM inventory heartbeat.')
+    }
+    foreach ($value in @('VirtualProcessorTotalRunTimePercent', 'VirtualProcessorPeakRunTimePercent', 'MemoryPressurePercent', 'MemoryDemandPercentOfMaximum', 'VirtualStorageLatencyMs', 'VirtualStorageQueueLength')) {
+        $summaryBag.AddValue($value, -1)
+    }
+    $api.AddItem($summaryBag)
+    $api.ReturnItems()
+}
+else {
+    $api.Return((Invoke-HcsVmEvaluation -VMId $VMId -ExpectedState $ExpectedState))
+}

@@ -4,7 +4,7 @@ param(
         'Capability', 'Intent', 'Adapter', 'Global',
         'ProvisioningDrift', 'ComplianceDrift', 'ApplyFailure', 'AdapterSymmetry',
         'RdmaState', 'RdmaConfigurationDrift', 'DcbPfc', 'EtsPolicy',
-        'QosTrafficClass', 'VmSwitch', 'ClusterConsistency', 'GlobalDrift')][string]$Mode,
+        'QosTrafficClass', 'VmSwitch', 'ClusterConsistency', 'GlobalDrift', 'IntentInventory')][string]$Mode,
     [Parameter(Mandatory)][string]$ComputerName,
     [string]$IntentName,
     [string]$AdapterNames,
@@ -121,13 +121,18 @@ function Test-HcsSameHost {
 
 function Get-HcsIntentStatusRecord {
     param([AllowNull()][string]$Name, [Parameter(Mandatory)][string]$Computer, [switch]$GlobalOverrides)
+    $cacheKey = "$Name|$($GlobalOverrides.IsPresent)|$Computer"
+    if ($null -eq (Get-Variable -Name HcsIntentStatusCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsIntentStatusCache = @{} }
+    if ($script:HcsIntentStatusCache.ContainsKey($cacheKey)) { return $script:HcsIntentStatusCache[$cacheKey] }
     $records = if ($GlobalOverrides.IsPresent) {
         @(Get-NetIntentStatus -ComputerName $Computer -GlobalOverrides -ErrorAction Stop)
     }
     else {
         @(Get-NetIntentStatus -Name $Name -ComputerName $Computer -ErrorAction Stop)
     }
-    return @($records | Where-Object { Test-HcsSameHost -Record $_ -Computer $Computer }) | Select-Object -First 1
+    $record = @($records | Where-Object { Test-HcsSameHost -Record $_ -Computer $Computer }) | Select-Object -First 1
+    $script:HcsIntentStatusCache[$cacheKey] = $record
+    return $record
 }
 
 function Get-HcsAdapterSpeedMbps {
@@ -160,7 +165,10 @@ function New-HcsResult {
 }
 
 $api = New-Object -ComObject 'MOM.ScriptAPI'
-$bag = $api.CreatePropertyBag()
+
+# Evaluates one Network ATC facet for one intent (or a host-scope facet) and returns @(state, detail).
+function Get-HcsModeResult {
+param([string]$Mode, [string]$IntentName, [string]$AdapterNames, [bool]$IsStorageIntent)
 $state = 'Good'
 $detail = 'Network ATC is healthy.'
 
@@ -663,6 +671,68 @@ catch {
     $api.LogScriptEvent('HyperVPrivateCloud.NetworkAtc.Health.ps1', 8903, 1, $detail)
 }
 
-$bag.AddValue('NetworkAtcState', $state)
-$bag.AddValue('NetworkAtcStateDetail', $detail)
-$api.Return($bag)
+return @($state, $detail)
+}
+
+if ($Mode -eq 'IntentInventory') {
+    # One probe run per host feeds every keyed per-intent monitor: one bag per intent with every
+    # facet state, keyed by the intent name the discovery stamps on the instance (ADR 0053 cookdown).
+    $facetModes = @(
+        @('Intent', 'IntentState'),
+        @('Adapter', 'AdapterReadinessState'),
+        @('ProvisioningDrift', 'ProvisioningDriftState'),
+        @('ComplianceDrift', 'ComplianceDriftState'),
+        @('ApplyFailure', 'ApplyFailureState'),
+        @('AdapterSymmetry', 'AdapterSymmetryState'),
+        @('RdmaState', 'RdmaState'),
+        @('RdmaConfigurationDrift', 'RdmaConfigurationDriftState'),
+        @('DcbPfc', 'DcbPfcState'),
+        @('VmSwitch', 'VmSwitchState'))
+    $intentCount = 0
+    if (Test-HcsCapability -ModuleName 'NetworkATC' -CommandName 'Get-NetIntent') {
+        $intentRecords = @()
+        try { $intentRecords = @(Get-NetIntent -ComputerName $ComputerName -ErrorAction Stop) }
+        catch { $api.LogScriptEvent('HyperVPrivateCloud.NetworkAtc.Health.ps1', 8904, 2, "Intent inventory enumeration failed on '$ComputerName': $($_.Exception.Message)") }
+        foreach ($intentRecord in $intentRecords) {
+            $name = [string](Get-HcsPropertyValue -InputObject $intentRecord -Name @('IntentName', 'Name'))
+            if ([string]::IsNullOrWhiteSpace($name)) { continue }
+            $adapterList = [System.Collections.Generic.List[string]]::new()
+            $adapterValue = Get-HcsPropertyValue -InputObject $intentRecord -Name @('NetAdapterNamesAsList', 'NetAdapterNames', 'AdapterNames')
+            foreach ($entry in @($adapterValue)) {
+                foreach ($part in ([string]$entry -split '[,;]')) {
+                    $trimmed = $part.Trim()
+                    if ($trimmed -and -not $adapterList.Contains($trimmed)) { $adapterList.Add($trimmed) }
+                }
+            }
+            $storageValue = Get-HcsPropertyValue -InputObject $intentRecord -Name @('IsStorageIntent', 'IsStorage')
+            $storageFlag = ([string]$storageValue) -match '^(?i)(true|1|yes)$'
+            $intentBag = $api.CreatePropertyBag()
+            $intentBag.AddValue('InstanceKey', $name)
+            foreach ($facet in $facetModes) {
+                $facetResult = Get-HcsModeResult -Mode $facet[0] -IntentName $name -AdapterNames ($adapterList -join ',') -IsStorageIntent $storageFlag
+                $intentBag.AddValue($facet[1], [string]$facetResult[0])
+                $intentBag.AddValue(($facet[1] + 'Detail'), [string]$facetResult[1])
+            }
+            $api.AddItem($intentBag)
+            $intentCount++
+        }
+    }
+    # Heartbeat bag: proves the inventory ran on hosts without Network ATC and satisfies the
+    # one-DataItem probe contract. No monitor matches its InstanceKey.
+    $summaryBag = $api.CreatePropertyBag()
+    $summaryBag.AddValue('InstanceKey', 'intent-inventory')
+    $summaryBag.AddValue('InventoryIntentCount', $intentCount)
+    foreach ($facet in $facetModes) {
+        $summaryBag.AddValue($facet[1], 'NotApplicable')
+        $summaryBag.AddValue(($facet[1] + 'Detail'), 'Intent inventory heartbeat.')
+    }
+    $api.AddItem($summaryBag)
+    $api.ReturnItems()
+}
+else {
+    $bag = $api.CreatePropertyBag()
+    $result = Get-HcsModeResult -Mode $Mode -IntentName $IntentName -AdapterNames $AdapterNames -IsStorageIntent $IsStorageIntent
+    $bag.AddValue('NetworkAtcState', [string]$result[0])
+    $bag.AddValue('NetworkAtcStateDetail', [string]$result[1])
+    $api.Return($bag)
+}
