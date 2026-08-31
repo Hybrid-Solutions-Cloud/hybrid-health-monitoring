@@ -44,12 +44,17 @@ Every external management pack this product needs can be downloaded, extracted, 
 one script, straight from the publishers' official links (nothing is redistributed):
 
 ```powershell
-# from the repository root, on a machine with the SCOM console or a management server
-./src/hyper-v/scom-mp/tools/Install-HyperVPrivateCloudPrerequisites.ps1 -Import
+# on a management server or SCOM-console machine, in PowerShell 7:
+iwr https://labs.hybridsolutions.cloud/hybrid-health-monitoring/downloads/hyper-v-private-cloud/tools/Install-HyperVPrivateCloudPrerequisites.ps1 -OutFile Install-HyperVPrivateCloudPrerequisites.ps1
+./Install-HyperVPrivateCloudPrerequisites.ps1 -Import
 
 # or only what you use, e.g. a clustered SAN deployment:
-./src/hyper-v/scom-mp/tools/Install-HyperVPrivateCloudPrerequisites.ps1 -Capability Cluster, CSV -Import
+./Install-HyperVPrivateCloudPrerequisites.ps1 -Capability Cluster, CSV -Import
 ```
+
+Run it as a **file** (as shown), not pasted line-by-line into a console — interactive PowerShell
+splits multi-line blocks. Without `-Import` it still downloads and extracts everything; you then
+import the `management-packs` folder from the console yourself.
 
 Then, in order:
 
