@@ -66,6 +66,10 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 
 ### Added
 
+* Publish Hyper-V Private Cloud Monitoring `1.1.0.0`: 13 permanently sealed MPs (token
+  `54d0fb1159995c86`), 66 public override packs, 14 bundles, manifests and SHA-256 checksums under
+  `docs/public/downloads/hyper-v-private-cloud/1.1.0.0/` and `latest/`. `1.0.0.0` is retained as
+  evidence only and marked not for deployment.
 * Distributed Application roll-ups redesigned so each branch reflects its own domain (Storage,
   Networking, Availability, Management, Monitoring Pipeline) with Performance and Configuration
   roll-ups at both levels; Hyper-V event collection (8 channels) and alert rules (10) with operator
