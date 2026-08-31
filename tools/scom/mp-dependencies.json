@@ -34,7 +34,7 @@
         "Token": "31bf3856ad364e35",
         "Class": "MicrosoftDownload",
         "Download": null,
-        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "OfficialMedia": "https://learn.microsoft.com/en-us/system-center/vmm/",
         "RequiredBy": [
           "HyperVPrivateCloud.Capability.VMM"
         ]
@@ -45,7 +45,7 @@
         "Token": "31bf3856ad364e35",
         "Class": "MicrosoftDownload",
         "Download": null,
-        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "OfficialMedia": "https://learn.microsoft.com/en-us/system-center/vmm/",
         "RequiredBy": [
           "HyperVPrivateCloud.Capability.VMM"
         ]
@@ -56,7 +56,7 @@
         "Token": "31bf3856ad364e35",
         "Class": "MicrosoftDownload",
         "Download": null,
-        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "OfficialMedia": "https://learn.microsoft.com/en-us/system-center/vmm/",
         "RequiredBy": [
           "HyperVPrivateCloud.Capability.VMM"
         ]
@@ -67,7 +67,7 @@
         "Token": "31bf3856ad364e35",
         "Class": "MicrosoftDownload",
         "Download": null,
-        "OfficialMedia": "https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip",
+        "OfficialMedia": "https://learn.microsoft.com/en-us/system-center/vmm/",
         "RequiredBy": [
           "HyperVPrivateCloud.Capability.VMM"
         ]

@@ -74,10 +74,10 @@ Versions shown are the **minimum** each pack hard-references. Importing a newer 
 | Management pack | Minimum version | Publisher token | Obtain from | Required by |
 |---|---|---|---|---|
 | `Microsoft.Storage.Library` | 1.0.0.0 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=100782) | S2D |
-| `Microsoft.SystemCenter.VirtualMachineManager.Discovery` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip) | VMM |
-| `Microsoft.SystemCenter.VirtualMachineManager.Library` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip) | VMM |
-| `Microsoft.SystemCenter.VirtualMachineManager.Monitoring` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip) | VMM |
-| `Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library` | 10.25.1200.0 | `31bf3856ad364e35` | [Official media](https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip) | VMM |
+| `Microsoft.SystemCenter.VirtualMachineManager.Discovery` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://learn.microsoft.com/en-us/system-center/vmm/) | VMM |
+| `Microsoft.SystemCenter.VirtualMachineManager.Library` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://learn.microsoft.com/en-us/system-center/vmm/) | VMM |
+| `Microsoft.SystemCenter.VirtualMachineManager.Monitoring` | 11.19.0.3 | `31bf3856ad364e35` | [Official media](https://learn.microsoft.com/en-us/system-center/vmm/) | VMM |
+| `Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library` | 10.25.1200.0 | `31bf3856ad364e35` | [Official media](https://learn.microsoft.com/en-us/system-center/vmm/) | VMM |
 | `Microsoft.Windows.10.SDNMonitoring` | 10.0.0.2 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=54300) | SDN |
 | `Microsoft.Windows.Cluster.Library` | 6.0.6278.0 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=54701) | Cluster |
 | `Microsoft.Windows.Cluster.Management.Library` | 10.1.0.0 | `31bf3856ad364e35` | [Download](https://www.microsoft.com/en-us/download/details.aspx?id=54701) | Cluster |
@@ -113,7 +113,7 @@ Work out which capabilities apply to your environment, then obtain only their pr
 | **PhysicalNetwork** | You want physical switch and port correlation | None beyond the SCOM base packs. Requires SCOM network discovery configured against your switches via SNMP |
 | **NetworkATC** | Hosts are Windows Server 2025 with Network ATC intents | None. Requires Windows Server **2025** with the `NetworkATC`, `Hyper-V`, `Failover-Clustering`, `Data-Center-Bridging`, and `FS-SMBBW` features and the `NetworkATC` PowerShell module |
 | **SDN** | You run Microsoft Software Defined Networking | Windows Server SDN Monitoring MPs ([id=54300](https://www.microsoft.com/en-us/download/details.aspx?id=54300)) — import **both** the monitoring and `.Images` packs |
-| **VMM** | Hosts are managed by System Center VMM | VMM management packs from the [SCVMM 2025 media](https://download.microsoft.com/download/6314b969-ddb8-42f2-aec0-5c96e8c4630a/SCVMM_2025.zip) |
+| **VMM** | Hosts are managed by System Center VMM | VMM management packs from your [System Center VMM installation media](https://learn.microsoft.com/en-us/system-center/vmm/) |
 
 ---
 
@@ -274,6 +274,24 @@ imports and discovers nothing.
 | `Microsoft.SystemCenter.VirtualMachineManager.*` | VMM MPs missing | Import from the SCVMM 2025 media |
 | `PureStorageFlashArray` | Vendor MP missing, or SCOM 2025 | Import the vendor MP; on SCOM 2025 exclude this capability |
 | A pack imports but stays empty | Runtime prerequisite, not an import problem | Check PowerShell 7 path, Windows features, and Run As profiles |
+| A prerequisite **is** imported but the error persists | **Public key token mismatch.** A re-sealed or community-modified copy satisfies the pack ID but not the publisher token, and SCOM reports it as missing | Check the token in Administration → Management Packs → Properties against the table above. Replace it with the publisher's original |
+
+::: tip Let SCOM fetch the Microsoft prerequisites for you
+When you import from disk, the console offers an **Online Catalog Connection** prompt. Answering
+**Yes** lets SCOM resolve missing dependencies from Microsoft's own management pack catalog — all the
+Microsoft packs above are in it. This needs internet access from the console; on an air-gapped
+management group, download them manually as described above.
+
+This is Microsoft resolving its own packs. Nothing in this product downloads or imports a publisher's
+management pack on your behalf — importing one can overwrite a pack you already depend on, and sealed
+management packs cannot be downgraded afterwards.
+:::
+
+::: warning Before you uninstall
+The VMM, SDN, and Pure Storage capabilities define Run As profiles. SCOM records those in
+`Microsoft.SystemCenter.SecureReferenceOverride`, which will block removal of the capability pack
+until the references are cleared. Plan removal accordingly rather than discovering it mid-uninstall.
+:::
 
 ---
 
