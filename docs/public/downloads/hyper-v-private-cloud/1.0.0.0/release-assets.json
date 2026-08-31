@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "1.0",
+  "productVersion": "1.0.0.0",
+  "buildMode": "Release",
+  "releaseEligible": true,
+  "assets": [
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Complete.zip",
+      "sha256": "dc91a6322facff3469c533ba9b191661e880f8e84f11a0e9d3a67ff3d730a6c5",
+      "bytes": 867147
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Core.zip",
+      "sha256": "55e0d748219bf2462fc6d0b944cd8d64e2d55b3331ce1fb48c24c532bdc6a99f",
+      "bytes": 134052
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Overrides.zip",
+      "sha256": "4b573a79269f1ece07ca8fa1d318f39c721e7d84e55832092b13bb8fd23db49a",
+      "bytes": 225289
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredPure.zip",
+      "sha256": "744c5cd5cf03eb2c1c27dbe625983e933d2996eeec942e245241d6df26fa5897",
+      "bytes": 369169
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredS2D.zip",
+      "sha256": "125f582091b233b2acfd29796c08ba406d5cbadf79b120992bef794378ef62ce",
+      "bytes": 237417
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredSAN.zip",
+      "sha256": "73e7af35c2f63eb23016c1a7c7620cb69262fe7a74c9d705c494b0650b04b1f8",
+      "bytes": 355272
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-CompletePrivateCloud.zip",
+      "sha256": "ffa093b6337b34f39c953b48e4b57a035028de926ba50e0dc0b807a0b3a979a3",
+      "bytes": 686515
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-HybridPureAndS2D.zip",
+      "sha256": "d89364b7d0b12474a4dee6d2975cfec181eceb26f6ae0ca424d520d2aa766b21",
+      "bytes": 415691
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-HybridSANAndS2D.zip",
+      "sha256": "e59f8c071715d447035348ab758f104f6885c04cc641466c3236fdc65833d812",
+      "bytes": 401794
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-HyperVOverSMB.zip",
+      "sha256": "9e8980992934b00ebe1a5282134bcb5c4bc65f7e104843324854444f0e3393e9",
+      "bytes": 241398
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-NetworkATC.zip",
+      "sha256": "f306749a00dc3649777e85b7cef7b0abd6d4b060658e41af4902cc7872307839",
+      "bytes": 216585
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-SDNEnabled.zip",
+      "sha256": "c720e20e300d93fe6d5936effd2a1efc94c10995911dab8668652091d0406207",
+      "bytes": 190664
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-Standalone.zip",
+      "sha256": "225c7e03f87763a0a53a64f4e5217476e882804138000f62aad2eb9bb5cde517",
+      "bytes": 146823
+    },
+    {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Profile-VMMManaged.zip",
+      "sha256": "a79e341e8dbcb0d79082dba263b6cb157b7ad3680c63911b65bcb814dd0d4a91",
+      "bytes": 206920
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.Cluster.mp",
+      "sha256": "03a8028772d933fcd4a7deb0bf3ecd623327dab927d661d0790297234f853220",
+      "bytes": 57344
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.FileServices.mp",
+      "sha256": "209d04d9329e0da2e2bc348394116124c25a91edcf46017b2a6d65e1be4d2bcd",
+      "bytes": 61440
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.NetworkATC.mp",
+      "sha256": "28c66c0a140edf810a3843a21b8b3915d7e222a655e78d72c0d753eba46ad9ec",
+      "bytes": 81920
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.PhysicalNetwork.mp",
+      "sha256": "5a80491cc57b7254b877b49404ebe1e7514abc5db8dc49e9003cb56ed5b47c63",
+      "bytes": 61440
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.PureStorage.mp",
+      "sha256": "8cb434e488cd488463fae9db0767feccb203ce42b84bf272215e175994662a1b",
+      "bytes": 15872
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.S2D.mp",
+      "sha256": "cd977d276be49d083f583940c26fbdb93436c2f249d122bd50509e4055b83172",
+      "bytes": 61440
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.SDN.mp",
+      "sha256": "843b3188b6f9f77d88f84011c23be0fed6592944fd9e03d9b11c718a43911c3f",
+      "bytes": 57344
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.Storage.mp",
+      "sha256": "ce90ddbbb64b549f29761c1cf3da38b4ca3a57997eedc9fa46fa75b62fbf996e",
+      "bytes": 188416
+    },
+    {
+      "file": "HyperVPrivateCloud.Capability.VMM.mp",
+      "sha256": "78780f3763f0be62059339430a4f06bdc3a2d3b20a5233bcd3c84977c4b50eb5",
+      "bytes": 73728
+    },
+    {
+      "file": "HyperVPrivateCloud.Discovery.mp",
+      "sha256": "0a5805db15b0ee73e59bfb396e7fb39157e4b3cd780186791b1c2d8d0b9ad5f2",
+      "bytes": 24576
+    },
+    {
+      "file": "HyperVPrivateCloud.Library.mp",
+      "sha256": "d1ead3755e600e389f3e5f540b538cd6beeb45aa33d47c64e188e492f214c767",
+      "bytes": 11264
+    },
+    {
+      "file": "HyperVPrivateCloud.Monitoring.mp",
+      "sha256": "701f3d1f4a2386a392751a6376a1dd058fa3887209e39587c75aa977d78b61d0",
+      "bytes": 118784
+    },
+    {
+      "file": "HyperVPrivateCloud.Presentation.mp",
+      "sha256": "7322c37fa03e5f182cc8eb4b439dfe3629b114817101474e5583b92dfe7630b9",
+      "bytes": 8704
+    },
+    {
+      "file": "release-manifest.json",
+      "sha256": "99069d541d7f762d1555f3f84c2a19ea9dedea4d3149796f24b44911bed75790",
+      "bytes": 38109
+    }
+  ]
+}

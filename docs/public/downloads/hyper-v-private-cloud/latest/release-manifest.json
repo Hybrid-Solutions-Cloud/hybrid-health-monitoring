@@ -1,0 +1,1013 @@
+{
+  "schemaVersion": "1.0",
+  "productName": "Hyper-V Private Cloud Monitoring",
+  "productVersion": "1.0.0.0",
+  "overrideVersion": "1.0.0.0",
+  "buildMode": "Release",
+  "releaseEligible": true,
+  "publicKeyToken": "54d0fb1159995c86",
+  "sourceCommit": "eb769f5ce5a65e9425fc83266b7bc26cf32f1de9",
+  "sourceDateEpoch": 315532800,
+  "verification": {
+    "vsae": true,
+    "mpbDependencies": 4,
+    "mpbVsaeIdentityRemap": true,
+    "verificationRemappedDependencies": [
+      "Microsoft.Storage.Library",
+      "Microsoft.SystemCenter.VirtualMachineManager.Discovery",
+      "Microsoft.SystemCenter.VirtualMachineManager.Monitoring",
+      "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect",
+      "PureStorageFlashArray"
+    ],
+    "externalStrongNames": true,
+    "strongName": true,
+    "runtimeCertification": "post-publication-operator-validation"
+  },
+  "artifacts": [
+    {
+      "id": "HyperVPrivateCloud.Library",
+      "file": "HyperVPrivateCloud.Library.mp",
+      "kind": "Library",
+      "required": true,
+      "sha256": "d1ead3755e600e389f3e5f540b538cd6beeb45aa33d47c64e188e492f214c767"
+    },
+    {
+      "id": "HyperVPrivateCloud.Discovery",
+      "file": "HyperVPrivateCloud.Discovery.mp",
+      "kind": "Discovery",
+      "required": true,
+      "sha256": "0a5805db15b0ee73e59bfb396e7fb39157e4b3cd780186791b1c2d8d0b9ad5f2"
+    },
+    {
+      "id": "HyperVPrivateCloud.Monitoring",
+      "file": "HyperVPrivateCloud.Monitoring.mp",
+      "kind": "Monitoring",
+      "required": true,
+      "sha256": "701f3d1f4a2386a392751a6376a1dd058fa3887209e39587c75aa977d78b61d0"
+    },
+    {
+      "id": "HyperVPrivateCloud.Presentation",
+      "file": "HyperVPrivateCloud.Presentation.mp",
+      "kind": "Presentation",
+      "required": true,
+      "sha256": "7322c37fa03e5f182cc8eb4b439dfe3629b114817101474e5583b92dfe7630b9"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.Cluster",
+      "file": "HyperVPrivateCloud.Capability.Cluster.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "03a8028772d933fcd4a7deb0bf3ecd623327dab927d661d0790297234f853220"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.Storage",
+      "file": "HyperVPrivateCloud.Capability.Storage.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "ce90ddbbb64b549f29761c1cf3da38b4ca3a57997eedc9fa46fa75b62fbf996e"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.S2D",
+      "file": "HyperVPrivateCloud.Capability.S2D.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "cd977d276be49d083f583940c26fbdb93436c2f249d122bd50509e4055b83172"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.PureStorage",
+      "file": "HyperVPrivateCloud.Capability.PureStorage.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "8cb434e488cd488463fae9db0767feccb203ce42b84bf272215e175994662a1b"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.FileServices",
+      "file": "HyperVPrivateCloud.Capability.FileServices.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "209d04d9329e0da2e2bc348394116124c25a91edcf46017b2a6d65e1be4d2bcd"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "file": "HyperVPrivateCloud.Capability.PhysicalNetwork.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "5a80491cc57b7254b877b49404ebe1e7514abc5db8dc49e9003cb56ed5b47c63"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.NetworkATC",
+      "file": "HyperVPrivateCloud.Capability.NetworkATC.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "28c66c0a140edf810a3843a21b8b3915d7e222a655e78d72c0d753eba46ad9ec"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.SDN",
+      "file": "HyperVPrivateCloud.Capability.SDN.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "843b3188b6f9f77d88f84011c23be0fed6592944fd9e03d9b11c718a43911c3f"
+    },
+    {
+      "id": "HyperVPrivateCloud.Capability.VMM",
+      "file": "HyperVPrivateCloud.Capability.VMM.mp",
+      "kind": "Capability",
+      "required": false,
+      "sha256": "78780f3763f0be62059339430a4f06bdc3a2d3b20a5233bcd3c84977c4b50eb5"
+    }
+  ],
+  "publicOverrides": [
+    {
+      "profile": "Standalone",
+      "tier": "Lab",
+      "file": "Overrides/Standalone/lab/HyperVPrivateCloud.Overrides.Standalone.Lab.Discovery.xml",
+      "sha256": "c9e198b5b18f92fe8b271f0d4d4e0fb6e1a6952f0df1a1bd85a1907294332aac"
+    },
+    {
+      "profile": "Standalone",
+      "tier": "Lab",
+      "file": "Overrides/Standalone/lab/HyperVPrivateCloud.Overrides.Standalone.Lab.Monitoring.xml",
+      "sha256": "ed738631e279a2ccefa2ba7b1aeac20852b0afbd1c870764d8d0edb3671529de"
+    },
+    {
+      "profile": "Standalone",
+      "tier": "Standard",
+      "file": "Overrides/Standalone/standard/HyperVPrivateCloud.Overrides.Standalone.Standard.Discovery.xml",
+      "sha256": "6b5df4e8ccd62a30d1bd450e95f4d9ad13f5e8c7bcc4d7294457a0bbe42814ba"
+    },
+    {
+      "profile": "Standalone",
+      "tier": "Standard",
+      "file": "Overrides/Standalone/standard/HyperVPrivateCloud.Overrides.Standalone.Standard.Monitoring.xml",
+      "sha256": "6acee84e803a45ef6bf2ab2a4fe90b943e2692a49cada32dc2dac68431d25b9f"
+    },
+    {
+      "profile": "Standalone",
+      "tier": "Strict",
+      "file": "Overrides/Standalone/strict/HyperVPrivateCloud.Overrides.Standalone.Strict.Discovery.xml",
+      "sha256": "0d2b30eaedbe9a81ba0012928ad5adc0523c65ce7adbd1c1067f9ed14ffe541c"
+    },
+    {
+      "profile": "Standalone",
+      "tier": "Strict",
+      "file": "Overrides/Standalone/strict/HyperVPrivateCloud.Overrides.Standalone.Strict.Monitoring.xml",
+      "sha256": "a8b0468f50ed7b5f38f65b8c50625492da1237229cc729b82264eed0a257b15c"
+    },
+    {
+      "profile": "ClusteredSAN",
+      "tier": "Lab",
+      "file": "Overrides/ClusteredSAN/lab/HyperVPrivateCloud.Overrides.ClusteredSAN.Lab.Discovery.xml",
+      "sha256": "7496223efc8f46401a9e9f635d0eaf0baf08b7f12b587ba6a3d14e943145e8f3"
+    },
+    {
+      "profile": "ClusteredSAN",
+      "tier": "Lab",
+      "file": "Overrides/ClusteredSAN/lab/HyperVPrivateCloud.Overrides.ClusteredSAN.Lab.Monitoring.xml",
+      "sha256": "cbddbddf2e357bceb26c992c590059e2e3e6deb9b631f0c96a4ad7ed6852dc2a"
+    },
+    {
+      "profile": "ClusteredSAN",
+      "tier": "Standard",
+      "file": "Overrides/ClusteredSAN/standard/HyperVPrivateCloud.Overrides.ClusteredSAN.Standard.Discovery.xml",
+      "sha256": "eb56b5f41d816e9f0e7edcb69b12cf468ca008febae579a831896778e08fd0f1"
+    },
+    {
+      "profile": "ClusteredSAN",
+      "tier": "Standard",
+      "file": "Overrides/ClusteredSAN/standard/HyperVPrivateCloud.Overrides.ClusteredSAN.Standard.Monitoring.xml",
+      "sha256": "5590e85e7625e711bcd1bd28a1ed1273418230c046b2eb16ca2f3e312250637a"
+    },
+    {
+      "profile": "ClusteredSAN",
+      "tier": "Strict",
+      "file": "Overrides/ClusteredSAN/strict/HyperVPrivateCloud.Overrides.ClusteredSAN.Strict.Discovery.xml",
+      "sha256": "89788ce10ccd87b4ad5bdf308c2830bc8871811cc7e22a14dcb4127ad9448700"
+    },
+    {
+      "profile": "ClusteredSAN",
+      "tier": "Strict",
+      "file": "Overrides/ClusteredSAN/strict/HyperVPrivateCloud.Overrides.ClusteredSAN.Strict.Monitoring.xml",
+      "sha256": "c8a0e1fea56fe52c8b1aebb5e5ad6c78e46b8ad6542783b46d1f1f5ecd4ed5d9"
+    },
+    {
+      "profile": "ClusteredPure",
+      "tier": "Lab",
+      "file": "Overrides/ClusteredPure/lab/HyperVPrivateCloud.Overrides.ClusteredPure.Lab.Discovery.xml",
+      "sha256": "da0380e85efc98d30f2561f96c0460b9549e2a82ea192038bb19625b886a6f4a"
+    },
+    {
+      "profile": "ClusteredPure",
+      "tier": "Lab",
+      "file": "Overrides/ClusteredPure/lab/HyperVPrivateCloud.Overrides.ClusteredPure.Lab.Monitoring.xml",
+      "sha256": "577ee39895cbe2f4d4ef7bcea54c60beec55e9d89692541244b4f734c38668f6"
+    },
+    {
+      "profile": "ClusteredPure",
+      "tier": "Standard",
+      "file": "Overrides/ClusteredPure/standard/HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Discovery.xml",
+      "sha256": "9dcb169338d2d790c87078292502c61b3d6d9491ee262878363dbd8a14a64941"
+    },
+    {
+      "profile": "ClusteredPure",
+      "tier": "Standard",
+      "file": "Overrides/ClusteredPure/standard/HyperVPrivateCloud.Overrides.ClusteredPure.Standard.Monitoring.xml",
+      "sha256": "60404985ea64e5246e40d17435ae6bd813a9ec70ebeae393bc4c81936c1bb3bf"
+    },
+    {
+      "profile": "ClusteredPure",
+      "tier": "Strict",
+      "file": "Overrides/ClusteredPure/strict/HyperVPrivateCloud.Overrides.ClusteredPure.Strict.Discovery.xml",
+      "sha256": "8d424413ea20c0b03f50dd677ba87844ad450df24c887da1e46a918b5858943a"
+    },
+    {
+      "profile": "ClusteredPure",
+      "tier": "Strict",
+      "file": "Overrides/ClusteredPure/strict/HyperVPrivateCloud.Overrides.ClusteredPure.Strict.Monitoring.xml",
+      "sha256": "f912a9281c2490d0e70776e1d9816ce3dd0ac1ce41990a5c668691e212bfc1b5"
+    },
+    {
+      "profile": "ClusteredS2D",
+      "tier": "Lab",
+      "file": "Overrides/ClusteredS2D/lab/HyperVPrivateCloud.Overrides.ClusteredS2D.Lab.Discovery.xml",
+      "sha256": "51830da5efc859ffb8fa59848aaa7292c0e47615cb22f83857661bd7eda7b2ce"
+    },
+    {
+      "profile": "ClusteredS2D",
+      "tier": "Lab",
+      "file": "Overrides/ClusteredS2D/lab/HyperVPrivateCloud.Overrides.ClusteredS2D.Lab.Monitoring.xml",
+      "sha256": "81a8853926bda13cb4ce38c09f9b7f13642a5daa5e3a5d79b9beb1e04a0b5321"
+    },
+    {
+      "profile": "ClusteredS2D",
+      "tier": "Standard",
+      "file": "Overrides/ClusteredS2D/standard/HyperVPrivateCloud.Overrides.ClusteredS2D.Standard.Discovery.xml",
+      "sha256": "2ce06db20fc8563924ad440ab48990b5ac9b83c23d690d94a9895911c350d9d1"
+    },
+    {
+      "profile": "ClusteredS2D",
+      "tier": "Standard",
+      "file": "Overrides/ClusteredS2D/standard/HyperVPrivateCloud.Overrides.ClusteredS2D.Standard.Monitoring.xml",
+      "sha256": "998e99d0aba77d674dda327c3248e9d3f47713da3a992936980476f42774571f"
+    },
+    {
+      "profile": "ClusteredS2D",
+      "tier": "Strict",
+      "file": "Overrides/ClusteredS2D/strict/HyperVPrivateCloud.Overrides.ClusteredS2D.Strict.Discovery.xml",
+      "sha256": "705d5379a117cf1d6d66ea41f7b833c5336afd88e0a2d683130f2e35222102b6"
+    },
+    {
+      "profile": "ClusteredS2D",
+      "tier": "Strict",
+      "file": "Overrides/ClusteredS2D/strict/HyperVPrivateCloud.Overrides.ClusteredS2D.Strict.Monitoring.xml",
+      "sha256": "2bedbfc6273aedc5a8dc60d658002a75cc5d4c645b0dd3f2a8195420b3b3c161"
+    },
+    {
+      "profile": "HybridSANAndS2D",
+      "tier": "Lab",
+      "file": "Overrides/HybridSANAndS2D/lab/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Lab.Discovery.xml",
+      "sha256": "4d5f0b7b18754d7c6e2f84762d90d5f5d6f3b8b2a13ebbdb8f9c3da0a51c0095"
+    },
+    {
+      "profile": "HybridSANAndS2D",
+      "tier": "Lab",
+      "file": "Overrides/HybridSANAndS2D/lab/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Lab.Monitoring.xml",
+      "sha256": "c308f622b6d9e2503d9061b7c8cf57c826abddbe8270ea3cb8a72e9c46ad3e8e"
+    },
+    {
+      "profile": "HybridSANAndS2D",
+      "tier": "Standard",
+      "file": "Overrides/HybridSANAndS2D/standard/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Standard.Discovery.xml",
+      "sha256": "39e8c1376ba83d97648fb35ab924004152592c60de5dd0ee0ae6b6b6caf9e594"
+    },
+    {
+      "profile": "HybridSANAndS2D",
+      "tier": "Standard",
+      "file": "Overrides/HybridSANAndS2D/standard/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Standard.Monitoring.xml",
+      "sha256": "1182c0106383daaee1c5463739dd91cc5782e1c51099298689fb6b9bdfe16037"
+    },
+    {
+      "profile": "HybridSANAndS2D",
+      "tier": "Strict",
+      "file": "Overrides/HybridSANAndS2D/strict/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Strict.Discovery.xml",
+      "sha256": "fc51508bc857b9c41ee46ce5c5b0740c90d307aff513a12ed111c7300b50877b"
+    },
+    {
+      "profile": "HybridSANAndS2D",
+      "tier": "Strict",
+      "file": "Overrides/HybridSANAndS2D/strict/HyperVPrivateCloud.Overrides.HybridSANAndS2D.Strict.Monitoring.xml",
+      "sha256": "f5df36451fbd744f624126428664ca103d5aa1c70bdaf15e8f8fb71f9e74dbd9"
+    },
+    {
+      "profile": "HybridPureAndS2D",
+      "tier": "Lab",
+      "file": "Overrides/HybridPureAndS2D/lab/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Lab.Discovery.xml",
+      "sha256": "a2a09c3979d41e099760831ac5dcb4ebb4fb491db54461ba46454080d3044eb5"
+    },
+    {
+      "profile": "HybridPureAndS2D",
+      "tier": "Lab",
+      "file": "Overrides/HybridPureAndS2D/lab/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Lab.Monitoring.xml",
+      "sha256": "fc5527e225e23c4ee0affb6e57cf770bc04b71e59c95f47330f62685298a8fa6"
+    },
+    {
+      "profile": "HybridPureAndS2D",
+      "tier": "Standard",
+      "file": "Overrides/HybridPureAndS2D/standard/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Standard.Discovery.xml",
+      "sha256": "9c5ced285024035c3765a84fa27e2eb070a9487e49cab9608fedff708975a2b0"
+    },
+    {
+      "profile": "HybridPureAndS2D",
+      "tier": "Standard",
+      "file": "Overrides/HybridPureAndS2D/standard/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Standard.Monitoring.xml",
+      "sha256": "75b861641a59adb90fc58784f9e1f98bf730c49be2e6d8c44443078bfc732ed5"
+    },
+    {
+      "profile": "HybridPureAndS2D",
+      "tier": "Strict",
+      "file": "Overrides/HybridPureAndS2D/strict/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Strict.Discovery.xml",
+      "sha256": "2e587f798c1c2f3e156ac157fc8bc329f768d70bc5bf118025f8f1c3674a02ee"
+    },
+    {
+      "profile": "HybridPureAndS2D",
+      "tier": "Strict",
+      "file": "Overrides/HybridPureAndS2D/strict/HyperVPrivateCloud.Overrides.HybridPureAndS2D.Strict.Monitoring.xml",
+      "sha256": "fab35616326401cd5195b3fdcef7e4cffc1e33707bdd3ab65305552dbb693b83"
+    },
+    {
+      "profile": "HyperVOverSMB",
+      "tier": "Lab",
+      "file": "Overrides/HyperVOverSMB/lab/HyperVPrivateCloud.Overrides.HyperVOverSMB.Lab.Discovery.xml",
+      "sha256": "59f38222853039176f87e6ce9a341d78d3958d8c9574609559dd630d50574062"
+    },
+    {
+      "profile": "HyperVOverSMB",
+      "tier": "Lab",
+      "file": "Overrides/HyperVOverSMB/lab/HyperVPrivateCloud.Overrides.HyperVOverSMB.Lab.Monitoring.xml",
+      "sha256": "89a9c69ebbe20e8cf72bac0860b4085e2dbc276942d4eb5add3a35d6aeabe0e5"
+    },
+    {
+      "profile": "HyperVOverSMB",
+      "tier": "Standard",
+      "file": "Overrides/HyperVOverSMB/standard/HyperVPrivateCloud.Overrides.HyperVOverSMB.Standard.Discovery.xml",
+      "sha256": "9d4857ad1862bd23d900927173bc0312b51254909dff8669d43c66f4532abfd9"
+    },
+    {
+      "profile": "HyperVOverSMB",
+      "tier": "Standard",
+      "file": "Overrides/HyperVOverSMB/standard/HyperVPrivateCloud.Overrides.HyperVOverSMB.Standard.Monitoring.xml",
+      "sha256": "eb3326536f48850409d16ffc1913e482b325af0f48bf9b694567096de2da5360"
+    },
+    {
+      "profile": "HyperVOverSMB",
+      "tier": "Strict",
+      "file": "Overrides/HyperVOverSMB/strict/HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Discovery.xml",
+      "sha256": "8322626fb768fa166987d668a0fb1e2b45d8a6117f35634008f358cfdba88718"
+    },
+    {
+      "profile": "HyperVOverSMB",
+      "tier": "Strict",
+      "file": "Overrides/HyperVOverSMB/strict/HyperVPrivateCloud.Overrides.HyperVOverSMB.Strict.Monitoring.xml",
+      "sha256": "0d2746c1c9a395081dc2030d2b2500d40277ef5e3a0c8e43c801415796f98599"
+    },
+    {
+      "profile": "NetworkATC",
+      "tier": "Lab",
+      "file": "Overrides/NetworkATC/lab/HyperVPrivateCloud.Overrides.NetworkATC.Lab.Discovery.xml",
+      "sha256": "380ceebeb05610c6fbe6047cbde1004766bcc367792b7d0084b447efd176c144"
+    },
+    {
+      "profile": "NetworkATC",
+      "tier": "Lab",
+      "file": "Overrides/NetworkATC/lab/HyperVPrivateCloud.Overrides.NetworkATC.Lab.Monitoring.xml",
+      "sha256": "ea54c49405902f69092a08ed05e2dc091158da19543ab4a571d2909a9e59dca9"
+    },
+    {
+      "profile": "NetworkATC",
+      "tier": "Standard",
+      "file": "Overrides/NetworkATC/standard/HyperVPrivateCloud.Overrides.NetworkATC.Standard.Discovery.xml",
+      "sha256": "9618b92a72c33a01e387c684a0be7c1cb00edffcdc8305f37e773c1e7a7e7922"
+    },
+    {
+      "profile": "NetworkATC",
+      "tier": "Standard",
+      "file": "Overrides/NetworkATC/standard/HyperVPrivateCloud.Overrides.NetworkATC.Standard.Monitoring.xml",
+      "sha256": "ced5a8fbb657cc4f53eb1ad9dc66cd9624ee8ace5dc938f1738d8bb43a753597"
+    },
+    {
+      "profile": "NetworkATC",
+      "tier": "Strict",
+      "file": "Overrides/NetworkATC/strict/HyperVPrivateCloud.Overrides.NetworkATC.Strict.Discovery.xml",
+      "sha256": "b58d123aacb3c636449cae6d5c237fbcd120298cebc3dc431c94620242878041"
+    },
+    {
+      "profile": "NetworkATC",
+      "tier": "Strict",
+      "file": "Overrides/NetworkATC/strict/HyperVPrivateCloud.Overrides.NetworkATC.Strict.Monitoring.xml",
+      "sha256": "5febaa16c2d373216e9d1f0d2e3ea0022883ad6ab7f6d44fa4d3d6fef222d54d"
+    },
+    {
+      "profile": "VMMManaged",
+      "tier": "Lab",
+      "file": "Overrides/VMMManaged/lab/HyperVPrivateCloud.Overrides.VMMManaged.Lab.Discovery.xml",
+      "sha256": "6c8895f80b27060fa1235ff2a6abfd5b90f6097def39bc469994860b50738b67"
+    },
+    {
+      "profile": "VMMManaged",
+      "tier": "Lab",
+      "file": "Overrides/VMMManaged/lab/HyperVPrivateCloud.Overrides.VMMManaged.Lab.Monitoring.xml",
+      "sha256": "babab7a55ef5831db6a7ec7446097cc5a6ac2e85c40af5e83cfb3df67040ee0e"
+    },
+    {
+      "profile": "VMMManaged",
+      "tier": "Standard",
+      "file": "Overrides/VMMManaged/standard/HyperVPrivateCloud.Overrides.VMMManaged.Standard.Discovery.xml",
+      "sha256": "51d345ae57998be0d8484552ea446a79d83d0120890336e8e28fdb6608b45716"
+    },
+    {
+      "profile": "VMMManaged",
+      "tier": "Standard",
+      "file": "Overrides/VMMManaged/standard/HyperVPrivateCloud.Overrides.VMMManaged.Standard.Monitoring.xml",
+      "sha256": "85b85ce1ca41d40f59b566baabcc7e4cb549008bcdb2175523e8a0e2cbc4e365"
+    },
+    {
+      "profile": "VMMManaged",
+      "tier": "Strict",
+      "file": "Overrides/VMMManaged/strict/HyperVPrivateCloud.Overrides.VMMManaged.Strict.Discovery.xml",
+      "sha256": "f0622fe0a4b8cea812a2e5cf3ee41ca26f11ed48564a2bab775f0257188ca03b"
+    },
+    {
+      "profile": "VMMManaged",
+      "tier": "Strict",
+      "file": "Overrides/VMMManaged/strict/HyperVPrivateCloud.Overrides.VMMManaged.Strict.Monitoring.xml",
+      "sha256": "07dbf2d1e89100a175df4e2b6ec6cf20d17a1d80c2f9239414eba554a7ebef48"
+    },
+    {
+      "profile": "SDNEnabled",
+      "tier": "Lab",
+      "file": "Overrides/SDNEnabled/lab/HyperVPrivateCloud.Overrides.SDNEnabled.Lab.Discovery.xml",
+      "sha256": "f8661870b0d8a23f853b6cd06f50f662d4e1aba89ac475b3c8deb83680cc12de"
+    },
+    {
+      "profile": "SDNEnabled",
+      "tier": "Lab",
+      "file": "Overrides/SDNEnabled/lab/HyperVPrivateCloud.Overrides.SDNEnabled.Lab.Monitoring.xml",
+      "sha256": "4e88e8053a49268507c01c2f64874146c8e871a60e025b1c86a59c5b7c68f88f"
+    },
+    {
+      "profile": "SDNEnabled",
+      "tier": "Standard",
+      "file": "Overrides/SDNEnabled/standard/HyperVPrivateCloud.Overrides.SDNEnabled.Standard.Discovery.xml",
+      "sha256": "0bd15e10c98064bbf499cd0d21ab3fdd19d51694e25993fc2d492c96c1605c15"
+    },
+    {
+      "profile": "SDNEnabled",
+      "tier": "Standard",
+      "file": "Overrides/SDNEnabled/standard/HyperVPrivateCloud.Overrides.SDNEnabled.Standard.Monitoring.xml",
+      "sha256": "72c847829c72cd664c9efdcedff64044f99afb51219ef2227263a98ce1a213c4"
+    },
+    {
+      "profile": "SDNEnabled",
+      "tier": "Strict",
+      "file": "Overrides/SDNEnabled/strict/HyperVPrivateCloud.Overrides.SDNEnabled.Strict.Discovery.xml",
+      "sha256": "b59d3abe70e97f7652178a3d60de930cdc2e7f1cff94fae4bcadacc95ebaf0ff"
+    },
+    {
+      "profile": "SDNEnabled",
+      "tier": "Strict",
+      "file": "Overrides/SDNEnabled/strict/HyperVPrivateCloud.Overrides.SDNEnabled.Strict.Monitoring.xml",
+      "sha256": "c861855fff3eba040c2650ff9c341c0793673bd3768df341323dd3f0cbfbca20"
+    },
+    {
+      "profile": "CompletePrivateCloud",
+      "tier": "Lab",
+      "file": "Overrides/CompletePrivateCloud/lab/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Lab.Discovery.xml",
+      "sha256": "a0c35cd9330242fc674ae2926ea38473a9eb5958356ad2dedf57c9ba45e8f606"
+    },
+    {
+      "profile": "CompletePrivateCloud",
+      "tier": "Lab",
+      "file": "Overrides/CompletePrivateCloud/lab/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Lab.Monitoring.xml",
+      "sha256": "084584d4e57329ebf2051dfde90f197203385915c13f07dcf0b699081ca6cdbd"
+    },
+    {
+      "profile": "CompletePrivateCloud",
+      "tier": "Standard",
+      "file": "Overrides/CompletePrivateCloud/standard/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Standard.Discovery.xml",
+      "sha256": "44ec27ed0228b0d5fc290dab1882480144dd6df174635c83aa55b88ecf1f06fd"
+    },
+    {
+      "profile": "CompletePrivateCloud",
+      "tier": "Standard",
+      "file": "Overrides/CompletePrivateCloud/standard/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Standard.Monitoring.xml",
+      "sha256": "558b8c2e31994d823cc3c3a2821db9508c4221b72a8d08023cd9bb0458040ed8"
+    },
+    {
+      "profile": "CompletePrivateCloud",
+      "tier": "Strict",
+      "file": "Overrides/CompletePrivateCloud/strict/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Discovery.xml",
+      "sha256": "8f8480547652c6558c787fb9118da38ad992042e168227a6fd891531fb6d598e"
+    },
+    {
+      "profile": "CompletePrivateCloud",
+      "tier": "Strict",
+      "file": "Overrides/CompletePrivateCloud/strict/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Monitoring.xml",
+      "sha256": "688f6c46e033d5deb9e6ba8c70268e9bc6d5af12e64f9d8699180ffcc291fa60"
+    }
+  ],
+  "prerequisites": [
+    {
+      "owner": "HyperVPrivateCloud.Capability.S2D",
+      "alias": "StorageLibrary",
+      "id": "Microsoft.Storage.Library",
+      "version": "1.0.0.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.Cluster",
+      "alias": "MSDL",
+      "id": "Microsoft.SystemCenter.DataWarehouse.Library",
+      "version": "7.0.8433.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Library",
+      "alias": "InstanceGroup",
+      "id": "Microsoft.SystemCenter.InstanceGroup.Library",
+      "version": "7.5.8501.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.Storage",
+      "alias": "SC",
+      "id": "Microsoft.SystemCenter.Library",
+      "version": "7.0.8433.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Library",
+      "alias": "ServiceDesigner",
+      "id": "Microsoft.SystemCenter.ServiceDesigner.Library",
+      "version": "7.0.8433.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.VMM",
+      "alias": "VMMDiscovery",
+      "id": "Microsoft.SystemCenter.VirtualMachineManager.Discovery",
+      "version": "11.19.0.3",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.VMM",
+      "alias": "VMMBase",
+      "id": "Microsoft.SystemCenter.VirtualMachineManager.Library",
+      "version": "11.19.0.3",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.VMM",
+      "alias": "VMMMonitoring",
+      "id": "Microsoft.SystemCenter.VirtualMachineManager.Monitoring",
+      "version": "11.19.0.3",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.VMM",
+      "alias": "VMMProV2",
+      "id": "Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library",
+      "version": "10.25.1200.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.SDN",
+      "alias": "SDN",
+      "id": "Microsoft.Windows.10.SDNMonitoring",
+      "version": "10.0.0.2",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.Cluster",
+      "alias": "Cluster",
+      "id": "Microsoft.Windows.Cluster.Library",
+      "version": "6.0.6278.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.Cluster",
+      "alias": "ClusterManagement",
+      "id": "Microsoft.Windows.Cluster.Management.Library",
+      "version": "10.1.0.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.FileServices",
+      "alias": "FileServices",
+      "id": "Microsoft.Windows.FileServices",
+      "version": "10.1.0.3",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.FileServices",
+      "alias": "FileSMB",
+      "id": "Microsoft.Windows.FileServices.SMB.2016",
+      "version": "10.1.0.4",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Library",
+      "alias": "Windows",
+      "id": "Microsoft.Windows.Library",
+      "version": "7.5.8501.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.S2D",
+      "alias": "S2D",
+      "id": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect",
+      "version": "1.0.0.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.Cluster",
+      "alias": "CSV",
+      "id": "Microsoft.Windows.Server.ClusterSharedVolumeMonitoring",
+      "version": "10.1.2.2",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.PureStorage",
+      "alias": "Pure",
+      "id": "PureStorageFlashArray",
+      "version": "2.0.120.0",
+      "publicKeyToken": "a9d994eedb5e7179"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Monitoring",
+      "alias": "Health",
+      "id": "System.Health.Library",
+      "version": "7.0.8433.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "alias": "System",
+      "id": "System.Library",
+      "version": "7.5.8501.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.PhysicalNetwork",
+      "alias": "Network",
+      "id": "System.NetworkManagement.Library",
+      "version": "7.2.11719.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    },
+    {
+      "owner": "HyperVPrivateCloud.Capability.FileServices",
+      "alias": "Perf",
+      "id": "System.Performance.Library",
+      "version": "7.0.8433.0",
+      "publicKeyToken": "31bf3856ad364e35"
+    }
+  ],
+  "dependencyEvidence": [
+    {
+      "sourceFile": "Microsoft.Storage.Library.mpb",
+      "sourceType": "mpb",
+      "sha256": "183c20afa9fc2ad049d449bc757786d6e83c06c950278536d7100063e6ed7800",
+      "verification": {
+        "authenticodeStatus": "Valid",
+        "signerSubject": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "signerThumbprint": "8740df4acb749640ad318e4be842f72ec651ad80"
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Storage.Library",
+          "version": "1.0.47.4",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.DataWarehouse.Library.mp",
+      "sourceType": "mp",
+      "sha256": "2f60e220d379200a32ea02cc1a6f17957e2f8df5ccaa22a26b8aaf94473a0a98",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.DataWarehouse.Library",
+          "version": "10.22.10118.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.InstanceGroup.Library.mp",
+      "sourceType": "mp",
+      "sha256": "2f715c9bc1daa1ced3cc91fc22fbe8bac1a2c7155db643cd383cb87230ba2af8",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.InstanceGroup.Library",
+          "version": "7.5.8501.1",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.Library.mp",
+      "sourceType": "mp",
+      "sha256": "69d7189e4730dd279beda7ec5f6ca9066f4f2d07eb4dc80526787c2c171882aa",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.Library",
+          "version": "10.22.10118.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.ServiceDesigner.Library.mp",
+      "sourceType": "mp",
+      "sha256": "787533b225043120fc42d4085d55aea9557a4b41c2a2f6e7d044ca2773d89ae0",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.ServiceDesigner.Library",
+          "version": "7.0.8447.6",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.VirtualMachineManager.Discovery.mpb",
+      "sourceType": "mpb",
+      "sha256": "50346e56f9e352cc7b3fda0c39f238a370dd45939d7ee710586246f5107efa31",
+      "verification": {
+        "authenticodeStatus": "Valid",
+        "signerSubject": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "signerThumbprint": "afbf0b8b6a18f7e23cca1ddcd0ac1a55b4035173"
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.Discovery",
+          "version": "11.19.0.3",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.VirtualMachineManager.Library.mp",
+      "sourceType": "mp",
+      "sha256": "d197b0365ca8ce46ab667a4a4f515b762917330f233b0f83c9cc51e3763386c5",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.Library",
+          "version": "11.19.0.3",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.VirtualMachineManager.Monitoring.mp",
+      "sourceType": "mp",
+      "sha256": "ceb52840f4eff75e3d72af129469c2c3c05267c5fc8d6ab8f7f9e7742de2e275",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.Monitoring",
+          "version": "11.19.0.3",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library.mp",
+      "sourceType": "mp",
+      "sha256": "ed5c2b1678db264e98134a5c5e03f9c5745233e2d4db722d08361ba426faf6a3",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.SystemCenter.VirtualMachineManager.PRO.V2.Library",
+          "version": "10.25.1200.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.10.SDNMonitoring.mp",
+      "sourceType": "mp",
+      "sha256": "fe07053f1ba17f4c68149dd8b6f4af2ebd4bf56bcf7df8227a06ecd775b748ec",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.10.SDNMonitoring",
+          "version": "10.0.0.2",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.Cluster.Library.mp",
+      "sourceType": "mp",
+      "sha256": "be374da4950ab8d98ed951e8ea0108c0ed651852b49b8c114a0869f75cb49030",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.Cluster.Library",
+          "version": "7.0.8447.6",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.Cluster.Management.Library.mp",
+      "sourceType": "mp",
+      "sha256": "bf99fb42ad71d2863555afb4e1d01d1d3f2f49691d448d0f80aab9d8f93dc556",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.Cluster.Management.Library",
+          "version": "10.1.0.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.FileServices.mp",
+      "sourceType": "mp",
+      "sha256": "53169ed69c45d8ae29171d2531b7bbd8caa4ba1319a70314e5849558d967bbc0",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.FileServices",
+          "version": "10.1.0.4",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.FileServices.SMB.2016.mp",
+      "sourceType": "mp",
+      "sha256": "b21c1aebc049d2898c564d387c781fc0e96848f649d25207ed90af5ed4b40f63",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.FileServices.SMB.2016",
+          "version": "10.1.0.4",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.Library.mp",
+      "sourceType": "mp",
+      "sha256": "310465bdd2f4b2450da03baff8bd6a1e29bc61be4a9ffe7b9a4f96bee6811a09",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.Library",
+          "version": "7.5.8501.1",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.mpb",
+      "sourceType": "mpb",
+      "sha256": "3b2cd520380fc96d0519d93622a1dba38c1652b8239803f3f3dbcdc020c81c5f",
+      "verification": {
+        "authenticodeStatus": "Valid",
+        "signerSubject": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "signerThumbprint": "8740df4acb749640ad318e4be842f72ec651ad80"
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect",
+          "version": "1.0.47.4",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.mp",
+      "sourceType": "mp",
+      "sha256": "c48ced3e55060c60039b441ee21da8823a07109cc4d60078c98f2e78a72adcd9",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "Microsoft.Windows.Server.ClusterSharedVolumeMonitoring",
+          "version": "10.1.2.2",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "PureStorageFlashArray.mpb",
+      "sourceType": "mpb",
+      "sha256": "330567c3d5aea53aeb6403054a78f4c828642feccf4d197d431a00abe3611bc9",
+      "verification": {
+        "authenticodeStatus": "NotSigned",
+        "signerSubject": "",
+        "signerThumbprint": ""
+      },
+      "identities": [
+        {
+          "id": "PureStorageFlashArray",
+          "version": "2.0.120.0",
+          "publicKeyToken": "a9d994eedb5e7179"
+        }
+      ]
+    },
+    {
+      "sourceFile": "System.Health.Library.mp",
+      "sourceType": "mp",
+      "sha256": "801beff27cec45a378f681b2a66108abf1613cd4e99879322e2ca839b4d46ee4",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "System.Health.Library",
+          "version": "7.0.8447.6",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "System.Library.mp",
+      "sourceType": "mp",
+      "sha256": "90bfc831b8a192597402ac826ba08f1c7fa6ea0d64f4a5800f853acf0a66723d",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "System.Library",
+          "version": "7.5.8501.1",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "System.NetworkManagement.Library.mp",
+      "sourceType": "mp",
+      "sha256": "dd3ade4108463d15de59d6abdb868f9648095128f4d485dd0c1ed8063f2b6bb5",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "System.NetworkManagement.Library",
+          "version": "10.22.10118.0",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    },
+    {
+      "sourceFile": "System.Performance.Library.mp",
+      "sourceType": "mp",
+      "sha256": "952bcf80fc3b9b1f53e854d4c21432e6e558ccc1f030d2ba72e787ca16a030cd",
+      "verification": {
+        "strongNameVerified": true
+      },
+      "identities": [
+        {
+          "id": "System.Performance.Library",
+          "version": "7.0.8447.6",
+          "publicKeyToken": "31bf3856ad364e35"
+        }
+      ]
+    }
+  ]
+}
