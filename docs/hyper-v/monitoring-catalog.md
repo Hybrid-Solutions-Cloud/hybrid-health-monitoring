@@ -10,7 +10,45 @@ authored catalog below is complete for the first functional build. The broader c
 remains open because “technically observable” is intentionally larger than “safe to enable by
 default.” Lab evidence can still change defaults before a signed release.
 
-## Authored development catalog
+## Authored coverage — Hyper-V Private Cloud Monitoring (development for the next release)
+
+Counts below are read from the built packs on 2026-08-31 after the full pack review
+([ADR 0053](../design/decisions/0053-management-pack-review-and-runtime-correctness.md)). Every unit
+monitor and every alerting rule carries a knowledge article; every threshold is an overridable
+parameter; monitors marked *disabled* stay in the pack for identity stability and are documented as
+superseded.
+
+| Pack | Unit monitors | Dependency roll-ups | Rules | Discoveries | Views |
+|---|---|---|---|---|---|
+| Monitoring (host + per-VM) | 39 (4 disabled, superseded) | 39 | 42 (24 performance, 8 event collection, 10 event alert) | — | — |
+| Discovery / Library / Presentation | — | — | — | 3 | 18 |
+| Capability.Storage (SAN, FC, iSCSI, MPIO) | 25 (1 disabled by design) | 4 | 7 | 1 | 6 |
+| Capability.Cluster (Failover Clustering, CSV) | 16 | 5 | 5 | 1 | 7 |
+| Capability.S2D | 16 (1 disabled) | 7 | 5 (2 disabled) | 7 | 11 |
+| Capability.NetworkATC | 16 | 4 | 0 | 1 | 7 |
+| Capability.SDN (host side only) | 15 (1 disabled) | 15 | 0 | 1 | 16 |
+| Capability.VMM | 13 | 10 | 6 | 3 | 20 |
+| Capability.FileServices (SMB / SOFS) | 12 | 3 | 9 | 1 | 7 |
+| Capability.PhysicalNetwork | 9 | 2 | 6 | 1 | 8 |
+| Capability.PureStorage | 1 | 4 | 0 | 1 | 11 |
+| **Total** | **162** | **93** | **80** | **20** | **111** |
+
+The Distributed Application (`HyperVPrivateCloud.Service`, one per cluster or standalone host) has
+seven branches. Each branch rolls up the monitors of its own domain — Storage carries VM virtual-disk
+availability, latency and queue plus SAN, S2D, SMB and Pure objects; Networking carries VM network
+connectivity, virtual switches, physical adapters, Network ATC intents and the SDN host binding;
+Availability carries expected state, heartbeat, Replica and the cluster objects; Management carries
+VMMS, Host Compute, the hypervisor and VMM; Monitoring Pipeline carries probe and capability health —
+and every branch rolls Availability, Performance and Configuration into the service. The
+`Hyper-V Private Cloud Objects` group contains everything inside any Distributed Application and
+backs the **All Active Alerts** view.
+
+Known limitations carried into the next major release are listed in ADR 0053: per-instance probe
+fan-out and in-script thresholds in the older capability monitors (cookdown), host-wide facts still
+evaluated per LUN/session/intent in the Storage and Network ATC packs, and the inert VLAN-mismatch
+monitor.
+
+## Superseded baseline catalog (`HybridSolutionsCloud.HyperV`)
 
 All nine stateful monitors target the discovered Hyper-V host role and share one parameter-identical
 probe for SCOM cookdown. Their alerts auto-resolve. `NotApplicable` is healthy only for explicitly

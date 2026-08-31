@@ -1,5 +1,51 @@
 # Handoff
 
+## 2026-08-31 — Full management pack review; 1.0.0.0 found non-functional on real hosts; fixed on feat/monitoring-depth
+
+**Branch:** `feat/monitoring-depth` — commits `c714170`, `32f1af2`, `f93096d` (+ docs commit), not
+pushed, not merged. `main` still carries the published `1.0.0.0`, which this work shows could never
+have monitored a real host (see ADR 0053). Do **not** deploy `1.0.0.0`; the next release supersedes it.
+
+### What changed
+
+- Every pack passes Microsoft VSAE verification and seals in Test mode (throwaway key); the ordering
+  and alias faults that blocked the `1.1.0.0` reseal are fixed.
+- Four repo-wide runtime killers fixed in all 27 scripts (non-existent `VMHost.HyperVVersion`,
+  `.NET` type literal for the COM `MOM.ScriptAPI`, `[bool]` params under `pwsh -File`, warning stream
+  on stdout) plus ~30 runtime/design defects from five parallel line-by-line reviews. Full reports
+  were in the job scratch directory; the durable summary is ADR 0053 and the CHANGELOG entry.
+- Generator: readable display names, class/discovery names, legacy duplicate monitors disabled,
+  Distributed Application roll-ups redesigned (39 in the Monitoring pack), single-brace token guard.
+- New content: 8 Hyper-V event collection rules + 10 alert rules with knowledge; product-wide
+  `HyperVPrivateCloud.Product.Group` + All Active Alerts view; SDN host-binding roll-ups + alert;
+  41 knowledge articles for Cluster/S2D/File Services; SDN tuning tiers.
+- Tests: 135/135 (two new: script hygiene, display names). Dependency doc drift check: OK.
+
+### Commands run and results
+
+`pwsh -File src/hyper-v/scom-mp/v2/tools/Build-HyperVPrivateCloudManagementPacks.ps1 -Version 1.1.0.0 -PublicKeyToken 54d0fb1159995c86 -OutputPath <tmp> -RequireComplete`
+→ 13 packs. `Invoke-Pester -Path tests/unit` → Passed=135 Failed=0. Test-mode release
+(`New-HyperVPrivateCloudReleasePackage.ps1 -BuildMode Test` with `sn -k` throwaway key and
+`D:\tmp\hcs-hyperv-deps-1.1.0.0`) → VSAE-VERIFY-OK ×13, sealed. `tools/scom/Export-MpDependencies.ps1 -Check` → OK.
+
+### Blockers / open questions
+
+- None blocking. The production reseal of `1.1.0.0` needs the Key Vault signing key and a clean
+  tree (release script refuses otherwise); the classifier has denied that command before.
+- Kris asked for a **task catalogue** to ship with the packs; the proposed list is in
+  `docs/hyper-v/monitoring-catalog.md`'s successor notes / session memory and is not yet authored.
+
+### Next steps
+
+1. Push `feat/monitoring-depth`; open the PR against `main` with ADR 0053 as the narrative.
+2. Reseal `1.1.0.0` (or `2.0.0.0` given the scale of behavioural change — decide), publish under
+   `docs/public/downloads/hyper-v-private-cloud/`, repoint `latest`, mark `1.0.0.0` as superseded
+   and not for deployment on the download page.
+3. Build the probe smoke test (run every `*.ps1.template` via `pwsh -File` with its literal
+   `<Arguments>` against a `MOM.ScriptAPI` shim) — the gap that let 1.0.0.0 ship.
+4. Author the SCOM Tasks catalogue; then the next-major items in ADR 0053 (per-host multi-instance
+   probes, host-wide facts once per cluster via a VirtualServer-hosted cluster role class).
+
 ## 2026-08-30 — Generated dependency docs, navigation restructure, product-named MP identity
 
 **Branch:** `refactor/hyperv-mp-namespace` (3 commits, not pushed). `main` carries the first two;

@@ -257,6 +257,7 @@ const decisionsSidebar = [
       { text: '0050 — Prerequisite acquisition and preflight', link: '/design/decisions/0050-prerequisite-acquisition-and-preflight' },
       { text: '0051 — Dependency currency and platform validation', link: '/design/decisions/0051-dependency-currency-and-platform-validation' },
       { text: '0052 — Pure Storage monitoring strategy', link: '/design/decisions/0052-pure-storage-monitoring-strategy' },
+      { text: '0053 — Management pack review and runtime correctness', link: '/design/decisions/0053-management-pack-review-and-runtime-correctness' },
     ],
   },
   {

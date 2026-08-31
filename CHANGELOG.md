@@ -45,6 +45,34 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 * Move the project to `Hybrid-Solutions-Cloud/hybrid-health-monitoring` and publish documentation
   at `https://labs.hybridsolutions.cloud/hybrid-health-monitoring/`.
 
+### Fixed
+
+* Full line-by-line review of the thirteen Hyper-V Private Cloud packs ([ADR 0053](docs/design/decisions/0053-management-pack-review-and-runtime-correctness.md)).
+  The shipped `1.0.0.0` could not have monitored a real host: a non-existent `VMHost.HyperVVersion`
+  property aborted topology discovery on every host, 20 of 27 scripts constructed the script API as a
+  .NET type that does not exist in `pwsh.exe`, nine `[bool]` parameters could not bind the string
+  arguments `pwsh -File` passes, and the generator garbled every property and relationship display
+  name. All four are corrected and guarded by tests.
+* Corrected runtime behaviour found by the same review: CSV objects keyed as Microsoft's CSV pack
+  keys them, quorum vote margin defaults that were permanently Critical on 2–4 node clusters,
+  Dynamic Memory ratios on static-memory VMs, nine Critical states per VM after every live migration,
+  S2D boot-disk false alerts, SAS/RAID multipath warnings, Network ATC blank provisioning status,
+  SDN certificate selection and endpoint counting, VMM agent-drift comparison and cloud capacity
+  cmdlets, alert and performance views targeted at classes that never carried the packs' data, and
+  cookdown broken by mixed intervals inside one data source.
+* Schema faults that only Microsoft VSAE reports: `<Monitors>` child ordering in all nine capability
+  packs and the performance mapper referenced under the wrong alias in the networking packs. All 13
+  packs now verify and seal.
+
+### Added
+
+* Distributed Application roll-ups redesigned so each branch reflects its own domain (Storage,
+  Networking, Availability, Management, Monitoring Pipeline) with Performance and Configuration
+  roll-ups at both levels; Hyper-V event collection (8 channels) and alert rules (10) with operator
+  knowledge; a product-wide `Hyper-V Private Cloud Objects` group with an All Active Alerts view;
+  SDN host-binding roll-ups and alerting; 41 knowledge articles for Cluster, S2D and File Services
+  monitors that had none; Lab/Standard/Strict tiers for the SDN host-side monitors.
+
 ### Changed
 
 * Run every Hyper-V Private Cloud v2 first-party script through public SCOM command-executor
