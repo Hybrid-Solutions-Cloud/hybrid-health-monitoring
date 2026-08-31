@@ -24,7 +24,7 @@ for the Hyper-V topology approved by the research and ADR gates.
 
 ## Delivery state
 
-Version `1.1.0.0` is permanently sealed, offline verified, and published in this repository (`1.0.0.0` is superseded and must not be deployed; see ADR 0053). Its
+Version `1.2.0.0` is permanently sealed, offline verified, and published in this repository (`1.0.0.0` is superseded and must not be deployed; see ADR 0053). Its
 public key token is `54d0fb1159995c86`.
 
 **[Download Hyper-V Private Cloud Monitoring now](../downloads/hyper-v-private-cloud.md).**

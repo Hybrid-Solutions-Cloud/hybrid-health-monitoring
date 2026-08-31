@@ -66,10 +66,11 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 
 ### Added
 
-* Publish Hyper-V Private Cloud Monitoring `1.1.0.0`: 13 permanently sealed MPs (token
+* Publish Hyper-V Private Cloud Monitoring `1.2.0.0`: 13 permanently sealed MPs (token
   `54d0fb1159995c86`), 66 public override packs, 14 bundles, manifests and SHA-256 checksums under
-  `docs/public/downloads/hyper-v-private-cloud/1.1.0.0/` and `latest/`. `1.0.0.0` is retained as
-  evidence only and marked not for deployment.
+  `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` and `latest/`. `1.1.0.0` (same day, before
+  the task catalogue) and `1.0.0.0` (non-functional, ADR 0053) are retained as evidence only;
+  `1.0.0.0` is marked not for deployment.
 * Operator task catalogue: 63 agent tasks across the Monitoring, Cluster, S2D, Storage, File
   Services, Network ATC, Physical Network, VMM and SDN packs (read-only diagnostics plus clearly
   labelled remediation tasks, each with knowledge), 4 console tasks (Remote Desktop, Hyper-V

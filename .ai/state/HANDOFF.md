@@ -3,10 +3,13 @@
 ## 2026-08-31 — Full management pack review; 1.0.0.0 found non-functional on real hosts; fixed on feat/monitoring-depth
 
 **Branch:** `feat/monitoring-depth` — pushed; PR #3 open against `main`
-(https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/pull/3). **`1.1.0.0` is sealed
-with the Key Vault key (source commit `46eb446`), validated `releaseEligible=true`, and published under
-`docs/public/downloads/hyper-v-private-cloud/1.1.0.0/` + `latest/`.** `1.0.0.0` could never have
+(https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/pull/3). **`1.2.0.0` is sealed
+with the Key Vault key (source commit `0f051d1`), validated `releaseEligible=true`, and published under
+`docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` + `latest/`.** It adds the operator task
+catalogue (63 agent tasks, 4 console tasks, 2 disabled recoveries, 1 diagnostic) and the probe smoke
+test (47 cases) on top of `1.1.0.0` (same day, retained as evidence). `1.0.0.0` could never have
 monitored a real host (ADR 0053) and is marked superseded / not for deployment on the download page.
+Unit tests: 192/192.
 
 ### What changed
 
