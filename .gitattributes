@@ -1,0 +1,2 @@
+# Generated artifacts compared byte-for-byte by contract tests must check out exactly as generated.
+*.example text eol=lf
