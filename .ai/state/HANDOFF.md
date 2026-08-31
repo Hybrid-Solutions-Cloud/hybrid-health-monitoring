@@ -1,5 +1,43 @@
 # Handoff
 
+## 2026-08-31 (final) — THE REAL 1.0.0.0 RELEASED; v2 directory eliminated; version history reset
+
+**Branch:** `feat/monitoring-depth` — pushed; PR #3 open. **`1.0.0.0` (the first release) is sealed
+with the Key Vault key (source commit `eb769f5`), validated `releaseEligible=true`, published under
+`docs/public/downloads/hyper-v-private-cloud/1.0.0.0/` + `latest/` (commit `5a12545`).**
+VSAE 13/13, Pester 198/198, docs build clean.
+
+### The three mandates executed this session
+
+1. **Cookdown fan-out complete** (`d9e5c45`): one probe run per host feeds all 17 per-LUN/session/
+   port storage monitors (`Storage.HostInventory.DataSource` + keyed `InstanceDetail.MonitorType`),
+   all 10 per-intent ATC monitors (`IntentInventory` + `IntentDetail`), and all 15 per-VM monitors
+   plus 10 collection rules (`VmInventory` + `Instance` DS + keyed ThreeState/AboveThreshold types).
+   Probe scripts emit one all-facet bag per instance (InstanceKey/VMId keyed, heartbeat bag for the
+   DataItem contract), helpers memoized (Get-Counter/CIM/event queries once per run).
+2. **v2 directory eliminated** (`adb6a48`): product source at `src/hyper-v/scom-mp/`; pre-rename
+   legacy source archived at `archive/hyperv-scom-mp-legacy/`; contracts `packages.json` /
+   `dependencies.json`; workflow `.github/workflows/release-hyper-v.yml`; tests renamed
+   `HyperVPrivateCloud.*.Tests.ps1`. Sealed element IDs / XML aliases (HCSV2Library…) unchanged.
+   Post-flatten fix: release tooling repo-root depth `'../../../..'` (`eb769f5`).
+3. **Version reset** (`81de9f0` + publish `5a12545`): engineering builds 1.0.0.0–1.4.0.0 withdrawn,
+   download dirs removed (2.0.0.0 old-identity evidence kept); ADR 0054
+   (`0054-the-real-1000-version-reset.md`, in nav); download page carries a single release; CHANGELOG
+   leads with `[1.0.0.0] — 2026-08-31`, old sections retitled withdrawn/consolidated; operator docs
+   reset to 1.0.0.0.
+
+### The gate
+
+**No further version ships until Kris imports 1.0.0.0 into a live management group and validates it
+against a real Hyper-V host** (ADR 0054 §4). Import: complete ZIP from the download page;
+prerequisites first; cluster nodes need agent proxy.
+
+### Commands and results
+
+`release-100.ps1` (Release mode, KV key) → sealed + validated; assets → `1.0.0.0/` + `latest/`
+(SHA-identical); `Test-HyperVPrivateCloudReleasePackage -RequireReleaseEligible` → True.
+Full suite after every stage; final: Pester 198/198, VSAE 13/13.
+
 ## 2026-08-31 (later still) — 1.4.0.0: host-wide facts once per host; released
 
 **Branch:** `feat/monitoring-depth` — pushed; PR #3 open. **`1.4.0.0` is sealed with the Key Vault
