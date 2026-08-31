@@ -29,6 +29,11 @@ jobs:
     name: Validate Hyper-V MP source
     runs-on: windows-latest
     steps:
+      # The byte-identical generator-output tests compare committed artifacts against regenerated
+      # ones; the generators emit LF, so the checkout must not rewrite files to CRLF.
+      - name: Force LF checkout
+        shell: pwsh
+        run: git config --global core.autocrlf false
       - name: Checkout
         uses: actions/checkout@v7
 
