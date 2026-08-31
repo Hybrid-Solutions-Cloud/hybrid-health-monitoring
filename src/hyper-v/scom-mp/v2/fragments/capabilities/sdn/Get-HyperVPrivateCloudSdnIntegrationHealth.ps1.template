@@ -2,7 +2,8 @@
 param(
     [string]$ComputerName,
     [string]$RequireSDN,
-    [string]$RequireSlbHostAgent
+    [string]$RequireSlbHostAgent,
+    [string]$Facet = 'Integration'
 )
 
 Set-StrictMode -Version Latest
@@ -11,6 +12,12 @@ $ErrorActionPreference = 'Stop'
 function ConvertTo-HcsBoolean {
     param([string]$Value)
     return $Value -match '^(?i:true|1|yes)$'
+}
+
+function Get-HcsService {
+    param([string]$Name)
+    try { return Get-Service -Name $Name -ErrorAction SilentlyContinue }
+    catch { return $null }
 }
 
 function Get-HcsServiceState {
@@ -23,18 +30,292 @@ function Get-HcsServiceState {
     catch { return 'Unknown' }
 }
 
-$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
-$bag = $api.CreatePropertyBag()
-
-try {
-    $hostId = ''
+function Get-HcsSdnHostId {
     try {
         $parameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -Name HostId -ErrorAction SilentlyContinue
         if ($null -ne $parameters -and $parameters.PSObject.Properties['HostId']) {
-            $hostId = [string]$parameters.HostId
+            return [string]$parameters.HostId
         }
     }
-    catch { $hostId = '' }
+    catch { return '' }
+    return ''
+}
+
+function Get-HcsSafeCollection {
+    param([scriptblock]$Query)
+    try { return @(& $Query) }
+    catch { return @() }
+}
+
+$api = [Microsoft.EnterpriseManagement.Mom.ScriptAPI]::new()
+$bag = $api.CreatePropertyBag()
+
+if ($Facet -eq 'HostDepth') {
+    # Every value below is derived from read-only local evidence on this host. Windows Server 2025
+    # relocated the Network Controller from a Service Fabric role in virtual machines to a Failover
+    # Clustering service on the host, and Microsoft.Windows.10.SDNMonitoring 10.0.0.2 still describes
+    # the Service Fabric object model (ADR 0051). Nothing here asserts either shape, and nothing here
+    # calls Network Controller REST. Where evidence is absent or unreadable the probe emits the benign
+    # sentinel for that measure so that no threshold monitor fires on an unverified assumption.
+    $BenignUnknownCount = 99
+    $BenignDays = 3650
+    $BenignUptimeMinutes = 10080
+    $EventWindowMinutes = 60
+
+    $state = 'Good'
+    $detail = "Windows Server SDN host depth evidence collected on '$ComputerName'."
+    $degraded = [System.Collections.Generic.List[string]]::new()
+
+    $ncHostAgentStoppedCount = 0
+    $slbHostAgentStoppedCount = 0
+    $hostIdMissingCount = 0
+    $networkControllerConnectionCount = $BenignUnknownCount
+    $ovsdbListenerCount = $BenignUnknownCount
+    $networkControllerServiceCount = 0
+    $networkControllerServiceStoppedCount = 0
+    $ncHostAgentUptimeMinutes = $BenignUptimeMinutes
+    $certificateDaysToExpiry = $BenignDays
+    $certificateExpiredCount = 0
+    $certificateUntrustedCount = 0
+    $certificateCandidateCount = 0
+    $vfpExtensionDisabledCount = 0
+    $vfpExtensionCount = 0
+    $controlPlaneErrorEventCount = 0
+    $dataPlaneErrorEventCount = 0
+
+    $hostAgentDetail = 'No Network Controller Host Agent evidence is present.'
+    $controllerDetail = 'No local Network Controller service is present on this computer.'
+    $certificateDetail = 'No SDN candidate certificate was found in the local computer personal store.'
+    $dataPlaneDetail = 'No virtual filtering platform switch extension was found.'
+    $eventDetail = "No SDN error or critical events were found in the last $EventWindowMinutes minutes."
+
+    try {
+        $hostId = Get-HcsSdnHostId
+        $ncService = Get-HcsService -Name 'NcHostAgent'
+        $slbService = Get-HcsService -Name 'SlbHostAgent'
+        $ncState = if ($null -eq $ncService) { 'NotInstalled' } else { [string]$ncService.Status }
+        $slbState = if ($null -eq $slbService) { 'NotInstalled' } else { [string]$slbService.Status }
+
+        if ($null -ne $ncService -and $ncState -ne 'Running') { $ncHostAgentStoppedCount = 1 }
+        if ($null -ne $slbService -and $slbState -ne 'Running') { $slbHostAgentStoppedCount = 1 }
+        if (($null -ne $ncService -or $null -ne $slbService) -and [string]::IsNullOrWhiteSpace($hostId)) {
+            $hostIdMissingCount = 1
+        }
+        $hostAgentDetail = "NcHostAgent=$ncState; SlbHostAgent=$slbState; HostId=$hostId."
+
+        # Configured Network Controller endpoints, as recorded locally by the host agent. The value is
+        # absent on shapes this pack has not validated, and absence stays benign rather than critical.
+        try {
+            $parameters = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\NcHostAgent\Parameters' -ErrorAction SilentlyContinue
+            if ($null -ne $parameters -and $parameters.PSObject.Properties['Connections']) {
+                $connections = @($parameters.Connections | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                $networkControllerConnectionCount = $connections.Count
+                $hostAgentDetail = "$hostAgentDetail Configured Network Controller connections: $($connections.Count)."
+            }
+            else {
+                $hostAgentDetail = "$hostAgentDetail Configured Network Controller connections are not recorded locally on this platform; the measure is reported as not applicable."
+            }
+        }
+        catch {
+            $degraded.Add('host agent connection registry')
+        }
+
+        # Listening endpoints owned by the host agent process. Reported as not applicable whenever the
+        # service is absent or stopped, because a dedicated monitor already covers the service state.
+        if ($null -ne $ncService -and $ncState -eq 'Running') {
+            $ovsdbListenerCount = 0
+            try {
+                $cimService = Get-CimInstance -ClassName Win32_Service -Filter "Name='NcHostAgent'" -ErrorAction SilentlyContinue
+                $processId = 0
+                if ($null -ne $cimService -and $cimService.PSObject.Properties['ProcessId']) {
+                    $processId = [int]$cimService.ProcessId
+                }
+                if ($processId -gt 0) {
+                    $listeners = Get-HcsSafeCollection { Get-NetTCPConnection -State Listen -OwningProcess $processId -ErrorAction SilentlyContinue }
+                    $ovsdbListenerCount = $listeners.Count
+                    $ports = @($listeners | ForEach-Object { [string]$_.LocalPort } | Sort-Object -Unique) -join ','
+                    if (-not [string]::IsNullOrWhiteSpace($ports)) {
+                        $hostAgentDetail = "$hostAgentDetail Host agent listening ports: $ports."
+                    }
+                    $process = $null
+                    try { $process = Get-Process -Id $processId -ErrorAction SilentlyContinue } catch { $process = $null }
+                    if ($null -ne $process -and $null -ne $process.StartTime) {
+                        $ncHostAgentUptimeMinutes = [math]::Round(((Get-Date) - $process.StartTime).TotalMinutes, 0)
+                    }
+                }
+                else {
+                    $ovsdbListenerCount = $BenignUnknownCount
+                    $degraded.Add('host agent process identity')
+                }
+            }
+            catch {
+                $ovsdbListenerCount = $BenignUnknownCount
+                $degraded.Add('host agent listener enumeration')
+            }
+        }
+
+        # Any locally installed Network Controller service, whatever its hosting shape. A computer that
+        # is not a Network Controller node simply reports zero and never alerts.
+        try {
+            $controllerServices = @(Get-Service -Name 'NetworkController*' -ErrorAction SilentlyContinue)
+            $networkControllerServiceCount = $controllerServices.Count
+            $networkControllerServiceStoppedCount = @($controllerServices | Where-Object { [string]$_.Status -ne 'Running' }).Count
+            if ($networkControllerServiceCount -gt 0) {
+                $serviceSummary = @($controllerServices | ForEach-Object { "$($_.Name)=$($_.Status)" }) -join '; '
+                $controllerDetail = "Local Network Controller services: $serviceSummary."
+            }
+        }
+        catch {
+            $degraded.Add('local Network Controller service enumeration')
+        }
+
+        # SDN candidate certificates: local computer personal store entries whose subject or subject
+        # alternative name matches this computer. Absence is benign.
+        try {
+            $names = [System.Collections.Generic.List[string]]::new()
+            $names.Add(([string]$env:COMPUTERNAME).ToLowerInvariant())
+            if (-not [string]::IsNullOrWhiteSpace($ComputerName)) {
+                $names.Add(([string]$ComputerName).ToLowerInvariant())
+                $names.Add((([string]$ComputerName) -split '\.')[0].ToLowerInvariant())
+            }
+            $candidates = [System.Collections.Generic.List[object]]::new()
+            foreach ($certificate in (Get-HcsSafeCollection { Get-ChildItem -Path 'Cert:\LocalMachine\My' -ErrorAction SilentlyContinue })) {
+                $subject = ([string]$certificate.Subject).ToLowerInvariant()
+                $dnsNames = ''
+                if ($certificate.PSObject.Properties['DnsNameList'] -and $null -ne $certificate.DnsNameList) {
+                    $dnsNames = (@($certificate.DnsNameList | ForEach-Object { [string]$_.Unicode }) -join ',').ToLowerInvariant()
+                }
+                $matched = $false
+                foreach ($name in $names) {
+                    if ([string]::IsNullOrWhiteSpace($name)) { continue }
+                    if ($subject -like "*$name*" -or $dnsNames -like "*$name*") { $matched = $true; break }
+                }
+                if ($matched) { $candidates.Add($certificate) }
+            }
+            $certificateCandidateCount = $candidates.Count
+            if ($candidates.Count -gt 0) {
+                $now = Get-Date
+                $certificateExpiredCount = @($candidates | Where-Object { $_.NotAfter -lt $now }).Count
+                $live = @($candidates | Where-Object { $_.NotAfter -ge $now })
+                if ($live.Count -gt 0) {
+                    $certificateDaysToExpiry = [math]::Floor((@($live | ForEach-Object { ($_.NotAfter - $now).TotalDays }) | Measure-Object -Minimum).Minimum)
+                }
+                else {
+                    $certificateDaysToExpiry = 0
+                }
+                foreach ($certificate in $live) {
+                    $chain = $null
+                    try {
+                        $chain = [System.Security.Cryptography.X509Certificates.X509Chain]::new()
+                        $chain.ChainPolicy.RevocationMode = [System.Security.Cryptography.X509Certificates.X509RevocationMode]::NoCheck
+                        if (-not $chain.Build($certificate)) { $certificateUntrustedCount++ }
+                    }
+                    catch { $degraded.Add('certificate chain validation') }
+                    finally { if ($null -ne $chain) { $chain.Dispose() } }
+                }
+                $certificateDetail = "SDN candidate certificates: $($candidates.Count); expired: $certificateExpiredCount; untrusted chain: $certificateUntrustedCount; minimum days to expiry: $certificateDaysToExpiry."
+            }
+        }
+        catch {
+            $degraded.Add('certificate store enumeration')
+        }
+
+        # Virtual filtering platform switch extension state. The Hyper-V module is optional here; when
+        # it is unavailable the counts stay at zero.
+        try {
+            if (Get-Module -ListAvailable -Name Hyper-V -ErrorAction SilentlyContinue) {
+                $extensions = [System.Collections.Generic.List[object]]::new()
+                foreach ($switch in (Get-HcsSafeCollection { Get-VMSwitch -ErrorAction SilentlyContinue })) {
+                    foreach ($extension in (Get-HcsSafeCollection { Get-VMSwitchExtension -VMSwitchName $switch.Name -ErrorAction SilentlyContinue })) {
+                        if (([string]$extension.Name) -match '(?i)vfp|virtual filtering') { $extensions.Add($extension) }
+                    }
+                }
+                $vfpExtensionCount = $extensions.Count
+                $vfpExtensionDisabledCount = @($extensions | Where-Object { -not $_.Enabled }).Count
+                if ($vfpExtensionCount -gt 0) {
+                    $dataPlaneDetail = "Virtual filtering platform switch extensions: $vfpExtensionCount; disabled: $vfpExtensionDisabledCount."
+                }
+            }
+        }
+        catch {
+            $degraded.Add('virtual switch extension enumeration')
+        }
+
+        # Error and critical events raised by the SDN control-plane and data-plane channels in the last
+        # window. A channel that does not exist contributes nothing.
+        try {
+            $since = (Get-Date).AddMinutes(-$EventWindowMinutes)
+            $controlPlanePatterns = @('Microsoft-Windows-NetworkController*', '*NcHostAgent*', '*SlbHostAgent*')
+            $dataPlanePatterns = @('Microsoft-Windows-Hyper-V-VfpExt*', '*VFP*')
+            $countEvents = {
+                param([string[]]$Patterns)
+                $total = 0
+                $logs = [System.Collections.Generic.List[string]]::new()
+                foreach ($pattern in $Patterns) {
+                    foreach ($log in (Get-HcsSafeCollection { Get-WinEvent -ListLog $pattern -ErrorAction SilentlyContinue })) {
+                        $logName = [string]$log.LogName
+                        if (-not $logs.Contains($logName) -and [int]$log.RecordCount -gt 0) { $logs.Add($logName) }
+                    }
+                }
+                foreach ($logName in $logs) {
+                    $events = Get-HcsSafeCollection {
+                        Get-WinEvent -FilterHashtable @{ LogName = $logName; Level = 1, 2; StartTime = $since } -MaxEvents 200 -ErrorAction SilentlyContinue
+                    }
+                    $total += $events.Count
+                }
+                return $total
+            }
+            $controlPlaneErrorEventCount = & $countEvents $controlPlanePatterns
+            $dataPlaneErrorEventCount = & $countEvents $dataPlanePatterns
+            if (($controlPlaneErrorEventCount + $dataPlaneErrorEventCount) -gt 0) {
+                $eventDetail = "SDN error or critical events in the last $EventWindowMinutes minutes - control plane: $controlPlaneErrorEventCount; data plane: $dataPlaneErrorEventCount."
+            }
+        }
+        catch {
+            $degraded.Add('SDN event channel query')
+        }
+
+        if ($degraded.Count -gt 0) {
+            $state = 'Warning'
+            $detail = "Windows Server SDN host depth evidence is incomplete on '$ComputerName'. Unavailable sources: $((@($degraded | Sort-Object -Unique)) -join ', '). Affected measures report their benign sentinel value."
+        }
+    }
+    catch {
+        $state = 'Critical'
+        $detail = "The Windows Server SDN host depth probe failed on '$ComputerName': $($_.Exception.Message)"
+    }
+
+    $bag.AddValue('SdnHostDepthState', $state)
+    $bag.AddValue('SdnHostDepthDetail', $detail)
+    $bag.AddValue('ComputerName', $ComputerName)
+    $bag.AddValue('HostAgentDetail', $hostAgentDetail)
+    $bag.AddValue('ControllerDetail', $controllerDetail)
+    $bag.AddValue('CertificateDetail', $certificateDetail)
+    $bag.AddValue('DataPlaneDetail', $dataPlaneDetail)
+    $bag.AddValue('EventDetail', $eventDetail)
+    $bag.AddValue('NcHostAgentStoppedCount', [double]$ncHostAgentStoppedCount)
+    $bag.AddValue('SlbHostAgentStoppedCount', [double]$slbHostAgentStoppedCount)
+    $bag.AddValue('HostIdMissingCount', [double]$hostIdMissingCount)
+    $bag.AddValue('NetworkControllerConnectionCount', [double]$networkControllerConnectionCount)
+    $bag.AddValue('OvsdbListenerCount', [double]$ovsdbListenerCount)
+    $bag.AddValue('NetworkControllerServiceCount', [double]$networkControllerServiceCount)
+    $bag.AddValue('NetworkControllerServiceStoppedCount', [double]$networkControllerServiceStoppedCount)
+    $bag.AddValue('NcHostAgentUptimeMinutes', [double]$ncHostAgentUptimeMinutes)
+    $bag.AddValue('SdnCertificateCandidateCount', [double]$certificateCandidateCount)
+    $bag.AddValue('SdnCertificateDaysToExpiry', [double]$certificateDaysToExpiry)
+    $bag.AddValue('SdnCertificateExpiredCount', [double]$certificateExpiredCount)
+    $bag.AddValue('SdnCertificateUntrustedCount', [double]$certificateUntrustedCount)
+    $bag.AddValue('VfpExtensionCount', [double]$vfpExtensionCount)
+    $bag.AddValue('VfpExtensionDisabledCount', [double]$vfpExtensionDisabledCount)
+    $bag.AddValue('SdnControlPlaneErrorEventCount', [double]$controlPlaneErrorEventCount)
+    $bag.AddValue('SdnDataPlaneErrorEventCount', [double]$dataPlaneErrorEventCount)
+    $bag.AddValue('SdnEventWindowMinutes', [double]$EventWindowMinutes)
+    $api.Return($bag)
+    return
+}
+
+try {
+    $hostId = Get-HcsSdnHostId
 
     $ncState = Get-HcsServiceState -Name 'NcHostAgent'
     $slbState = Get-HcsServiceState -Name 'SlbHostAgent'

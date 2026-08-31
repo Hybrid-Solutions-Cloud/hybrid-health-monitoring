@@ -750,7 +750,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
     }
 
     It 'adds service impact and the missing Network Controller security rollup without duplicate leaf alerts' {
-        @($script:SdnCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
+        @($script:SdnCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 15
         @($script:SdnCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 11
         @($script:SdnCapability.SelectNodes('//Rule')).Count | Should -Be 0
         $monitor = $script:SdnCapability.SelectSingleNode("//UnitMonitor[@ID='HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor']")
