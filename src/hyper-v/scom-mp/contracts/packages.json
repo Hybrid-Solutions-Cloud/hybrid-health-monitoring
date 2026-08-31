@@ -29,7 +29,7 @@
     { "id": "NetworkATC", "capabilities": ["NetworkATC"] },
     { "id": "VMMManaged", "capabilities": ["VMM"] },
     { "id": "SDNEnabled", "capabilities": ["SDN"] },
-    { "id": "CompletePrivateCloud", "capabilities": ["Cluster", "Storage", "PureStorage", "S2D", "FileServices", "NetworkATC", "PhysicalNetwork", "SDN", "VMM"] }
+    { "id": "CompletePrivateCloud", "capabilities": ["Cluster", "Storage", "S2D", "FileServices", "NetworkATC", "PhysicalNetwork", "SDN", "VMM"] }
   ],
   "overrideTiers": ["Lab", "Standard", "Strict"]
 }
