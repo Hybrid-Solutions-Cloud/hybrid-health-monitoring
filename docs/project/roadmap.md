@@ -86,6 +86,29 @@ The execution order between the three committed Features will be set after resea
 credible effort and lab-capacity estimates. Adding Hyper-V does not silently compress the existing
 Azure Local work.
 
+#### Storage array integration — planned
+
+Host-side SAN monitoring already ships and is vendor-neutral: the Storage capability discovers Fibre
+Channel ports, iSCSI sessions, host attachments, logical units, and the mapping from virtual hard
+disks to array LUNs, using no external management pack at all.
+
+What is missing is **array-side** health — the array, its controllers, and its volumes as the storage
+platform itself reports them.
+
+| Item | Commitment | Status |
+|---|---|---|
+| Pure Storage FlashArray array-side monitoring | Planned | Vendor management pack is dead-ended; replacement to be built. See [ADR 0052](../design/decisions/0052-pure-storage-monitoring-strategy.md) |
+| Additional storage vendors | Candidate | Shape follows whatever pattern the Pure replacement establishes |
+
+The existing `Capability.PureStorage` depends on a vendor management pack that its publisher supports
+on SCOM 2016, 2019, and 2022 only, and which has had no commit since October 2024. That capability is
+therefore documented as SCOM 2019/2022 only and is **not** part of a SCOM 2025 deployment.
+
+The replacement targets an interface Pure maintains — either the OpenMetrics endpoint built into
+Purity//FA 6.6.11 and later, or a first-party capability pack over the FlashArray REST API. The
+[research spike](../design/research-spikes.md) decides between them and sizes the work. Sequencing is
+deliberately unset until that estimate exists, for the same reason as the Features above.
+
 ## In development — constrained Hyper-V Azure Monitor
 
 The Hyper-V Azure Monitor Feature has a constrained development go. Release remains blocked until:
