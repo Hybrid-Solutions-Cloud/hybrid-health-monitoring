@@ -14,19 +14,22 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.2.0.0
+## Current release: 1.3.0.0
 
 All 13 product Management Packs are sealed with the permanent public key token
 `54d0fb1159995c86`, verified by Microsoft VSAE, strong-name checked, and covered by the published
 SHA-256 manifest. The release contains 13 sealed Management Packs, 66 public override packs, and 14
-deterministic bundles: 162 unit monitors, 93 dependency roll-ups, 80 rules, 20 discoveries,
-111 views, 63 operator tasks plus 4 console tasks, and 234 knowledge articles across host, VM,
+deterministic bundles: 162 unit monitors, 96 dependency roll-ups, 80 rules, 21 discoveries,
+112 views, 63 operator tasks plus 4 console tasks, and 234 knowledge articles across host, VM,
 Failover Clustering, CSV, Storage Spaces Direct, SAN (Fibre Channel, iSCSI, MPIO), SMB/SOFS,
 Network ATC, physical networking, SDN host binding, VMM and Pure Storage.
 
-`1.2.0.0` supersedes `1.1.0.0`, published earlier the same day without the task catalogue and the
-probe smoke test; the `1.1.0.0` files stay under
-[`1.1.0.0`](/downloads/hyper-v-private-cloud/1.1.0.0/release-assets.json) as release evidence.
+`1.3.0.0` supersedes `1.2.0.0`: cluster-wide facts (CSV state, quorum, node, network and role
+state) are now evaluated once per cluster on a cluster-hosted role instead of once per node, and the
+four original storage availability monitors plus the inert VLAN-mismatch monitor ship disabled as
+superseded. The [`1.2.0.0`](/downloads/hyper-v-private-cloud/1.2.0.0/release-assets.json) and
+[`1.1.0.0`](/downloads/hyper-v-private-cloud/1.1.0.0/release-assets.json) files stay published as
+release evidence.
 
 ::: danger 1.0.0.0 is superseded and must not be deployed
 The full pack review recorded in
@@ -34,7 +37,7 @@ The full pack review recorded in
 runtime defects that stopped every `1.0.0.0` probe and discovery script before its first statement.
 That release could never have monitored a real host. Its files stay under
 [`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json) as release evidence only.
-If it was imported, upgrade in place to `1.2.0.0`: every element ID is preserved, so overrides carry
+If it was imported, upgrade in place to `1.3.0.0`: every element ID is preserved, so overrides carry
 forward.
 :::
 
@@ -64,7 +67,7 @@ The version line restarts at `1.0.0.0` because this is a new pack identity with 
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.2.0.0`](/downloads/hyper-v-private-cloud/1.2.0.0/release-assets.json). The `latest` directory
+[`1.3.0.0`](/downloads/hyper-v-private-cloud/1.3.0.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
 
 The superseded [`2.0.0.0`](/downloads/hyper-v-private-cloud/2.0.0.0/release-assets.json) assets are

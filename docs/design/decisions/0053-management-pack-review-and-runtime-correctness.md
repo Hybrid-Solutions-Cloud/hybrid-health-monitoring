@@ -90,12 +90,20 @@ availability aggregate, event views with no event rules, no product-wide alert s
   and 172 knowledge articles.
 - The `1.0.0.0` download remains published as release evidence but is not fit for deployment; the
   next release supersedes it and the download page must say so.
-- Recorded but deliberately not changed in this release (tracked for the next major):
-  per-instance probe fan-out (one `pwsh.exe` per VM / LUN / intent per interval) and thresholds
-  evaluated in-script for the older capability monitors, which together defeat cookdown; host-wide
-  facts still evaluated per instance in the Storage (iSCSI/MPIO event counters) and Network ATC
-  (cluster consistency, ETS/QoS) packs; overlap between the original storage availability monitors
-  and the depth monitors; the inert VLAN-mismatch monitor (Windows exposes no LLDP neighbour data);
+- Closed in the follow-up release (1.3.0.0): **cluster-wide facts are evaluated once per cluster.**
+  `HyperVPrivateCloud.Capability.Cluster.ClusterRole` is hosted by the cluster core virtual server
+  (`Microsoft.Windows.Cluster.VirtualServer`), exactly as Microsoft's CSV and S2D packs host their
+  cluster-scoped objects, so the 13 cluster-wide monitors, the two CSV capacity rules and the
+  relationship discovery run on the node that owns the core group and fail over with it; only the
+  node-local CSV latency/queue monitors stay on the host role. The original v1 storage availability
+  monitors (`AttachmentAvailability`, `AttachmentRedundancy`, `IscsiSessionAvailability`,
+  `FibreChannelPortAvailability`) ship disabled as superseded by the depth monitors, and the inert
+  VLAN-mismatch monitor ships disabled with its reason. A 63-task operator catalogue and a probe
+  smoke test were added in 1.2.0.0.
+- Recorded but deliberately not changed yet (next major): per-instance probe fan-out (one
+  `pwsh.exe` per VM / LUN / intent per interval) and thresholds evaluated in-script for the older
+  capability monitors, which together defeat cookdown; host-wide facts still evaluated per instance
+  in the Storage (iSCSI/MPIO event counters) and Network ATC (cluster consistency, ETS/QoS) packs;
   the File Services discovery creating an SMB service instance for non-agent file servers; and the
   Pure Storage scripts' dependence on the .NET Framework SCOM SDK under PowerShell 7.
 - **Lesson recorded for the authoring standard:** a green Pester run and a clean VSAE seal prove the

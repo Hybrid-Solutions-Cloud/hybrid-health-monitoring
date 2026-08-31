@@ -22,16 +22,16 @@ superseded.
 |---|---|---|---|---|---|
 | Monitoring (host + per-VM) | 39 (4 disabled, superseded) | 39 | 42 (24 performance, 8 event collection, 10 event alert) | — | — |
 | Discovery / Library / Presentation | — | — | — | 3 | 18 |
-| Capability.Storage (SAN, FC, iSCSI, MPIO) | 25 (1 disabled by design) | 4 | 7 | 1 | 6 |
-| Capability.Cluster (Failover Clustering, CSV) | 16 | 5 | 5 | 1 | 7 |
+| Capability.Storage (SAN, FC, iSCSI, MPIO) | 25 (5 disabled: 1 by design, 4 superseded) | 4 | 7 | 1 | 6 |
+| Capability.Cluster (Failover Clustering, CSV) | 16 (13 once per cluster) | 8 | 5 | 2 | 8 |
 | Capability.S2D | 16 (1 disabled) | 7 | 5 (2 disabled) | 7 | 11 |
 | Capability.NetworkATC | 16 | 4 | 0 | 1 | 7 |
 | Capability.SDN (host side only) | 15 (1 disabled) | 15 | 0 | 1 | 16 |
 | Capability.VMM | 13 | 10 | 6 | 3 | 20 |
 | Capability.FileServices (SMB / SOFS) | 12 | 3 | 9 | 1 | 7 |
-| Capability.PhysicalNetwork | 9 | 2 | 6 | 1 | 8 |
+| Capability.PhysicalNetwork | 9 (1 disabled, no LLDP data) | 2 | 6 | 1 | 8 |
 | Capability.PureStorage | 1 | 4 | 0 | 1 | 11 |
-| **Total** | **162** | **93** | **80** | **20** | **111** |
+| **Total** | **162** | **96** | **80** | **21** | **112** |
 
 The Distributed Application (`HyperVPrivateCloud.Service`, one per cluster or standalone host) has
 seven branches. Each branch rolls up the monitors of its own domain — Storage carries VM virtual-disk
@@ -42,6 +42,14 @@ VMMS, Host Compute, the hypervisor and VMM; Monitoring Pipeline carries probe an
 and every branch rolls Availability, Performance and Configuration into the service. The
 `Hyper-V Private Cloud Objects` group contains everything inside any Distributed Application and
 backs the **All Active Alerts** view.
+
+Cluster-wide facts are evaluated **once per cluster**, not once per node: the 13 cluster-scoped
+monitors (CSV state, free space, redirected access, quorum, node state, network state, group
+failures), the two CSV capacity rules and the relationship discovery target
+`HyperVPrivateCloud.Capability.Cluster.ClusterRole`, hosted by the cluster core virtual server so the
+workflows run on the node that owns the core group and fail over with it. Only the node-local CSV
+latency and queue-depth monitors stay on the per-host role. This needs agent proxy on every cluster
+node, as Microsoft's Cluster pack already does.
 
 ### Operator tasks
 

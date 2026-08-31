@@ -1,0 +1,52 @@
+#Requires -Version 7.0
+# Discovers one HyperVPrivateCloud.Capability.Cluster.ClusterRole per failover cluster, hosted by the
+# cluster's core virtual server (Microsoft.Windows.Cluster.VirtualServer). Workflows targeted at that object
+# run once, on whichever node owns the cluster core group, and fail over with it, so cluster-wide facts
+# (CSV state, quorum, node and network state, role failures) are evaluated once per cluster rather than
+# once per node. The role is also placed in the Availability and Clustering branch of the Distributed
+# Application through the boundary the core topology discovery established.
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$PrincipalName
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+try {
+    $clusterName = ''
+    try { $clusterName = [string](Get-ItemProperty -LiteralPath 'HKLM:\Cluster' -Name 'ClusterName' -ErrorAction SilentlyContinue).ClusterName } catch { $clusterName = '' }
+    if ([string]::IsNullOrWhiteSpace($clusterName)) {
+        # Not a cluster node (or the cluster registry hive is absent): nothing to discover.
+        $api.Return($discoveryData)
+        return
+    }
+    $boundaryId = 'cluster:' + $clusterName.ToLowerInvariant()
+
+    $role = $discoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.ClusterRole']$")
+    $role.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $PrincipalName)
+    $role.AddProperty("$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.ClusterRole']/BoundaryId$", $boundaryId)
+    $role.AddProperty("$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.ClusterRole']/ClusterName$", $clusterName)
+    $role.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", "Failover cluster $clusterName")
+    $discoveryData.AddInstance($role)
+
+    $availability = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.AvailabilityComponent']$")
+    $availability.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$", $boundaryId)
+    $discoveryData.AddInstance($availability)
+
+    $relationship = $discoveryData.CreateRelationshipInstance("$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsClusterRole']$")
+    $relationship.Source = $availability
+    $relationship.Target = $role
+    $discoveryData.AddInstance($relationship)
+
+    $api.Return($discoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.Cluster.RoleDiscovery.ps1', 8303, 1, $_.Exception.Message)
+    throw
+}

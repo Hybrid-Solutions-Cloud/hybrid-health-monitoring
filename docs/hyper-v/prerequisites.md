@@ -25,7 +25,7 @@ then obtain only the prerequisites on that list.
 ## Before anything else: get the packs from the right place
 
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
-from `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/`.
+from `docs/public/downloads/hyper-v-private-cloud/1.3.0.0/`.
 
 ::: warning Upgrading from 2.0.0.0
 This page documents the **`HyperVPrivateCloud.*`** identities used from `1.0.0.0` onward. The
@@ -218,6 +218,16 @@ The Cluster capability references `Microsoft.Windows.Cluster.Library` at version
 older base library distinct from `Microsoft.Windows.Cluster.Management.Library` `10.1.0.0`. The
 Microsoft download bundle normally includes both, but if you have imported cluster packs
 selectively in the past you may have the management library without the base library.
+
+### Cluster nodes need agent proxy enabled
+
+From 1.3.0.0 the cluster-wide monitors, the CSV capacity rules and the cluster relationship discovery
+target `HyperVPrivateCloud.Capability.Cluster.ClusterRole`, which is hosted by the cluster core
+virtual server (`Microsoft.Windows.Cluster.VirtualServer`) — the same object Microsoft's own
+Cluster and CSV packs use. A node can only submit discovery data for an object it does not host
+itself when **Allow this agent to act as a proxy** is enabled on every cluster node. Microsoft's
+Cluster pack already requires this, so an existing cluster deployment normally has it; if the
+`ClusterRole` object never appears, the proxy setting is the first thing to check.
 
 ### File Services pins two packs at two different versions
 

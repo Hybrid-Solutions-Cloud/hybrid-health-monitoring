@@ -66,10 +66,12 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 
 ### Added
 
-* Publish Hyper-V Private Cloud Monitoring `1.2.0.0`: 13 permanently sealed MPs (token
+* Publish Hyper-V Private Cloud Monitoring `1.3.0.0`: 13 permanently sealed MPs (token
   `54d0fb1159995c86`), 66 public override packs, 14 bundles, manifests and SHA-256 checksums under
-  `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` and `latest/`. `1.1.0.0` (same day, before
-  the task catalogue) and `1.0.0.0` (non-functional, ADR 0053) are retained as evidence only;
+  `docs/public/downloads/hyper-v-private-cloud/1.3.0.0/` and `latest/`: 162 unit monitors, 96
+  dependency roll-ups, 80 rules, 21 discoveries, 112 views, 63 agent tasks, 4 console tasks and
+  234 knowledge articles. `1.2.0.0` and `1.1.0.0` (same day, before the cluster role and the task
+  catalogue respectively) and `1.0.0.0` (non-functional, ADR 0053) are retained as evidence only;
   `1.0.0.0` is marked not for deployment.
 * Operator task catalogue: 63 agent tasks across the Monitoring, Cluster, S2D, Storage, File
   Services, Network ATC, Physical Network, VMM and SDN packs (read-only diagnostics plus clearly
@@ -87,6 +89,18 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 
 ### Changed
 
+* Cluster-wide facts are evaluated once per cluster. The 13 cluster-scoped monitors (CSV state,
+  free space and redirected access, quorum, node, network and group state), the two CSV capacity
+  rules and the cluster relationship discovery now target
+  `HyperVPrivateCloud.Capability.Cluster.ClusterRole`, hosted by the cluster core virtual server
+  (`Microsoft.Windows.Cluster.VirtualServer`) so they run on the core-group owner and fail over with
+  it; only the node-local CSV latency and queue monitors remain on the host role. Requires agent
+  proxy on cluster nodes, as the Microsoft Cluster pack already does. Tuning-catalog context class
+  updated accordingly.
+* The four original storage availability monitors (attachment availability/redundancy, iSCSI
+  session availability, Fibre Channel port availability) ship disabled as superseded by the depth
+  monitors; the VLAN-mismatch monitor ships disabled because Windows exposes no LLDP neighbour data.
+  Element IDs are preserved.
 * Run every Hyper-V Private Cloud v2 first-party script through public SCOM command-executor
   wrappers that launch the machine-wide PowerShell 7 MSI path explicitly; add operator-visible
   runtime evidence, the common installation prerequisite, static contract tests, and ADR 0047.

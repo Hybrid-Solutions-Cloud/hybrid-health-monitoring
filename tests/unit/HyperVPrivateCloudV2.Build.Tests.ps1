@@ -366,33 +366,47 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
         $references.HCSV2Presentation.ID | Should -Be 'HyperVPrivateCloud.Presentation'
     }
 
-    It 'relates authoritative Microsoft cluster objects without defining duplicate cluster classes' {
-        @($script:ClusterCapability.SelectNodes('//ClassType')).Count | Should -Be 0
+    It 'relates authoritative Microsoft cluster objects and adds only the cluster-hosted role' {
+        $classes = @($script:ClusterCapability.SelectNodes('//ClassType'))
+        $classes.Count | Should -Be 1
+        $classes[0].ID | Should -Be 'HyperVPrivateCloud.Capability.Cluster.ClusterRole'
+        $classes[0].Hosted | Should -Be 'true'
+        $hosting = $script:ClusterCapability.SelectSingleNode("//RelationshipType[@ID='HyperVPrivateCloud.Capability.Cluster.VirtualServerHostsClusterRole']")
+        $hosting.Base | Should -Be 'System!System.Hosting'
+        [string]$hosting.Source.Type | Should -Be 'Cluster!Microsoft.Windows.Cluster.VirtualServer'
         $relationships = @($script:ClusterCapability.SelectNodes('//RelationshipType'))
-        $relationships.Count | Should -Be 6
+        $relationships.Count | Should -Be 8
         @($relationships.Target.Type) | Should -Contain 'Cluster!Microsoft.Windows.Cluster'
         @($relationships.Target.Type) | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Node'
         @($relationships.Target.Type) | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Group'
         @($relationships.Target.Type) | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Network'
         @($relationships.Target.Type) | Should -Contain 'CSV!Microsoft.Windows.Server.ClusterSharedVolumeMonitoring.ClusterSharedVolume'
-        @($script:ClusterCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 0
-        @($script:ClusterCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 6
+        @($script:ClusterCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 2
+        @($script:ClusterCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 8
+        $script:ClusterCapability.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.Capability.Cluster.ClusterRole.Discovery']").Target | Should -Be 'Cluster!Microsoft.Windows.Cluster.VirtualServer'
+        $script:ClusterCapability.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.Capability.Cluster.Relationship.Discovery']").Target | Should -Be 'HyperVPrivateCloud.Capability.Cluster.ClusterRole'
     }
 
     It 'uses Microsoft leaf health and adds only HCS integration-pipeline monitoring and rollups' {
         @($script:ClusterCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 16
-        @($script:ClusterCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 5
+        @($script:ClusterCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 8
         @($script:ClusterCapability.SelectNodes('//Rule')).Count | Should -Be 5
         $script:ClusterCapability.SelectSingleNode("//UnitMonitor[@ID='HyperVPrivateCloud.Capability.Cluster.IntegrationHealth.Monitor']") | Should -Not -BeNullOrEmpty
+        # Cluster-wide facts are evaluated once per cluster on the cluster-hosted role; only node-local CSV latency/queue stay on the host role.
+        $clusterWide = @($script:ClusterCapability.SelectNodes('//UnitMonitor') | Where-Object { $_.ID -notmatch 'CSV.(ReadLatency|WriteLatency|QueueDepth)' })
+        $clusterWide.Count | Should -Be 13
+        foreach ($monitor in $clusterWide) { [string]$monitor.Target | Should -Be 'HyperVPrivateCloud.Capability.Cluster.ClusterRole' }
+        foreach ($monitor in @($script:ClusterCapability.SelectNodes('//UnitMonitor') | Where-Object { $_.ID -match 'CSV.(ReadLatency|WriteLatency|QueueDepth)' })) { [string]$monitor.Target | Should -Be 'HCSV2Library!HyperVPrivateCloud.HostRole' }
         foreach ($rollup in $script:ClusterCapability.SelectNodes('//DependencyMonitor')) {
-            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberMonitor | Should -BeIn @('Health!System.Health.AvailabilityState', 'Health!System.Health.PerformanceState', 'Health!System.Health.ConfigurationState')
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
             $rollup.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
         }
+        @($script:ClusterCapability.SelectNodes("//DependencyMonitor[@RelationshipType='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsClusterRole']") | ForEach-Object MemberMonitor) | Sort-Object | Should -Be @('Health!System.Health.AvailabilityState', 'Health!System.Health.ConfigurationState', 'Health!System.Health.PerformanceState')
     }
 
     It 'ships cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
-        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 7
+        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 8
         $targets = @($script:ClusterCapability.SelectNodes('//View') | ForEach-Object Target)
         $targets | Should -Contain 'Cluster!Microsoft.Windows.Cluster'
         $targets | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Node'
@@ -404,7 +418,7 @@ Describe 'Hyper-V Private Cloud Monitoring v2 core build' {
 
     It 'uses non-throwing cluster capability probes and syntactically valid embedded PowerShell' {
         foreach ($scriptBody in $script:ClusterCapability.SelectNodes('//ScriptBody')) {
-            if ($scriptBody.ParentNode.ScriptName -like '*.Task.ps1') { continue }
+            if ($scriptBody.ParentNode.ScriptName -like '*.Task.ps1' -or $scriptBody.ParentNode.ScriptName -like '*RoleDiscovery.ps1') { continue }
             $scriptBody.InnerText | Should -Match 'function Test-HcsCapability'
             $scriptBody.InnerText | Should -Not -Match 'Import-Module[^\r\n]+-ErrorAction\s+Stop'
             $tokens = $null
