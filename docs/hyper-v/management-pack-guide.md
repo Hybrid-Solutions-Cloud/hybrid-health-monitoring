@@ -10,7 +10,9 @@ upgraded, and removed. Version `1.0.0.0` is permanently sealed with public key t
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 1.0.0.0 now](../downloads/hyper-v-private-cloud.md).** Import exactly one
+**[Download version 1.0.0.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
+the [operations guide](operations-guide.md) covers day-two use: console layout, tuning, tasks.
+ Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
 lab preview is superseded and is not compatible with this signing identity.
 

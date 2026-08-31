@@ -47,6 +47,7 @@ const hyperVSidebar = [
     text: 'Deploy and operate',
     items: [
       { text: 'Administration guide', link: '/hyper-v/management-pack-guide' },
+      { text: 'Operations guide', link: '/hyper-v/operations-guide' },
       { text: 'Monitoring catalog policy', link: '/hyper-v/monitoring-catalog' },
       { text: 'Management pack overview', link: '/hyper-v/scom-mp' },
     ],
