@@ -1,5 +1,17 @@
 # Current task
 
+## Active release — 2026-09-01 Hyper-V Private Cloud 1.0.2.0 production seal
+
+- Corrected the PowerShell 7 release packager to reuse an exact loaded SCOM SDK assembly identity,
+  inspect multiple MPB files without duplicate loads, and extract gzip-compressed UTF-8/UTF-16
+  loose-MP resources without invoking the failing SDK sealed-pack constructor.
+- A complete test-mode package passed Microsoft VSAE verification and sealing for all 13 product
+  MPs, strong-name checks, 66 override generation, 14 bundle generation, and the independent
+  package validator. Release tests pass 11/11 and PSScriptAnalyzer is clean.
+- Next: merge the release-tool correction, produce the release-eligible package with the permanent
+  Key Vault signing identity, publish the exact assets, import 1.0.2.0 into ProductLabs SCOM, and
+  validate runtime recovery.
+
 ## Active correction — 2026-09-01 Hyper-V Private Cloud 1.0.2.0
 
 - Live SCOM 2025 certification of `1.0.1.0` found two product defects: the shared command-executor

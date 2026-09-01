@@ -208,6 +208,30 @@ function Get-HcsFileHashValue {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-HcsSdkAssembly {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Path)
+
+    $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+    $requestedName = [System.Reflection.AssemblyName]::GetAssemblyName($resolvedPath)
+    $loadedAssemblies = @(
+        [System.AppDomain]::CurrentDomain.GetAssemblies() |
+            Where-Object { $_.FullName -eq $requestedName.FullName }
+    )
+    if ($loadedAssemblies.Count -gt 1) {
+        throw "More than one loaded SDK assembly has identity '$($requestedName.FullName)'."
+    }
+    if ($loadedAssemblies.Count -eq 1) {
+        $loadedAssembly = $loadedAssemblies[0]
+        if ([string]::IsNullOrWhiteSpace($loadedAssembly.Location)) {
+            throw "Loaded SDK assembly '$($requestedName.FullName)' has no verifiable file location."
+        }
+        return $loadedAssembly
+    }
+
+    return [System.Reflection.Assembly]::LoadFrom($resolvedPath)
+}
+
 function Get-HcsAssemblyIdentity {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Path)
@@ -239,8 +263,8 @@ function Get-HcsBundleManagementPackIdentity {
     if (-not (Test-Path -LiteralPath $coreAssemblyPath -PathType Leaf)) {
         throw "Microsoft.EnterpriseManagement.Core.dll was not found beside '$PackagingAssemblyPath'."
     }
-    $coreAssembly = [System.Reflection.Assembly]::LoadFrom($coreAssemblyPath)
-    $packagingAssembly = [System.Reflection.Assembly]::LoadFrom($PackagingAssemblyPath)
+    $coreAssembly = Get-HcsSdkAssembly -Path $coreAssemblyPath
+    $packagingAssembly = Get-HcsSdkAssembly -Path $PackagingAssemblyPath
     $readerType = $packagingAssembly.GetType('Microsoft.EnterpriseManagement.Packaging.ManagementPackMsiBundleReader', $true)
     $storeType = $coreAssembly.GetType('Microsoft.EnterpriseManagement.Configuration.IO.ManagementPackFileStore', $true)
     $writerType = $coreAssembly.GetType('Microsoft.EnterpriseManagement.Configuration.IO.ManagementPackXmlWriter', $true)
@@ -271,23 +295,99 @@ function Get-HcsSealedManagementPackXml {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ManagementPackPath,
-        [Parameter(Mandatory)][string]$ExtractionPath,
-        [Parameter(Mandatory)][string]$CoreAssemblyPath,
-        [Parameter(Mandatory)][string[]]$ReferenceDirectories
+        [Parameter(Mandatory)][string]$ExtractionPath
     )
 
-    $coreAssembly = [System.Reflection.Assembly]::LoadFrom($CoreAssemblyPath)
-    $managementPackType = $coreAssembly.GetType('Microsoft.EnterpriseManagement.Configuration.ManagementPack', $true)
-    $writerType = $coreAssembly.GetType('Microsoft.EnterpriseManagement.Configuration.IO.ManagementPackXmlWriter', $true)
-    $constructor = $managementPackType.GetConstructor([type[]]@([string], [string[]]))
-    if ($null -eq $constructor) { throw 'The Microsoft SCOM SDK ManagementPack(string, string[]) constructor was not found.' }
-    $managementPack = $constructor.Invoke([object[]]@($ManagementPackPath, [string[]]$ReferenceDirectories))
-    if (-not $managementPack.Sealed -or [string]::IsNullOrWhiteSpace([string]$managementPack.KeyToken)) {
-        throw "Management Pack '$ManagementPackPath' is not sealed with a publisher identity."
+    $resolvedPath = (Resolve-Path -LiteralPath $ManagementPackPath).Path
+    $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($resolvedPath)
+    $loadContext = [System.Runtime.Loader.AssemblyLoadContext]::new("HcsMpInspect-$([guid]::NewGuid().ToString('N'))", $true)
+    $resourceBytes = $null
+    try {
+        $assembly = $loadContext.LoadFromAssemblyPath($resolvedPath)
+        $resourceName = @($assembly.GetManifestResourceNames() | Where-Object { $_ -eq 'MPResources.resources' })
+        if ($resourceName.Count -ne 1) {
+            throw "Sealed Management Pack '$resolvedPath' does not contain one MPResources.resources manifest."
+        }
+        $resourceStream = $assembly.GetManifestResourceStream($resourceName[0])
+        try {
+            $resourceReader = [System.Resources.ResourceReader]::new($resourceStream)
+            try {
+                $enumerator = $resourceReader.GetEnumerator()
+                while ($enumerator.MoveNext()) {
+                    if ([string]$enumerator.Key -eq 'ManagementPack') {
+                        $resourceBytes = [byte[]]$enumerator.Value
+                        break
+                    }
+                }
+            }
+            finally {
+                $resourceReader.Dispose()
+            }
+        }
+        finally {
+            $resourceStream.Dispose()
+        }
+    }
+    finally {
+        $loadContext.Unload()
+    }
+    if ($null -eq $resourceBytes -or $resourceBytes.Length -eq 0) {
+        throw "Sealed Management Pack '$resolvedPath' has no ManagementPack resource payload."
+    }
+
+    if ($resourceBytes.Length -ge 2 -and $resourceBytes[0] -eq 0x1f -and $resourceBytes[1] -eq 0x8b) {
+        $compressedStream = [System.IO.MemoryStream]::new($resourceBytes, $false)
+        $xmlStream = [System.IO.MemoryStream]::new()
+        try {
+            $gzipStream = [System.IO.Compression.GZipStream]::new(
+                $compressedStream,
+                [System.IO.Compression.CompressionMode]::Decompress
+            )
+            try {
+                $gzipStream.CopyTo($xmlStream)
+            }
+            finally {
+                $gzipStream.Dispose()
+            }
+            $xmlBytes = $xmlStream.ToArray()
+        }
+        finally {
+            $xmlStream.Dispose()
+            $compressedStream.Dispose()
+        }
+    }
+    else {
+        $xmlBytes = $resourceBytes
+    }
+
+    $xmlEncoding = if ($xmlBytes.Length -ge 2 -and $xmlBytes[0] -eq 0xff -and $xmlBytes[1] -eq 0xfe) {
+        [System.Text.Encoding]::Unicode
+    }
+    elseif ($xmlBytes.Length -ge 2 -and $xmlBytes[0] -eq 0xfe -and $xmlBytes[1] -eq 0xff) {
+        [System.Text.Encoding]::BigEndianUnicode
+    }
+    elseif ($xmlBytes.Length -ge 2 -and $xmlBytes[0] -eq 0x3c -and $xmlBytes[1] -eq 0x00) {
+        [System.Text.Encoding]::Unicode
+    }
+    elseif ($xmlBytes.Length -ge 2 -and $xmlBytes[0] -eq 0x00 -and $xmlBytes[1] -eq 0x3c) {
+        [System.Text.Encoding]::BigEndianUnicode
+    }
+    else {
+        [System.Text.Encoding]::UTF8
+    }
+    [xml]$managementPackXml = $xmlEncoding.GetString($xmlBytes)
+    $managementPackId = [string]$managementPackXml.ManagementPack.Manifest.Identity.ID
+    if ([string]::IsNullOrWhiteSpace($managementPackId) -or $managementPackId -ne $assemblyName.Name) {
+        throw "Sealed Management Pack resource identity '$managementPackId' does not match assembly identity '$($assemblyName.Name)'."
     }
     [System.IO.Directory]::CreateDirectory($ExtractionPath) | Out-Null
-    $writer = [System.Activator]::CreateInstance($writerType, @($ExtractionPath))
-    return $writer.WriteManagementPack($managementPack)
+    $xmlPath = Join-Path $ExtractionPath "$managementPackId.xml"
+    [System.IO.File]::WriteAllText(
+        $xmlPath,
+        $xmlEncoding.GetString($xmlBytes),
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    return $xmlPath
 }
 
 function Resolve-HcsExternalIdentity {
@@ -487,7 +587,6 @@ if (-not $SkipSdkVerification -and $bundleReferenceIdentities.Count -gt 0) {
     try {
         Invoke-HcsNativeTool -FilePath $resolvedSn -ArgumentList @('-q', '-k', $transientKeyPath) -FailureMessage 'Failed to generate the transient MPB verification key.' | Out-Null
         $bundleVerificationToken = Get-HcsPublicKeyToken -KeyPath $transientKeyPath -SnPath $resolvedSn -WorkingPath $bundleReferenceRoot
-        $referenceDirectories = [string[]]@($DependencyPath | ForEach-Object { (Resolve-Path -LiteralPath $_).Path })
         $reachableIdentities = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::Ordinal)
         $dependencyEdges = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::Ordinal)
         $inspectionQueue = [System.Collections.Generic.Queue[object]]::new()
@@ -507,8 +606,7 @@ if (-not $SkipSdkVerification -and $bundleReferenceIdentities.Count -gt 0) {
             if ([string]$identity.kind -eq 'mp' -and [string]::IsNullOrWhiteSpace([string]$identity.xmlPath)) {
                 $looseExtractionPath = Join-Path $bundleReferenceRoot "source-loose/$($identity.id)-$((Get-HcsFileHashValue -Path $identity.path).Substring(0, 12))"
                 $identity.xmlPath = Get-HcsSealedManagementPackXml -ManagementPackPath $identity.path `
-                    -ExtractionPath $looseExtractionPath -CoreAssemblyPath (Join-Path (Split-Path -Parent $MpbPackagingAssemblyPath) 'Microsoft.EnterpriseManagement.Core.dll') `
-                    -ReferenceDirectories $referenceDirectories
+                    -ExtractionPath $looseExtractionPath
             }
             [xml]$identityXml = Get-Content -LiteralPath $identity.xmlPath -Raw
             $edges = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)

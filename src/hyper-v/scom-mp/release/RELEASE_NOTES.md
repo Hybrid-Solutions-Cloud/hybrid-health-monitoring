@@ -12,6 +12,8 @@ SCOM 2025 validation: command-executor policies now accept valid multiline `<Dat
 the Storage Spaces Direct object-health probe preserves empty and singleton query results as
 arrays under strict mode. The diagnostic-summary task also returns useful runtime evidence when
 the Hyper-V query path is unavailable instead of terminating without operator-readable output.
+The release packager also handles preloaded SCOM SDK assemblies and mixed UTF-8/UTF-16 sealed
+dependency resources correctly when verification runs under PowerShell 7.
 
 Existing customer-owned unsealed override Management Packs remain valid because the sealed pack
 IDs and permanent public key token are unchanged. Import the version-increased sealed product

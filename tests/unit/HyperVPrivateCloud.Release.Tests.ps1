@@ -104,6 +104,23 @@ Describe 'Hyper-V Private Cloud release tooling' {
         $script:ValidationText | Should -Match 'MPB Authenticode status is unsupported'
     }
 
+    It 'reuses matching SCOM SDK assemblies for multi-bundle PowerShell 7 inspection' {
+        $script:PackageText | Should -Match 'function Get-HcsSdkAssembly'
+        $script:PackageText | Should -Match 'CurrentDomain\.GetAssemblies\(\)'
+        $script:PackageText | Should -Match '\$_.FullName -eq \$requestedName.FullName'
+        $script:PackageText | Should -Match 'Get-HcsSdkAssembly -Path \$PackagingAssemblyPath'
+        $script:PackageText | Should -Not -Match '\[System\.Reflection\.Assembly\]::LoadFrom\(\$PackagingAssemblyPath\)'
+    }
+
+    It 'extracts loose sealed dependency XML without binding a second SCOM SDK copy' {
+        $script:PackageText | Should -Match '\[System\.Resources\.ResourceReader\]::new'
+        $script:PackageText | Should -Match "'ManagementPack'"
+        $script:PackageText | Should -Match '\[System\.IO\.Compression\.GZipStream\]::new'
+        $script:PackageText | Should -Match '\[System\.Text\.Encoding\]::Unicode'
+        $script:PackageText | Should -Match '\[System\.Text\.UTF8Encoding\]::new\(\$false\)'
+        $script:PackageText | Should -Not -Match 'ManagementPack\(string, string\[\]\) constructor'
+    }
+
     It 'publishes only through the protected Windows release workflow' {
         Test-Path -LiteralPath $script:ReleaseWorkflow -PathType Leaf | Should -BeTrue
         $script:WorkflowText | Should -Match "github\.ref == 'refs/heads/main'"
