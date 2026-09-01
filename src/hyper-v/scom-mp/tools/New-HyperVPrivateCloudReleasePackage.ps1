@@ -505,13 +505,16 @@ $repositoryPrefix = $repositoryRoot.TrimEnd('\') + '\'
 if ($resolvedKeyPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw 'SigningKeyPath must be outside the repository. Signing keys must never be source-controlled or packaged.'
 }
-$headCommit = (& git -C $repositoryRoot rev-parse HEAD 2>&1 | Select-Object -First 1).ToString().Trim().ToLowerInvariant()
+$headOutput = @(& git -C $repositoryRoot rev-parse HEAD 2>&1)
+$headSucceeded = $?
+$headCommit = ($headOutput | Select-Object -First 1).ToString().Trim().ToLowerInvariant()
 if ($BuildMode -eq 'Release') {
     if ($SkipSdkVerification) { throw 'Release mode cannot skip Microsoft VSAE verification.' }
     if (-not $ApprovedReleaseSigningIdentity) { throw 'Release mode requires -ApprovedReleaseSigningIdentity.' }
-    if ($LASTEXITCODE -ne 0 -or $headCommit -notmatch '^[0-9a-f]{40}$') { throw 'Release mode requires a resolvable source commit.' }
+    if (-not $headSucceeded -or $headCommit -notmatch '^[0-9a-f]{40}$') { throw 'Release mode requires a resolvable source commit.' }
     $worktreeStatus = @(& git -C $repositoryRoot status --porcelain 2>&1)
-    if ($LASTEXITCODE -ne 0 -or $worktreeStatus.Count -gt 0) { throw 'Release mode requires a clean Git worktree.' }
+    $worktreeStatusSucceeded = $?
+    if (-not $worktreeStatusSucceeded -or $worktreeStatus.Count -gt 0) { throw 'Release mode requires a clean Git worktree.' }
 }
 if (-not $SkipSdkVerification -and $DependencyPath.Count -eq 0) {
     throw 'DependencyPath is required when Microsoft VSAE verification is enabled.'
