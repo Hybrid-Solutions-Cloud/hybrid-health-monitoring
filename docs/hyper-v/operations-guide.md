@@ -17,7 +17,7 @@ Everything lives under **Monitoring → Hyper-V Private Cloud**:
 
 | Folder | What you find there |
 |---|---|
-| **Overview** | The Distributed Application diagram and **All Active Alerts** — every alert from any object the product monitors, in one view. Start here every morning. |
+| **Overview** | **Solution Health** and three nested Distributed Application diagrams — **Solution Diagram** (the entire private cloud), **Hyper-V Fabric Diagram** (every cluster and host across all sites with their VMs, storage and networking), **Management Stack Diagram** (host management services, VMM, SDN, monitoring pipeline) — plus the per-boundary **Private Cloud Diagram** and **All Active Alerts**. Start here every morning. |
 | **Compute** | Host state, host performance, and Hyper-V event views. |
 | **Virtual Machines** | Per-VM runtime state, performance, and replica views. |
 | **Availability** | Failover cluster, node, network, group, CSV and cluster-role state views. |
@@ -26,9 +26,12 @@ Everything lives under **Monitoring → Hyper-V Private Cloud**:
 | **Monitoring Pipeline** | The product watching itself — probe and capability health. If this folder is unhealthy, distrust the rest until it is fixed. |
 | **Operations** | Task-oriented views for day-two work. |
 
-One **Distributed Application** (`Hyper-V Private Cloud Service`) exists per cluster or standalone
-host. Its seven branches each roll up their own domain, so a red Storage branch means storage —
-not an echo of some unrelated monitor.
+Three enterprise-wide Distributed Applications exist exactly once: **Hyper-V Private Cloud** (the
+whole solution) contains **Hyper-V Fabric** and **Management Stack**. Beneath the fabric, one
+per-boundary DA (`Hyper-V Private Cloud - <cluster or host>`) exists per cluster or standalone
+host, and its seven branches each roll up their own domain — so a red Storage branch means storage,
+not an echo of some unrelated monitor. The Management Stack collects every boundary's Management
+and Monitoring Pipeline branches, which is where VMM and SDN objects surface.
 
 ## What runs by default
 

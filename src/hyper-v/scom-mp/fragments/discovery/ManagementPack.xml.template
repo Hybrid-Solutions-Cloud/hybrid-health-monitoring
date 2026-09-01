@@ -50,7 +50,7 @@
           <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.AvailabilityComponent" />
           <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.StorageComponent" />
           <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponent" />
-          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.MonitoringComponent" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.MonitoringComponent" /><DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.Enterprise.Solution" /><DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.Enterprise.Fabric" /><DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.Enterprise.ManagementStack" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.BoundaryContainsHostRole" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.BoundaryContainsVirtualMachine" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.BoundaryContainsVirtualSwitch" />
@@ -72,7 +72,7 @@
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.VirtualMachineComponentContainsVirtualMachine" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.VirtualMachineComponentContainsRuntime" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.AvailabilityComponentContainsRuntime" />
-          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.StorageComponentContainsRuntime" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.StorageComponentContainsRuntime" /><DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.SolutionContainsFabric" /><DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.SolutionContainsManagementStack" /><DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.FabricContainsService" /><DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ManagementStackContainsManagementComponent" /><DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ManagementStackContainsMonitoringComponent" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsRuntime" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.AvailabilityComponentContainsReplicationRelationship" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.StorageComponentContainsVirtualHardDisk" />

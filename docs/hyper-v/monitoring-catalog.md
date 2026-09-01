@@ -20,8 +20,8 @@ superseded.
 
 | Pack | Unit monitors | Dependency roll-ups | Rules | Discoveries | Views |
 |---|---|---|---|---|---|
-| Monitoring (host + per-VM) | 39 (4 disabled, superseded) | 39 | 42 (24 performance, 8 event collection, 10 event alert) | — | — |
-| Discovery / Library / Presentation | — | — | — | 3 | 18 |
+| Monitoring (host + per-VM) | 39 (4 disabled, superseded) | 54 (15 enterprise) | 42 (24 performance, 8 event collection, 10 event alert) | — | — |
+| Discovery / Library / Presentation | — | — | — | 3 | 22 |
 | Capability.Storage (SAN, FC, iSCSI, MPIO) | 25 (5 disabled: 1 by design, 4 superseded) | 4 | 7 | 1 | 6 |
 | Capability.Cluster (Failover Clustering, CSV) | 16 (13 once per cluster) | 8 | 5 | 2 | 8 |
 | Capability.S2D | 16 (1 disabled) | 7 | 5 (2 disabled) | 7 | 11 |
@@ -31,7 +31,7 @@ superseded.
 | Capability.FileServices (SMB / SOFS) | 12 | 3 | 9 | 2 | 7 |
 | Capability.PhysicalNetwork | 9 (1 disabled, no LLDP data) | 2 | 6 | 1 | 8 |
 | Capability.PureStorage | 1 | 4 | 0 | 1 | 11 |
-| **Total** | **162** | **96** | **80** | **22** | **112** |
+| **Total** | **162** | **111** | **80** | **22** | **116** |
 
 The Distributed Application (`HyperVPrivateCloud.Service`, one per cluster or standalone host) has
 seven branches. Each branch rolls up the monitors of its own domain — Storage carries VM virtual-disk

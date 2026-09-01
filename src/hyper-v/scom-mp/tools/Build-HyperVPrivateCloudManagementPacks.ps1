@@ -243,6 +243,24 @@ function Get-HcsRollupContent {
         }
     }
 
+    # Enterprise level: three nested singleton DAs. The solution rolls up the fabric and the management stack;
+    # the fabric rolls up every boundary DA; the management stack rolls up each boundary's Management and
+    # Monitoring Pipeline branches (VMM and SDN objects arrive through those branches).
+    $enterpriseRollups = @(
+        @('Enterprise.Solution', 'Fabric', 'SolutionContainsFabric', 'Hyper-V Fabric', 'the Hyper-V Private Cloud solution'),
+        @('Enterprise.Solution', 'ManagementStack', 'SolutionContainsManagementStack', 'Management Stack', 'the Hyper-V Private Cloud solution'),
+        @('Enterprise.Fabric', 'Service', 'FabricContainsService', 'private cloud boundary', 'the Hyper-V Fabric'),
+        @('Enterprise.ManagementStack', 'Management', 'ManagementStackContainsManagementComponent', 'host management', 'the Management Stack'),
+        @('Enterprise.ManagementStack', 'Monitoring', 'ManagementStackContainsMonitoringComponent', 'monitoring pipeline', 'the Management Stack')
+    )
+    foreach ($rollup in $enterpriseRollups) {
+        foreach ($aspect in $aspects) {
+            $id = "HyperVPrivateCloud.$($rollup[0]).$($rollup[1]).$($aspect[0]).Dependency.Monitor"
+            [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HyperVPrivateCloud.$($rollup[0])`" ParentMonitorID=`"Health!System.Health.$($aspect[1])`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"HCSV2Library!HyperVPrivateCloud.$($rollup[2])`" MemberMonitor=`"Health!System.Health.$($aspect[1])`"><Category>$($aspect[2])</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
+            [void]$displays.AppendLine("    <DisplayString ElementID=`"$id`"><Name>Roll up $($rollup[3]) $($aspect[0].ToLowerInvariant())</Name><Description>Rolls the $($aspect[0].ToLowerInvariant()) state of every $($rollup[3]) member into $($rollup[4]).</Description></DisplayString>")
+        }
+    }
+
     # Component level. Each branch rolls up the monitors that belong to its own domain so a VM heartbeat failure
     # is visible under Virtual Machines and Availability, not under Storage and Networking as well. The first
     # entry of each branch keeps its 1.0.0.0 element ID (".Members.Availability.Dependency.Monitor"); a member
