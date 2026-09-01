@@ -5,14 +5,26 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
-## Management pack identities changed in this release
+## Version 1.0.2.0 corrective release
+
+Version `1.0.2.0` is an in-place upgrade from `1.0.1.0`. It corrects two defects found during live
+SCOM 2025 validation: command-executor policies now accept valid multiline `<DataItem>` XML, and
+the Storage Spaces Direct object-health probe preserves empty and singleton query results as
+arrays under strict mode. The diagnostic-summary task also returns useful runtime evidence when
+the Hyper-V query path is unavailable instead of terminating without operator-readable output.
+
+Existing customer-owned unsealed override Management Packs remain valid because the sealed pack
+IDs and permanent public key token are unchanged. Import the version-increased sealed product
+Management Packs over the installed `1.0.1.0` packs; do not remove the existing packs first.
+
+## Product identity history
 
 Management Packs are now named for the product rather than the publisher. The namespace is
 `HyperVPrivateCloud.*` — for example `HyperVPrivateCloud.Library` and
 `HyperVPrivateCloud.Capability.Cluster`. Publisher attribution is carried in the sealed pack
 `Company` and `Copyright` metadata and in the documentation.
 
-The version line restarts at `1.0.0.0`. This is the first release under this identity; the earlier
+The version line started at `1.0.0.0`. That was the first release under this identity; the earlier
 `2.0.0.0` package used the previous `HybridSolutionsCloud.HyperVPrivateCloud.*` identities and no
 `1.0` was ever officially released under them.
 
