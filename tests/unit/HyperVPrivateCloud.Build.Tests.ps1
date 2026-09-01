@@ -95,6 +95,41 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
             Should -Be 'Collect Hyper-V diagnostic and PowerShell runtime summary'
     }
 
+    It 'accepts single-line and multiline SCOM DataItem output' {
+        $singleLine = '<DataItem type="System.PropertyBagData"><Property Name="State" Variant="8">Good</Property></DataItem>'
+        $multiline = "<DataItem type=`"System.DiscoveryData`">`n<DiscoveryType>0</DiscoveryType>`n</DataItem>"
+        foreach ($moduleId in 'HyperVPrivateCloud.Pwsh.DiscoveryProvider', 'HyperVPrivateCloud.Pwsh.PropertyBagProbe') {
+            $module = $script:Library.SelectSingleNode("//*[@ID='$moduleId']")
+            $stdoutPolicy = $module.SelectSingleNode('.//DefaultEventPolicy/StdOutMatches')
+            $stdoutPolicy.Operator | Should -Be 'DoesNotMatchRegularExpression'
+            [regex]::IsMatch($singleLine, $stdoutPolicy.InnerText) | Should -BeTrue
+            [regex]::IsMatch($multiline, $stdoutPolicy.InnerText) | Should -BeTrue
+        }
+    }
+
+    It 'preserves empty and singleton S2D query results as arrays under strict mode' {
+        $scriptText = $script:S2DCapability.SelectSingleNode("//ScriptBody[contains(../ScriptName,'S2D.ObjectHealth')]").InnerText
+        $tokens = $null
+        $parseErrors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseInput($scriptText, [ref]$tokens, [ref]$parseErrors)
+        @($parseErrors).Count | Should -Be 0
+        $helper = $ast.Find({
+                param($node)
+                $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+                $node.Name -eq 'Get-HcsSafeCollection'
+            }, $true)
+        $helper | Should -Not -BeNullOrEmpty
+        . ([scriptblock]::Create($helper.Extent.Text))
+
+        $empty = Get-HcsSafeCollection { @() }
+        $singleton = Get-HcsSafeCollection { [pscustomobject]@{ Name = 'CSV01' } }
+        $empty.GetType().FullName | Should -Be 'System.Object[]'
+        $empty.Count | Should -Be 0
+        $singleton.GetType().FullName | Should -Be 'System.Object[]'
+        $singleton.Count | Should -Be 1
+        $singleton[0].Name | Should -Be 'CSV01'
+    }
+
     It 'defines the complete required Distributed Application branch contract' {
         $required = @('ManagementComponent', 'ComputeComponent', 'VirtualMachineComponent', 'AvailabilityComponent', 'StorageComponent', 'NetworkComponent', 'MonitoringComponent')
         $classIds = @($script:Library.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType') | ForEach-Object ID)

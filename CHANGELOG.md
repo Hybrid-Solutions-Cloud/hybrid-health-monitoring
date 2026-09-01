@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.2.0] — 2026-09-01
+
+Corrective in-place upgrade from `1.0.1.0` after live SCOM 2025 certification. Discovery and
+property-bag workflows now accept multiline `<DataItem>` XML emitted by the SCOM script API;
+previously the command-executor event policy dropped otherwise valid output and raised workflow
+initialization alerts. The S2D object-health probe now preserves empty and singleton query results
+as arrays under strict mode, preventing `$null.Count` failures when no storage job or another
+optional S2D object is present. Both runtime contracts are covered by regression tests.
+The diagnostic-summary task now returns PowerShell runtime and Hyper-V query failure evidence when
+the management path is unavailable instead of terminating without operator-readable output.
+
 ## [1.0.1.0] — 2026-08-31
 
 First field-test cut, additive over 1.0.0.0 (in-place upgrade; existing override pairs keep

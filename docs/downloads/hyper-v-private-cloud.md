@@ -14,12 +14,12 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.0.1.0
+## Current release: 1.0.2.0
 
-`1.0.1.0` is an additive, in-place upgrade over `1.0.0.0` from the first field test: three nested
-enterprise Distributed Applications — **Hyper-V Private Cloud** (the whole solution) containing
-**Hyper-V Fabric** and **Management Stack** — and a CompletePrivateCloud tuning profile that no
-longer requires the Pure Storage pack. All 13 product Management Packs
+`1.0.2.0` is an additive, in-place corrective upgrade over `1.0.1.0`. Live SCOM 2025 certification
+found two runtime defects: multiline discovery/property-bag XML was rejected by the
+command-executor event policy, and an empty S2D query could collapse to `$null` under strict mode.
+Both are corrected and guarded by regression tests. All 13 product Management Packs
 are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
 strong-name checked, and covered by the published SHA-256 manifest. The release contains 13 sealed
 Management Packs, 66 public override packs, and 14 deterministic bundles: 162 unit monitors, 111
@@ -45,9 +45,9 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.0.1.0`](/downloads/hyper-v-private-cloud/1.0.1.0/release-assets.json). The `latest` directory
+[`1.0.2.0`](/downloads/hyper-v-private-cloud/1.0.2.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
-The previous release stays under [`1.0.0.0`](/downloads/hyper-v-private-cloud/1.0.0.0/release-assets.json).
+The previous release stays under [`1.0.1.0`](/downloads/hyper-v-private-cloud/1.0.1.0/release-assets.json).
 Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
 ([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 

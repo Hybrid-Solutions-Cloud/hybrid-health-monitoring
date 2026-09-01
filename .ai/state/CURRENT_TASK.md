@@ -1,5 +1,19 @@
 # Current task
 
+## Active correction — 2026-09-01 Hyper-V Private Cloud 1.0.2.0
+
+- Live SCOM 2025 certification of `1.0.1.0` found two product defects: the shared command-executor
+  stdout policy rejected multiline SCOM `DataItem` XML, and the S2D object-health helper returned
+  `$null` for an empty query under strict mode.
+- Canonical source now uses a multiline-safe, anchored DataItem policy and preserves empty and
+  singleton S2D query results as arrays. The diagnostic-summary task also returns useful runtime
+  evidence when the Hyper-V query path is unavailable instead of terminating without output.
+- Regression coverage passes: core build 83/83, probe smoke 63/63, dependency docs 8/8, and the
+  VitePress site builds. The earlier full run was 198 passed / 2 failed before both failing cases
+  were corrected and independently re-run green.
+- Next: commit and push the clean corrective source, seal and publish `1.0.2.0`, import it into the
+  live SCOM management group, and verify workflow/resource health.
+
 <!-- What is being worked on right now. Keep it short; update as work moves. -->
 
 _Hyper-V Private Cloud Monitoring `1.0.0.0` is released and repository-published. Management Packs

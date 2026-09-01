@@ -2,7 +2,7 @@
 
 > Last updated: August 30, 2026
 >
-> Status: Azure Local is under development. Hyper-V Private Cloud Monitoring `1.0.0.0` is permanently
+> Status: Azure Local is under development. Hyper-V Private Cloud Monitoring `1.0.2.0` is permanently
 > sealed and published in the repository with verified direct downloads, under the product-named
 > `HyperVPrivateCloud.*` identity; the earlier `2.0.0.0` package and the `0.1` lab preview are both
 > superseded. The topology model, Distributed Application, presentation layer, and override system
@@ -20,7 +20,7 @@ platform first and monitoring surface second:
 | Platform | SCOM Management Pack | Azure Monitor Health Models |
 |---|---|---|
 | **Azure Local** | Under development; not the active delivery priority | Under development |
-| **Hyper-V** | `1.0.0.0` permanently sealed and repository-published; monitoring depth and post-install certification follow | Constrained development through Azure Arc-enabled SCVMM and Arc-enabled Servers |
+| **Hyper-V** | `1.0.2.0` permanently sealed and repository-published; monitoring depth and post-install certification follow | Constrained development through Azure Arc-enabled SCVMM and Arc-enabled Servers |
 
 ### Product ambition
 
@@ -114,7 +114,7 @@ test-sealed binaries.
 | Distributed Application and console | Core DA, diagram, folders, and views authored; capability integration remains | Complete enabled topology is navigable and verified health propagates without duplicate alerts |
 | Customer overrides and deployment profiles | Authored: 11 profiles, three tiers, 66 generated Discovery/Monitoring examples; semantic resolution, drift, cookdown, version separation, invalid-profile, same-MP group, and VSAE gates pass | Governed release packaging emits import-ready XML with the signed product version/token, then representative import/export/upgrade/removal labs pass |
 | Runtime certification | Explicit public command-executor wrappers now launch the PowerShell 7 MSI path; SCOM 2016/2022 library contracts and static workflow tests pass; a read-only management-group collector now produces lane-specific identity, topology, workflow, DA/view, alert, and recent diagnostic-task snapshots plus an unapproved evidence draft | HealthService task evidence and every embedded/capability script run under the declared PowerShell 7 contract on every claimed SCOM/Windows Server pair |
-| Governed release and public download | Complete: version `1.0.0.0` sealed under the product-named `HyperVPrivateCloud.*` identity with permanent token `54d0fb1159995c86`; 13 MPs, 66 overrides, 14 bundles, manifests, and checksums validated and published | Preserve immutable versioned assets and advance `latest` only through a version-increased validated package |
+| Governed release and public download | Complete: version `1.0.2.0` sealed under the product-named `HyperVPrivateCloud.*` identity with permanent token `54d0fb1159995c86`; 13 MPs, 66 overrides, 14 bundles, manifests, and checksums validated and published | Preserve immutable versioned assets and advance `latest` only through a version-increased validated package |
 | **Monitoring depth** | **Skeleton: 12 unit monitors, 12 rules, 0 aggregate monitors across the whole product** | **A curated catalog of monitors, rules, and thresholds covering every component named under "Product ambition", each overridable, each backed by spike evidence** |
 | Dependency currency | Audited 2026-08-30: five referenced Microsoft packs current and stated for Windows Server 2025 and SCOM 2025; SDN unproven; Pure dead-ended | SDN validated in a Windows Server 2025 lab or the capability constrained; Pure replacement delivered; declared minimums established by test rather than inherited from the build |
 
