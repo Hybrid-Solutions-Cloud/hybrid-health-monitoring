@@ -38,8 +38,8 @@ function Get-HcsNumber {
 
 function Get-HcsSafeCollection {
     param([scriptblock]$Query)
-    try { return @(& $Query) }
-    catch { return @() }
+    try { Write-Output -NoEnumerate @(& $Query) }
+    catch { Write-Output -NoEnumerate @() }
 }
 
 $api = New-Object -ComObject 'MOM.ScriptAPI'

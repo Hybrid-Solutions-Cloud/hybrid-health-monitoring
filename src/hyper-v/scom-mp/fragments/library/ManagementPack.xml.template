@@ -182,7 +182,7 @@
                 <RequireOutput>true</RequireOutput>
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
                 <DefaultEventPolicy>
-                  <StdOutMatches Operator="DoesNotMatchRegularExpression">&lt;DataItem.+/DataItem\b*&gt;|&lt;DataItem.*/&gt;</StdOutMatches>
+                  <StdOutMatches Operator="DoesNotMatchRegularExpression">(?s)^\s*&lt;DataItem\b.*(?:/&gt;|&lt;/DataItem&gt;)\s*$</StdOutMatches>
                   <StdErrMatches>\a+</StdErrMatches>
                   <ExitCodeMatches>[^0]+</ExitCodeMatches>
                 </DefaultEventPolicy>
@@ -215,7 +215,7 @@
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
                 <OutputType>System.PropertyBagData</OutputType>
                 <DefaultEventPolicy>
-                  <StdOutMatches Operator="DoesNotMatchRegularExpression">&lt;DataItem.+/DataItem\b*&gt;|&lt;DataItem.*/&gt;</StdOutMatches>
+                  <StdOutMatches Operator="DoesNotMatchRegularExpression">(?s)^\s*&lt;DataItem\b.*(?:/&gt;|&lt;/DataItem&gt;)\s*$</StdOutMatches>
                   <StdErrMatches>\a+</StdErrMatches>
                   <ExitCodeMatches>[^0]+</ExitCodeMatches>
                 </DefaultEventPolicy>

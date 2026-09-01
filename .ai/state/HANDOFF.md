@@ -1,5 +1,26 @@
 # Handoff
 
+## 2026-09-01 — 1.0.2.0 runtime correction ready to seal
+
+**Branch:** `fix/hyperv-runtime-probe-contract` from `main` at `58d6497`.
+
+Live ProductLabs SCOM validation exposed two defects in `1.0.1.0`. The shared discovery/property
+bag `DefaultEventPolicy` used a single-line regex, so valid multiline DataItem output was dropped
+and event 21405/workflow initialization alerts were raised. The S2D object-health
+`Get-HcsSafeCollection` helper also unrolled empty output to `$null`, making `.Count` fail under
+strict mode. Both are fixed in canonical source and protected by tests. The diagnostic-summary task
+now returns a readable failure result when Hyper-V WMI is unavailable.
+
+Validation: `HyperVPrivateCloud.Build.Tests.ps1` 83/83, probe smoke 63/63, dependency docs 8/8,
+PSScriptAnalyzer clean, `git diff --check` clean, and VitePress build complete. The complete suite
+first returned 198 pass / 2 fail; those exact failures were corrected and their full test files now
+pass. `npm ci` reported three existing lockfile advisories (two moderate, one high); dependency
+upgrades are not mixed into this runtime release.
+
+Next: commit/push source, seal and publish `1.0.2.0` with Key Vault signing identity
+`hcs-hybrid-health-monitoring-scom-release-private-key`, import the version-increased packs into
+ProductLabs SCOM, and validate that workflow alerts clear and S2D workflows return data.
+
 ## 2026-08-31 (final) — THE REAL 1.0.0.0 RELEASED; v2 directory eliminated; version history reset
 
 **Branch:** `feat/monitoring-depth` — pushed; PR #3 open. **`1.0.0.0` (the first release) is sealed
