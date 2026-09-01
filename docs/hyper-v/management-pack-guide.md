@@ -6,11 +6,11 @@ description: Public operator guide for building, installing, validating, tuning,
 # Hyper-V Management Pack administration guide
 
 This guide explains how Hyper-V Private Cloud Monitoring is installed, tuned, validated,
-upgraded, and removed. Version `1.0.0.0` is permanently sealed with public key token
+upgraded, and removed. Version `1.0.1.0` is permanently sealed with public key token
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 1.0.0.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
+**[Download version 1.0.1.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
 the [operations guide](operations-guide.md) covers day-two use: console layout, tuning, tasks.
  Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
@@ -125,7 +125,7 @@ storage objects. The S2D package's Cluster and Windows Server prerequisites must
 and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
 volumes, and file shares.
 
-The HCS adapter references the lowest compatible Microsoft MP identity (`1.0.0.0`) while requiring
+The HCS adapter references the lowest compatible Microsoft MP identity (`1.0.1.0`) while requiring
 the inspected `1.0.47.4` package as the supported minimum. It contributes DA membership, health
 rollup, query-pipeline coverage, and views only. Microsoft S2D faults, ongoing jobs, leaf monitors,
 alerts, and performance rules remain authoritative.
@@ -420,8 +420,8 @@ Generate a customer-owned pair with:
     -TuningTier Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
-    -Version '1.0.0.0' `
-    -ProductVersion '1.0.0.0' `
+    -Version '1.0.1.0' `
+    -ProductVersion '1.0.1.0' `
     -PublicKeyToken '54d0fb1159995c86' `
     -OutputPath './out/contoso-overrides'
 ```
@@ -429,7 +429,7 @@ Generate a customer-owned pair with:
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
 installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
 Neither product fact has a default because guessing produces unresolved references at import time.
-The product version and token above are the facts for release `1.0.0.0`; confirm them against the
+The product version and token above are the facts for release `1.0.1.0`; confirm them against the
 governed release manifest before generating files for a later release.
 
 The catalog explicitly names every workflow, target class, local module, property, and
@@ -441,7 +441,7 @@ groups; generation fails on cross-unsealed-MP group references.
 
 The repository's 66 `.xml.example` source files remain generator drift evidence. The
 [public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
-contains the 66 import-ready XML files generated for product `1.0.0.0` and token
+contains the 66 import-ready XML files generated for product `1.0.1.0` and token
 `54d0fb1159995c86`.
 
 Then:
