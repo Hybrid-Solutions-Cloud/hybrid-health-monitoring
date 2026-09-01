@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.1.0] — 2026-08-31
+
+First field-test cut, additive over 1.0.0.0 (in-place upgrade; existing override pairs keep
+importing). Three nested enterprise Distributed Applications — **Hyper-V Private Cloud** (the
+whole solution) containing **Hyper-V Fabric** (every cluster and standalone host across all sites)
+and **Management Stack** (host management services, VMM, SDN, monitoring pipeline) — with 15
+availability/performance/configuration roll-ups, a Solution Health view and three diagram views
+leading the Overview folder. The CompletePrivateCloud tuning profile no longer requires the Pure
+Storage pack (it means everything supportable on SCOM 2025; ClusteredPure and HybridPureAndS2D
+remain the explicit Pure profiles). Also shipped alongside: the one-command prerequisite and
+override installers and the operations guides. 13 sealed MPs, 66 override packs, 14 bundles:
+162 unit monitors, 111 dependency roll-ups, 80 rules, 22 discoveries, 116 views.
+
 ## [1.0.0.0] — 2026-08-31
 
 **The first release of Hyper-V Private Cloud Monitoring.** 13 permanently sealed Management Packs
