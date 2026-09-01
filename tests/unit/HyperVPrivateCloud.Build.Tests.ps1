@@ -219,7 +219,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
     It 'implements core host and agent-hosted per-VM monitoring' {
         @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 39
         # 21 Service-level rollups (7 branches x Availability/Performance/Configuration) + 18 domain-specific component rollups.
-        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 39
+        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 54
+        @($script:Monitoring.SelectNodes('//DependencyMonitor') | Where-Object { $_.ID -match '.Enterprise.' }).Count | Should -Be 15
         # 24 performance collection + 8 Hyper-V event collection + 10 Hyper-V event alert rules.
         @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 42
         @($script:Monitoring.SelectNodes("//Rule[Category='EventCollection']")).Count | Should -Be 8

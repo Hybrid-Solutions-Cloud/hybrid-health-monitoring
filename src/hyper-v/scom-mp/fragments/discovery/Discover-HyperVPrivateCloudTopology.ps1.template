@@ -230,6 +230,21 @@ try {
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComputeComponentContainsHostRole']$" $components['Compute'] $hostInstance
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponentContainsHostRole']$" $components['Monitoring Pipeline'] $hostInstance
 
+    # Enterprise Distributed Applications (singletons): the whole solution, the Hyper-V fabric across every
+    # boundary, and the management stack. Every boundary's DA joins the fabric; its Management and Monitoring
+    # Pipeline branches join the management stack. Singletons need no properties.
+    $solution = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.Solution']$")
+    $fabric = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.Fabric']$")
+    $managementStack = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.ManagementStack']$")
+    $discoveryData.AddInstance($solution)
+    $discoveryData.AddInstance($fabric)
+    $discoveryData.AddInstance($managementStack)
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.SolutionContainsFabric']$" $solution $fabric
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.SolutionContainsManagementStack']$" $solution $managementStack
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.FabricContainsService']$" $fabric $service
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementStackContainsManagementComponent']$" $managementStack $components['Management']
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementStackContainsMonitoringComponent']$" $managementStack $components['Monitoring Pipeline']
+
     $switchesById = @{}
     foreach ($switch in @(Get-VMSwitch -ErrorAction SilentlyContinue)) {
         $switchId = [string]$switch.Id
