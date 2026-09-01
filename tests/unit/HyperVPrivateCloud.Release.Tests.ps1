@@ -48,6 +48,8 @@ Describe 'Hyper-V Private Cloud release tooling' {
         $script:PackageText | Should -Match "Release mode requires -ApprovedReleaseSigningIdentity"
         $script:PackageText | Should -Match "Release mode requires a clean Git worktree"
         $script:PackageText | Should -Match "Release mode requires a resolvable source commit"
+        $script:PackageText | Should -Match '\$headSucceeded = \$\?'
+        $script:PackageText | Should -Match '\$worktreeStatusSucceeded = \$\?'
         $script:PackageText | Should -Match "SigningKeyPath must be outside the repository"
         $script:ValidationText | Should -Match 'RequireReleaseEligible'
         $script:ValidationText | Should -Match "Publication requires a Release-mode package"

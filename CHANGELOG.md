@@ -11,7 +11,9 @@ optional S2D object is present. Both runtime contracts are covered by regression
 The diagnostic-summary task now returns PowerShell runtime and Hyper-V query failure evidence when
 the management path is unavailable instead of terminating without operator-readable output.
 Release packaging now reuses an already loaded matching SCOM SDK identity and reads sealed loose-MP
-resources without rebinding the SDK, allowing multi-bundle verification under PowerShell 7.
+resources without rebinding the SDK, allowing multi-bundle verification under PowerShell 7. Its
+release provenance gate now captures native Git success directly instead of assuming the optional
+`$LASTEXITCODE` variable has been initialized.
 
 ## [1.0.1.0] — 2026-08-31
 

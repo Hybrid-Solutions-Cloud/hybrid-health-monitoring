@@ -25,6 +25,12 @@ Next: commit/push/merge this correction, build a clean-main release package with
 identity `hcs-hybrid-health-monitoring-scom-release-private-key`, publish exact 1.0.2.0 assets,
 import them into ProductLabs SCOM, and validate workflow/resource health.
 
+**Follow-up:** the first production-mode attempt stopped before sealing because strict mode read an
+unset `$LASTEXITCODE` in the Git provenance gate. The Key Vault value remained non-echoed, the
+temporary key was deleted, and no production output was created. Branch
+`fix/hyperv-release-provenance` captures `$?` immediately after each native Git command; merge and
+rerun test-mode Release before retrieving the permanent key again.
+
 ## 2026-09-01 — 1.0.2.0 runtime correction ready to seal
 
 **Branch:** `fix/hyperv-runtime-probe-contract` from `main` at `58d6497`.
