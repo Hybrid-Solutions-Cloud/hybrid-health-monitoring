@@ -1,5 +1,30 @@
 # Handoff
 
+## 2026-09-01 — PowerShell 7 release packaging correction validated
+
+**Branch:** `fix/hyperv-portable-sdk-loading` from `main` at `c32c398`.
+
+The 1.0.2.0 package gate exposed two authoring-host compatibility defects after the runtime fixes
+were merged. Repeated `[Assembly]::LoadFrom()` calls for the same SCOM SDK identity fail under
+PowerShell 7 when the machine already has the SDK in the GAC. The SDK sealed-pack constructor also
+failed to read valid loose prerequisite MPs. The release tool now reuses an exact loaded assembly
+identity, extracts the structured `ManagementPack` resource from loose sealed MPs in an isolated
+load context, handles gzip plus UTF-8/UTF-16 payloads, verifies the embedded identity, and writes a
+normalized temporary UTF-8 inspection copy. Publisher dependency files remain unchanged and VSAE
+continues to perform the authoritative Microsoft SDK verification and sealing.
+
+Validation: release tests 11/11; parser and PSScriptAnalyzer clean; dependency-doc check green;
+complete test package at `E:/temp/hcs-hyperv-release-1.0.2.0-test-9` produced 13 sealed MPs, 66
+public overrides, and 14 deterministic bundles; the independent package validator passed. The
+portable extracted `FASTSEAL.exe` required Microsoft's documented CLR-v2-on-v4 app configuration
+because this workstation does not have .NET Framework 3.5; that disposable config is outside the
+repository. The full unit suite reached 201 passed / 1 dependency-doc drift failure before the
+authoritative dependency exporter was rerun; targeted recheck is green.
+
+Next: commit/push/merge this correction, build a clean-main release package with Key Vault signing
+identity `hcs-hybrid-health-monitoring-scom-release-private-key`, publish exact 1.0.2.0 assets,
+import them into ProductLabs SCOM, and validate workflow/resource health.
+
 ## 2026-09-01 — 1.0.2.0 runtime correction ready to seal
 
 **Branch:** `fix/hyperv-runtime-probe-contract` from `main` at `58d6497`.

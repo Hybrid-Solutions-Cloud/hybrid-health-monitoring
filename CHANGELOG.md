@@ -10,6 +10,8 @@ as arrays under strict mode, preventing `$null.Count` failures when no storage j
 optional S2D object is present. Both runtime contracts are covered by regression tests.
 The diagnostic-summary task now returns PowerShell runtime and Hyper-V query failure evidence when
 the management path is unavailable instead of terminating without operator-readable output.
+Release packaging now reuses an already loaded matching SCOM SDK identity and reads sealed loose-MP
+resources without rebinding the SDK, allowing multi-bundle verification under PowerShell 7.
 
 ## [1.0.1.0] — 2026-08-31
 
