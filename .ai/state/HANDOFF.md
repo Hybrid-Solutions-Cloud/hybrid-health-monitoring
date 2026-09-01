@@ -929,3 +929,22 @@ orphaned pages. `docs/public/downloads/**` was deliberately not touched by the r
 - **Next action:** Export the official dependency MPs from each target SCOM management group, run
   `Test-HyperVManagementPacksWithSdk.ps1`, correct any verified schema/dependency findings, then
   test-seal and execute the documented standalone and cluster lab matrix.
+# 2026-09-01 — Hyper-V SCOM 1.0.2.0 governed production release
+
+- **Source:** Clean `main` at `4c0fa8515591fb83d36ca7462a02125885323983`.
+- **Release-mode gate:** A transient-key Release build passed the independent package validator
+  with 13 sealed management packs, 14 release bundles, and `releaseEligible=true`. This output was
+  validation-only and is not a publishable artifact.
+- **Production signing:** The permanent private key was retrieved at runtime from
+  `kv-hcs-vault-01` secret `hcs-hybrid-health-monitoring-scom-release-private-key`, supplied only to
+  the external release driver, and removed from the temporary filesystem in the driver's `finally`
+  block. No key value was written to this repository or command output.
+- **Production validation:** `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible`
+  passed for `E:\temp\hcs-hyperv-release-1.0.2.0-production`: 13 sealed MPs, 14 release bundles,
+  Release mode, approved public-key token `54d0fb1159995c86`, and release-eligible status.
+- **Manifest provenance:** Product version `1.0.2.0`, source commit
+  `4c0fa8515591fb83d36ca7462a02125885323983`, VSAE verification enabled, external dependency
+  strong names verified, product strong names verified, and per-artifact SHA-256 hashes recorded.
+- **Next action:** Publish the exact production assets under the versioned and `latest` download
+  paths, merge the release change, then import this exact sealed build into the ProductLabs SCOM
+  management group in dependency order and validate runtime health.
