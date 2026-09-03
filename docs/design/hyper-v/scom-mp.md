@@ -5,7 +5,7 @@ description: Architecture map, research gates, and implementation contracts for 
 
 # Hyper-V SCOM Management Pack design
 
-This is the active first delivery lane. Hyper-V Private Cloud Monitoring `1.0.6.0` and its
+This is the active first delivery lane. Hyper-V Private Cloud Monitoring `1.0.7.0` and its
 platform-owned Distributed Application are implemented as four core and nine capability MPs,
 permanently sealed with token `54d0fb1159995c86`, offline VSAE-verified, and repository-published.
 Representative SCOM runtime and lifecycle certification follows operator installation.

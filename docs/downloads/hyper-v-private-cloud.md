@@ -16,23 +16,19 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.0.6.0
+## Current release: 1.0.7.0
 
-`1.0.6.0` is an in-place corrective upgrade over `1.0.3.0` through `1.0.5.0`. Every one of the 13
-sealed product MPs has version `1.0.6.0`, so SCOM recognizes the release as an upgrade. It removes
-the CommandExecuter stdout regex that discarded valid PowerShell discovery and monitor DataItems,
-fixes singleton File Services results under StrictMode, and detects real cluster membership when a
-seeded HostRole has not yet received its topology BoundaryId. All 13 product Management Packs
-are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
+`1.0.7.0` is the current production release. Every one of the 13 sealed product MPs has version `1.0.7.0`,
+delivering full management domain services monitoring (Active Directory, DNS resolution, and PXE/WDS bare-metal deployment),
+central deep-troubleshooting operator tasks, and the streamlined 2-pack override model.
+All 13 product Management Packs are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
 strong-name checked, and covered by the published SHA-256 manifest. The release catalog contains 13
-sealed Management Packs and optional starter templates: 162 unit monitors, 111
-dependency roll-ups, 80 rules, 22 discoveries, 115 views, 63 operator tasks plus 4 console tasks,
-and 234 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
+sealed Management Packs and 2 canonical override packs: 165 unit monitors, 114
+dependency roll-ups, 80 rules, 24 discoveries, 118 views, 69 operator tasks,
+and 240 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
 (Fibre Channel, iSCSI, MPIO), SMB/SOFS, Network ATC, physical networking, SDN host binding, VMM and
 Pure Storage. Cluster-wide facts are evaluated once per cluster, host-wide facts once per host, and
-one probe run per host feeds every per-VM, per-LUN, per-session, per-port and per-intent monitor
-([ADR 0053](../design/decisions/0053-management-pack-review-and-runtime-correctness.md),
-[ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
+one probe run per host feeds every per-VM, per-LUN, per-session, per-port and per-intent monitor.
 
 Management Packs are named for the product — `HyperVPrivateCloud.Library`,
 `HyperVPrivateCloud.Capability.Cluster`, and so on. Publisher attribution is carried in the sealed
@@ -40,20 +36,18 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.6.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.0.6.0`. It contains no override MPs.
+- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.7.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.0.7.0`. It contains no override MPs.
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
 - [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
-- [Download optional override starters](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — alternative Lab, Standard, and Strict templates for 11 profiles; select and review one Discovery/Monitoring pair only.
+- [Download canonical override templates](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — Discovery and Monitoring override templates; select and review one Discovery/Monitoring pair only.
 - [Download SHA-256 checksums](/downloads/hyper-v-private-cloud/latest/SHA256SUMS.txt)
 - [View the release manifest](/downloads/hyper-v-private-cloud/latest/release-manifest.json)
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.0.6.0`](/downloads/hyper-v-private-cloud/1.0.6.0/release-assets.json). The `latest` directory
+[`1.0.7.0`](/downloads/hyper-v-private-cloud/1.0.7.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
-The previous release stays under [`1.0.5.0`](/downloads/hyper-v-private-cloud/1.0.5.0/release-assets.json).
-Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
-([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
+The previous release stays under [`1.0.6.0`](/downloads/hyper-v-private-cloud/1.0.6.0/release-assets.json).
 
 ## Apply a tuning profile in one command
 

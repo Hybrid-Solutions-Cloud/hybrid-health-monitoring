@@ -6,11 +6,11 @@ description: Public operator guide for building, installing, validating, tuning,
 # Hyper-V Management Pack administration guide
 
 This guide explains how Hyper-V Private Cloud Monitoring is installed, tuned, validated,
-upgraded, and removed. Version `1.0.6.0` is permanently sealed with public key token
+upgraded, and removed. Version `1.0.7.0` is permanently sealed with public key token
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 1.0.6.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
+**[Download version 1.0.7.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
 the [operations guide](operations-guide.md) covers day-two use: console layout, tuning, tasks.
  Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
@@ -35,7 +35,7 @@ Each supported capability is a separate sealed adapter. Publisher-owned prerequi
 redistributed in the HCS download and must be installed before the corresponding adapter.
 
 “Four core MPs” is a dependency classification, not an instruction to reduce an existing
-installation to four files. The `1.0.6.0` deployment ZIP contains all 12 non-PureStorage solution
+installation to four files. The `1.0.7.0` deployment ZIP contains all 12 non-PureStorage solution
 MPs so one import upgrades Library, Discovery, Monitoring, Presentation, Cluster, Storage, S2D,
 File Services, Network ATC, Physical Network, SDN, and VMM together. Pure Storage is separate.
 
@@ -340,7 +340,7 @@ discovery problem first.
 ## Troubleshoot a dark or partially upgraded installation
 
 First prove that the complete solution was upgraded. This command must return exactly 12 rows at
-`1.0.6.0` for the non-PureStorage deployment; any other version is a failed/partial import:
+`1.0.7.0` for the non-PureStorage deployment; any other version is a failed/partial import:
 
 ```powershell
 Get-SCOMManagementPack |
@@ -350,8 +350,8 @@ Get-SCOMManagementPack |
     Select-Object Name, Version, Sealed
 ```
 
-If SDN, Storage, File Services, or Network ATC still shows `1.0.3.0`, re-import the 12 files from
-`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.6.0.zip` together. Do not change or remove the 523
+If SDN, Storage, File Services, or Network ATC still shows an older version, re-import the 12 files from
+`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.7.0.zip` together. Do not change or remove the
 customer overrides, do not disable agent proxy, and do not shorten the seed intervals to compensate.
 
 For event 21414 or 21406, record the workflow name, command line, script arguments, stdout, stderr,
@@ -470,8 +470,8 @@ Generate a customer-owned pair with:
     -TuningTier Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
-    -Version '1.0.6.0' `
-    -ProductVersion '1.0.6.0' `
+    -Version '1.0.7.0' `
+    -ProductVersion '1.0.7.0' `
     -PublicKeyToken '54d0fb1159995c86' `
     -OutputPath './out/contoso-overrides'
 ```
@@ -479,7 +479,7 @@ Generate a customer-owned pair with:
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
 installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
 Neither product fact has a default because guessing produces unresolved references at import time.
-The product version and token above are the facts for release `1.0.6.0`; confirm them against the
+The product version and token above are the facts for release `1.0.7.0`; confirm them against the
 governed release manifest before generating files for a later release.
 
 The catalog explicitly names every workflow, target class, local module, property, and
@@ -489,9 +489,8 @@ a worked all-hosts group in that same unsealed MP and uses it for core host moni
 performance collection. A custom profile can define different same-MP Discovery or Monitoring
 groups; generation fails on cross-unsealed-MP group references.
 
-The repository's 66 `.xml.example` source files remain generator drift evidence. The
-[public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
-contains the optional starter XML files generated for product `1.0.6.0` and token
+The [public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
+contains the canonical override templates generated for product `1.0.7.0` and token
 `54d0fb1159995c86`.
 
 Then:

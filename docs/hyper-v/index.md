@@ -9,7 +9,7 @@ Hyper-V Private Cloud Monitoring is the flagship enterprise on-premises monitori
 
 | Delivery Surface | Commitment | Status | Architecture |
 |---|---|---|---|
-| **SCOM Management Pack Suite** | Primary Platform Track | **Production Sealed (1.0.6.0)** | 100% on-premises SCOM; zero cloud or Azure dependencies |
+| **SCOM Management Pack Suite** | Primary Platform Track | **Production Sealed (1.0.7.0)** | 100% on-premises SCOM; zero cloud or Azure dependencies |
 
 ::: info Pure SCOM architecture
 Hyper-V Private Cloud Monitoring runs entirely through System Center Operations Manager. All health evaluation, property bag probing, topology discovery, diagnostic tasks, and resilient rollups execute on-premises using PowerShell 7+. There is no Azure Monitor or Azure Arc requirement.
