@@ -1,6 +1,34 @@
 # Handoff
 
-## 2026-09-03 — 2-Pack Override Architecture (Discovery & Solution Overrides) and Docs Realignment
+## 2026-09-03 — Published Current Build & Documentation Overhaul (Health Models, Navigation, and Full Object Documentation)
+
+- **Committed & Pushed to `main`**:
+  - `db65723`: `feat(hyper-v): implement 2-pack override model and central operator tasks AB#7319`
+  - `09557cf`: `docs(hyper-v): update architecture docs, separate health models, and clean navigation AB#7319`
+  - Pushed cleanly to `https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring.git` (`main -> main`).
+- **Main Page (`docs/index.md`) Realignment**:
+  - Clarified that Hyper-V Private Cloud and Azure Local are **not part of the same health model**. They are distinct products with separate management pack suites and zero shared runtime dependencies.
+  - Removed all Azure Monitor references from Hyper-V. Hyper-V Private Cloud is 100% on-premises SCOM ("Hyper-V Wins").
+  - Added new sovereign platform architecture diagram clearly separating the two product tracks.
+- **Start Here (`docs/start-here.md`) Modernized**:
+  - Brought completely up to date with `1.0.6.0` production release and 2-pack override model.
+  - Removed in-text ADR jargon and cleaned navigation links.
+  - Documented central operator troubleshooting tasks.
+- **Navigation & Sidebar Disambiguation (`docs/.vitepress/config.mts`)**:
+  - Renamed `hyperVDesign` to `'Hyper-V architecture and design'`.
+  - Renamed `azureLocalDesign` to `'Azure Local architecture and design'`.
+  - Resolved the duplicate "Design and architecture" headings in the left sidebar when viewing `/design/`.
+  - Updated the top navigation "Architecture & Reference" dropdown with clear, direct links.
+  - Removed `SquaredUp Cloud` from the Hyper-V sidebar.
+- **Full Object, Monitor, Rollup & Task Documentation**:
+  - `docs/design/hyper-v/class-and-relationship-model.md`: Added comprehensive class reference documenting all 8 Core DA classes, 7 Core operational classes, and 9 Capability classes with their base types, hosting parents, and key properties.
+  - `docs/design/hyper-v/health-and-alert-architecture.md`: Added detailed rollup hierarchy mermaid diagram, explicit 25% VM percentage rollup policy, unit monitor catalog with overridable thresholds, and operator tasks catalog.
+  - `docs/hyper-v/monitoring-catalog.md`: Updated counts to reflect 165 unit monitors, 114 rollups, 80 rules, and the complete operator task catalog.
+  - `docs/design/hyper-v/override-and-tuning-architecture.md` & `docs/design/hyper-v/scom-mp.md`: Removed stale `1.0.0.0` references in favor of `1.0.6.0`.
+- **Validation**:
+  - `npm run docs:build`: Clean build in 61.91s with 0 errors and 0 broken links.
+  - `MpDependencies.Docs.Tests.ps1`: 8/8 tests passed.
+
 
 - Eliminated 66 legacy override management packs across 11 deployment profiles and 3 tuning tiers.
 - Implemented clean, operator-friendly 2-Pack Override Architecture:
