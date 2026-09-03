@@ -3,45 +3,29 @@ title: Hyper-V
 description: Hyper-V health monitoring through SCOM and a constrained Azure Monitor track through Arc-enabled SCVMM and Arc-enabled hosts.
 ---
 
-# Hyper-V
+# Hyper-V Private Cloud Monitoring
 
-Hyper-V is a separate platform track. Its primary delivery is a SCOM Management Pack. Azure
-Monitor now has a constrained development path for environments that use Azure Arc-enabled SCVMM
-and Arc-enable each participating Hyper-V host for AMA/DCR telemetry.
+Hyper-V Private Cloud Monitoring is the flagship enterprise on-premises monitoring solution in this project. Delivered as a comprehensive, modular suite of System Center Operations Manager (SCOM) Management Packs, it is engineered specifically for private cloud infrastructure built on Windows Server Failover Clustering, Hyper-V, and System Center Virtual Machine Manager (SCVMM).
 
-| Delivery surface | Commitment | Status |
-|---|---|---|
-| **SCOM Management Pack** | Committed platform track | Version 1.0.6.0 permanently sealed, offline verified, and repository-published; operator SCOM certification follows installation |
-| **Azure Monitor through Arc-enabled SCVMM** | Constrained track | Development baseline; substantial parity and lab gates remain |
+| Delivery Surface | Commitment | Status | Architecture |
+|---|---|---|---|
+| **SCOM Management Pack Suite** | Primary Platform Track | **Production Sealed (1.0.6.0)** | 100% on-premises SCOM; zero cloud or Azure dependencies |
 
-::: info Two independent solutions
-The SCOM Management Pack and Azure Monitor Health Model have separate design, source,
-deployment, testing, and release boundaries.
+::: info Pure SCOM architecture
+Hyper-V Private Cloud Monitoring runs entirely through System Center Operations Manager. All health evaluation, property bag probing, topology discovery, diagnostic tasks, and resilient rollups execute on-premises using PowerShell 7+. There is no Azure Monitor or Azure Arc requirement.
 :::
 
-**[Download Hyper-V Private Cloud Monitoring](../downloads/hyper-v-private-cloud.md).**
+**[Download Hyper-V Private Cloud Monitoring](../downloads/hyper-v-private-cloud.md)** | **[Prerequisites Guide](prerequisites.md)** | **[Administration Guide](management-pack-guide.md)** | **[Operations Guide](operations-guide.md)**
 
-## Why this is separate from Azure Local
+## Complete architectural separation from Azure Local
 
-Hyper-V and Azure Local share Windows Server virtualization and SCOM concepts, but they do not
-have identical product topology or signal sources. Azure Local adds a prescribed, Azure-integrated
-platform stack with opinionated storage, lifecycle management, registration, and Azure-side
-services. Hyper-V must also account for standalone hosts, general-purpose failover clusters,
-optional SCVMM management, and configurations that have no Azure dependency.
+Hyper-V and Azure Local are treated as completely distinct platforms throughout this repository:
 
-Network ATC is **not** an Azure Local-only capability. It is supported for eligible Windows Server
-2025 Datacenter failover clusters and is this project's preferred host-networking baseline for such
-Hyper-V clusters. When SCVMM or Windows Server SDN participates in network management, the
-Management Pack must model its actual layer rather than assume one universal authority. Network
-ATC may own host intent while Network Controller owns the overlay. Older or otherwise ineligible
-Hyper-V environments still require explicit non-ATC coverage.
+1. **Independent Product Lines:** Azure Local (formerly Azure Stack HCI) has a prescribed, cloud-connected lifecycle, opinionated storage, and native Azure Monitor integration. Hyper-V Private Cloud is designed for sovereign, on-premises enterprise virtualization, standalone nodes, general-purpose failover clusters, SAN/Pure/SMB/S2D storage, and SCVMM-managed fabrics.
+2. **Zero Runtime Coupling:** The Hyper-V Management Pack suite contains no references to Azure Local management packs, ARM resource IDs, or Azure monitoring extensions. You can deploy Hyper-V monitoring in environments completely air-gapped from Azure.
+3. **Dedicated Management Domain:** Enterprise Hyper-V private clouds operate with their own dedicated Active Directory, DNS, and bare-metal deployment infrastructure (PXE/WDS). Our Distributed Application directly monitors and models these critical management services.
 
-The project will reuse stable authoring patterns and shared health semantics while keeping
-platform-specific discoveries and monitoring independently supportable.
-
-See the [Hyper-V design map](../design/hyper-v/index.md) for the separate
-[SCOM](../design/hyper-v/scom-mp.md) and conditional
-[Azure Monitor Health Models](../design/hyper-v/azure-monitor.md) lanes.
+See the [Hyper-V SCOM architecture map](../design/hyper-v/scom-mp.md) and the [Distributed Application design](../design/hyper-v/distributed-application.md).
 
 ## Hyper-V topology research
 

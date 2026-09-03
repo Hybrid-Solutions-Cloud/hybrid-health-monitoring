@@ -32,6 +32,9 @@
       <View ID="HyperVPrivateCloud.Host.Events.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.HostRole" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
       <View ID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime" TypeID="SC!Microsoft.SystemCenter.EventViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
       <View ID="HyperVPrivateCloud.Product.ActiveAlerts.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.Product.Group" TypeID="SC!Microsoft.SystemCenter.AlertViewType" Visible="true"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria></View>
+      <View ID="HyperVPrivateCloud.ActiveDirectory.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Dns.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.DnsService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.Deployment.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.DeploymentService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
     </Views>
     <Folders>
       <Folder ID="HyperVPrivateCloud.Root.Folder" Accessibility="Public" ParentFolder="SC!Microsoft.SystemCenter.Monitoring.ViewFolder.Root" />
@@ -43,6 +46,7 @@
       <Folder ID="HyperVPrivateCloud.Networking.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
       <Folder ID="HyperVPrivateCloud.MonitoringPipeline.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
       <Folder ID="HyperVPrivateCloud.Operations.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
+      <Folder ID="HyperVPrivateCloud.Management.Folder" Accessibility="Public" ParentFolder="HyperVPrivateCloud.Root.Folder" />
     </Folders>
     <FolderItems>
       <FolderItem ElementID="HyperVPrivateCloud.Service.State.View" ID="HyperVPrivateCloud.Service.State.View.FolderItem" Folder="HyperVPrivateCloud.Overview.Folder" />
@@ -58,6 +62,9 @@
       <FolderItem ElementID="HyperVPrivateCloud.VirtualSwitch.State.View" ID="HyperVPrivateCloud.VirtualSwitch.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View" ID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.MonitoringPipeline.State.View" ID="HyperVPrivateCloud.MonitoringPipeline.State.View.FolderItem" Folder="HyperVPrivateCloud.MonitoringPipeline.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.ActiveDirectory.State.View" ID="HyperVPrivateCloud.ActiveDirectory.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Dns.State.View" ID="HyperVPrivateCloud.Dns.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.Deployment.State.View" ID="HyperVPrivateCloud.Deployment.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Host.ActiveAlerts.View" ID="HyperVPrivateCloud.Host.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Host.Events.View" ID="HyperVPrivateCloud.Host.Events.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
@@ -70,31 +77,35 @@
     <DisplayString ElementID="HyperVPrivateCloud.Product.ActiveAlerts.View"><Name>All Active Alerts</Name><Description>Every active alert raised against any object of the Hyper-V Private Cloud product: hosts, virtual machines, clusters, storage, networking, SDN and VMM capability objects.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Presentation"><Name>Hyper-V Private Cloud Monitoring Presentation</Name><Description>Operator console hierarchy, Distributed Application diagram, health, alerts, events, performance, inventory, and monitoring coverage for Hyper-V Private Cloud Monitoring.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Root.Folder"><Name>Hyper-V Private Cloud</Name><Description>Complete operator workspace for supported Hyper-V private-cloud capabilities.</Description></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Overview.Folder"><Name>Overview</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Compute.Folder"><Name>Compute</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachines.Folder"><Name>Virtual Machines</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Availability.Folder"><Name>Availability</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Storage.Folder"><Name>Storage</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Networking.Folder"><Name>Networking</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.MonitoringPipeline.Folder"><Name>Monitoring Pipeline</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Operations.Folder"><Name>Operations</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Overview.Folder"><Name>Overview</Name><Description>Top-level summary views, solution health, and active alerts across the entire private cloud environment.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Compute.Folder"><Name>Compute</Name><Description>Host inventory, operational health, processor, and memory performance across Hyper-V compute hosts.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachines.Folder"><Name>Virtual Machines</Name><Description>Workload inventory, per-VM operational health, runtime metrics, and performance views for all hosted virtual machines.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Availability.Folder"><Name>Availability</Name><Description>Clustering, high availability, node quorum, live migration, and Hyper-V Replica status.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Storage.Folder"><Name>Storage</Name><Description>Virtual hard disks, Cluster Shared Volumes, SAN attachments, S2D pools, and SMB storage paths.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Networking.Folder"><Name>Networking</Name><Description>Virtual switches, virtual network adapters, SET teams, and physical uplink infrastructure.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.MonitoringPipeline.Folder"><Name>Monitoring Pipeline</Name><Description>Diagnostic views for SCOM agent execution, discovery probe health, and script telemetry.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Operations.Folder"><Name>Operations</Name><Description>Centralized active alert views, operational event logs, and remediation tasks.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Service.State.View"><Name>Private Cloud Health</Name><Description>Health state for every discovered standalone or clustered Hyper-V private-cloud service boundary.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Enterprise.Solution.State.View"><Name>Solution Health</Name><Description>Health of the entire Hyper-V Private Cloud solution: fabric and management stack.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.Enterprise.Solution.Diagram.View"><Name>Solution Diagram</Name><Description>The entire solution: the Hyper-V fabric across every site and the management stack, expandable to every object.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.Enterprise.Fabric.Diagram.View"><Name>Hyper-V Fabric Diagram</Name><Description>Every cluster and standalone host with its virtual machines, storage and networking.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.Enterprise.ManagementStack.Diagram.View"><Name>Management Stack Diagram</Name><Description>The control plane: host management services, VMM, SDN and the monitoring pipeline.</Description></DisplayString><DisplayString ElementID="HyperVPrivateCloud.Service.Diagram.View"><Name>Private Cloud Diagram</Name><Description>Distributed Application diagram showing service branches, contained resources, and their rolled-up health.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Component.State.View"><Name>Private Cloud Components</Name><Description>Health of the management, compute, VM, availability, storage, networking, and monitoring branches.</Description></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Host.State.View"><Name>Hyper-V Hosts</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Host.Performance.View"><Name>Host Performance</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.State.View"><Name>Hyper-V Hosts</Name><Description>State view of all discovered Hyper-V physical hosts and their operational health.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.Performance.View"><Name>Host Performance</Name><Description>Real-time and historical performance counters for Hyper-V host logical processors, memory, and network throughput.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.VirtualMachine.State.View"><Name>Virtual Machine Inventory</Name><Description>Stable logical VM identities that remain consistent across host migration.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.State.View"><Name>Virtual Machine Health</Name><Description>Agent-hosted VM runtime health on the current Hyper-V owner.</Description></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Performance.View"><Name>Virtual Machine Performance</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.ReplicationRelationship.State.View"><Name>Hyper-V Replica</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualHardDisk.State.View"><Name>Virtual Hard Disks</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualSwitch.State.View"><Name>Virtual Switches</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View"><Name>Virtual Network Adapters</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Performance.View"><Name>Virtual Machine Performance</Name><Description>Performance counters for virtual machine virtual processor usage, dynamic memory pressure, and virtual storage throughput.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.ReplicationRelationship.State.View"><Name>Hyper-V Replica</Name><Description>Operational state and replication health for all configured Hyper-V Replica relationships.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualHardDisk.State.View"><Name>Virtual Hard Disks</Name><Description>Inventory and health state for all virtual hard disks (VHD/VHDX) attached to monitored VMs.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualSwitch.State.View"><Name>Virtual Switches</Name><Description>Operational health and configuration of virtual switches and switch teams across hosts.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualNetworkAdapter.State.View"><Name>Virtual Network Adapters</Name><Description>Network adapter connectivity, IP assignment, and VLAN configuration for virtual machines.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.MonitoringPipeline.State.View"><Name>Workflow Health</Name><Description>Discovery and monitoring pipeline freshness and execution health.</Description></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Host.ActiveAlerts.View"><Name>Active Host Alerts</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View"><Name>Active Virtual Machine Alerts</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.Host.Events.View"><Name>Host Events</Name></DisplayString>
-    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View"><Name>Virtual Machine Events</Name></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.ActiveAlerts.View"><Name>Active Host Alerts</Name><Description>Active unresolved alerts specifically raised against Hyper-V host hardware and hypervisor services.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View"><Name>Active Virtual Machine Alerts</Name><Description>Active unresolved alerts specifically raised against virtual machine runtimes and guest integration services.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Host.Events.View"><Name>Host Events</Name><Description>Critical, Error, and Warning events collected from Hyper-V host event log channels.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.VirtualMachineRuntime.Events.View"><Name>Virtual Machine Events</Name><Description>Operational events collected from Hyper-V worker and VMMS channels for virtual machine instances.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Management.Folder"><Name>Management Infrastructure</Name><Description>Management domain services, Active Directory, DNS infrastructure, and bare-metal PXE deployment health.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.ActiveDirectory.State.View"><Name>Active Directory Domain</Name><Description>State view of the management Active Directory domain, forest, PDC emulator, and secure channel health.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Dns.State.View"><Name>DNS Infrastructure</Name><Description>State view of DNS client resolution health and configured DNS servers for the private cloud.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.Deployment.State.View"><Name>Bare-Metal Deployment</Name><Description>State view of Windows Deployment Services (WDS) and PXE boot infrastructure.</Description></DisplayString>
   </DisplayStrings></LanguagePack></LanguagePacks>
   <Resources><Assembly ID="HyperVPrivateCloud.ConsoleTask.Assembly" Accessibility="Internal" FileName="Res.dll" HasNullStream="true" QualifiedName="Res, Version=1.0.0.0" /></Resources>
 </ManagementPack>

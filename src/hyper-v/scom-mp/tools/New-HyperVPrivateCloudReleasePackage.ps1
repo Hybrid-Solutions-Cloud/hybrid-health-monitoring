@@ -733,20 +733,15 @@ foreach ($artifact in $manifest.artifacts) {
 
 $overrideRoot = Join-Path $stagingRoot 'Overrides'
 $overrideFiles = [System.Collections.Generic.List[object]]::new()
-foreach ($deploymentProfile in $contract.profiles) {
-    foreach ($tier in $contract.overrideTiers) {
-        $profilePath = Join-Path $overrideRoot "$($deploymentProfile.id)/$($tier.ToString().ToLowerInvariant())"
-        & $overrideTool -DeploymentProfile ([string]$deploymentProfile.id) -TuningTier ([string]$tier) -PublicProfile `
-            -Version $OverrideVersion -ProductVersion $Version -PublicKeyToken $publicKeyToken -OutputPath $profilePath
-        foreach ($file in Get-ChildItem -LiteralPath $profilePath -Filter '*.xml' -File) {
-            $overrideFiles.Add([pscustomobject]@{
-                    profile = [string]$deploymentProfile.id
-                    tier = [string]$tier
-                    file = Get-HcsRelativePath -BasePath $stagingRoot -Path $file.FullName
-                    sha256 = Get-HcsFileHashValue -Path $file.FullName
-                })
-        }
-    }
+& $overrideTool -DeploymentProfile CompletePrivateCloud -TuningTier Standard -PublicProfile `
+    -Version $OverrideVersion -ProductVersion $Version -PublicKeyToken $publicKeyToken -OutputPath $overrideRoot
+foreach ($file in Get-ChildItem -LiteralPath $overrideRoot -Filter '*.xml' -File) {
+    $overrideFiles.Add([pscustomobject]@{
+            profile = 'Solution'
+            tier = 'Standard'
+            file = Get-HcsRelativePath -BasePath $stagingRoot -Path $file.FullName
+            sha256 = Get-HcsFileHashValue -Path $file.FullName
+        })
 }
 
 $internalIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)

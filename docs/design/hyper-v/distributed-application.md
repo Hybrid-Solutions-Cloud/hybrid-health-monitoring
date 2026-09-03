@@ -38,85 +38,59 @@ flowchart TD
 SCVMM management does not merge unrelated clusters or hosts into one required DA. A future fleet
 view can aggregate DAs through presentation content or a separately packaged integration MP.
 
-## Cluster DA
+## Comprehensive Private Cloud Distributed Application Architecture
+
+The private cloud Distributed Application models the complete infrastructure fabric across seven core branches, including optional hardware and edge integrations:
 
 ```mermaid
-flowchart TB
-    ROOT[Hyper-V cluster service]
-    COMP[Compute and cluster]
-    VM[Virtual machines]
-    STO[Storage and Replica]
-    NET[Networking]
-    MGMT[Management plane]
-    PIPE[Monitoring pipeline]
+graph TD
+    Service["Hyper-V Private Cloud Service (DA Root)"]
+    Service --> Compute["Compute Component"]
+    Service --> VMs["Virtual Machines Component"]
+    Service --> Storage["Storage Component"]
+    Service --> Network["Network Component"]
+    Service --> Avail["Availability & Clustering Component"]
+    Service --> MgmtInfra["Management Infrastructure Component"]
+    Service --> MonPipe["Monitoring Pipeline Component"]
 
-    ROOT --> COMP
-    ROOT --> VM
-    ROOT --> STO
-    ROOT --> NET
-    ROOT --> MGMT
-    ROOT --> PIPE
+    Compute --> HostRoles["Hyper-V Host Roles"]
+    Compute -.-> DellOME["Dell OME Physical Server / Chassis (Optional Capability)"]
 
-    COMP --> CLUSTER[Cluster, quorum, nodes, roles, and resources]
-    VM --> VMS[Expected-running and actionable VMs]
-    STO --> CSV[CSVs, paths, virtual disks, VHD/VHDX, and Replica]
-    NET --> AUTH[Layered physical, host-intent, virtualization, and SDN authority paths]
-    MGMT --> OPTIONAL[Optional SCVMM and Network Controller dependencies]
-    PIPE --> TELEMETRY[Agents, discovery freshness, workflow health, and data freshness]
+    MgmtInfra --> ADDS["Active Directory Domain & Secure Channel"]
+    MgmtInfra --> DNS["DNS Services & Name Resolution"]
+    MgmtInfra --> PXEWDS["PXE / WDS Bare-Metal Deployment"]
 
-    classDef root fill:#fff7ed,stroke:#ea580c,color:#7c2d12
-    classDef branch fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-    classDef member fill:#ecfdf5,stroke:#059669,color:#064e3b
-    class ROOT root
-    class COMP,VM,STO,NET,MGMT,PIPE branch
-    class CLUSTER,VMS,CSV,AUTH,OPTIONAL,TELEMETRY member
+    Network --> VSwitches["Virtual Switches & SET Teams"]
+    Network --> PhysAdapters["Host Physical Adapters"]
+    PhysAdapters -.-> ToRPorts["ToR Switch Ports (LLDP/CDP Correlation)"]
+    Network -.-> FortiGate["Fortinet Firewalls & DHCP Gateways (Optional Capability)"]
+
+    Storage --> CSVs["Cluster Shared Volumes"]
+    Storage -.-> S2DPools["Storage Spaces Direct Pools"]
+    Storage -.-> PureArrays["Pure Storage FlashArrays"]
+    Storage -.-> SMBShares["SOFS / SMB Storage Shares"]
+
+    classDef root fill:#0078D4,color:#fff,stroke:none
+    classDef core fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+    classDef leaf fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef opt fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-dasharray: 5 5
+    class Service root
+    class Compute,VMs,Storage,Network,Avail,MgmtInfra,MonPipe core
+    class HostRoles,ADDS,DNS,PXEWDS,VSwitches,PhysAdapters,CSVs leaf
+    class DellOME,ToRPorts,FortiGate,S2DPools,PureArrays,SMBShares opt
 ```
-
-## Standalone-host DA
-
-```mermaid
-flowchart TB
-    ROOT[Hyper-V standalone-host service]
-    COMP[Compute and host]
-    VM[Virtual machines]
-    STO[Storage and Replica]
-    NET[Networking]
-    PIPE[Monitoring pipeline]
-
-    ROOT --> COMP
-    ROOT --> VM
-    ROOT --> STO
-    ROOT --> NET
-    ROOT --> PIPE
-
-    COMP --> HOST[Windows computer, Hyper-V role, and required services]
-    VM --> VMS[Expected-running and actionable VMs]
-    STO --> DISK[Local/external paths, virtual disks, VHD/VHDX, and Replica]
-    NET --> SWITCH[Physical adapters, switches, ports, and VM adapters]
-    PIPE --> TELEMETRY[Agent, discovery, workflow, and freshness health]
-
-    classDef root fill:#fff7ed,stroke:#ea580c,color:#7c2d12
-    classDef branch fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-    classDef member fill:#ecfdf5,stroke:#059669,color:#064e3b
-    class ROOT root
-    class COMP,VM,STO,NET,PIPE branch
-    class HOST,VMS,DISK,SWITCH,TELEMETRY member
-```
-
-Cluster-only objects are absent rather than Healthy placeholders in a standalone DA. The optional
-Management plane branch appears only when an accepted topology makes that plane operationally
-required.
 
 ## Component contract
 
 | DA branch | Membership | Default root impact |
 |---|---|---|
-| Compute and cluster | Host role or cluster, quorum, nodes, clustered roles/resources, and required virtualization services | Availability-critical; redundancy-aware for clustered hosts |
-| Virtual machines | VMs classified as actionable by expected-state policy | Population-aware; intentional Off/Saved/template states do not penalize availability |
-| Storage and Replica | CSVs, approved storage paths, disks, VHD/VHDX dependencies, and Replica relationships | Availability or data-integrity critical where the dependency is required |
-| Networking | Physical-to-virtual topology with explicit authority at each layer | Availability-critical for required paths; configuration drift can be lower impact |
-| Management plane | Optional SCVMM, Network Controller, and authoritative management dependencies | Topology-specific; absent when not selected |
-| Monitoring pipeline | Agent, required discovery freshness, workflow health, and required collection paths | Root-impacting so missing telemetry cannot look Healthy |
+| Compute and host | Host role or cluster, nodes, clustered roles/resources, and optional Dell OME physical hardware health | Availability-critical; redundancy-aware for clustered hosts |
+| Virtual machines | VMs classified as actionable by expected-state policy | Population-aware percentage rollup (25% threshold); individual maintenance VMs do not trigger false-positive outages |
+| Storage and Replica | CSVs, approved storage paths, disks, VHD/VHDX dependencies, S2D, Pure Storage, and SMB shares | Availability or data-integrity critical where the dependency is required |
+| Networking | Physical-to-virtual topology, virtual switches, SET uplinks, ToR switch ports (LLDP/CDP), and optional Fortinet firewalls/DHCP | Availability-critical for required paths; configuration drift can be lower impact |
+| Availability and clustering | Windows Server Failover Cluster resources, quorum, networks, and CSV coordinator states | Availability-critical |
+| Management infrastructure | Dedicated management domain services: Active Directory trust/channel, DNS resolution, and PXE/WDS bare-metal deployment | Availability-critical (cloud cannot authenticate or resolve resources without AD/DNS) |
+| Monitoring pipeline | PowerShell 7 engine, agent telemetry, required discovery freshness, workflow health, and collection paths | Root-impacting so missing telemetry cannot look Healthy |
 
 ## Dynamic membership
 

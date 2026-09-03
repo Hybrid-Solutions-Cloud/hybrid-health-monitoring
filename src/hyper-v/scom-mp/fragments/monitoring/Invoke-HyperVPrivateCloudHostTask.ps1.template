@@ -5,6 +5,7 @@
 param(
     [ValidateSet('VmInventory', 'HostHeadroom', 'EventTail', 'LiveMigrationSettings', 'SwitchConfiguration', 'PendingReboot', 'PipelineSelfTest', 'HyperVBpa',
         'VmDetail', 'VmPerformance', 'VmReplica',
+        'TestDomainHealth', 'TestDnsResolution', 'TestPortConnectivity', 'TestPxeWdsHealth',
         'RestartVmms', 'RestartVmCompute', 'StartVm', 'StopVm', 'SaveVm', 'ResumeVm', 'RestartVm', 'MergeCheckpoints', 'CreateCheckpoint', 'ResumeReplication', 'MoveVmToBestNode')]
     [string]$Action = 'VmInventory',
     [string]$Parameter = '',
@@ -33,7 +34,9 @@ function Get-HcsVm {
 
 $lines.Add("Hyper-V Private Cloud task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
 try {
-    if (-not (Import-HcsModule -Name 'Hyper-V')) { throw 'The Hyper-V PowerShell module is not available on this host.' }
+    if ($Action -notin @('TestDomainHealth', 'TestDnsResolution', 'TestPortConnectivity', 'TestPxeWdsHealth')) {
+        if (-not (Import-HcsModule -Name 'Hyper-V')) { throw 'The Hyper-V PowerShell module is not available on this host.' }
+    }
     switch ($Action) {
         'VmInventory' {
             Add-HcsSection 'Virtual machines'
@@ -172,6 +175,173 @@ try {
             $group = Get-ClusterResource -ErrorAction Stop | Where-Object { $_.ResourceType -eq 'Virtual Machine' -and ((Get-ClusterParameter -InputObject $_ -Name VmID -ErrorAction SilentlyContinue).Value -eq [string]$vm.Id) } | Select-Object -First 1 -ExpandProperty OwnerGroup
             if ($null -eq $group) { throw "VM '$($vm.Name)' is not a clustered role." }
             Add-HcsText (Move-ClusterVirtualMachineRole -Name $group.Name -MigrationType Live -ErrorAction Stop | Format-Table -AutoSize)
+        }
+        'TestDomainHealth' {
+            Add-HcsSection 'Domain membership and secure channel'
+            $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+            if ($null -ne $cs -and $cs.PartOfDomain) {
+                $lines.Add("Domain: $($cs.Domain)")
+                $lines.Add("Workgroup: $($cs.Workgroup)")
+                try {
+                    $channelOk = Test-ComputerSecureChannel -ErrorAction Stop
+                    $lines.Add("Secure channel status: $(if ($channelOk) { 'OK' } else { 'FAILED' })")
+                } catch {
+                    $lines.Add("Secure channel test threw: $($_.Exception.Message)")
+                }
+                try {
+                    $domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain()
+                    $lines.Add("Active Directory Forest: $($domainObj.Forest.Name)")
+                    $lines.Add("PDC Emulator: $($domainObj.PdcRoleOwner.Name)")
+                    $lines.Add("Domain Mode: $($domainObj.DomainMode)")
+                } catch {
+                    $lines.Add("Directory services query: $($_.Exception.Message)")
+                }
+                try {
+                    $site = [System.DirectoryServices.ActiveDirectory.ActiveDirectorySite]::GetComputerSite().Name
+                    $lines.Add("Assigned AD Site: $site")
+                } catch {
+                    $lines.Add("AD Site query: $($_.Exception.Message)")
+                }
+            } else {
+                $lines.Add("Host is not joined to an Active Directory domain (Standalone / Workgroup).")
+            }
+        }
+        'TestDnsResolution' {
+            Add-HcsSection 'DNS client configuration'
+            $dnsServers = @()
+            if (Get-Command Get-DnsClientServerAddress -ErrorAction SilentlyContinue) {
+                $adapters = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.ServerAddresses.Count -gt 0 })
+                foreach ($ad in $adapters) {
+                    $lines.Add("Interface $($ad.InterfaceAlias) ($($ad.InterfaceIndex)): $($ad.ServerAddresses -join ', ')")
+                    $dnsServers += $ad.ServerAddresses
+                }
+            }
+            $dnsServers = @($dnsServers | Select-Object -Unique)
+            $lines.Add("Distinct DNS Servers configured: $(if ($dnsServers.Count) { $dnsServers -join ', ' } else { 'None' })")
+
+            Add-HcsSection 'DNS name resolution tests'
+            $targets = @($ComputerName, $env:COMPUTERNAME)
+            if ($env:USERDNSDOMAIN) { $targets += $env:USERDNSDOMAIN }
+            $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+            if ($null -ne $cs -and $cs.PartOfDomain -and $cs.Domain) { $targets += $cs.Domain }
+            $targets = @($targets | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+
+            foreach ($target in $targets) {
+                $sw = [System.Diagnostics.Stopwatch]::StartNew()
+                try {
+                    $res = [System.Net.Dns]::GetHostEntry($target)
+                    $sw.Stop()
+                    $addrs = ($res.AddressList | ForEach-Object { $_.ToString() }) -join ', '
+                    $lines.Add("  [OK] $target -> $addrs ($($sw.ElapsedMilliseconds) ms)")
+                } catch {
+                    $sw.Stop()
+                    $lines.Add("  [FAIL] $target -> $($_.Exception.Message) ($($sw.ElapsedMilliseconds) ms)")
+                }
+            }
+
+            if ($env:USERDNSDOMAIN) {
+                Add-HcsSection "Active Directory SRV record tests for $($env:USERDNSDOMAIN)"
+                $srvRecord = "_ldap._tcp.dc._msdcs.$($env:USERDNSDOMAIN)"
+                try {
+                    if (Get-Command Resolve-DnsName -ErrorAction SilentlyContinue) {
+                        $srvResults = @(Resolve-DnsName -Name $srvRecord -Type SRV -ErrorAction Stop)
+                        foreach ($srv in $srvResults) {
+                            $lines.Add("  DC: $($srv.NameTarget):$($srv.Port) (Priority: $($srv.Priority), Weight: $($srv.Weight))")
+                        }
+                    } else {
+                        $lines.Add("  Resolve-DnsName cmdlet not available.")
+                    }
+                } catch {
+                    $lines.Add("  [FAIL] Querying $($srvRecord): $($_.Exception.Message)")
+                }
+            }
+        }
+        'TestPortConnectivity' {
+            Add-HcsSection 'Port connectivity diagnostics'
+            $endpoints = [System.Collections.Generic.List[object]]::new()
+            if (-not [string]::IsNullOrWhiteSpace($Parameter)) {
+                if ($Parameter.Contains(':')) {
+                    $parts = $Parameter -split ':', 2
+                    $endpoints.Add([pscustomobject]@{ Host = $parts[0].Trim(); Port = [int]$parts[1].Trim(); Label = 'User-specified target' })
+                } else {
+                    $endpoints.Add([pscustomobject]@{ Host = $Parameter.Trim(); Port = 445; Label = 'SMB (default port)' })
+                }
+            } else {
+                $gw = Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled = TRUE" -ErrorAction SilentlyContinue | Where-Object { $null -ne $_.DefaultIPGateway } | Select-Object -ExpandProperty DefaultIPGateway -First 1
+                if ($gw) {
+                    $endpoints.Add([pscustomobject]@{ Host = $gw; Port = 445; Label = 'Default Gateway (SMB port probe)' })
+                    $endpoints.Add([pscustomobject]@{ Host = $gw; Port = 80; Label = 'Default Gateway (HTTP/Mgmt)' })
+                    $endpoints.Add([pscustomobject]@{ Host = $gw; Port = 443; Label = 'Default Gateway (HTTPS/Firewall)' })
+                }
+                $dcHost = $null
+                try {
+                    $domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain()
+                    $dcHost = $domainObj.PdcRoleOwner.Name
+                } catch {}
+                if ($dcHost) {
+                    $endpoints.Add([pscustomobject]@{ Host = $dcHost; Port = 135; Label = 'DC RPC Endpoint Mapper' })
+                    $endpoints.Add([pscustomobject]@{ Host = $dcHost; Port = 389; Label = 'DC LDAP' })
+                    $endpoints.Add([pscustomobject]@{ Host = $dcHost; Port = 636; Label = 'DC LDAPS' })
+                    $endpoints.Add([pscustomobject]@{ Host = $dcHost; Port = 88; Label = 'DC Kerberos' })
+                    $endpoints.Add([pscustomobject]@{ Host = $dcHost; Port = 445; Label = 'DC SMB' })
+                    $endpoints.Add([pscustomobject]@{ Host = $dcHost; Port = 5985; Label = 'DC WinRM HTTP' })
+                }
+                $endpoints.Add([pscustomobject]@{ Host = '127.0.0.1'; Port = 5723; Label = 'SCOM Management Server (local test)' })
+            }
+
+            foreach ($ep in $endpoints) {
+                $client = [System.Net.Sockets.TcpClient]::new()
+                $sw = [System.Diagnostics.Stopwatch]::StartNew()
+                try {
+                    $connectAsync = $client.BeginConnect($ep.Host, $ep.Port, $null, $null)
+                    $success = $connectAsync.AsyncWaitHandle.WaitOne(3000, $false)
+                    $sw.Stop()
+                    if ($success -and $client.Connected) {
+                        $client.EndConnect($connectAsync)
+                        $lines.Add("  [OPEN] $($ep.Host):$($ep.Port) ($($ep.Label)) in $($sw.ElapsedMilliseconds) ms")
+                    } else {
+                        $lines.Add("  [CLOSED/TIMEOUT] $($ep.Host):$($ep.Port) ($($ep.Label)) after $($sw.ElapsedMilliseconds) ms")
+                    }
+                } catch {
+                    $sw.Stop()
+                    $lines.Add("  [FAIL] $($ep.Host):$($ep.Port) ($($ep.Label)): $($_.Exception.Message)")
+                } finally {
+                    $client.Dispose()
+                }
+            }
+        }
+        'TestPxeWdsHealth' {
+            Add-HcsSection 'Bare-metal PXE and Windows Deployment Services health'
+            $wds = Get-Service -Name 'WDSServer' -ErrorAction SilentlyContinue
+            if ($null -eq $wds) {
+                $lines.Add("Windows Deployment Services (WDSServer) is not installed on this host.")
+            } else {
+                $lines.Add("WDSServer Status: $($wds.Status)")
+                $lines.Add("WDSServer StartType: $($wds.StartType)")
+
+                Add-HcsSection 'PXE / TFTP UDP listeners'
+                try {
+                    if (Get-Command Get-NetUDPEndpoint -ErrorAction SilentlyContinue) {
+                        $endpoints = @(Get-NetUDPEndpoint -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in @(67, 68, 69, 4011) })
+                        if ($endpoints.Count) {
+                            $lines.Add(($endpoints | Select-Object LocalAddress, LocalPort | Format-Table -AutoSize | Out-String).TrimEnd())
+                        } else {
+                            $lines.Add("No active listeners found on PXE/TFTP ports (67, 68, 69, 4011).")
+                        }
+                    }
+                } catch {
+                    $lines.Add("Unable to query UDP endpoints: $($_.Exception.Message)")
+                }
+
+                Add-HcsSection 'Remote Installation Folder (REMINST)'
+                $reminstShare = Get-CimInstance Win32_Share -Filter "Name = 'REMINST'" -ErrorAction SilentlyContinue
+                if ($reminstShare) {
+                    $lines.Add("REMINST share path: $($reminstShare.Path)")
+                    $lines.Add("REMINST share exists on disk: $(Test-Path -LiteralPath $reminstShare.Path)")
+                } else {
+                    $lines.Add("REMINST share not found.")
+                }
+            }
         }
     }
 }

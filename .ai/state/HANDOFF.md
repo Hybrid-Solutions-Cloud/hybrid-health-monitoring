@@ -1,5 +1,102 @@
 # Handoff
 
+## 2026-09-03 — 2-Pack Override Architecture (Discovery & Solution Overrides) and Docs Realignment
+
+- Eliminated 66 legacy override management packs across 11 deployment profiles and 3 tuning tiers.
+- Implemented clean, operator-friendly 2-Pack Override Architecture:
+  - `HyperVPrivateCloud.Discovery.Overrides.xml`: targets all discovery workflows (Core seed, topology, capabilities).
+  - `HyperVPrivateCloud.Monitoring.Overrides.xml`: targets all monitoring workflows (host monitors, VM monitors, capability monitors).
+- Updated generator & packaging tools:
+  - `New-HyperVPrivateCloudOverrideManagementPacks.ps1`: Emits canonical IDs `HyperVPrivateCloud.Discovery.Overrides` and `HyperVPrivateCloud.Monitoring.Overrides` (or `<Org>.HyperVPrivateCloud.Discovery.Overrides` and `<Org>.HyperVPrivateCloud.Monitoring.Overrides`).
+  - `Update-HyperVPrivateCloudOverrideExamples.ps1`: Emits only the 2 canonical solution override files in `src/hyper-v/scom-mp/templates/overrides/public/` (deleted the 11 profile folders / 66 legacy files).
+  - `New-HyperVPrivateCloudReleasePackage.ps1`: Stages the 2 canonical solution override files in the release package.
+  - `Install-HyperVPrivateCloudOverrides.ps1`: Extracted and imports the 2 solution override files directly without requiring complex profile/tier flags.
+- Updated Public Documentation:
+  - `docs/hyper-v/operations-guide.md`: Updated tuning section for the 2-pack model.
+  - `docs/hyper-v/management-pack-guide.md`: Replaced 66-pack references with the 2-pack override architecture.
+  - `docs/hyper-v/prerequisites.md`: Simplified the override step.
+  - `docs/design/hyper-v/override-and-tuning-architecture.md`: Updated architecture contract from 66-file matrix to the 2-pack model.
+- Test & Verification:
+  - `npm run docs:build` in `docs/`: Built clean in 45.00s with 0 broken links and 0 errors.
+  - `HyperVPrivateCloud.Build.Tests.ps1`: 87/87 passed.
+  - `HyperVPrivateCloud.Overrides.Tests.ps1`: 9/9 passed.
+  - `HyperVPrivateCloud.Release.Tests.ps1`: 11/11 passed.
+  - `HyperVPrivateCloud.Integration.Tests.ps1`: 5/5 passed.
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: 63/63 passed.
+  - `MpDependencies.Docs.Tests.ps1`: 8/8 passed.
+
+
+- Completed end-to-end integration of private cloud management stack into the Distributed Application (DA):
+  - Added classes `ActiveDirectoryService`, `DnsService`, and `DeploymentService` to `HyperVPrivateCloud.Library`,
+    contained by `ManagementComponent`.
+  - Added discovery logic in `Discover-HyperVPrivateCloudTopology.ps1.template` to detect domain membership, forest,
+    PDC emulator, AD site, configured DNS servers, DNS search list, and Windows Deployment Services (WDSServer).
+  - Added unit monitors (`DomainHealth`, `DnsHealth`, `DeploymentService`) and dependency rollups into
+    `ManagementComponent` in `Build-HyperVPrivateCloudManagementPacks.ps1` with non-throwing evaluation probes in
+    `Get-HyperVPrivateCloudHostHealth.ps1.template`.
+  - Added dedicated `Management Infrastructure` console folder and state views for Active Directory, DNS, and Bare-Metal
+    Deployment in `HyperVPrivateCloud.Presentation`.
+- Operations Hub & Deep Troubleshooting Operator Tasks:
+  - Added 4 operator tasks to `HyperVPrivateCloud.Monitoring`:
+    - `TestDomainHealth`: Tests domain trust, secure channel status, PDC emulator, and AD site.
+    - `TestDnsResolution`: Tests adapter DNS configuration, forward resolution, and AD domain controller SRV records.
+    - `TestPortConnectivity`: Probes TCP connectivity to default gateway (HTTP/HTTPS/SMB), DC (RPC/LDAP/LDAPS/Kerberos/SMB/WinRM), and optional custom targets.
+    - `TestPxeWdsHealth`: Checks WDSServer service, active UDP listeners on ports 67/68/69/4011, and REMINST share.
+  - Added ToR switch port troubleshooting tasks to `HyperVPrivateCloud.Capability.PhysicalNetwork`:
+    - `GetLldpNeighbor`: Discovers connected ToR switch port ID, chassis ID, and physical adapter DCB/LLDP advanced properties via CIM and driver queries.
+    - `PfcEtsCounters`: Queries RDMA Activity, PFC pause frames, DCB traffic classes, and QoS policy drop counters for deep network troubleshooting.
+  - Authored full DisplayStrings, non-empty Descriptions, and Knowledge Articles for all new monitors, rollups, views, and tasks.
+- Build & Test Verification:
+  - Built all 13 v2 Management Pack artifacts cleanly.
+  - `HyperVPrivateCloud.Build.Tests.ps1`: Passed 87/87 tests.
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: Passed 63/63 probe execution tests under `pwsh -File`.
+  - `MpDependencies.Docs.Tests.ps1`: Passed 8/8 tests.
+  - Total unit & smoke suite: 158/158 passed (0 failed, 0 skipped).
+- Files touched:
+  - `src/hyper-v/scom-mp/fragments/library/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/discovery/Discover-HyperVPrivateCloudTopology.ps1.template`
+  - `src/hyper-v/scom-mp/fragments/discovery/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/monitoring/Get-HyperVPrivateCloudHostHealth.ps1.template`
+  - `src/hyper-v/scom-mp/fragments/monitoring/Invoke-HyperVPrivateCloudHostTask.ps1.template`
+  - `src/hyper-v/scom-mp/fragments/monitoring/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/capabilities/physical-network/Invoke-HyperVPrivateCloudPhysicalNetworkTask.ps1.template`
+  - `src/hyper-v/scom-mp/fragments/capabilities/physical-network/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/presentation/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/tools/Build-HyperVPrivateCloudManagementPacks.ps1`
+  - `tests/unit/HyperVPrivateCloud.Build.Tests.ps1`
+
+## 2026-09-03 — Management pack overhaul: 100% description QA, resilient DA rollup, and build verification
+
+- Operator QA identified missing descriptions across management pack elements and requested a complete
+  overhaul covering descriptions, Distributed Application (DA) rollups, visuals/presentation, discovery
+  reliability, and operator tasks.
+- 100% Description QA: Added detailed `<Description>` tags across all templates (`Presentation`, `Monitoring`,
+  `Library`, `Cluster`). Updated generator functions in `Build-HyperVPrivateCloudManagementPacks.ps1`
+  (`Add-HcsManagementPackDisplayString`, `Get-HcsElementDisplayStringContent`, `Get-HcsRollupContent`,
+  and capability generators) and hooked `Complete-HcsDisplayStrings` into the build pipeline. All 1,485
+  DisplayStrings across all 13 built management packs now have non-empty, technically meaningful descriptions
+  (0 missing).
+- Resilient Distributed Application Rollup: Replaced `WorstOf` rollup algorithm on `VirtualMachines.Members.*`
+  with `Percentage` (25% failure threshold) and set `MemberUnAvailable` to `Success`. Single offline or
+  maintenance VMs no longer trigger false-positive critical alerts for the whole private cloud service.
+- Verification & Test Gated:
+  - `HyperVPrivateCloud.Build.Tests.ps1`: Added strict assertion requiring 0 DisplayStrings with empty
+    descriptions across all 13 packs, plus assertions for VM rollup `Percentage` algorithm and `MemberUnAvailable="Success"`.
+    Passed 87/87 tests.
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: Ran all 63 probe/discovery script execution smoke tests; passed 63/63.
+  - Synchronized prerequisites docs with `tools/scom/Export-MpDependencies.ps1`; `MpDependencies.Docs.Tests.ps1` passed 8/8.
+  - VitePress documentation built successfully with `npm run docs:build` in 50.7s.
+- Files touched:
+  - `src/hyper-v/scom-mp/fragments/presentation/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/monitoring/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/library/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/fragments/capabilities/cluster/ManagementPack.xml.template`
+  - `src/hyper-v/scom-mp/tools/Build-HyperVPrivateCloudManagementPacks.ps1`
+  - `tests/unit/HyperVPrivateCloud.Build.Tests.ps1`
+  - `docs/hyper-v/prerequisites.md`
+  - `docs/azure-local/scom/prerequisites.md`
+  - `tools/scom/mp-dependencies.json`
+
 ## 2026-09-03 — Hyper-V 1.0.6.0 runtime recovery and complete deployment
 
 Live HAAS-SDR evidence on installed `1.0.3.0` showed HostRole seed fixed (4/4) but every PowerShell

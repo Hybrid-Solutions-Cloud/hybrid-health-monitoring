@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 # Physical host networking operator tasks (read-only).
 param(
-    [ValidateSet('AdapterInventory', 'AdapterErrors', 'SwitchUplinks')]
+    [ValidateSet('AdapterInventory', 'AdapterErrors', 'SwitchUplinks', 'GetLldpNeighbor', 'PfcEtsCounters')]
     [string]$Action = 'AdapterInventory',
     [string]$Parameter = '',
     [string]$ComputerName = $env:COMPUTERNAME
@@ -45,6 +45,78 @@ try {
             else { $lines.Add('The Hyper-V module is not available on this host.') }
             Add-HcsSection 'LBFO teams (legacy)'
             if (Get-Command Get-NetLbfoTeam -ErrorAction SilentlyContinue) { Add-HcsText (Get-NetLbfoTeam -ErrorAction SilentlyContinue | Select-Object Name, Status, TeamingMode, LoadBalancingAlgorithm, Members | Format-Table -AutoSize) }
+        }
+        'GetLldpNeighbor' {
+            Add-HcsSection 'Top-of-Rack Switch LLDP / CDP neighbor discovery'
+            try {
+                $lldpAgents = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName 'MSFT_NetLldpAgent' -ErrorAction SilentlyContinue)
+                if ($lldpAgents.Count) {
+                    Add-HcsText ($lldpAgents | Select-Object LocalInterfaceIndex, CurrentOperationalStatus, DeviceId, PortId | Format-Table -AutoSize)
+                } else {
+                    $lines.Add("Standard CIM LLDP agent returned no active neighbors.")
+                }
+            } catch {
+                $lines.Add("CIM MSFT_NetLldpAgent query: $($_.Exception.Message)")
+            }
+
+            Add-HcsSection 'Physical adapter LLDP / DCB driver properties'
+            foreach ($adapter in @(Get-NetAdapter -Physical -ErrorAction SilentlyContinue)) {
+                $lines.Add("Adapter: $($adapter.Name) ($($adapter.InterfaceDescription)) - Status: $($adapter.Status), LinkSpeed: $($adapter.LinkSpeed)")
+                try {
+                    $props = @(Get-NetAdapterAdvancedProperty -Name $adapter.Name -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match 'LLDP|DCB|Priority|Flow Control|PFC|ETS' })
+                    if ($props.Count) {
+                        Add-HcsText ($props | Select-Object DisplayName, DisplayValue | Format-Table -AutoSize)
+                    }
+                } catch {}
+            }
+
+            Add-HcsSection 'Network neighbors (ARP / NDP)'
+            try {
+                $neighbors = @(Get-NetNeighbor -AddressFamily IPv4 -State Reachable, Permanent -ErrorAction SilentlyContinue | Where-Object { $_.InterfaceAlias -notlike '*Loopback*' -and $_.LinkLayerAddress -ne '00-00-00-00-00-00' })
+                if ($neighbors.Count) {
+                    Add-HcsText ($neighbors | Select-Object InterfaceAlias, IPAddress, LinkLayerAddress, State | Format-Table -AutoSize)
+                }
+            } catch {}
+        }
+        'PfcEtsCounters' {
+            Add-HcsSection 'Priority Flow Control (PFC) and RDMA counters'
+            try {
+                $rdma = @(Get-Counter -Counter '\RDMA Activity(*)\*' -ErrorAction SilentlyContinue)
+                if ($rdma.Count) {
+                    Add-HcsText ($rdma.CounterSamples | Select-Object InstanceName, @{ n = 'Counter'; e = { ($_.Path -split '\\')[-1] } }, CookedValue | Format-Table -AutoSize)
+                } else {
+                    $lines.Add("No active RDMA Activity counters (iWARP or RoCEv2 not actively passing traffic).")
+                }
+            } catch {
+                $lines.Add("RDMA counters unavailable.")
+            }
+
+            Add-HcsSection 'QoS / DCB traffic class packet drop counters'
+            try {
+                $qos = @(Get-Counter -Counter '\Network QoS Policy(*)\*' -ErrorAction SilentlyContinue)
+                if ($qos.Count) {
+                    Add-HcsText ($qos.CounterSamples | Select-Object InstanceName, @{ n = 'Counter'; e = { ($_.Path -split '\\')[-1] } }, CookedValue | Format-Table -AutoSize)
+                } else {
+                    $lines.Add("No Network QoS Policy counter instances found.")
+                }
+            } catch {
+                $lines.Add("Network QoS Policy counters unavailable.")
+            }
+
+            Add-HcsSection 'Data Center Bridging (DCB) QoS configuration'
+            try {
+                if (Get-Command Get-NetQosPolicy -ErrorAction SilentlyContinue) {
+                    Add-HcsText (Get-NetQosPolicy -ErrorAction SilentlyContinue | Format-Table -AutoSize)
+                }
+                if (Get-Command Get-NetQosTrafficClass -ErrorAction SilentlyContinue) {
+                    Add-HcsText (Get-NetQosTrafficClass -ErrorAction SilentlyContinue | Format-Table -AutoSize)
+                }
+                if (Get-Command Get-NetQosFlowControl -ErrorAction SilentlyContinue) {
+                    Add-HcsText (Get-NetQosFlowControl -ErrorAction SilentlyContinue | Format-Table -AutoSize)
+                }
+            } catch {
+                $lines.Add("DCB cmdlets unavailable: $($_.Exception.Message)")
+            }
         }
     }
 }

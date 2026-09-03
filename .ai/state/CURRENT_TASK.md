@@ -1,5 +1,35 @@
 # Current task
 
+## Completed — Management Domain Health, DNS, PXE/WDS, and Operator Hub Diagnostics
+
+- Management domain infrastructure added to Distributed Application:
+  - `ActiveDirectoryService`, `DnsService`, and `DeploymentService` added to `HyperVPrivateCloud.Library`.
+  - Topology discovery in `Discover-HyperVPrivateCloudTopology.ps1.template` maps these services under `ManagementComponent`.
+  - Probes in `Get-HyperVPrivateCloudHostHealth.ps1.template` monitor AD secure channel, DNS resolution, and WDS.
+  - Unit monitors and rollups configured in `Build-HyperVPrivateCloudManagementPacks.ps1`.
+  - Dedicated `Management Infrastructure` folder and 3 State Views added to `HyperVPrivateCloud.Presentation`.
+- Central Operations Hub & Deep Troubleshooting Operator Tasks:
+  - Host tasks: `TestDomainHealth`, `TestDnsResolution`, `TestPortConnectivity`, `TestPxeWdsHealth`.
+  - Physical network tasks: `GetLldpNeighbor` (ToR port/chassis discovery) and `PfcEtsCounters` (PFC/ETS/RDMA pause/drop analysis).
+  - All tasks accompanied by complete DisplayStrings, Descriptions, and MAML Knowledge Articles.
+- Fully verified with 100% test pass rate across build (87/87) and probe smoke/override/docs (71/71).
+
+## Completed — 2-Pack Override Architecture and Elimination of 66 Legacy Packs
+
+- Removed 66 legacy override management packs across 11 deployment profiles and 3 tiers.
+- Delivered the clean 2-pack override architecture:
+  - `HyperVPrivateCloud.Discovery.Overrides`: Governs discovery frequencies and scopes.
+  - `HyperVPrivateCloud.Monitoring.Overrides`: Governs monitoring thresholds, rules, and alerts.
+- Updated generator tools, release packaging, installation scripts, documentation, and unit tests.
+- All unit test suites passed 100% (Build: 87/87, Overrides: 9/9, Release: 11/11, Integration: 5/5).
+- VitePress documentation built clean in 45s with 0 broken links and 0 errors.
+
+## Roadmap: Optional Capability Packs (Fortinet & Dell OME)
+
+- Architecture for optional capabilities:
+  - `HyperVPrivateCloud.Capability.Fortinet`: Standalone pack for Fortinet firewall gateway and DHCP monitoring; correlates into `NetworkComponent` when deployed, zero dependency on core when absent.
+  - `HyperVPrivateCloud.Capability.DellOME`: Standalone pack integrating Dell OpenManage Enterprise MP health into `ComputeComponent`.
+
 ## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.6.0
 
 - Live SCOM 2025 validation of `1.0.3.0` proved HostRole seed recovery but showed all PowerShell

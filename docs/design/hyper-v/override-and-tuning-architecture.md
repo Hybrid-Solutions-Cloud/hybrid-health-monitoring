@@ -25,10 +25,10 @@ representative-lab evidence before production release.
 | Customer Monitoring Overrides | Customer-owned unsealed `.xml` | Monitor/rule enablement, thresholds, timing, alerts, collection, and monitoring-targeting groups | Discovery overrides |
 | Lab, Standard, and Strict templates | Product-maintained public examples, not imported product dependencies | Reviewed starter values and a manifest of the settings they change | Customer names, credentials, destinations, or undisclosed active policy |
 
-The v2 generator uses these customer-owned Management Pack IDs:
+The v2 generator produces two canonical override Management Packs:
 
-- `<Organization>.HyperVPrivateCloud.Overrides.<DeploymentProfile>.<Tier>.Discovery`; and
-- `<Organization>.HyperVPrivateCloud.Overrides.<DeploymentProfile>.<Tier>.Monitoring`.
+- `<Organization>.HyperVPrivateCloud.Discovery.Overrides` (or `HyperVPrivateCloud.Discovery.Overrides` for public starter packs); and
+- `<Organization>.HyperVPrivateCloud.Monitoring.Overrides` (or `HyperVPrivateCloud.Monitoring.Overrides` for public starter packs).
 
 The organization prefix makes ownership clear and prevents a customer file from appearing to be a
 signed product artifact. The display name can use the organization's normal naming convention.
@@ -180,18 +180,16 @@ company-specific groups.
 
 The committed `.xml.example` files are generated artifacts, not hand-maintained samples. Run
 `src/hyper-v/scom-mp/tools/Update-HyperVPrivateCloudOverrideExamples.ps1` after changing the
-generator, catalog, or package profile. CI regenerates the entire 66-file matrix in a temporary
-directory and rejects any byte difference. It also builds all 13 product MPs and resolves every
+generator, catalog, or package profile. CI regenerates the 2 canonical solution override files in a temporary
+directory and rejects any byte difference. It also builds all product MPs and resolves every
 generated workflow, context, module, property, parameter, and reference. Generated examples use
-`{{VERSION}}`, `{{PRODUCT_VERSION}}`, and `{{PUBLIC_KEY_TOKEN}}`; governed release packaging must
-replace them with the real release identities before publishing import-ready `.xml` files.
+`{{VERSION}}`, `{{PRODUCT_VERSION}}`, and `{{PUBLIC_KEY_TOKEN}}`; governed release packaging
+replaces them with the real release identities before publishing import-ready `.xml` files.
 
 Generate a customer-owned pair with:
 
 ```powershell
 ./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudOverrideManagementPacks.ps1 `
-  -DeploymentProfile ClusteredS2D `
-  -TuningTier Standard `
   -OrganizationId Contoso `
   -OrganizationName 'Contoso' `
   -Version 1.0.0.0 `

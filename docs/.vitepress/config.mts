@@ -30,7 +30,6 @@ const hyperVDesign = {
     { text: 'Security and operability', link: '/design/hyper-v/security-and-operability' },
     { text: 'Validation and release', link: '/design/hyper-v/validation-and-release' },
     { text: 'Governed release runbook', link: '/design/hyper-v/release-runbook' },
-    { text: 'Azure Monitor solution design', link: '/design/hyper-v/azure-monitor' },
   ],
 }
 
@@ -47,16 +46,9 @@ const hyperVSidebar = [
     text: 'Deploy and operate',
     items: [
       { text: 'Administration guide', link: '/hyper-v/management-pack-guide' },
-      { text: 'Operations guide', link: '/hyper-v/operations-guide' },
+      { text: 'Operations & troubleshooting hub', link: '/hyper-v/operations-guide' },
       { text: 'Monitoring catalog policy', link: '/hyper-v/monitoring-catalog' },
       { text: 'Management pack overview', link: '/hyper-v/scom-mp' },
-    ],
-  },
-  {
-    text: 'Azure Monitor track',
-    items: [
-      { text: 'Health model status', link: '/hyper-v/azure-monitor' },
-      { text: 'Research and parity gaps', link: '/hyper-v/azure-monitor-research' },
     ],
   },
   {

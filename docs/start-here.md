@@ -74,17 +74,14 @@ substantial.
 
 ---
 
-## Still deciding between SCOM and Azure Monitor?
+## SCOM vs. Azure Monitor (Azure Local Only)
 
-For Azure Local you have a genuine choice. The two tracks differ in prerequisites, cost model, and
-maturity:
+For **Azure Local**, you have a choice between on-premises SCOM and cloud-native Azure Monitor. The two tracks differ in prerequisites, cost model, and deployment requirements:
 
 - [SCOM → Azure Monitor comparison](/comparison/)
-- [Concept mapping](/design/concept-mapping) — how SCOM classes, health states, and rollups
-  correspond to Azure Monitor entities
+- [Concept mapping](/design/concept-mapping) — how SCOM classes, health states, and rollups correspond to Azure Monitor entities
 
-For Hyper-V the choice is currently constrained — see
-[the Azure Monitor track status](/hyper-v/azure-monitor).
+For **Hyper-V Private Cloud**, SCOM is the definitive, authoritative monitoring engine. Hyper-V has no dependency on Azure Arc or Azure Monitor.
 
 ---
 

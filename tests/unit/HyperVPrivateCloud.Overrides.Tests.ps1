@@ -54,11 +54,11 @@ Describe 'Hyper-V Private Cloud Monitoring override generation' {
         (Get-Content -LiteralPath $script:Generator -Raw) | Should -Not -Match 'Host\.\$|MonitorId\s*=|contextClassId\s*='
     }
 
-    It 'commits all 66 examples as byte-identical deterministic generator output' {
+    It 'commits the solution override examples as byte-identical deterministic generator output' {
         $expected = @(Get-ChildItem -LiteralPath $script:CommittedExamples -Filter '*.xml.example' -File -Recurse)
         $actual = @(Get-ChildItem -LiteralPath $script:RegeneratedExamples -Filter '*.xml.example' -File -Recurse)
-        $expected.Count | Should -Be 66
-        $actual.Count | Should -Be 66
+        $expected.Count | Should -Be 2
+        $actual.Count | Should -Be 2
         $expectedRelative = @($expected | ForEach-Object { [System.IO.Path]::GetRelativePath($script:CommittedExamples, $_.FullName) } | Sort-Object)
         $actualRelative = @($actual | ForEach-Object { [System.IO.Path]::GetRelativePath($script:RegeneratedExamples, $_.FullName) } | Sort-Object)
         $actualRelative | Should -Be $expectedRelative
@@ -85,24 +85,16 @@ Describe 'Hyper-V Private Cloud Monitoring override generation' {
         }
     }
 
-    It 'emits only the capabilities selected by each deployment profile' {
+    It 'emits all capability references in the solution override pack' {
         $aliasByCapability = @{
-            Cluster = 'HCSV2Cluster'; Storage = 'HCSV2Storage'; PureStorage = 'HCSV2PureStorage'
+            Cluster = 'HCSV2Cluster'; Storage = 'HCSV2Storage'
             S2D = 'HCSV2S2D'; FileServices = 'HCSV2FileServices'; NetworkATC = 'HCSV2NetworkATC'
             PhysicalNetwork = 'HCSV2PhysicalNetwork'; SDN = 'HCSV2SDN'; VMM = 'HCSV2VMM'
         }
-        foreach ($profile in $script:Contract.profiles) {
-            $directory = Join-Path $script:RegeneratedExamples "$($profile.id)/standard"
-            $documents = @(Get-ChildItem -LiteralPath $directory -Filter '*.xml.example' -File | ForEach-Object { [xml](Get-Content -LiteralPath $_.FullName -Raw) })
-            $aliases = @($documents | ForEach-Object { $_.SelectNodes('/ManagementPack/Manifest/References/Reference') } | ForEach-Object { [string]$_.Alias })
-            foreach ($entry in $aliasByCapability.GetEnumerator()) {
-                if ([string]$entry.Key -in @($profile.capabilities)) {
-                    $aliases | Should -Contain $entry.Value
-                }
-                else {
-                    $aliases | Should -Not -Contain $entry.Value
-                }
-            }
+        $monitoringPack = [xml](Get-Content -LiteralPath (Join-Path $script:RegeneratedExamples 'HyperVPrivateCloud.Monitoring.Overrides.xml.example') -Raw)
+        $aliases = @($monitoringPack.SelectNodes('/ManagementPack/Manifest/References/Reference') | ForEach-Object { [string]$_.Alias })
+        foreach ($entry in $aliasByCapability.GetEnumerator()) {
+            $aliases | Should -Contain $entry.Value
         }
     }
 
@@ -171,7 +163,7 @@ Describe 'Hyper-V Private Cloud Monitoring override generation' {
     }
 
     It 'preserves cookdown by applying shared acquisition values to every shared monitor' {
-        $path = Join-Path $script:RegeneratedExamples 'CompletePrivateCloud/strict/HyperVPrivateCloud.Overrides.CompletePrivateCloud.Strict.Monitoring.xml.example'
+        $path = Join-Path $script:RegeneratedExamples 'HyperVPrivateCloud.Monitoring.Overrides.xml.example'
         [xml]$managementPack = Get-Content -LiteralPath $path -Raw
         foreach ($parameter in @('IntervalSeconds', 'CpuWarningPercent', 'CpuCriticalPercent', 'MemoryWarningMB', 'MemoryCriticalMB', 'PagesInputWarningPerSecond', 'PagesInputCriticalPerSecond', 'CheckpointWarningHours', 'CheckpointCriticalHours')) {
             $nodes = @($managementPack.SelectNodes("//MonitorConfigurationOverride[contains(@Monitor,'.Host.') and @Parameter='$parameter']"))
@@ -186,14 +178,12 @@ Describe 'Hyper-V Private Cloud Monitoring override generation' {
     }
 
     It 'ships the Standard worked group in the same unsealed MP as its overrides' {
-        foreach ($profile in $script:Contract.profiles) {
-            $path = Join-Path $script:RegeneratedExamples "$($profile.id)/standard/HyperVPrivateCloud.Overrides.$($profile.id).Standard.Monitoring.xml.example"
-            [xml]$managementPack = Get-Content -LiteralPath $path -Raw
-            $group = $managementPack.SelectSingleNode('//ClassType[contains(@ID,".Group.AllHosts")]')
-            $group | Should -Not -BeNullOrEmpty
-            $managementPack.SelectSingleNode("//Discovery[@Target='$($group.ID)']") | Should -Not -BeNullOrEmpty
-            @($managementPack.SelectNodes("//Overrides/*[@Context='$($group.ID)']")).Count | Should -BeGreaterThan 0
-        }
+        $path = Join-Path $script:RegeneratedExamples "HyperVPrivateCloud.Monitoring.Overrides.xml.example"
+        [xml]$managementPack = Get-Content -LiteralPath $path -Raw
+        $group = $managementPack.SelectSingleNode('//ClassType[contains(@ID,".Group.AllHosts")]')
+        $group | Should -Not -BeNullOrEmpty
+        $managementPack.SelectSingleNode("//Discovery[@Target='$($group.ID)']") | Should -Not -BeNullOrEmpty
+        @($managementPack.SelectNodes("//Overrides/*[@Context='$($group.ID)']")).Count | Should -BeGreaterThan 0
     }
 
     It 'rejects unknown schemas, unknown capabilities, and cross-MP group references' {

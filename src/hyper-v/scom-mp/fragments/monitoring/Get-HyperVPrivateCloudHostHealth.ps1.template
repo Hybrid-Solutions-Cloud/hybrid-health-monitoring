@@ -137,6 +137,75 @@ try {
             if ($null -eq $service) { Write-HcsState $stateName 'Critical' ("Required service {0} is not installed." -f $serviceName) }
             else { Write-HcsState $stateName $(if ($service.Status -eq 'Running') { 'Good' } else { 'Critical' }) ("Service {0}: {1}" -f $serviceName, $service.Status) }
         }
+
+        # Domain Health (Active Directory secure channel & connectivity)
+        try {
+            $cs = Get-CimInstance -ClassName 'Win32_ComputerSystem' -ErrorAction SilentlyContinue
+            if ($null -ne $cs -and $cs.PartOfDomain) {
+                $secureChannel = $false
+                try {
+                    $secureChannel = Test-ComputerSecureChannel -ErrorAction Stop
+                } catch {
+                    $secureChannel = $false
+                }
+                if ($secureChannel) {
+                    Write-HcsState 'DomainHealthState' 'Good' ("Active Directory secure channel verified for domain {0}" -f [string]$cs.Domain)
+                } else {
+                    Write-HcsState 'DomainHealthState' 'Critical' ("Active Directory secure channel is broken for domain {0}" -f [string]$cs.Domain)
+                }
+            } else {
+                Write-HcsState 'DomainHealthState' 'Good' 'Host is standalone / workgroup (not domain-joined).'
+            }
+        } catch {
+            Write-HcsState 'DomainHealthState' 'Warning' ("Failed to evaluate domain health: {0}" -f $_.Exception.Message)
+        }
+
+        # DNS Health (Resolution and server reachability)
+        try {
+            $dnsServers = @()
+            if (Get-Command Get-DnsClientServerAddress -ErrorAction SilentlyContinue) {
+                $dnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -ExpandProperty ServerAddresses | Select-Object -Unique)
+            }
+            if (-not $dnsServers.Count) {
+                $netConfig = Get-CimInstance -ClassName 'Win32_NetworkAdapterConfiguration' -Filter "IPEnabled = TRUE" -ErrorAction SilentlyContinue
+                $dnsServers = @($netConfig | Where-Object { $null -ne $_.DNSServerSearchOrder } | Select-Object -ExpandProperty DNSServerSearchOrder | Select-Object -Unique)
+            }
+            if ($dnsServers.Count -gt 0) {
+                $testHost = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { $env:COMPUTERNAME }
+                $resolved = $false
+                try {
+                    $res = [System.Net.Dns]::GetHostEntry($testHost)
+                    if ($res.AddressList.Count -gt 0) { $resolved = $true }
+                } catch {
+                    $resolved = $false
+                }
+                if ($resolved) {
+                    Write-HcsState 'DnsHealthState' 'Good' ("DNS resolution operational; servers: {0}" -f ($dnsServers -join ', '))
+                } else {
+                    Write-HcsState 'DnsHealthState' 'Critical' ("DNS resolution failed for {0} using servers: {1}" -f $testHost, ($dnsServers -join ', '))
+                }
+            } else {
+                Write-HcsState 'DnsHealthState' 'Warning' 'No DNS servers configured on active network adapters.'
+            }
+        } catch {
+            Write-HcsState 'DnsHealthState' 'Warning' ("Failed to evaluate DNS health: {0}" -f $_.Exception.Message)
+        }
+
+        # Bare-Metal Deployment Service (WDS/PXE)
+        try {
+            $wdsService = Get-Service -Name 'WDSServer' -ErrorAction SilentlyContinue
+            if ($null -ne $wdsService) {
+                if ($wdsService.Status -eq 'Running') {
+                    Write-HcsState 'DeploymentServiceState' 'Good' 'Windows Deployment Services (WDSServer) is running.'
+                } else {
+                    Write-HcsState 'DeploymentServiceState' 'Warning' ("Windows Deployment Services (WDSServer) is {0}." -f $wdsService.Status)
+                }
+            } else {
+                Write-HcsState 'DeploymentServiceState' 'Good' 'Bare-metal deployment service (WDS) is not installed on this host.'
+            }
+        } catch {
+            Write-HcsState 'DeploymentServiceState' 'Good' 'WDS probe skipped.'
+        }
     }
 
     $os = Get-CimInstance -ClassName 'Win32_OperatingSystem'
@@ -177,7 +246,7 @@ try {
     Write-HcsState 'PipelineState' 'Good' ('Host health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
 }
 catch {
-    foreach ($state in @('VMMSState', 'VmComputeState', 'HyperVPowerShellState', 'HypervisorState', 'CpuState', 'MemoryState', 'PagingState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState', 'PipelineState')) {
+    foreach ($state in @('VMMSState', 'VmComputeState', 'HyperVPowerShellState', 'HypervisorState', 'CpuState', 'MemoryState', 'PagingState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState', 'DomainHealthState', 'DnsHealthState', 'DeploymentServiceState', 'PipelineState')) {
         if (-not $statesSet.ContainsKey($state)) { Write-HcsState $state 'Critical' $_.Exception.Message }
     }
     $api.LogScriptEvent('Hyper-V Private Cloud Host Health', 8201, 1, $_.Exception.ToString())

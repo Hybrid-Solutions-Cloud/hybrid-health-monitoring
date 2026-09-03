@@ -39,13 +39,10 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [ValidateSet('Standalone', 'ClusteredSAN', 'ClusteredPure', 'ClusteredS2D', 'HybridSANAndS2D',
-        'HybridPureAndS2D', 'HyperVOverSMB', 'NetworkATC', 'SDNEnabled', 'VMMManaged', 'CompletePrivateCloud')]
-    [string]$DeploymentProfile,
-    [Parameter(Mandatory)]
-    [ValidateSet('Lab', 'Standard', 'Strict')]
-    [string]$TuningTier,
+    [Parameter()]
+    [string]$DeploymentProfile = 'CompletePrivateCloud',
+    [Parameter()]
+    [string]$TuningTier = 'Standard',
     [string]$Source = 'https://labs.hybridsolutions.cloud/hybrid-health-monitoring/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip',
     [string]$Destination = (Join-Path (Get-Location) 'HyperVPrivateCloudOverrides'),
     [switch]$Import
@@ -79,9 +76,11 @@ else {
 }
 
 $pair = foreach ($kind in 'Discovery', 'Monitoring') {
-    $name = "HyperVPrivateCloud.Overrides.$DeploymentProfile.$TuningTier.$kind.xml"
-    $found = @(Get-ChildItem -LiteralPath $extractRoot -Recurse -File -Filter $name)
-    if ($found.Count -ne 1) { throw "Expected exactly one '$name' in '$extractRoot', found $($found.Count). Is the source the release Overrides bundle?" }
+    $found = @(Get-ChildItem -LiteralPath $extractRoot -Recurse -File -Filter "*$kind*Overrides.xml")
+    if ($found.Count -eq 0) {
+        $found = @(Get-ChildItem -LiteralPath $extractRoot -Recurse -File -Filter "HyperVPrivateCloud.Overrides.*.$kind.xml")
+    }
+    if ($found.Count -eq 0) { throw "Expected override file for '$kind' in '$extractRoot', found none." }
     $found[0]
 }
 

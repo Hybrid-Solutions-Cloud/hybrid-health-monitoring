@@ -23,6 +23,7 @@ Everything lives under **Monitoring → Hyper-V Private Cloud**:
 | **Availability** | Failover cluster, node, network, group, CSV and cluster-role state views. |
 | **Storage** | SAN LUNs, attachments, iSCSI sessions, FC ports, S2D, SMB and Pure views. |
 | **Networking** | Physical adapters, virtual switches, Network ATC intents, SDN host state. |
+| **Management Infrastructure** | Dedicated private cloud management domain views: Active Directory trust/channel, DNS services and name resolution, and bare-metal deployment (PXE/WDS). |
 | **Monitoring Pipeline** | The product watching itself — probe and capability health. If this folder is unhealthy, distrust the rest until it is fixed. |
 | **Operations** | Task-oriented views for day-two work. |
 
@@ -62,25 +63,22 @@ To enable any of these: right-click the object type's monitor/discovery (or use 
 Management Pack Objects), **Overrides → Override the …**, tick `Enabled` = True, and save to your
 **custom override management pack** — never the Default Management Pack.
 
-## Tuning: overrides and tiers
+## Tuning: overrides
 
-### Apply a baseline tier (the supported way)
+### Apply solution overrides (the supported way)
 
-Import exactly **one** Discovery + Monitoring override pair matching your topology profile:
+Import the canonical Discovery + Monitoring override pair:
 
 ```powershell
 iwr https://labs.hybridsolutions.cloud/hybrid-health-monitoring/downloads/hyper-v-private-cloud/tools/Install-HyperVPrivateCloudOverrides.ps1 -OutFile Install-HyperVPrivateCloudOverrides.ps1
-./Install-HyperVPrivateCloudOverrides.ps1 -DeploymentProfile HybridSANAndS2D -TuningTier Standard -Import
+./Install-HyperVPrivateCloudOverrides.ps1 -Import
 ```
 
-- **Standard** — the coded defaults made explicit. Importing it changes nothing; it gives you a
-  visible, versionable baseline to diff your own changes against.
-- **Lab** — forgiving thresholds and faster discovery for test environments.
-- **Strict** — tight thresholds for environments where a warning should page someone.
+The solution ships two starter override management packs:
+- **`HyperVPrivateCloud.Discovery.Overrides`** — controls discovery cadences, intervals, and scopes.
+- **`HyperVPrivateCloud.Monitoring.Overrides`** — provides a visible, versionable baseline for monitor and rule thresholds across the private cloud fabric.
 
-Pick the profile that matches the capability packs you imported — a profile referencing a pack you
-did not import will refuse to import. To change tiers later, delete the imported pair first, then
-import the new one.
+To customize for your organization, generate organization-prefixed packs (`<Org>.HyperVPrivateCloud.Discovery.Overrides` and `<Org>.HyperVPrivateCloud.Monitoring.Overrides`) using `New-HyperVPrivateCloudOverrideManagementPacks.ps1`.
 
 ### Change a single threshold
 
@@ -129,6 +127,19 @@ Manager**, **Open Failover Cluster Manager**, **Connect to the virtual machine c
 
 The *Capture VM health detail on state change* diagnostic runs automatically when a VM's
 expected-state monitor trips, so the alert already contains a fresh snapshot before you look.
+
+### Operator Hub: Deep troubleshooting & diagnostic tasks
+
+Operators can diagnose host connectivity, directory services, and network fabric issues directly from SCOM without remoting into nodes:
+
+| Task | Target | What it tests & returns |
+|---|---|---|
+| **Test Active Directory domain and secure channel** | Host | Runs `Test-ComputerSecureChannel -Verbose`, identifies PDC emulator, domain forest functional level, and local AD site membership. |
+| **Test DNS configuration and name resolution** | Host | Audits configured client adapter DNS servers, tests forward queries, and verifies Active Directory domain controller SRV records (`_ldap._tcp.dc._msdcs.<domain>`). |
+| **Test TCP port connectivity** | Host | Fast TCP socket probe against default gateway (HTTP/HTTPS/SMB), DC core services (RPC 135, LDAP 389, LDAPS 636, Kerberos 88, SMB 445, WinRM 5985), and optional custom target passed in the Parameter field (`host:port`). |
+| **Test bare-metal PXE and WDS deployment services** | Host | Validates `WDSServer` service status, active UDP listeners on PXE/TFTP ports (67, 68, 69, 4011), and checks the `REMINST` remote installation share. |
+| **Discover Top-of-Rack switch LLDP and CDP neighbors** | Host | Queries CIM `MSFT_NetLldpAgent`, physical adapter driver properties, and ARP/NDP tables to discover connected ToR switch port ID, switch chassis ID, and system description. |
+| **Show Priority Flow Control and RDMA pause counters** | Host | Queries RDMA activity, PFC pause frames, DCB traffic classes, and QoS policy drop counters for deep lossless RoCEv2 fabric troubleshooting. |
 
 ## Reading health like the pack means it
 

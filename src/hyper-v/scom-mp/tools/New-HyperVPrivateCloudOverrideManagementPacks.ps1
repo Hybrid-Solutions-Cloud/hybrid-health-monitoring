@@ -67,13 +67,13 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'HCS scripting standard requires Write-Host for operator status.')]
 [CmdletBinding(DefaultParameterSetName = 'Customer')]
 param(
-    [Parameter(Mandatory)]
+    [Parameter()]
     [ValidatePattern('^[A-Za-z][A-Za-z0-9]*$')]
-    [string]$DeploymentProfile,
+    [string]$DeploymentProfile = 'CompletePrivateCloud',
 
-    [Parameter(Mandatory)]
+    [Parameter()]
     [ValidateSet('Lab', 'Standard', 'Strict')]
-    [string]$TuningTier,
+    [string]$TuningTier = 'Standard',
 
     [Parameter(Mandatory, ParameterSetName = 'Customer')]
     [ValidatePattern('^[A-Za-z][A-Za-z0-9.]*$')]
@@ -320,12 +320,28 @@ $outputDirectory = [System.IO.Path]::GetFullPath($OutputPath)
 
 foreach ($documentKind in @('Discovery', 'Monitoring')) {
     $idPrefix = if ([string]::IsNullOrWhiteSpace($organizationIdValue)) { '' } else { "$organizationIdValue." }
-    $managementPackId = "${idPrefix}HyperVPrivateCloud.Overrides.$DeploymentProfile.$TuningTier.$documentKind"
-    $displayName = if ($isPublicArtifact) {
-        "Hyper-V Private Cloud Monitoring - $DeploymentProfile $TuningTier $documentKind Overrides"
+    $isSolutionOverride = ($DeploymentProfile -in @('CompletePrivateCloud', 'Solution')) -and ($TuningTier -eq 'Standard')
+    $managementPackId = if ($isSolutionOverride) {
+        "${idPrefix}HyperVPrivateCloud.$documentKind.Overrides"
     }
     else {
-        "$(ConvertTo-HcsXmlText -Value $organizationNameValue) - Hyper-V Private Cloud $DeploymentProfile $TuningTier $documentKind Overrides"
+        "${idPrefix}HyperVPrivateCloud.Overrides.$DeploymentProfile.$TuningTier.$documentKind"
+    }
+    $displayName = if ($isSolutionOverride) {
+        if ($isPublicArtifact) {
+            "Hyper-V Private Cloud Monitoring - $(if ($documentKind -eq 'Monitoring') { 'Solution' } else { 'Discovery' }) Overrides"
+        }
+        else {
+            "$(ConvertTo-HcsXmlText -Value $organizationNameValue) - Hyper-V Private Cloud $(if ($documentKind -eq 'Monitoring') { 'Solution' } else { 'Discovery' }) Overrides"
+        }
+    }
+    else {
+        if ($isPublicArtifact) {
+            "Hyper-V Private Cloud Monitoring - $DeploymentProfile $TuningTier $documentKind Overrides"
+        }
+        else {
+            "$(ConvertTo-HcsXmlText -Value $organizationNameValue) - Hyper-V Private Cloud $DeploymentProfile $TuningTier $documentKind Overrides"
+        }
     }
     $documentGroups = @($groups | Where-Object { [string]$_.kind -eq $documentKind })
     $groupSections = Get-HcsGroupSection -Groups $documentGroups -ManagementPackId $managementPackId

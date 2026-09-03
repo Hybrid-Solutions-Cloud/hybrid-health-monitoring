@@ -44,14 +44,7 @@ else {
 }
 [System.IO.Directory]::CreateDirectory($resolvedOutputRoot) | Out-Null
 
-$count = 0
-foreach ($deploymentDefinition in $contract.profiles) {
-    foreach ($tier in $contract.overrideTiers) {
-        $destination = Join-Path $resolvedOutputRoot "$($deploymentDefinition.id)/$($tier.ToString().ToLowerInvariant())"
-        [System.IO.Directory]::CreateDirectory($destination) | Out-Null
-        & $generatorPath -DeploymentProfile ([string]$deploymentDefinition.id) -TuningTier ([string]$tier) -EmitExample -OutputPath $destination
-        $count += 2
-    }
-}
+& $generatorPath -DeploymentProfile CompletePrivateCloud -TuningTier Standard -EmitExample -OutputPath $resolvedOutputRoot
+$count = @(Get-ChildItem -LiteralPath $resolvedOutputRoot -Filter '*.xml.example' -File).Count
 
 Write-Host "Generated $count public v2 override example file(s) in '$resolvedOutputRoot'." -ForegroundColor Green

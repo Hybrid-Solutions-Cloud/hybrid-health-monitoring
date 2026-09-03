@@ -111,8 +111,60 @@ function Add-HcsManagementPackDisplayString {
         throw "Management Pack '$ManagementPackId' has no ENU DisplayStrings container."
     }
 
-    $displayString = "        <DisplayString ElementID=`"$ManagementPackId`"><Name>$displayName</Name></DisplayString>`r`n      "
+    $description = [System.Security.SecurityElement]::Escape("Provides discovery, monitoring, and operational visualization for $capabilityName components within the Hyper-V Private Cloud solution.")
+    $displayString = "        <DisplayString ElementID=`"$ManagementPackId`"><Name>$displayName</Name><Description>$description</Description></DisplayString>`r`n      "
     return $Content.Insert($position, $displayString)
+}
+
+function Complete-HcsDisplayStrings {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Content)
+
+    $pattern = [regex]'<DisplayString\s+([^>]*?)><Name>([^<]*?)</Name></DisplayString>'
+    $evaluator = [System.Text.RegularExpressions.MatchEvaluator]{
+        param([System.Text.RegularExpressions.Match]$m)
+        $attrs = $m.Groups[1].Value
+        $name = $m.Groups[2].Value
+        
+        if ($attrs -match 'SubElementID="([^"]+)"') {
+            $subId = $Matches[1]
+            if ($subId -in @('Good', 'Warning', 'Critical', 'Healthy', 'Degraded', 'Failed', 'Disabled', 'NotApplicable')) {
+                $desc = "$subId health state for $name."
+            } else {
+                $desc = "$name property for the target class."
+            }
+        } else {
+            if ($attrs -match 'ElementID="([^"]+)"') {
+                $elemId = $Matches[1]
+                if ($elemId -like '*.State.View' -or $elemId -like '*.State') {
+                    $desc = "State view displaying the health and key properties of $name."
+                } elseif ($elemId -like '*.Performance.View' -or $elemId -like '*.Performance') {
+                    $desc = "Performance view displaying metrics and counter data for $name."
+                } elseif ($elemId -like '*.ActiveAlerts.View' -or $elemId -like '*.Alerts') {
+                    $desc = "Alert view displaying active unresolved alerts for $name."
+                } elseif ($elemId -like '*.Events.View') {
+                    $desc = "Event view displaying operational event log records for $name."
+                } elseif ($elemId -like '*.Folder') {
+                    $desc = "Console folder containing views and dashboards for $name."
+                } elseif ($elemId -like '*.Dependency.Monitor') {
+                    $desc = "Rolls up the health of member $name objects into the parent entity."
+                } elseif ($elemId -like '*.Collection.Rule') {
+                    $desc = "Collects performance counter data for $name into Operations Manager databases."
+                } elseif ($elemId -like '*.Discovery') {
+                    $desc = "Discovers $name objects and relationships for Hyper-V Private Cloud monitoring."
+                } elseif ($elemId -like '*.Monitor') {
+                    $desc = "Monitors operational health, status, and thresholds for $name."
+                } else {
+                    $desc = "$name component in the Hyper-V Private Cloud monitoring solution."
+                }
+            } else {
+                $desc = "$name component in the Hyper-V Private Cloud monitoring solution."
+            }
+        }
+        $escapedDesc = [System.Security.SecurityElement]::Escape($desc)
+        return "<DisplayString $attrs><Name>$name</Name><Description>$escapedDesc</Description></DisplayString>"
+    }
+    return $pattern.Replace($Content, $evaluator)
 }
 
 function Get-HcsElementDisplayStringContent {
@@ -129,22 +181,26 @@ function Get-HcsElementDisplayStringContent {
     $escape = { param($s) [System.Security.SecurityElement]::Escape($s) }
     foreach ($classType in $ManagementPack.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType')) {
         $classId = [string]$classType.ID
+        $leaf = ConvertTo-HcsDisplayName -Value $classId
+        $area = Get-HcsAreaDisplayName -Value $classId
         if (-not $authored.Contains($classId)) {
-            $area = Get-HcsAreaDisplayName -Value $classId
-            $leaf = ConvertTo-HcsDisplayName -Value $classId
             $name = & $escape "$area $leaf"
             $description = & $escape "$leaf object discovered and monitored by the Hyper-V Private Cloud $area capability."
             [void]$result.AppendLine("        <DisplayString ElementID=`"$classId`"><Name>$name</Name><Description>$description</Description></DisplayString>")
         }
         foreach ($property in $classType.SelectNodes('Property')) {
             $name = & $escape (ConvertTo-HcsDisplayName -Value ([string]$property.ID))
-            [void]$result.AppendLine("        <DisplayString ElementID=`"$classId`" SubElementID=`"$($property.ID)`"><Name>$name</Name></DisplayString>")
+            $propDesc = & $escape "$name property of the $leaf class."
+            [void]$result.AppendLine("        <DisplayString ElementID=`"$classId`" SubElementID=`"$($property.ID)`"><Name>$name</Name><Description>$propDesc</Description></DisplayString>")
         }
     }
     foreach ($relationship in $ManagementPack.SelectNodes('/ManagementPack/TypeDefinitions/EntityTypes/RelationshipTypes/RelationshipType')) {
         if ($authored.Contains([string]$relationship.ID)) { continue }
         $name = & $escape (ConvertTo-HcsDisplayName -Value ([string]$relationship.ID))
-        [void]$result.AppendLine("        <DisplayString ElementID=`"$($relationship.ID)`"><Name>$name</Name></DisplayString>")
+        $sourceType = if ($relationship.Source) { $relationship.Source.Type } else { 'source' }
+        $targetType = if ($relationship.Target) { $relationship.Target.Type } else { 'target' }
+        $relDesc = & $escape "$name relationship relating $sourceType to $targetType in Hyper-V Private Cloud Monitoring."
+        [void]$result.AppendLine("        <DisplayString ElementID=`"$($relationship.ID)`"><Name>$name</Name><Description>$relDesc</Description></DisplayString>")
     }
     foreach ($discovery in $ManagementPack.SelectNodes('/ManagementPack/Monitoring/Discoveries/Discovery')) {
         $discoveryId = [string]$discovery.ID
@@ -175,6 +231,9 @@ function Get-HcsMonitoringContent {
         @('Replication', 'ReplicationState', 'Hyper-V Replica health', 'AvailabilityState', 'AvailabilityHealth', 'Warning', 'Tracks the worst Hyper-V Replica relationship health on the host.', 'Inspect replication connectivity, authentication, backlog, storage, and last successful replication.'),
         @('VirtualSwitches', 'VirtualSwitchState', 'Hyper-V virtual switch health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Detects external virtual switches with no bound physical uplink.', 'Review switch type, SET membership, physical adapter state, and recent network configuration changes.'),
         @('StorageAttachments', 'StorageAttachmentState', 'Hyper-V virtual disk attachment health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Detects missing or unreadable VHD/VHDX attachments.', 'Validate the VM disk path, storage availability, permissions, VHD chain, and active backup or merge operations.'),
+        @('DomainHealth', 'DomainHealthState', 'Active Directory domain and secure channel health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Tracks Active Directory domain trust, secure channel, and domain controller reachability.', 'Verify Active Directory domain join, secure channel with Test-ComputerSecureChannel, DNS server connectivity, and DC availability.'),
+        @('DnsHealth', 'DnsHealthState', 'DNS infrastructure resolution health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Tracks Domain Name System resolution and configured server reachability.', 'Verify primary and secondary DNS server responsiveness, forward and reverse lookup, and domain SRV records.'),
+        @('DeploymentService', 'DeploymentServiceState', 'Bare-metal deployment service health', 'ConfigurationState', 'ConfigurationHealth', 'Warning', 'Tracks bare-metal provisioning and Windows Deployment Services state.', 'Verify the WDSServer service status, TFTP listener on port 69, and PXE boot provider configuration.'),
         @('Pipeline', 'PipelineState', 'Hyper-V host monitoring pipeline health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Tracks completion of the shared host health probe.', 'Review Operations Manager event 8201, workflow state, module availability, permissions, and timeout settings.')
     )
     $vmDefinitions = @(
@@ -305,10 +364,13 @@ function Get-HcsRollupContent {
         @('Management.Members.Availability', 'ManagementComponent', 'ManagementComponentContainsHostRole', 'AvailabilityState', 'AvailabilityHealth', 'HyperVPrivateCloud.Host.VMMS.Monitor', 'Success', 'Roll up Hyper-V management service (VMMS) availability into Management'),
         @('Management.Members.HostCompute.Availability', 'ManagementComponent', 'ManagementComponentContainsHostRole', 'AvailabilityState', 'AvailabilityHealth', 'HyperVPrivateCloud.Host.VmCompute.Monitor', 'Success', 'Roll up Host Compute Service availability into Management'),
         @('Management.Members.Hypervisor.Availability', 'ManagementComponent', 'ManagementComponentContainsHostRole', 'AvailabilityState', 'AvailabilityHealth', 'HyperVPrivateCloud.Host.Hypervisor.Monitor', 'Success', 'Roll up hypervisor availability into Management'),
+        @('Management.Members.Domain.Availability', 'ManagementComponent', 'ManagementComponentContainsHostRole', 'AvailabilityState', 'AvailabilityHealth', 'HyperVPrivateCloud.Host.DomainHealth.Monitor', 'Success', 'Roll up Active Directory domain health into Management'),
+        @('Management.Members.Dns.Availability', 'ManagementComponent', 'ManagementComponentContainsHostRole', 'AvailabilityState', 'AvailabilityHealth', 'HyperVPrivateCloud.Host.DnsHealth.Monitor', 'Success', 'Roll up DNS infrastructure resolution health into Management'),
+        @('Management.Members.Deployment.Configuration', 'ManagementComponent', 'ManagementComponentContainsHostRole', 'ConfigurationState', 'ConfigurationHealth', 'HyperVPrivateCloud.Host.DeploymentService.Monitor', 'Success', 'Roll up bare-metal deployment service health into Management'),
         @('Compute.Members.Availability', 'ComputeComponent', 'ComputeComponentContainsHostRole', 'AvailabilityState', 'AvailabilityHealth', 'Health!System.Health.AvailabilityState', 'Error', 'Roll up Hyper-V host availability into Compute'),
         @('Compute.Members.Performance', 'ComputeComponent', 'ComputeComponentContainsHostRole', 'PerformanceState', 'PerformanceHealth', 'Health!System.Health.PerformanceState', 'Success', 'Roll up Hyper-V host performance into Compute'),
         @('Compute.Members.Configuration', 'ComputeComponent', 'ComputeComponentContainsHostRole', 'ConfigurationState', 'ConfigurationHealth', 'Health!System.Health.ConfigurationState', 'Success', 'Roll up Hyper-V host configuration into Compute'),
-        @('VirtualMachines.Members.Availability', 'VirtualMachineComponent', 'VirtualMachineComponentContainsRuntime', 'AvailabilityState', 'AvailabilityHealth', 'Health!System.Health.AvailabilityState', 'Error', 'Roll up virtual machine availability into Virtual Machines'),
+        @('VirtualMachines.Members.Availability', 'VirtualMachineComponent', 'VirtualMachineComponentContainsRuntime', 'AvailabilityState', 'AvailabilityHealth', 'Health!System.Health.AvailabilityState', 'Success', 'Roll up virtual machine availability into Virtual Machines'),
         @('VirtualMachines.Members.Performance', 'VirtualMachineComponent', 'VirtualMachineComponentContainsRuntime', 'PerformanceState', 'PerformanceHealth', 'Health!System.Health.PerformanceState', 'Success', 'Roll up virtual machine performance into Virtual Machines'),
         @('VirtualMachines.Members.Configuration', 'VirtualMachineComponent', 'VirtualMachineComponentContainsRuntime', 'ConfigurationState', 'ConfigurationHealth', 'Health!System.Health.ConfigurationState', 'Success', 'Roll up virtual machine configuration into Virtual Machines'),
         @('Availability.Members.Availability', 'AvailabilityComponent', 'AvailabilityComponentContainsRuntime', 'AvailabilityState', 'AvailabilityHealth', 'HyperVPrivateCloud.VmRuntime.Availability.Monitor', 'Success', 'Roll up VM expected-state availability into Availability and Clustering'),
@@ -323,7 +385,12 @@ function Get-HcsRollupContent {
     )
     foreach ($rollup in $componentRollups) {
         $id = "HyperVPrivateCloud.$($rollup[0]).Dependency.Monitor"
-        [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HyperVPrivateCloud.$($rollup[1])`" ParentMonitorID=`"Health!System.Health.$($rollup[3])`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"HCSV2Library!HyperVPrivateCloud.$($rollup[2])`" MemberMonitor=`"$($rollup[5])`"><Category>$($rollup[4])</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>$($rollup[6])</MemberUnAvailable></DependencyMonitor>")
+        $algorithm = if ($rollup[0] -like 'VirtualMachines.Members.*') {
+            '<Algorithm>Percentage</Algorithm><AlgorithmParameter>25</AlgorithmParameter>'
+        } else {
+            '<Algorithm>WorstOf</Algorithm>'
+        }
+        [void]$monitors.AppendLine("      <DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HCSV2Library!HyperVPrivateCloud.$($rollup[1])`" ParentMonitorID=`"Health!System.Health.$($rollup[3])`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"HCSV2Library!HyperVPrivateCloud.$($rollup[2])`" MemberMonitor=`"$($rollup[5])`"><Category>$($rollup[4])</Category>$algorithm<MemberUnAvailable>$($rollup[6])</MemberUnAvailable></DependencyMonitor>")
         [void]$displays.AppendLine("    <DisplayString ElementID=`"$id`"><Name>$($rollup[7])</Name><Description>Dependency roll-up through the $($rollup[2] -creplace '([a-z0-9])([A-Z])', '$1 $2') relationship.</Description></DisplayString>")
     }
     return [pscustomobject]@{ Monitors = $monitors.ToString(); DisplayStrings = $displays.ToString() }
@@ -390,12 +457,12 @@ function Get-HcsStorageCapabilityContent {
         $id = "HyperVPrivateCloud.Capability.Storage.$($view[0]).State.View"
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HyperVPrivateCloud.Capability.Storage.$($view[1])`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"$($view[3])`" />")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[2])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[2])</Name><Description>Displays the health state and configuration of $($view[2]) in the storage infrastructure.</Description></DisplayString>")
     }
     $alertViewId = 'HyperVPrivateCloud.Capability.Storage.ActiveAlerts.View'
     [void]$views.AppendLine("<View ID=`"$alertViewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"HyperVPrivateCloud.Capability.Storage.HostAttachment`" TypeID=`"SC!Microsoft.SystemCenter.AlertViewType`" Visible=`"true`"><Category>Operations</Category><Criteria><ResolutionState><StateRange Operator=`"NotEquals`">255</StateRange></ResolutionState></Criteria></View>")
     [void]$folderItems.AppendLine("<FolderItem ElementID=`"$alertViewId`" ID=`"$alertViewId.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Operations.Folder`" />")
-    [void]$displays.AppendLine("<DisplayString ElementID=`"$alertViewId`"><Name>SAN and storage active alerts</Name></DisplayString>")
+    [void]$displays.AppendLine("<DisplayString ElementID=`"$alertViewId`"><Name>SAN and storage active alerts</Name><Description>Displays active alerts raised for Hyper-V SAN attachments, MPIO, and storage transport paths.</Description></DisplayString>")
 
     return [pscustomobject]@{
         IntegrationFilters = $integrationFilters.Trim()
@@ -442,8 +509,8 @@ function Get-HcsS2DCapabilityContent {
         $viewId = "HyperVPrivateCloud.Capability.S2D.$($definition.Kind).State.View"
         [void]$views.AppendLine("<View ID=`"$viewId`" Accessibility=`"Public`" Enabled=`"true`" Target=`"S2D!$classId`" TypeID=`"SC!Microsoft.SystemCenter.StateViewType`" Visible=`"true`"><Category>Operations</Category><Criteria /></View>")
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$rollupId`"><Name>Roll up $($definition.Name) health</Name></DisplayString>")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($definition.Name)</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$rollupId`"><Name>Roll up $($definition.Name) health</Name><Description>Rolls the health of $($definition.Name) into the private cloud Storage component.</Description></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($definition.Name)</Name><Description>Displays the state and health of authoritative $($definition.Name) in Storage Spaces Direct clusters.</Description></DisplayString>")
     }
 
     $extraViews = @(
@@ -457,10 +524,10 @@ function Get-HcsS2DCapabilityContent {
         $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($view[1])`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name><Description>Displays $($view[3]) for Storage Spaces Direct infrastructure.</Description></DisplayString>")
     }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor"><Name>S2D integration pipeline health</Name><Description>Verifies the HCS query path without duplicating Microsoft S2D leaf monitoring.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name><Description>$state health state for S2D integration pipeline.</Description></DisplayString>") }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.S2D.IntegrationHealth.Monitor.Message"><Name>S2D integration pipeline health</Name><Description>{0}</Description></DisplayString>')
 
     return [pscustomobject]@{ Discoveries = $discoveries.ToString(); Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
@@ -483,7 +550,7 @@ function Get-HcsPureStorageCapabilityContent {
     foreach ($definition in $rollupDefinitions) {
         $id = "HyperVPrivateCloud.Capability.PureStorage.$($definition[0]).Dependency.Monitor"
         [void]$rollups.AppendLine("<DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$($definition[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name><Description>Rolls the health of $($definition[3]) into the parent component of the private cloud Distributed Application.</Description></DisplayString>")
     }
     $viewDefinitions = @(
         @('Pod', 'PureStorage.FlashArray.Pod', 'SC!Microsoft.SystemCenter.StateViewType', 'Pure ActiveCluster pods'),
@@ -503,10 +570,10 @@ function Get-HcsPureStorageCapabilityContent {
         $criteria = if ($view[2] -like '*AlertViewType') { '<Criteria><ResolutionState><StateRange Operator="NotEquals">255</StateRange></ResolutionState></Criteria>' } else { '<Criteria />' }
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"Pure!$($view[1])`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name><Description>Displays $($view[3]) correlated with Hyper-V hosts and storage in the private cloud.</Description></DisplayString>")
     }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor"><Name>Pure Storage correlation health</Name><Description>Verifies exact IQN, WWPN, and serial correlations without duplicating array monitoring.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name><Description>$state health state for Pure Storage correlation.</Description></DisplayString>") }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PureStorage.IntegrationHealth.Monitor.Message"><Name>Pure Storage correlation health</Name><Description>{0}</Description></DisplayString>')
     return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
@@ -527,7 +594,7 @@ function Get-HcsFileServicesCapabilityContent {
     foreach ($definition in $rollupDefinitions) {
         $id = "HyperVPrivateCloud.Capability.FileServices.$($definition[0]).Dependency.Monitor"
         [void]$rollups.AppendLine("<DependencyMonitor ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$($definition[1])`" ParentMonitorID=`"Health!System.Health.AvailabilityState`" Remotable=`"true`" Priority=`"Normal`" RelationshipType=`"$($definition[2])`" MemberMonitor=`"Health!System.Health.AvailabilityState`"><Category>AvailabilityHealth</Category><Algorithm>WorstOf</Algorithm><MemberUnAvailable>Success</MemberUnAvailable></DependencyMonitor>")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>Roll up $($definition[3])</Name><Description>Rolls the health of $($definition[3]) into the private cloud Distributed Application.</Description></DisplayString>")
     }
     $viewDefinitions = @(
         @('Share', 'HyperVPrivateCloud.Capability.FileServices.SmbShare', 'SC!Microsoft.SystemCenter.StateViewType', 'Hyper-V SMB shares'),
@@ -544,10 +611,10 @@ function Get-HcsFileServicesCapabilityContent {
         $target = if ($view[1] -like '*!*') { $view[1] } elseif ($view[1] -like 'Microsoft.*') { "FileServices!$($view[1])" } else { $view[1] }
         [void]$views.AppendLine("<View ID=`"$id`" Accessibility=`"Public`" Enabled=`"true`" Target=`"$target`" TypeID=`"$($view[2])`" Visible=`"true`"><Category>Operations</Category>$criteria</View>")
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Storage.Folder`" />")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[3])</Name><Description>Displays $($view[3]) utilized by Hyper-V virtual machines and hosts.</Description></DisplayString>")
     }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.FileServices.Health.Monitor"><Name>Hyper-V over SMB health</Name><Description>Validates required SMB connections, continuous availability, and optional RDMA paths.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.FileServices.Health.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.FileServices.Health.Monitor`" SubElementID=`"$state`"><Name>$state</Name><Description>$state health state for Hyper-V over SMB.</Description></DisplayString>") }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.FileServices.Health.Monitor.Message"><Name>Hyper-V over SMB health</Name><Description>{0}</Description></DisplayString>')
     return [pscustomobject]@{ Rollups = $rollups.ToString(); Views = $views.ToString(); FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
@@ -571,13 +638,13 @@ function Get-HcsPhysicalNetworkCapabilityContent {
     foreach ($view in $views) {
         $id = "HyperVPrivateCloud.Capability.PhysicalNetwork.$($view[0]).View"
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$id`" ID=`"$id.FolderItem`" Folder=`"HCSV2Presentation!HyperVPrivateCloud.Networking.Folder`" />")
-        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[1])</Name></DisplayString>")
+        [void]$displays.AppendLine("<DisplayString ElementID=`"$id`"><Name>$($view[1])</Name><Description>Displays $($view[1]) discovered and correlated with Hyper-V physical switches and adapters.</Description></DisplayString>")
     }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor"><Name>Physical-network correlation input health</Name><Description>Validates the exact Windows adapter identities supplied to SCOM built-in MAC-based network topology correlation.</Description></DisplayString>')
-    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>") }
+    foreach ($state in @('Good', 'Warning', 'Critical')) { [void]$displays.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor`" SubElementID=`"$state`"><Name>$state</Name><Description>$state health state for physical-network correlation input.</Description></DisplayString>") }
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.IntegrationHealth.Monitor.Message"><Name>Physical-network correlation input failed</Name><Description>{0}</Description></DisplayString>')
-    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkAdapter.Dependency.Monitor"><Name>Roll up Hyper-V host network-adapter health</Name></DisplayString>')
-    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUplink.Dependency.Monitor"><Name>Roll up physical uplink health into virtual switches</Name></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.NetworkAdapter.Dependency.Monitor"><Name>Roll up Hyper-V host network-adapter health</Name><Description>Rolls physical network adapter health into the host network role.</Description></DisplayString>')
+    [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.VirtualSwitchUplink.Dependency.Monitor"><Name>Roll up physical uplink health into virtual switches</Name><Description>Rolls physical uplink health into external Hyper-V virtual switches.</Description></DisplayString>')
     [void]$displays.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.PhysicalNetwork.Relationship.Discovery"><Name>Discover Hyper-V physical-uplink relationships</Name><Description>Relates external Hyper-V switches to Microsoft Windows network-adapter objects. SCOM remains authoritative for device, switch, port, VLAN, and connection discovery.</Description></DisplayString>')
     return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displays.ToString() }
 }
@@ -613,35 +680,35 @@ function Get-HcsVmmCapabilityContent {
     foreach ($entry in $viewNames.GetEnumerator()) {
         $viewId = "HyperVPrivateCloud.Capability.VMM.$($entry.Key).View"
         [void]$folderItems.AppendLine("<FolderItem ElementID=`"$viewId`" ID=`"$viewId.FolderItem`" Folder=`"HyperVPrivateCloud.Capability.VMM.Folder`" />")
-        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($entry.Value)</Name></DisplayString>")
+        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"$viewId`"><Name>$($entry.Value)</Name><Description>Displays $($entry.Value) managed within the SCVMM fabric.</Description></DisplayString>")
     }
     [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.Folder"><Name>Virtual Machine Manager</Name><Description>VMM fabric services, management health, private clouds, hosts, virtual machines, networking, storage, failed jobs, alerts, and performance.</Description></DisplayString>')
     [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor"><Name>VMM integration and topology-query health</Name><Description>Validates the VMM module, read-only connection, logical-network, network-site, and VM-network queries.</Description></DisplayString>')
     [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor"><Name>Recent failed VMM jobs</Name><Description>Tracks VMM jobs with Failed status during the configured lookback period.</Description></DisplayString>')
     foreach ($monitorId in @('IntegrationHealth', 'FailedJobs')) {
         foreach ($state in @('Good', 'Warning', 'Critical')) {
-            [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.VMM.$monitorId.Monitor`" SubElementID=`"$state`"><Name>$state</Name></DisplayString>")
+            [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.VMM.$monitorId.Monitor`" SubElementID=`"$state`"><Name>$state</Name><Description>$state health state for VMM $monitorId monitor.</Description></DisplayString>")
         }
     }
     [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.IntegrationHealth.Monitor.Message"><Name>VMM integration query failed</Name><Description>{0}</Description></DisplayString>')
     [void]$displayStrings.AppendLine('<DisplayString ElementID="HyperVPrivateCloud.Capability.VMM.FailedJobs.Monitor.Message"><Name>Recent VMM jobs failed</Name><Description>{0}</Description></DisplayString>')
-    $workflowNames = [ordered]@{
-        'Fabric.Discovery' = 'Discover VMM fabric service, logical networks, and network sites'
-        'Host.Relationship.Discovery' = 'Discover VMM-to-Hyper-V host relationships'
-        'Cloud.Relationship.Discovery' = 'Discover VMM private-cloud relationships'
-        'Management.Server.Availability.Dependency.Monitor' = 'Roll up VMM management-server availability'
-        'Management.Server.Configuration.Dependency.Monitor' = 'Roll up VMM management-server configuration and failed jobs'
-        'Compute.Host.WinRM.Dependency.Monitor' = 'Roll up VMM host WinRM availability into the VMM fabric'
-        'Compute.Host.AgentVersion.Dependency.Monitor' = 'Roll up VMM host agent-version compliance into the VMM fabric'
-        'Management.Host.WinRM.Dependency.Monitor' = 'Roll up VMM host WinRM availability into its Hyper-V boundary'
-        'Management.Host.AgentVersion.Dependency.Monitor' = 'Roll up VMM host agent-version compliance into its Hyper-V boundary'
-        'Management.Cloud.Availability.Dependency.Monitor' = 'Roll up VMM private-cloud availability'
-        'Management.Cloud.Configuration.Dependency.Monitor' = 'Roll up VMM private-cloud configuration'
-        'ClusterManagement.Cloud.Availability.Dependency.Monitor' = 'Roll up mapped VMM private-cloud availability into the cluster boundary'
-        'ClusterManagement.Cloud.Configuration.Dependency.Monitor' = 'Roll up mapped VMM private-cloud configuration into the cluster boundary'
+    $workflowDefinitions = [ordered]@{
+        'Fabric.Discovery' = @('Discover VMM fabric service, logical networks, and network sites', 'Discovers SCVMM fabric services, logical networks, and network sites associated with the Hyper-V private cloud.')
+        'Host.Relationship.Discovery' = @('Discover VMM-to-Hyper-V host relationships', 'Discovers relationships between SCVMM-managed hosts and local Hyper-V host roles.')
+        'Cloud.Relationship.Discovery' = @('Discover VMM private-cloud relationships', 'Discovers relationships between SCVMM private clouds and Hyper-V boundaries.')
+        'Management.Server.Availability.Dependency.Monitor' = @('Roll up VMM management-server availability', 'Rolls up SCVMM management server availability into the VMM fabric service.')
+        'Management.Server.Configuration.Dependency.Monitor' = @('Roll up VMM management-server configuration and failed jobs', 'Rolls up SCVMM configuration and failed job health into the VMM fabric service.')
+        'Compute.Host.WinRM.Dependency.Monitor' = @('Roll up VMM host WinRM availability into the VMM fabric', 'Rolls up host WinRM connectivity from SCVMM into the VMM fabric.')
+        'Compute.Host.AgentVersion.Dependency.Monitor' = @('Roll up VMM host agent-version compliance into the VMM fabric', 'Rolls up SCVMM host agent version compliance into the VMM fabric.')
+        'Management.Host.WinRM.Dependency.Monitor' = @('Roll up VMM host WinRM availability into its Hyper-V boundary', 'Rolls up host WinRM connectivity into the host boundary.')
+        'Management.Host.AgentVersion.Dependency.Monitor' = @('Roll up VMM host agent-version compliance into its Hyper-V boundary', 'Rolls up SCVMM host agent compliance into the host boundary.')
+        'Management.Cloud.Availability.Dependency.Monitor' = @('Roll up VMM private-cloud availability', 'Rolls up SCVMM private cloud availability into the management boundary.')
+        'Management.Cloud.Configuration.Dependency.Monitor' = @('Roll up VMM private-cloud configuration', 'Rolls up SCVMM private cloud configuration into the management boundary.')
+        'ClusterManagement.Cloud.Availability.Dependency.Monitor' = @('Roll up mapped VMM private-cloud availability into the cluster boundary', 'Rolls up mapped SCVMM private cloud availability into the cluster boundary.')
+        'ClusterManagement.Cloud.Configuration.Dependency.Monitor' = @('Roll up mapped VMM private-cloud configuration into the cluster boundary', 'Rolls up mapped SCVMM private cloud configuration into the cluster boundary.')
     }
-    foreach ($entry in $workflowNames.GetEnumerator()) {
-        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.VMM.$($entry.Key)`"><Name>$($entry.Value)</Name></DisplayString>")
+    foreach ($entry in $workflowDefinitions.GetEnumerator()) {
+        [void]$displayStrings.AppendLine("<DisplayString ElementID=`"HyperVPrivateCloud.Capability.VMM.$($entry.Key)`"><Name>$($entry.Value[0])</Name><Description>$($entry.Value[1])</Description></DisplayString>")
     }
     return [pscustomobject]@{ FolderItems = $folderItems.ToString(); DisplayStrings = $displayStrings.ToString() }
 }
@@ -895,6 +962,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
         )
     }
     $content = Add-HcsManagementPackDisplayString -Content $content -ManagementPackId $artifact.id -ProductName $manifest.productName
+    $content = Complete-HcsDisplayStrings -Content $content
     if ($content -match '\{\{[A-Z0-9_]+\}\}') {
         throw "Unresolved build token in $sourcePath"
     }

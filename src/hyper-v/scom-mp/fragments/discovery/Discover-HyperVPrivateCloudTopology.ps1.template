@@ -230,6 +230,80 @@ try {
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComputeComponentContainsHostRole']$" $components['Compute'] $hostInstance
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponentContainsHostRole']$" $components['Monitoring Pipeline'] $hostInstance
 
+    # Discover Management Domain (Active Directory Domain Services)
+    try {
+        $cs = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue
+        if ($null -ne $cs -and $cs.PartOfDomain -and -not [string]::IsNullOrWhiteSpace($cs.Domain)) {
+            $domainFqdn = [string]$cs.Domain
+            $adInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']$")
+            $adInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']/BoundaryId$", $boundaryId)
+            $adInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']/DomainFqdn$", $domainFqdn)
+            $adInstance.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", ("Active Directory ({0})" -f $domainFqdn))
+            if ($cs.Workgroup) {
+                $adInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']/DomainNetbiosName$", [string]$cs.Workgroup)
+            }
+            try {
+                $domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain()
+                if ($null -ne $domainObj) {
+                    $adInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']/ForestFqdn$", [string]$domainObj.Forest.Name)
+                    $adInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']/DomainControllerAffinity$", [string]$domainObj.PdcRoleOwner.Name)
+                }
+            } catch {}
+            try {
+                $site = [System.DirectoryServices.ActiveDirectory.ActiveDirectorySite]::GetComputerSite().Name
+                if ($site) { $adInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService']/SiteName$", [string]$site) }
+            } catch {}
+            $discoveryData.AddInstance($adInstance)
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsActiveDirectoryService']$" $components['Management'] $adInstance
+        }
+    } catch {}
+
+    # Discover DNS Infrastructure Service
+    try {
+        $dnsServers = @()
+        if (Get-Command Get-DnsClientServerAddress -ErrorAction SilentlyContinue) {
+            $dnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -ExpandProperty ServerAddresses | Select-Object -Unique)
+        }
+        if (-not $dnsServers.Count) {
+            $netConfig = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration -Filter "IPEnabled = TRUE" -ErrorAction SilentlyContinue
+            $dnsServers = @($netConfig | Where-Object { $null -ne $_.DNSServerSearchOrder } | Select-Object -ExpandProperty DNSServerSearchOrder | Select-Object -Unique)
+        }
+        if ($dnsServers.Count -gt 0) {
+            $dnsServerList = ($dnsServers -join ', ')
+            $dnsInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DnsService']$")
+            $dnsInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DnsService']/BoundaryId$", $boundaryId)
+            $dnsInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DnsService']/DnsServerAddresses$", $dnsServerList)
+            $dnsInstance.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", ("DNS Infrastructure ({0})" -f ($dnsServers[0])))
+            $dnsInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DnsService']/PrimaryDnsServer$", [string]$dnsServers[0])
+            try {
+                if (Get-Command Get-DnsClientGlobalSetting -ErrorAction SilentlyContinue) {
+                    $globalSetting = Get-DnsClientGlobalSetting -ErrorAction SilentlyContinue
+                    if ($globalSetting -and $globalSetting.SuffixSearchList) {
+                        $dnsInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DnsService']/DnsSuffixSearchList$", ($globalSetting.SuffixSearchList -join ', '))
+                    }
+                }
+            } catch {}
+            $discoveryData.AddInstance($dnsInstance)
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsDnsService']$" $components['Management'] $dnsInstance
+        }
+    } catch {}
+
+    # Discover Bare-Metal Deployment Service (WDS/PXE) if installed
+    try {
+        $wdsService = Get-Service -Name 'WDSServer' -ErrorAction SilentlyContinue
+        if ($null -ne $wdsService) {
+            $deployInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DeploymentService']$")
+            $deployInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DeploymentService']/BoundaryId$", $boundaryId)
+            $deployInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DeploymentService']/ServerName$", $nodeName)
+            $deployInstance.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", ("Bare-Metal Deployment ({0})" -f $nodeName))
+            $deployInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DeploymentService']/WdsStatus$", [string]$wdsService.Status)
+            $deployInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DeploymentService']/TftpListenerPort$", [int]69)
+            $deployInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DeploymentService']/PxeProvider$", 'Windows Deployment Services / PXE')
+            $discoveryData.AddInstance($deployInstance)
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsDeploymentService']$" $components['Management'] $deployInstance
+        }
+    } catch {}
+
     # Enterprise Distributed Applications (singletons): the whole solution, the Hyper-V fabric across every
     # boundary, and the management stack. Every boundary's DA joins the fabric; its Management and Monitoring
     # Pipeline branches join the management stack. Singletons need no properties.
