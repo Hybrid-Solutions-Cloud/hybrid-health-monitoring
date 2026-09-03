@@ -1,8 +1,9 @@
 # Handoff
 
-## 2026-09-03 — Public Hyper-V download and documentation correction
+## 2026-09-03 — Hyper-V 1.0.4.0 console QA and publication
 
-**Branch:** `fix/hyperv-1.0.3-release-scope` from merged `origin/main` at `24d876a`.
+**Branches:** source/docs correction `fix/hyperv-1.0.3-release-scope` merged by PR #19 as
+`5bd476e`; release publication branch `release/hyperv-1.0.4.0` starts at that merge.
 
 Corrected the public docs after operator review. The homepage CTA now points directly to the
 released Hyper-V Private Cloud `1.0.3.0` download instead of the Azure Local lab-preview route.
@@ -23,11 +24,29 @@ the full 13-pack release catalog and explicitly require all eight currently inst
 packs to be upgraded. No source MP, management-group override, agent proxy, capability scope, or
 discovery interval was changed.
 
-Operator console QA then found two Failover Cluster state views under Availability. The broken
+Operator console QA found seven capability MPs without pack-level display strings, including S2D,
+VMM, and PhysicalNetwork in HAAS-SDR's eight-pack scope. The generator now emits friendly names for
+every pack, and regression coverage audits every pack plus user-facing class, relationship,
+discovery, monitor, rule, task, view, folder, console task, string resource, and secure reference.
+It also found two Failover Cluster state views under Availability. The broken
 lowercase `Failover clusters` view targeted the HCS `ClusterRole` projection; the working
 `Failover Clusters` view targets Microsoft's authoritative `Microsoft.Windows.Cluster` class. The
 duplicate HCS view, its folder item, and its display string were removed. Regression coverage now
 requires seven cluster views, forbids the duplicate, and retains the Microsoft-targeted view.
+
+Validation: focused Hyper-V build tests `86/86`; full repository unit suite `205/205`; PR #19 CI
+VitePress and Hyper-V MP source jobs passed. Production `1.0.4.0` was sealed locally from source
+commit `a28f364` using the permanent Key Vault key, and the independent validator passed 13 sealed
+MPs, Release mode, `releaseEligible=true`, and token `54d0fb1159995c86`. Temporary encoded and
+binary key files were deleted in `finally`. The redundant queued protected-runner workflow
+33717114789 was cancelled before it could publish a competing byte set.
+
+The exact HAAS-SDR eight-pack `1.0.4.0` ZIP contains only Library, Discovery, Monitoring,
+Presentation, Cluster, S2D, VMM, and PhysicalNetwork; no override MPs. It is 317562 bytes with
+SHA-256 `bcb192f1f8f032461c61eaf2c2556774833c6c09c3ebc0072a76f14efc777db0`. The complete validated
+asset directory plus this targeted ZIP is published under immutable `1.0.4.0` and `latest`; the
+asset/checksum manifests include it. Current docs now name `1.0.4.0`; `1.0.3.0` remains immutable
+as the previous release.
 
 ## 2026-09-02 — 1.0.3.0 discovery correction validated in test-seal mode
 
