@@ -11,9 +11,14 @@
   cluster class remains.
 - Focused build tests pass `86/86`; the repository unit suite passed `205/205` before the duplicate
   view removal, and the affected build suite was rerun successfully afterward.
-- Next: merge source to main, run the governed production release workflow for `1.0.4.0`, publish
-  the exact eight-pack HAAS-SDR ZIP, update current-version docs, deploy the site, and verify live
-  downloads. Do not change the 523 overrides, proxy settings, capability scope, or intervals.
+- PR #19 merged as `5bd476e`; production package validation passed for `1.0.4.0` with 13 sealed MPs,
+  Release mode, `releaseEligible=true`, token `54d0fb1159995c86`, and source commit `a28f364`.
+- The exact eight-pack HAAS-SDR ZIP contains no override MPs, is 317562 bytes, and has SHA-256
+  `bcb192f1f8f032461c61eaf2c2556774833c6c09c3ebc0072a76f14efc777db0`.
+- Next: complete publication PR, deploy the site, and verify live homepage/download/manifest.
+  Then import all eight packs over the installed version and run the acceptance validator after
+  the required discovery cycles. Do not change the 523 overrides, proxy settings, capability
+  scope, or intervals.
 
 ## Prior correction — 2026-09-02 Hyper-V Private Cloud 1.0.3.0
 

@@ -17,17 +17,16 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.0.3.0
+## Current release: 1.0.4.0
 
-`1.0.3.0` is an additive, in-place corrective upgrade over `1.0.2.0`. Live SCOM 2025 certification
-found two discovery blockers: the registry seed could not create `HostRole` before topology
-supplied its boundary, and valid S2D/VMM relationship discovery data could be rejected when the
-PowerShell child process did not terminate explicitly with exit code zero. Both are corrected and
-guarded by regression tests. All 13 product Management Packs
+`1.0.4.0` is an in-place corrective upgrade over `1.0.3.0`. It gives every capability MP a friendly
+SCOM display name and removes the empty duplicate lowercase `Failover clusters` view while keeping
+the working Microsoft-backed `Failover Clusters` view. It also includes the `1.0.3.0` HostRole seed
+and S2D/VMM process-termination corrections. All 13 product Management Packs
 are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
 strong-name checked, and covered by the published SHA-256 manifest. The release catalog contains 13
 sealed Management Packs and optional starter templates: 162 unit monitors, 111
-dependency roll-ups, 80 rules, 22 discoveries, 116 views, 63 operator tasks plus 4 console tasks,
+dependency roll-ups, 80 rules, 22 discoveries, 115 views, 63 operator tasks plus 4 console tasks,
 and 234 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
 (Fibre Channel, iSCSI, MPIO), SMB/SOFS, Network ATC, physical networking, SDN host binding, VMM and
 Pure Storage. Cluster-wide facts are evaluated once per cluster, host-wide facts once per host, and
@@ -41,7 +40,7 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the HAAS-SDR eight-pack upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip)** — the exact eight sealed `1.0.3.0` MPs already in scope: Library, Discovery, Monitoring, Presentation, Cluster, S2D, VMM, and PhysicalNetwork. It contains no override MPs.
+- **[Download the HAAS-SDR eight-pack upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.4.0.zip)** — the exact eight sealed `1.0.4.0` MPs already in scope: Library, Discovery, Monitoring, Presentation, Cluster, S2D, VMM, and PhysicalNetwork. It contains no override MPs.
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
 - [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
 - [Download optional override starters](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — alternative Lab, Standard, and Strict templates for 11 profiles; select and review one Discovery/Monitoring pair only.
@@ -50,9 +49,9 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.0.3.0`](/downloads/hyper-v-private-cloud/1.0.3.0/release-assets.json). The `latest` directory
+[`1.0.4.0`](/downloads/hyper-v-private-cloud/1.0.4.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
-The previous release stays under [`1.0.2.0`](/downloads/hyper-v-private-cloud/1.0.2.0/release-assets.json).
+The previous release stays under [`1.0.3.0`](/downloads/hyper-v-private-cloud/1.0.3.0/release-assets.json).
 Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
 ([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 
