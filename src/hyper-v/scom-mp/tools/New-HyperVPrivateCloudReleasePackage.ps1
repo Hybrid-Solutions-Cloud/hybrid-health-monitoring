@@ -882,8 +882,15 @@ foreach ($deploymentProfile in $contract.profiles) {
         Copy-HcsFile -Source $mpPath -Destination (Join-Path $profileStage "ManagementPacks/$id.mp")
     }
     $profileOverridePath = Join-Path $overrideRoot ([string]$deploymentProfile.id)
-    foreach ($file in Get-ChildItem -LiteralPath $profileOverridePath -File -Recurse) {
-        Copy-HcsFile -Source $file.FullName -Destination (Join-Path $profileStage "Overrides/$($deploymentProfile.id)/$(Get-HcsRelativePath -BasePath $profileOverridePath -Path $file.FullName)")
+    if (Test-Path -LiteralPath $profileOverridePath) {
+        foreach ($file in Get-ChildItem -LiteralPath $profileOverridePath -File -Recurse) {
+            Copy-HcsFile -Source $file.FullName -Destination (Join-Path $profileStage "Overrides/$($deploymentProfile.id)/$(Get-HcsRelativePath -BasePath $profileOverridePath -Path $file.FullName)")
+        }
+    }
+    else {
+        foreach ($file in Get-ChildItem -LiteralPath $overrideRoot -Filter '*.xml' -File) {
+            Copy-HcsFile -Source $file.FullName -Destination (Join-Path $profileStage "Overrides/$($file.Name)")
+        }
     }
     Copy-HcsFile -Source $releaseManifestPath -Destination (Join-Path $profileStage 'release-manifest.json')
     Copy-HcsFile -Source (Join-Path $stagingRoot 'README.md') -Destination (Join-Path $profileStage 'README.md')
