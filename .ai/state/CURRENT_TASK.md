@@ -1,6 +1,17 @@
 # Current task
 
-## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.4.0
+## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.5.0
+
+- `1.0.4.0` already existed in the operator management group, so the console/view correction is
+  being republished as the required version-increased upgrade `1.0.5.0`; sealed MP bytes are never
+  replaced under an existing version.
+- All 13 sealed product MPs and all 66 generated public starter MPs now carry `1.0.5.0`. Release
+  mode and the independent publication validator both fail if product and public override versions
+  differ. The HAAS-SDR deployment ZIP still contains exactly eight sealed product MPs and no
+  overrides; existing customer-owned overrides remain untouched.
+- Production `1.0.5.0` passed VSAE sealing and independent validation with token
+  `54d0fb1159995c86`. The eight-pack is 317587 bytes with SHA-256
+  `5b6d10a265e06039c5ae61fa54538069f6d2f03ccc49036cbc6c027a9821af43`.
 
 - Operator console QA found seven capability MPs without pack-level display strings; three are in
   the HAAS-SDR eight-pack deployment (S2D, VMM, and PhysicalNetwork). The generator now supplies
@@ -11,11 +22,10 @@
   cluster class remains.
 - Focused build tests pass `86/86`; the repository unit suite passed `205/205` before the duplicate
   view removal, and the affected build suite was rerun successfully afterward.
-- PR #19 merged as `5bd476e`; production package validation passed for `1.0.4.0` with 13 sealed MPs,
-  Release mode, `releaseEligible=true`, token `54d0fb1159995c86`, and source commit `a28f364`.
-- The exact eight-pack HAAS-SDR ZIP contains no override MPs, is 317562 bytes, and has SHA-256
-  `bcb192f1f8f032461c61eaf2c2556774833c6c09c3ebc0072a76f14efc777db0`.
-- Next: complete publication PR, deploy the site, and verify live homepage/download/manifest.
+- PR #19 merged as `5bd476e`; the subsequent same-version `1.0.4.0` publication is superseded by
+  this version-increased `1.0.5.0` correction.
+- Next: complete the `1.0.5.0` publication PR, deploy the site, and verify the live
+  homepage/download/manifest.
   Then import all eight packs over the installed version and run the acceptance validator after
   the required discovery cycles. Do not change the 523 overrides, proxy settings, capability
   scope, or intervals.
