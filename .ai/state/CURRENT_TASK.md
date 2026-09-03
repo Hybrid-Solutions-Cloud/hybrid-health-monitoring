@@ -1,5 +1,28 @@
 # Current task
 
+## Active correction — 2026-09-02 Hyper-V Private Cloud 1.0.3.0
+
+- Live SCOM 2025 certification of `1.0.2.0` found two independent discovery blockers. The
+  `HostRole` registry seed omitted its required non-key `BoundaryId`, so every seed instance was
+  invalid. S2D and VMM host-relationship scripts returned valid discovery XML but did not
+  explicitly normalize their successful child-process exit status.
+- Canonical source now allows `BoundaryId` to be populated by staged topology and explicitly exits
+  zero after the two relationship scripts submit discovery data. The runtime smoke contract now
+  requires submitted data to have exit code zero and empty stderr.
+- Validation: core build `85/85`; targeted S2D/VMM termination smoke `9/9`; other unit files
+  `140/141` initially, with the sole generated dependency-doc drift corrected and rechecked `8/8`;
+  VSAE test seal produced 13 MPs, 66 override MPs, and 14 bundles; independent package validation
+  passed.
+- Production package `D:/tmp/hcs-hyperv-release-1.0.3.0` is independently validated as
+  `releaseEligible=true` with permanent token `54d0fb1159995c86`; the exact eight-pack deployment
+  ZIP is `D:/tmp/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip`.
+- The same validated 30 release assets are published byte-for-byte under
+  `docs/public/downloads/hyper-v-private-cloud/1.0.3.0/` and `latest/`; public download and operator
+  documentation identifies `1.0.3.0` as current, and the VitePress production build passes.
+- Next: import the eight-pack deployment into the live management group, allow one four-hour seed
+  plus one 30-minute topology cycle, and require `Test-SdrHyperVPrivateCloudMonitoring.ps1` to
+  report `16/0`, 4 HostRole, and 2 ClusterRole.
+
 ## Active release — 2026-09-01 Hyper-V Private Cloud 1.0.2.0 production seal
 
 - Corrected the PowerShell 7 release packager to reuse an exact loaded SCOM SDK assembly identity,

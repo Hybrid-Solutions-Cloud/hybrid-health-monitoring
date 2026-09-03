@@ -5,19 +5,18 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
-## Version 1.0.2.0 corrective release
+## Version 1.0.3.0 corrective release
 
-Version `1.0.2.0` is an in-place upgrade from `1.0.1.0`. It corrects two defects found during live
-SCOM 2025 validation: command-executor policies now accept valid multiline `<DataItem>` XML, and
-the Storage Spaces Direct object-health probe preserves empty and singleton query results as
-arrays under strict mode. The diagnostic-summary task also returns useful runtime evidence when
-the Hyper-V query path is unavailable instead of terminating without operator-readable output.
-The release packager also handles preloaded SCOM SDK assemblies and mixed UTF-8/UTF-16 sealed
-dependency resources correctly when verification runs under PowerShell 7.
+Version `1.0.3.0` is an in-place upgrade from `1.0.2.0`. It corrects two defects found during live
+SCOM 2025 validation: the registry seed can now create the Hyper-V
+host role before topology resolves its boundary, and successful S2D and VMM host-relationship
+discoveries explicitly return process exit code zero after submitting valid discovery data. The
+runtime regression suite now rejects a submitted DataItem if the child process leaves stderr
+populated or exits non-zero.
 
 Existing customer-owned unsealed override Management Packs remain valid because the sealed pack
 IDs and permanent public key token are unchanged. Import the version-increased sealed product
-Management Packs over the installed `1.0.1.0` packs; do not remove the existing packs first.
+Management Packs over the installed `1.0.2.0` packs; do not remove the existing packs first.
 
 ## Product identity history
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.3.0] — 2026-09-02
+
+Corrective in-place upgrade from `1.0.2.0` after live SCOM certification. The registry seed can
+now create `HyperVPrivateCloud.HostRole` before the topology
+discovery supplies its authoritative boundary: the non-key `BoundaryId` property is optional at
+seed time instead of invalidating every seed instance. Successful S2D and VMM host-relationship
+discoveries now terminate `pwsh.exe` explicitly with exit code zero after submitting their valid
+`System.DiscoveryData` payloads, preventing CommandExecuter from discarding the payload during
+process termination. Regression coverage requires valid discovery output to have both an empty
+stderr stream and a zero process exit code.
+
 ## [1.0.2.0] — 2026-09-01
 
 Corrective in-place upgrade from `1.0.1.0` after live SCOM 2025 certification. Discovery and

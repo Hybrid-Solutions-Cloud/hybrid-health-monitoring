@@ -11,7 +11,7 @@ and Arc-enable each participating Hyper-V host for AMA/DCR telemetry.
 
 | Delivery surface | Commitment | Status |
 |---|---|---|
-| **SCOM Management Pack** | Committed platform track | Version 1.0.2.0 permanently sealed, offline verified, and repository-published; operator SCOM certification follows installation |
+| **SCOM Management Pack** | Committed platform track | Version 1.0.3.0 permanently sealed, offline verified, and repository-published; operator SCOM certification follows installation |
 | **Azure Monitor through Arc-enabled SCVMM** | Constrained track | Development baseline; substantial parity and lab gates remain |
 
 ::: info Two independent solutions

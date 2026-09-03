@@ -79,7 +79,7 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 try {
     if ([string]::IsNullOrWhiteSpace($VMMId) -or [string]::IsNullOrWhiteSpace($VMMServer)) {
         $api.Return($script:DiscoveryData)
-        return
+        exit 0
     }
 
     $fabric = Get-HcsFabricServiceInstance -ServerName $VMMServer
@@ -101,6 +101,9 @@ try {
     Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.ManagementReferencesVMMHost']$" $localManagement $vmmHost
     Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.VMM.HostRoleReferencesVMMHost']$" $hostRole $vmmHost
     $api.Return($script:DiscoveryData)
+    # CommandExecuter evaluates the child-process exit code independently of the valid discovery
+    # payload. Terminate explicitly so a stale PowerShell status cannot reject submitted data.
+    exit 0
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.VMM.HostRelationshipDiscovery.ps1', 8511, 1, $_.Exception.Message)

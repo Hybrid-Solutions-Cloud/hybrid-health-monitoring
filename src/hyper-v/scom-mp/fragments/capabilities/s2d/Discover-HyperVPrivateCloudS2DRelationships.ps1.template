@@ -32,7 +32,7 @@ $script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
 try {
     if ([string]::IsNullOrWhiteSpace($UniqueId) -or [string]::IsNullOrWhiteSpace($ComputerName)) {
         $api.Return($script:DiscoveryData)
-        return
+        exit 0
     }
 
     $clusterName = $ComputerName.Split('.')[0].ToLowerInvariant()
@@ -84,6 +84,9 @@ try {
     Add-HcsProperty $instance "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
     Add-HcsRelationship $relationshipType $storage $instance
     $api.Return($script:DiscoveryData)
+    # CommandExecuter evaluates the child-process exit code independently of the valid discovery
+    # payload. Terminate explicitly so a stale PowerShell status cannot reject submitted data.
+    exit 0
 }
 catch {
     $api.LogScriptEvent('HyperVPrivateCloud.S2D.RelationshipDiscovery.ps1', 8502, 1, $_.Exception.Message)

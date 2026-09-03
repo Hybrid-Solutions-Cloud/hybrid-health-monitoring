@@ -1,5 +1,42 @@
 # Handoff
 
+## 2026-09-02 — 1.0.3.0 discovery correction validated in test-seal mode
+
+**Branch:** `fix/hyperv-discovery-termination` from `origin/main` at `12886d0`.
+
+Live validation of the installed eight-pack `1.0.2.0` deployment showed valid S2D and VMM
+relationship `System.DiscoveryData` being rejected at child-process termination. Those scripts now
+call `exit 0` immediately after successful `$api.Return(...)`; genuine exceptions still log and
+throw. Independently, `HostRole.Seed.Discovery` could not instantiate the class because its
+registry provider does not know `BoundaryId` while the class declared that non-key staged-topology
+property required. `BoundaryId` is now optional until topology supplies the authoritative value.
+
+Regression coverage asserts the seed/class contract, explicit successful termination, and that
+any submitted DataItem has exit code zero with empty stderr. Core build tests pass `85/85`;
+targeted S2D/VMM smoke passes `9/9`; non-smoke tests passed `140/141` before regenerating the sole
+dependency-doc drift, whose direct recheck passes `8/8`. A `1.0.3.0` Test-mode VSAE package at
+`D:/tmp/hcs-hyperv-release-1.0.3.0-test` produced 13 sealed MPs, 66 overrides, and 14 bundles and
+passed independent package validation. The throwaway key was deleted.
+
+The source fix is commit `08108de`. Production package
+`D:/tmp/hcs-hyperv-release-1.0.3.0` passed the independent validator with
+`releaseEligible=true`, 13 sealed MPs, 14 bundles, source commit `08108de`, and permanent token
+`54d0fb1159995c86`; the temporary production key was deleted. The exact inferred eight-pack import
+set (core four + Cluster + S2D + VMM + PhysicalNetwork) is
+`D:/tmp/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip`, SHA-256
+`428105bcbd193f08757ca71ef30316225bc3ad6ed09245578db6ee6e2a39b11c`.
+
+All 30 validated release assets were copied byte-for-byte into immutable
+`docs/public/downloads/hyper-v-private-cloud/1.0.3.0/` and `latest/`. The download page, README,
+Hyper-V landing page, administration guide, prerequisites, and SCOM MP page now identify
+`1.0.3.0` as current. Asset hash comparison passed for both publication directories, dependency
+documentation tests pass `8/8`, and the VitePress production build completes successfully.
+
+Next: import those eight packs over `1.0.2.0`, allow one four-hour seed cycle plus one 30-minute
+topology cycle, then require `Test-SdrHyperVPrivateCloudMonitoring.ps1` = `16/0`, 4 HostRole,
+2 ClusterRole. Do not change the 523 overrides, cluster-node agent proxy, capability scope, or seed
+intervals.
+
 ## 2026-09-01 — PowerShell 7 release packaging correction validated
 
 **Branch:** `fix/hyperv-portable-sdk-loading` from `main` at `c32c398`.
