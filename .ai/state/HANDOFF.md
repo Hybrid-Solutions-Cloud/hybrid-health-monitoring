@@ -18,11 +18,18 @@ dependency-doc drift, whose direct recheck passes `8/8`. A `1.0.3.0` Test-mode V
 `D:/tmp/hcs-hyperv-release-1.0.3.0-test` produced 13 sealed MPs, 66 overrides, and 14 bundles and
 passed independent package validation. The throwaway key was deleted.
 
-Next: commit, production-seal with Key Vault identity
-`hcs-hybrid-health-monitoring-scom-release-private-key`, import the eight required packs over
-`1.0.2.0`, allow one four-hour seed cycle plus one 30-minute topology cycle, then require
-`Test-SdrHyperVPrivateCloudMonitoring.ps1` = `16/0`, 4 HostRole, 2 ClusterRole. Do not change the
-523 overrides, cluster-node agent proxy, capability scope, or seed intervals.
+The source fix is commit `08108de`. Production package
+`D:/tmp/hcs-hyperv-release-1.0.3.0` passed the independent validator with
+`releaseEligible=true`, 13 sealed MPs, 14 bundles, source commit `08108de`, and permanent token
+`54d0fb1159995c86`; the temporary production key was deleted. The exact inferred eight-pack import
+set (core four + Cluster + S2D + VMM + PhysicalNetwork) is
+`D:/tmp/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip`, SHA-256
+`428105bcbd193f08757ca71ef30316225bc3ad6ed09245578db6ee6e2a39b11c`.
+
+Next: import those eight packs over `1.0.2.0`, allow one four-hour seed cycle plus one 30-minute
+topology cycle, then require `Test-SdrHyperVPrivateCloudMonitoring.ps1` = `16/0`, 4 HostRole,
+2 ClusterRole. Do not change the 523 overrides, cluster-node agent proxy, capability scope, or seed
+intervals.
 
 ## 2026-09-01 — PowerShell 7 release packaging correction validated
 

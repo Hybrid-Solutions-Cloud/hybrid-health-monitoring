@@ -13,10 +13,12 @@
   `140/141` initially, with the sole generated dependency-doc drift corrected and rechecked `8/8`;
   VSAE test seal produced 13 MPs, 66 override MPs, and 14 bundles; independent package validation
   passed.
-- Next: production-seal `1.0.3.0` with the permanent publisher identity, import the eight-pack
-  deployment into the live management group, allow one four-hour seed plus one 30-minute topology
-  cycle, and require `Test-SdrHyperVPrivateCloudMonitoring.ps1` to report `16/0`, 4 HostRole, and
-  2 ClusterRole.
+- Production package `D:/tmp/hcs-hyperv-release-1.0.3.0` is independently validated as
+  `releaseEligible=true` with permanent token `54d0fb1159995c86`; the exact eight-pack deployment
+  ZIP is `D:/tmp/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip`.
+- Next: import the eight-pack deployment into the live management group, allow one four-hour seed
+  plus one 30-minute topology cycle, and require `Test-SdrHyperVPrivateCloudMonitoring.ps1` to
+  report `16/0`, 4 HostRole, and 2 ClusterRole.
 
 ## Active release — 2026-09-01 Hyper-V Private Cloud 1.0.2.0 production seal
 
