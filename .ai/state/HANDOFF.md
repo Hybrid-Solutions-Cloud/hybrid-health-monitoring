@@ -23,6 +23,12 @@ the full 13-pack release catalog and explicitly require all eight currently inst
 packs to be upgraded. No source MP, management-group override, agent proxy, capability scope, or
 discovery interval was changed.
 
+Operator console QA then found two Failover Cluster state views under Availability. The broken
+lowercase `Failover clusters` view targeted the HCS `ClusterRole` projection; the working
+`Failover Clusters` view targets Microsoft's authoritative `Microsoft.Windows.Cluster` class. The
+duplicate HCS view, its folder item, and its display string were removed. Regression coverage now
+requires seven cluster views, forbids the duplicate, and retains the Microsoft-targeted view.
+
 ## 2026-09-02 — 1.0.3.0 discovery correction validated in test-seal mode
 
 **Branch:** `fix/hyperv-discovery-termination` from `origin/main` at `12886d0`.

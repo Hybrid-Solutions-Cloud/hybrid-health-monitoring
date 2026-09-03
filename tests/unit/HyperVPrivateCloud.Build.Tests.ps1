@@ -495,8 +495,11 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         @($script:ClusterCapability.SelectNodes("//DependencyMonitor[@RelationshipType='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsClusterRole']") | ForEach-Object MemberMonitor) | Sort-Object | Should -Be @('Health!System.Health.AvailabilityState', 'Health!System.Health.ConfigurationState', 'Health!System.Health.PerformanceState')
     }
 
-    It 'ships cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
-        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 8
+    It 'ships authoritative cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
+        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 7
+        $script:ClusterCapability.SelectSingleNode("//View[@ID='HyperVPrivateCloud.Capability.Cluster.ClusterRole.State.View']") | Should -BeNullOrEmpty
+        $script:ClusterCapability.SelectSingleNode("//FolderItem[@ElementID='HyperVPrivateCloud.Capability.Cluster.ClusterRole.State.View']") | Should -BeNullOrEmpty
+        $script:ClusterCapability.SelectSingleNode("//View[@ID='HyperVPrivateCloud.Capability.Cluster.Cluster.State.View' and @Target='Cluster!Microsoft.Windows.Cluster']") | Should -Not -BeNullOrEmpty
         $targets = @($script:ClusterCapability.SelectNodes('//View') | ForEach-Object Target)
         $targets | Should -Contain 'Cluster!Microsoft.Windows.Cluster'
         $targets | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Node'
