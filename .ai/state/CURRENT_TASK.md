@@ -16,6 +16,9 @@
 - Production package `D:/tmp/hcs-hyperv-release-1.0.3.0` is independently validated as
   `releaseEligible=true` with permanent token `54d0fb1159995c86`; the exact eight-pack deployment
   ZIP is `D:/tmp/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip`.
+- The same validated 30 release assets are published byte-for-byte under
+  `docs/public/downloads/hyper-v-private-cloud/1.0.3.0/` and `latest/`; public download and operator
+  documentation identifies `1.0.3.0` as current, and the VitePress production build passes.
 - Next: import the eight-pack deployment into the live management group, allow one four-hour seed
   plus one 30-minute topology cycle, and require `Test-SdrHyperVPrivateCloudMonitoring.ps1` to
   report `16/0`, 4 HostRole, and 2 ClusterRole.

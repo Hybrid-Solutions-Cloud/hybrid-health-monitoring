@@ -26,6 +26,12 @@ set (core four + Cluster + S2D + VMM + PhysicalNetwork) is
 `D:/tmp/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip`, SHA-256
 `428105bcbd193f08757ca71ef30316225bc3ad6ed09245578db6ee6e2a39b11c`.
 
+All 30 validated release assets were copied byte-for-byte into immutable
+`docs/public/downloads/hyper-v-private-cloud/1.0.3.0/` and `latest/`. The download page, README,
+Hyper-V landing page, administration guide, prerequisites, and SCOM MP page now identify
+`1.0.3.0` as current. Asset hash comparison passed for both publication directories, dependency
+documentation tests pass `8/8`, and the VitePress production build completes successfully.
+
 Next: import those eight packs over `1.0.2.0`, allow one four-hour seed cycle plus one 30-minute
 topology cycle, then require `Test-SdrHyperVPrivateCloudMonitoring.ps1` = `16/0`, 4 HostRole,
 2 ClusterRole. Do not change the 523 overrides, cluster-node agent proxy, capability scope, or seed
