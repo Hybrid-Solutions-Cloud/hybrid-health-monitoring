@@ -81,6 +81,40 @@ function Get-HcsAreaDisplayName {
     return 'Hyper-V Private Cloud'
 }
 
+function Add-HcsManagementPackDisplayString {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Content,
+        [Parameter(Mandatory)][string]$ManagementPackId,
+        [Parameter(Mandatory)][string]$ProductName
+    )
+
+    [xml]$document = $Content
+    if ($document.SelectSingleNode("/ManagementPack/LanguagePacks/LanguagePack/DisplayStrings/DisplayString[@ElementID='$ManagementPackId']")) {
+        return $Content
+    }
+
+    $capabilityName = switch ($ManagementPackId) {
+        'HyperVPrivateCloud.Capability.Storage' { 'SAN and Host Storage' }
+        'HyperVPrivateCloud.Capability.S2D' { 'Storage Spaces Direct' }
+        'HyperVPrivateCloud.Capability.PureStorage' { 'Pure Storage' }
+        'HyperVPrivateCloud.Capability.FileServices' { 'File Services and SMB' }
+        'HyperVPrivateCloud.Capability.PhysicalNetwork' { 'Physical Network' }
+        'HyperVPrivateCloud.Capability.SDN' { 'Software Defined Networking' }
+        'HyperVPrivateCloud.Capability.VMM' { 'Virtual Machine Manager' }
+        default { Get-HcsAreaDisplayName -Value $ManagementPackId }
+    }
+    $displayName = [System.Security.SecurityElement]::Escape("$ProductName - $capabilityName")
+    $closingTag = '</DisplayStrings>'
+    $position = $Content.IndexOf($closingTag, [System.StringComparison]::Ordinal)
+    if ($position -lt 0) {
+        throw "Management Pack '$ManagementPackId' has no ENU DisplayStrings container."
+    }
+
+    $displayString = "        <DisplayString ElementID=`"$ManagementPackId`"><Name>$displayName</Name></DisplayString>`r`n      "
+    return $Content.Insert($position, $displayString)
+}
+
 function Get-HcsElementDisplayStringContent {
     [CmdletBinding()]
     param([Parameter(Mandatory)][xml]$ManagementPack)
@@ -860,6 +894,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             (Get-HcsElementDisplayStringContent -ManagementPack $librarySource)
         )
     }
+    $content = Add-HcsManagementPackDisplayString -Content $content -ManagementPackId $artifact.id -ProductName $manifest.productName
     if ($content -match '\{\{[A-Z0-9_]+\}\}') {
         throw "Unresolved build token in $sourcePath"
     }

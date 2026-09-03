@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.4.0] — 2026-09-03
+
+Console-quality corrective upgrade from `1.0.3.0`. All capability MPs now have friendly pack-level
+display names instead of exposing dotted internal IDs in SCOM Administration. The empty duplicate
+lowercase `Failover clusters` state view was removed from Availability; the working `Failover
+Clusters` view targeting Microsoft's authoritative cluster class remains. Regression coverage now
+requires friendly display strings for every product MP and user-facing element and forbids the
+duplicate cluster view.
+
 ## [1.0.3.0] — 2026-09-02
 
 Corrective in-place upgrade from `1.0.2.0` after live SCOM certification. The registry seed can

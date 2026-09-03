@@ -110,7 +110,6 @@ const azureLocalSidebar = [
     items: [
       { text: 'Overview', link: '/azure-local/scom/' },
       { text: 'Prerequisites', link: '/azure-local/scom/prerequisites' },
-      { text: 'Download lab preview', link: '/downloads/scom-lab-preview' },
       { text: 'Administration guide', link: '/azure-local/scom/management-pack-guide' },
       { text: 'Operations guide', link: '/azure-local/scom/operations-guide' },
       { text: 'Monitoring catalog', link: '/azure-local/scom/monitoring-catalog' },
@@ -286,7 +285,6 @@ const downloadsSidebar = [
     text: 'Downloads',
     items: [
       { text: 'Hyper-V Private Cloud Monitoring v2', link: '/downloads/hyper-v-private-cloud' },
-      { text: 'Azure Local SCOM lab preview', link: '/downloads/scom-lab-preview' },
     ],
   },
   {

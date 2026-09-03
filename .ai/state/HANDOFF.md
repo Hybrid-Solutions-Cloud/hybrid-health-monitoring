@@ -1,5 +1,34 @@
 # Handoff
 
+## 2026-09-03 — Public Hyper-V download and documentation correction
+
+**Branch:** `fix/hyperv-1.0.3-release-scope` from merged `origin/main` at `24d876a`.
+
+Corrected the public docs after operator review. The homepage CTA now points directly to the
+released Hyper-V Private Cloud `1.0.3.0` download instead of the Azure Local lab-preview route.
+Azure Local preview download links were removed from the homepage, navigation, start page, and
+Azure Local operator pages; the legacy preview-status route now states that Azure Local has no
+public package. The only current rendered-doc occurrence of `1.0.1.0` was an ambiguously labelled
+Microsoft dependency identity in the Hyper-V administration guide; it now explicitly identifies
+the current HCS version as `1.0.3.0` and separates Microsoft dependency versions from product
+versions.
+
+Published the previously validated exact HAAS-SDR eight-pack ZIP as
+`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip` in both immutable `1.0.3.0` and `latest`.
+It contains Library, Discovery, Monitoring, Presentation, Cluster, S2D, VMM, and PhysicalNetwork,
+contains no override MPs, is 317544 bytes, and has SHA-256
+`428105bcbd193f08757ca71ef30316225bc3ad6ed09245578db6ee6e2a39b11c`. Both asset manifests and
+checksum files include it. Operator docs now distinguish the four-pack core dependency layer from
+the full 13-pack release catalog and explicitly require all eight currently installed HAAS-SDR
+packs to be upgraded. No source MP, management-group override, agent proxy, capability scope, or
+discovery interval was changed.
+
+Operator console QA then found two Failover Cluster state views under Availability. The broken
+lowercase `Failover clusters` view targeted the HCS `ClusterRole` projection; the working
+`Failover Clusters` view targets Microsoft's authoritative `Microsoft.Windows.Cluster` class. The
+duplicate HCS view, its folder item, and its display string were removed. Regression coverage now
+requires seven cluster views, forbids the duplicate, and retains the Microsoft-targeted view.
+
 ## 2026-09-02 — 1.0.3.0 discovery correction validated in test-seal mode
 
 **Branch:** `fix/hyperv-discovery-termination` from `origin/main` at `12886d0`.

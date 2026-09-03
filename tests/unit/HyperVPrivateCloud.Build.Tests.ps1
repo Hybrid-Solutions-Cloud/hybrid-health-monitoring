@@ -163,6 +163,42 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         }
     }
 
+    It 'gives every pack and user-facing element a friendly display string' {
+        $elementPaths = @(
+            '/ManagementPack/TypeDefinitions/EntityTypes/ClassTypes/ClassType',
+            '/ManagementPack/TypeDefinitions/EntityTypes/RelationshipTypes/RelationshipType',
+            '/ManagementPack/Monitoring/Discoveries/Discovery',
+            '/ManagementPack/Monitoring/Monitors/UnitMonitor',
+            '/ManagementPack/Monitoring/Monitors/AggregateMonitor',
+            '/ManagementPack/Monitoring/Monitors/DependencyMonitor',
+            '/ManagementPack/Monitoring/Rules/Rule',
+            '/ManagementPack/Monitoring/Tasks/Task',
+            '/ManagementPack/Presentation/Views/View',
+            '/ManagementPack/Presentation/Folders/Folder',
+            '/ManagementPack/Presentation/ConsoleTasks/ConsoleTask',
+            '/ManagementPack/Resources/StringResources/StringResource',
+            '/ManagementPack/TypeDefinitions/SecureReferences/SecureReference'
+        )
+
+        foreach ($artifact in $script:Receipt.artifacts) {
+            [xml]$managementPack = Get-Content -LiteralPath (Join-Path $script:Output $artifact.output) -Raw
+            $managementPackId = [string]$managementPack.ManagementPack.Manifest.Identity.ID
+            $packName = $managementPack.SelectSingleNode("/ManagementPack/LanguagePacks/LanguagePack/DisplayStrings/DisplayString[@ElementID='$managementPackId']/Name")
+            $packName | Should -Not -BeNullOrEmpty -Because "pack $managementPackId must not appear as its dotted internal ID"
+            $packName.InnerText | Should -Not -Match '^HyperVPrivateCloud\.'
+
+            $displayIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+            foreach ($displayString in $managementPack.SelectNodes('/ManagementPack/LanguagePacks/LanguagePack/DisplayStrings/DisplayString[not(@SubElementID)]')) {
+                [void]$displayIds.Add([string]$displayString.ElementID)
+            }
+            foreach ($elementPath in $elementPaths) {
+                foreach ($element in $managementPack.SelectNodes($elementPath)) {
+                    $displayIds.Contains([string]$element.ID) | Should -BeTrue -Because "$managementPackId element $($element.ID) needs a friendly display string"
+                }
+            }
+        }
+    }
+
     It 'builds all four required core artifacts plus authored optional capabilities without claiming they are sealed' {
         $script:Receipt.complete | Should -BeTrue
         @($script:Receipt.pendingRequiredArtifacts).Count | Should -Be 0
@@ -459,8 +495,11 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         @($script:ClusterCapability.SelectNodes("//DependencyMonitor[@RelationshipType='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsClusterRole']") | ForEach-Object MemberMonitor) | Sort-Object | Should -Be @('Health!System.Health.AvailabilityState', 'Health!System.Health.ConfigurationState', 'Health!System.Health.PerformanceState')
     }
 
-    It 'ships cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
-        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 8
+    It 'ships authoritative cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
+        @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 7
+        $script:ClusterCapability.SelectSingleNode("//View[@ID='HyperVPrivateCloud.Capability.Cluster.ClusterRole.State.View']") | Should -BeNullOrEmpty
+        $script:ClusterCapability.SelectSingleNode("//FolderItem[@ElementID='HyperVPrivateCloud.Capability.Cluster.ClusterRole.State.View']") | Should -BeNullOrEmpty
+        $script:ClusterCapability.SelectSingleNode("//View[@ID='HyperVPrivateCloud.Capability.Cluster.Cluster.State.View' and @Target='Cluster!Microsoft.Windows.Cluster']") | Should -Not -BeNullOrEmpty
         $targets = @($script:ClusterCapability.SelectNodes('//View') | ForEach-Object Target)
         $targets | Should -Contain 'Cluster!Microsoft.Windows.Cluster'
         $targets | Should -Contain 'ClusterManagement!Microsoft.Windows.Cluster.Node'

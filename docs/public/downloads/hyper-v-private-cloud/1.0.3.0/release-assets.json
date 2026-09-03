@@ -10,6 +10,11 @@
       "bytes": 870385
     },
     {
+      "file": "Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip",
+      "sha256": "428105bcbd193f08757ca71ef30316225bc3ad6ed09245578db6ee6e2a39b11c",
+      "bytes": 317544
+    },
+    {
       "file": "Hyper-V-Private-Cloud-Monitoring-Core.zip",
       "sha256": "3344fee2124532bd3e6ae5aa9854b8b47e38adb4471cdf99f47484e41b70a0f8",
       "bytes": 136920

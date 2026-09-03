@@ -63,7 +63,8 @@ Then, in order:
    The per-user or Store install does not work; every workflow launches
    `%ProgramFiles%\PowerShell\7\pwsh.exe` by absolute path.
 2. **SCOM agent on every host**, and on cluster nodes tick **Allow this agent to act as a proxy**.
-3. Import the four **core** Hyper-V Private Cloud packs, then only the **capability** packs you use.
+3. For a new installation, import the four **core** packs and every **capability** pack you use. For
+   an upgrade, replace every installed `HyperVPrivateCloud.*` pack; do not upgrade only the core.
 4. Apply one tuning profile (see [the download page](../downloads/hyper-v-private-cloud.md#apply-a-tuning-profile-in-one-command)):
    `./Install-HyperVPrivateCloudOverrides.ps1 -DeploymentProfile <yourProfile> -TuningTier Standard -Import`
 

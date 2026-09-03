@@ -93,10 +93,11 @@ ADR 0022 prohibits shared SCOM runtime elements.
 - The Azure Local SCOM design, research catalog, deterministic source build, DA, monitoring,
   presentation, reporting, and customer override baseline are implemented.
 - The platform-first roadmap and Azure DevOps hierarchy are established.
-- Hyper-V Private Cloud Monitoring `1.0.3.0` is implemented and repository-published as four
-  permanently sealed core MPs, nine optional capability MPs, 66 public override MPs, and 14
-  download bundles. Management Packs use the product-named `HyperVPrivateCloud.*` namespace. SCOM
-  runtime and lifecycle certification follows operator installation.
+- Hyper-V Private Cloud Monitoring `1.0.3.0` is implemented and repository-published as 13
+  permanently sealed product MPs: four always-required MPs and nine optional capability MPs.
+  Upgrades replace every product MP already installed; they do not reduce an eight-pack deployment
+  to the four-pack core. Management Packs use the product-named `HyperVPrivateCloud.*` namespace.
+  SCOM runtime and lifecycle certification follows operator installation.
 - The Azure Local five-project SCOM suite passes Microsoft VSAE/SDK verification and ordered test
   sealing but remains under development and is a separate product from the Hyper-V download.
 - Independent Azure Local and constrained Hyper-V Azure Monitor Health Model development baselines

@@ -18,8 +18,8 @@ hero:
       text: View the roadmap
       link: /project/roadmap
     - theme: alt
-      text: Download SCOM lab previews
-      link: /downloads/scom-lab-preview
+      text: Download Hyper-V SCOM 1.0.3.0
+      link: /downloads/hyper-v-private-cloud
 features:
   - title: Azure Local
     details: A committed SCOM Management Pack and Azure Monitor Health Models for the full Azure Local infrastructure stack.
@@ -75,15 +75,12 @@ separate SCOM and Azure Monitor paths for Event Management, CMDB correlation, an
 
 ## Project status
 
-::: info Independent development baselines are implemented
-Azure Local and Hyper-V have separate functional SCOM Management Pack and Distributed Application
-baselines. Azure Local and constrained Hyper-V Health Model baselines compile with Bicep. The
-SCOM-to-ServiceNow mapping/profile baseline also passes offline validation. Both SCOM suites pass
-Microsoft VSAE/SDK verification and ordered transient test sealing. Release signing and live SCOM,
-Azure, and ServiceNow certification gates remain. See the [project roadmap](/project/roadmap) and
-[implementation plan](https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/blob/main/PLAN.md).
-The sealed SCOM suites are available for controlled testing from the
-[lab-preview download page](/downloads/scom-lab-preview).
+::: info Hyper-V SCOM release available
+Hyper-V Private Cloud Monitoring `1.0.3.0` is the current sealed SCOM release and is available from
+the [Hyper-V download page](/downloads/hyper-v-private-cloud). Azure Local remains a development
+track and has no public SCOM package. See the [project roadmap](/project/roadmap) and
+[implementation plan](https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/blob/main/PLAN.md)
+for the remaining certification gates.
 :::
 
 | Phase | Description | Status |

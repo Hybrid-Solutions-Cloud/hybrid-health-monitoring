@@ -52,14 +52,13 @@ and configure Run As profiles for VMM, SDN, or Pure Storage.
 ## Path: Azure Local with SCOM {#path-azure-local-with-scom}
 
 ::: warning Lab preview
-These packs are published as a lab preview and are not sealed for production use.
+These packs remain under development and are not publicly downloadable.
 :::
 
 1. **[Read the prerequisites](/azure-local/scom/prerequisites)** — shorter than the Hyper-V list; these packs
    reference only management packs that ship with SCOM.
-2. **[Download the lab preview](/downloads/scom-lab-preview)** — verify the checksums.
-3. **[Follow the management pack guide](/azure-local/scom/management-pack-guide)** — import and verify.
-4. **[Review the monitoring catalog](/azure-local/scom/monitoring-catalog)**.
+2. **[Follow the management pack guide](/azure-local/scom/management-pack-guide)** — development and validation guidance only.
+3. **[Review the monitoring catalog](/azure-local/scom/monitoring-catalog)**.
 
 ---
 

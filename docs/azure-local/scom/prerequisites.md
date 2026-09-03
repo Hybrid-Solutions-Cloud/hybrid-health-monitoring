@@ -7,10 +7,9 @@ description: What must be present in the management group and on the cluster bef
 
 Work through this page before importing the Azure Local management packs.
 
-::: warning Lab preview
-The Azure Local SCOM management packs are currently published as a **lab preview** and are not
-sealed for production use. See the [downloads page](../../downloads/scom-lab-preview.md) for the
-current status and checksums. Treat everything below as preview guidance.
+::: warning Development only
+The Azure Local SCOM management packs are not publicly downloadable and are not released for
+production use. Treat everything below as development guidance.
 :::
 
 The dependency tables on this page are **generated directly from the management pack source** by
@@ -91,8 +90,7 @@ If you have not yet decided which track to use, read the
 - [ ] SCOM 2019, 2022, or 2025; Data Warehouse role healthy
 - [ ] Agents deployed and healthy on all Azure Local nodes
 - [ ] Azure Local cluster deployed and operational
-- [ ] Lab-preview status understood — not for production management groups
-- [ ] Checksums verified against the [downloads page](../../downloads/scom-lab-preview.md)
+- [ ] Development-only status understood — no public package is available
 
 ---
 
@@ -102,6 +100,5 @@ Continue to the [management pack guide](management-pack-guide.md) for the import
 
 ## References
 
-- [Download the SCOM management pack lab previews](../../downloads/scom-lab-preview.md)
 - [Azure Local management pack guide](management-pack-guide.md)
 - [Azure Monitor prerequisites for Azure Local](../azure-monitor/prerequisites.md)

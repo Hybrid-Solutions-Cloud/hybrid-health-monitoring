@@ -1,4 +1,5 @@
 9f9685692467df4a9c35028b3600be58331888caa17444768d395122c5e499f6  Hyper-V-Private-Cloud-Monitoring-Complete.zip
+428105bcbd193f08757ca71ef30316225bc3ad6ed09245578db6ee6e2a39b11c  Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip
 3344fee2124532bd3e6ae5aa9854b8b47e38adb4471cdf99f47484e41b70a0f8  Hyper-V-Private-Cloud-Monitoring-Core.zip
 c6d358ba95bd4b45e616184af5ec6ba36de7a54b1b3b0c39d15c1addafe61d24  Hyper-V-Private-Cloud-Monitoring-Overrides.zip
 7dab3d44ab3fb7ac39e10f3c70df894c9d225ba3bc4dd43909179434222b2ddc  Hyper-V-Private-Cloud-Monitoring-Profile-ClusteredPure.zip
