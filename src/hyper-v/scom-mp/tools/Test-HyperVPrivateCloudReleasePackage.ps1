@@ -155,7 +155,8 @@ foreach ($artifact in $manifest.artifacts) {
 $requiredStableAssets = @(
     'Hyper-V-Private-Cloud-Monitoring-Complete.zip',
     'Hyper-V-Private-Cloud-Monitoring-Core.zip',
-    'Hyper-V-Private-Cloud-Monitoring-Overrides.zip'
+    'Hyper-V-Private-Cloud-Monitoring-Overrides.zip',
+    "Hyper-V-Private-Cloud-Monitoring-Deployment-$($manifest.productVersion).zip"
 )
 foreach ($name in $requiredStableAssets) {
     Assert-HcsCondition -Condition (Test-Path -LiteralPath (Join-Path $assetsPath $name) -PathType Leaf) -Message "Stable release asset is missing: '$name'."
@@ -186,6 +187,23 @@ try {
     Assert-HcsCondition -Condition (@($completeZip.Entries | Where-Object FullName -Like 'Overrides/*.xml').Count -eq @($manifest.publicOverrides).Count) -Message 'Complete ZIP has the wrong override count.'
 }
 finally { $completeZip.Dispose() }
+
+$deploymentZipPath = Join-Path $assetsPath "Hyper-V-Private-Cloud-Monitoring-Deployment-$($manifest.productVersion).zip"
+$deploymentZip = [System.IO.Compression.ZipFile]::OpenRead($deploymentZipPath)
+try {
+    $expectedDeploymentFiles = @($manifest.artifacts | Where-Object id -ne 'HyperVPrivateCloud.Capability.PureStorage' | ForEach-Object file | Sort-Object)
+    $actualDeploymentFiles = @($deploymentZip.Entries | ForEach-Object FullName | Sort-Object)
+    Assert-HcsCondition -Condition (@(Compare-Object $expectedDeploymentFiles $actualDeploymentFiles).Count -eq 0) -Message 'Deployment ZIP must contain exactly the 12 non-PureStorage solution MPs at its root.'
+    foreach ($entry in $deploymentZip.Entries) {
+        $asset = @($manifest.artifacts | Where-Object file -eq $entry.FullName)[0]
+        $stream = $entry.Open()
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { $entryHash = ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant() }
+        finally { $sha.Dispose(); $stream.Dispose() }
+        Assert-HcsCondition -Condition ($entryHash -eq [string]$asset.sha256) -Message "Deployment ZIP MP differs from the validated sealed asset: '$($entry.FullName)'."
+    }
+}
+finally { $deploymentZip.Dispose() }
 
 if ($RequireReleaseEligible) {
     Assert-HcsCondition -Condition ([string]$manifest.buildMode -eq 'Release') -Message 'Publication requires a Release-mode package.'

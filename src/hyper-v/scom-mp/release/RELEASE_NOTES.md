@@ -5,6 +5,26 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
+## Version 1.0.6.0 runtime and deployment corrective release
+
+Version `1.0.6.0` is an in-place upgrade from every `1.0.3.0` through `1.0.5.0` installation. It
+removes CommandExecuter's stdout regular-expression gate from the shared PowerShell discovery and
+property-bag providers. The typed SCOM modules now parse the returned `System.DiscoveryData` or
+`System.PropertyBagData` directly, while stderr content and nonzero process exit codes still raise
+workflow errors. The ambiguous empty `EventPolicy` and the legacy `\a+` stderr sentinel are gone.
+
+File Services health now preserves empty and singleton required-share results as arrays under
+StrictMode. CSV health no longer assumes an empty staged `HostRole.BoundaryId` means standalone;
+it queries local Failover Cluster membership and derives the cluster boundary before collecting
+CSV health and performance data. Events 8702 and 8304 now include the facet/computer, supplied
+boundary, exception type and message, commands to reproduce the failed query, and remediation.
+
+The primary deployment ZIP now contains exactly the 12 non-PureStorage solution MPs: four core
+packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM. It
+contains no overrides. Packaging and independent validation fail if one is missing, extra, or
+different from the validated sealed asset. Pure Storage remains a separately selected optional
+adapter because it requires the vendor Management Pack.
+
 ## Version 1.0.5.0 console-quality corrective release
 
 Version `1.0.5.0` is an in-place upgrade from `1.0.4.0`. Every sealed product MP carries the new

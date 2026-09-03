@@ -118,7 +118,7 @@ try {
     if ($Facet -eq 'Legacy') {
         $requireRdmaEnabled = ConvertTo-HcsBoolean -Value $RequireRdma -Default $false
         if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { throw 'The Hyper-V PowerShell module is unavailable. Install Hyper-V-PowerShell.' }
-        $required = Get-HcsRequiredShare
+        $required = @(Get-HcsRequiredShare)
         if ($required.Count -eq 0) { $state = 'NotApplicable'; $detail = 'No Hyper-V virtual hard disk uses a UNC path on this host.' }
         elseif (-not (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection')) { throw 'The SMB client PowerShell capability is unavailable. Install the Windows file-services management tools.' }
         else {
@@ -168,7 +168,7 @@ try {
             $shareAvailabilityStateDetail = 'The SMB PowerShell capability is unavailable on this host, so SMB detail monitoring is skipped.'
         }
         else {
-            $required = if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') { Get-HcsRequiredShare } else { [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase) }
+            $required = if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') { @(Get-HcsRequiredShare) } else { @() }
             $connections = @(Get-SmbConnection -ErrorAction SilentlyContinue)
             $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction SilentlyContinue) } else { @() }
             $localShares = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbShare') { @(Get-SmbShare -ErrorAction SilentlyContinue | Where-Object { -not [bool](Get-HcsProperty -InputObject $_ -Name 'Special') }) } else { @() }
@@ -383,14 +383,17 @@ try {
     }
 }
 catch {
+    $failureType = $_.Exception.GetType().FullName
+    $failureMessage = $_.Exception.Message
+    $remediation = 'Verify the Hyper-V and SMB PowerShell features are installed, run Get-VM, Get-VMHardDiskDrive, and Get-SmbConnection as Local System, then review Operations Manager event 8702 for the failing facet and command.'
     if ($Facet -eq 'Legacy') {
         $state = 'Critical'
-        $detail = "Hyper-V over SMB query failed: $($_.Exception.Message)"
+        $detail = "Hyper-V over SMB query failed. Facet='$Facet'; ErrorType='$failureType'; Error='$failureMessage'. $remediation"
         $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $detail)
     }
     else {
         $serviceState = 'Critical'
-        $serviceStateDetail = "SMB detail query failed: $($_.Exception.Message)"
+        $serviceStateDetail = "SMB detail query failed. Facet='$Facet'; ErrorType='$failureType'; Error='$failureMessage'. $remediation"
         $probeFailed = $true
         $api.LogScriptEvent('HyperVPrivateCloud.FileServices.Health.ps1', 8702, 1, $serviceStateDetail)
     }
