@@ -19,7 +19,8 @@
     Four-part version used by every sealed product MP.
 
 .PARAMETER OverrideVersion
-    Independent four-part version used by the public, unsealed starter override MPs.
+    Four-part version used by the public, unsealed starter override MPs. Release mode requires it
+    to equal Version so every HCS-authored MP distributed in a release has one release version.
 
 .PARAMETER SigningKeyPath
     Path to the strong-name key pair. The key must be outside the repository.
@@ -511,6 +512,7 @@ $headCommit = ($headOutput | Select-Object -First 1).ToString().Trim().ToLowerIn
 if ($BuildMode -eq 'Release') {
     if ($SkipSdkVerification) { throw 'Release mode cannot skip Microsoft VSAE verification.' }
     if (-not $ApprovedReleaseSigningIdentity) { throw 'Release mode requires -ApprovedReleaseSigningIdentity.' }
+    if ($OverrideVersion -ne $Version) { throw 'Release mode requires OverrideVersion to equal Version.' }
     if (-not $headSucceeded -or $headCommit -notmatch '^[0-9a-f]{40}$') { throw 'Release mode requires a resolvable source commit.' }
     $worktreeStatus = @(& git -C $repositoryRoot status --porcelain 2>&1)
     $worktreeStatusSucceeded = $?

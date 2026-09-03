@@ -46,6 +46,7 @@ Describe 'Hyper-V Private Cloud release tooling' {
     It 'prevents test output or an unapproved identity from becoming a release' {
         $script:PackageText | Should -Match "Release mode cannot skip Microsoft VSAE verification"
         $script:PackageText | Should -Match "Release mode requires -ApprovedReleaseSigningIdentity"
+        $script:PackageText | Should -Match "Release mode requires OverrideVersion to equal Version"
         $script:PackageText | Should -Match "Release mode requires a clean Git worktree"
         $script:PackageText | Should -Match "Release mode requires a resolvable source commit"
         $script:PackageText | Should -Match '\$headSucceeded = \$\?'
@@ -53,6 +54,7 @@ Describe 'Hyper-V Private Cloud release tooling' {
         $script:PackageText | Should -Match "SigningKeyPath must be outside the repository"
         $script:ValidationText | Should -Match 'RequireReleaseEligible'
         $script:ValidationText | Should -Match "Publication requires a Release-mode package"
+        $script:ValidationText | Should -Match "Publication requires product and public override MP versions to match"
         $script:ValidationText | Should -Match 'post-publication SCOM validation contract'
     }
 
@@ -132,6 +134,7 @@ Describe 'Hyper-V Private Cloud release tooling' {
         $script:WorkflowText | Should -Match 'az keyvault secret show'
         $script:WorkflowText | Should -Match '\[IO\.Path\]::GetRelativePath'
         $script:WorkflowText | Should -Match '-BuildMode Release'
+        $script:WorkflowText | Should -Match '-OverrideVersion \$env:HCS_VERSION'
         $script:WorkflowText | Should -Match '-RequireReleaseEligible'
         $script:WorkflowText | Should -Match "'release', 'create'"
         $script:WorkflowText | Should -Match 'releases/latest/download'

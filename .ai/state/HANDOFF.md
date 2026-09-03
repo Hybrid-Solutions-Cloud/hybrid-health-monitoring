@@ -1,5 +1,31 @@
 # Handoff
 
+## 2026-09-03 — Hyper-V 1.0.5.0 version-increased publication
+
+The operator confirmed `1.0.4.0` already exists in HAAS-SDR, so the console/display-name and
+duplicate-view corrections must not be shipped as different bytes under that version. Branch
+`release/hyperv-1.0.5.0` adds a Release-mode gate requiring `OverrideVersion == Version`, adds the
+same independent publication validation, and passes the release version explicitly in the
+protected workflow. All current docs now identify `1.0.5.0` as the upgrade from `1.0.4.0`.
+
+Production package `D:/tmp/hcs-hyperv-release-1.0.5.0` was built from clean source commit
+`d11edba` with the permanent Key Vault signing identity. VSAE/strong-name and independent package
+validation passed: 13 sealed product MPs at `1.0.5.0`, 66 generated public starter MPs at
+`1.0.5.0`, 15 bundles after adding the targeted deployment ZIP, `releaseEligible=true`, and token
+`54d0fb1159995c86`. The temporary encoded and binary key files were deleted in `finally`.
+
+The exact HAAS-SDR ZIP is
+`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.5.0.zip`: Library, Discovery, Monitoring,
+Presentation, Cluster, S2D, VMM, and PhysicalNetwork only; no overrides. It is 317587 bytes with
+SHA-256 `5b6d10a265e06039c5ae61fa54538069f6d2f03ccc49036cbc6c027a9821af43`.
+The validated assets were copied byte-for-byte to immutable `1.0.5.0` and `latest`; the stale
+latest-only `1.0.4.0` deployment ZIP was removed while immutable `1.0.4.0` remains. Focused
+release/build tests passed 97/97 and the production VitePress build passed.
+
+Next: commit publication assets/state, push and merge the release PR, wait for Pages, then verify
+the live homepage CTA, manifest versions, exact eight-pack membership/hash, and absence of
+overrides. Do not change the 523 existing overrides, agent proxy, capability scope, or intervals.
+
 ## 2026-09-03 — Hyper-V 1.0.4.0 console QA and publication
 
 **Branches:** source/docs correction `fix/hyperv-1.0.3-release-scope` merged by PR #19 as

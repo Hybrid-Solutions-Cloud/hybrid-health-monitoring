@@ -68,6 +68,9 @@ Assert-HcsCondition -Condition ([string]$catalog.schemaVersion -eq '1.0') -Messa
 Assert-HcsCondition -Condition ([string]$manifest.productVersion -eq [string]$catalog.productVersion) -Message 'Manifest and asset-catalog product versions differ.'
 Assert-HcsCondition -Condition ([string]$manifest.buildMode -eq [string]$catalog.buildMode) -Message 'Manifest and asset-catalog build modes differ.'
 Assert-HcsCondition -Condition ([bool]$manifest.releaseEligible -eq [bool]$catalog.releaseEligible) -Message 'Manifest and asset-catalog eligibility values differ.'
+if ($RequireReleaseEligible) {
+    Assert-HcsCondition -Condition ([string]$manifest.overrideVersion -eq [string]$manifest.productVersion) -Message 'Publication requires product and public override MP versions to match.'
+}
 
 $dependencyEvidenceIdentities = @(
     foreach ($source in $manifest.dependencyEvidence) {

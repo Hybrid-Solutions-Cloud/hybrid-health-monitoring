@@ -18,8 +18,8 @@ hero:
       text: View the roadmap
       link: /project/roadmap
     - theme: alt
-      text: Download HAAS-SDR 8-pack 1.0.4.0
-      link: /hybrid-health-monitoring/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.4.0.zip
+      text: Download HAAS-SDR 8-pack 1.0.5.0
+      link: /hybrid-health-monitoring/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.5.0.zip
 features:
   - title: Azure Local
     details: A committed SCOM Management Pack and Azure Monitor Health Models for the full Azure Local infrastructure stack.
@@ -76,7 +76,7 @@ separate SCOM and Azure Monitor paths for Event Management, CMDB correlation, an
 ## Project status
 
 ::: info Hyper-V SCOM release available
-Hyper-V Private Cloud Monitoring `1.0.4.0` is the current sealed SCOM release and is available from
+Hyper-V Private Cloud Monitoring `1.0.5.0` is the current sealed SCOM release and is available from
 the [Hyper-V download page](/downloads/hyper-v-private-cloud). Azure Local remains a development
 track and has no public SCOM package. See the [project roadmap](/project/roadmap) and
 [implementation plan](https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/blob/main/PLAN.md)
