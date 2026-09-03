@@ -7,7 +7,7 @@ description: Hyper-V SCOM Distributed Application service model, dynamic members
 
 The Hyper-V SCOM product ships a Hyper-V-owned Distributed Application (DA) with no dependency on
 the Azure Local MP. One DA represents one operational failure boundary: a failover cluster or a
-standalone Hyper-V host. The implemented root is `HybridSolutionsCloud.HyperV.Service`, keyed by
+standalone Hyper-V host. The implemented root is `HyperVPrivateCloud.Service`, keyed by
 the stable cluster-or-host boundary ID and derived from the SCOM Service Designer service class.
 
 A DA organizes and presents health. It does not replace correctly targeted unit, aggregate, and
