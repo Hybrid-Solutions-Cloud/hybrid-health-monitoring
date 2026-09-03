@@ -1,13 +1,14 @@
 # Current task
 
-## Completed — Full Production Suite & Documentation Published (Release 1.0.6.0)
+## Completed — Sealed Production Release 1.0.7.0 Published & Pushed
 
-- All 13 sealed product Management Packs, 2 canonical solution override templates, and full suite compiled and sealed with permanent signing token `54d0fb1159995c86`.
-- 100% test pass rate across all test suites: 175/175 Pester unit & smoke tests, 8/8 prerequisite doc sync tests.
-- Complete documentation overhaul: separated Hyper-V and Azure Local health models, updated Start Here guide, removed ADR references from operator docs, cleaned navigation sidebars, and exhaustively documented all classes, monitors, rollups, thresholds, and tasks.
-- Interactive full-screen zoom and pan diagram overlay implemented for all Mermaid diagrams and architecture SVG imagery.
+- Built, verified, and sealed all 13 product Management Packs at version `1.0.7.0` using official Azure Key Vault release signing key `hcs-hybrid-health-monitoring-scom-release-private-key` (Token `54d0fb1159995c86`).
+- Built, verified, and validated all 15 deterministic bundles, including `Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.7.0.zip` and canonical 2-pack override starters.
+- Validated with `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` (100% compliant).
+- Staged all assets to `docs/public/downloads/hyper-v-private-cloud/1.0.7.0/` and `docs/public/downloads/hyper-v-private-cloud/latest/`.
+- Updated all download links and documentation references across the site to `1.0.7.0`.
 - VitePress documentation compiled cleanly with 0 broken links and 0 errors (`npm run docs:build`).
-- All commits pushed to `origin/main` (`main -> main`). Git working tree completely clean.
+- All changes committed and pushed to `origin main` (`d0ed798`). Git worktree completely clean.
 
 ## Completed — Management Domain Health, DNS, PXE/WDS, and Operator Hub Diagnostics
 

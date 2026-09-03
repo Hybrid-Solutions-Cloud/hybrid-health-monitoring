@@ -1,5 +1,23 @@
 # Handoff
 
+## 2026-09-03 — Sealed and Published Production Release 1.0.7.0
+
+- **Built, Sealed, and Validated 1.0.7.0**:
+  - Retrieved permanent official release RSA private key from Azure Key Vault `kv-hcs-vault-01` (`hcs-hybrid-health-monitoring-scom-release-private-key`).
+  - Compiled and sealed all 13 Management Packs at version `1.0.7.0` using Microsoft VSAE FASTSEAL with public key token `54d0fb1159995c86`.
+  - Built all 15 release ZIP packages and checksum files (`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.7.0.zip`, `Hyper-V-Private-Cloud-Monitoring-Complete.zip`, Core, Overrides, and profile bundles).
+  - Validated package eligibility with `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` (100% compliant).
+  - Staged sealed `.mp` and `.zip` assets to:
+    - `docs/public/downloads/hyper-v-private-cloud/1.0.7.0/`
+    - `docs/public/downloads/hyper-v-private-cloud/latest/`
+- **Documentation Updated & Built**:
+  - Updated all download URLs, manifests, and documentation references to `1.0.7.0`.
+  - Rebuilt VitePress documentation site cleanly with 0 errors in 52.59s (`npm run docs:build`).
+- **Committed & Pushed to `main`**:
+  - `ffc3965`: `fix(hyper-v): support 2-pack override model in release packager profiles AB#7319`
+  - `d0ed798`: `feat(release): publish sealed 1.0.7.0 Management Packs and update downloads AB#7319`
+  - Pushed to `origin/main` (`main -> main`). Git worktree completely clean.
+
 ## 2026-09-03 — Published Current Build & Documentation Overhaul (Health Models, Navigation, and Full Object Documentation)
 
 - **Committed & Pushed to `main`**:
