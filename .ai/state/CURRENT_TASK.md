@@ -1,6 +1,21 @@
 # Current task
 
-## Active correction — 2026-09-02 Hyper-V Private Cloud 1.0.3.0
+## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.4.0
+
+- Operator console QA found seven capability MPs without pack-level display strings; three are in
+  the HAAS-SDR eight-pack deployment (S2D, VMM, and PhysicalNetwork). The generator now supplies
+  friendly names for every capability MP, and a comprehensive display-string regression gate
+  covers all packs and user-facing elements.
+- The empty lowercase `Failover clusters` view targeting the HCS ClusterRole projection was removed
+  from Availability. The working `Failover Clusters` view targeting Microsoft's authoritative
+  cluster class remains.
+- Focused build tests pass `86/86`; the repository unit suite passed `205/205` before the duplicate
+  view removal, and the affected build suite was rerun successfully afterward.
+- Next: merge source to main, run the governed production release workflow for `1.0.4.0`, publish
+  the exact eight-pack HAAS-SDR ZIP, update current-version docs, deploy the site, and verify live
+  downloads. Do not change the 523 overrides, proxy settings, capability scope, or intervals.
+
+## Prior correction — 2026-09-02 Hyper-V Private Cloud 1.0.3.0
 
 - Live SCOM 2025 certification of `1.0.2.0` found two independent discovery blockers. The
   `HostRole` registry seed omitted its required non-key `BoundaryId`, so every seed instance was
