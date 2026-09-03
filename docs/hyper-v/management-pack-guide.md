@@ -130,7 +130,7 @@ storage objects. The S2D package's Cluster and Windows Server prerequisites must
 and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
 volumes, and file shares.
 
-The current HCS product release is `1.0.6.0`. Independently, its S2D adapter references the lowest
+The current HCS product release is `1.0.7.0`. Independently, its S2D adapter references the lowest
 compatible **Microsoft.Storage.Library** identity while requiring Microsoft's inspected `1.0.47.4`
 S2D package as the supported minimum. These Microsoft dependency versions are not the HCS product
 version. The adapter contributes DA membership, health rollup, query-pipeline coverage, and views
