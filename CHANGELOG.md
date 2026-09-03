@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.5.0] — 2026-09-03
+
+Version-increased corrective upgrade from `1.0.4.0`. All 13 sealed product MPs now carry version
+`1.0.5.0`, ensuring SCOM recognizes the display-name corrections and removal of the empty lowercase
+`Failover clusters` view as an upgrade. The working `Failover Clusters` view targeting Microsoft's
+authoritative cluster class remains. No customer-owned overrides, capability scope, proxy setting,
+or discovery interval is changed.
+
 ## [1.0.4.0] — 2026-09-03
 
 Console-quality corrective upgrade from `1.0.3.0`. All capability MPs now have friendly pack-level

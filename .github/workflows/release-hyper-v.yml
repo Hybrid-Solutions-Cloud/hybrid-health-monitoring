@@ -132,6 +132,7 @@ jobs:
           $dependencyPaths = [string[]]@($env:HCS_DEPENDENCY_PATHS.Split(';', [StringSplitOptions]::RemoveEmptyEntries))
           & ./src/hyper-v/scom-mp/tools/New-HyperVPrivateCloudReleasePackage.ps1 `
               -Version $env:HCS_VERSION `
+              -OverrideVersion $env:HCS_VERSION `
               -SigningKeyPath $env:HCS_SIGNING_KEY_PATH `
               -DependencyPath $dependencyPaths `
               -OutputPath $env:HCS_PACKAGE_ROOT `

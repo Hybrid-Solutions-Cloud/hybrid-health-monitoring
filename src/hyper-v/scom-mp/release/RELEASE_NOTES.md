@@ -5,9 +5,10 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
-## Version 1.0.4.0 console-quality corrective release
+## Version 1.0.5.0 console-quality corrective release
 
-Version `1.0.4.0` is an in-place upgrade from `1.0.3.0`. It adds friendly Management Pack display
+Version `1.0.5.0` is an in-place upgrade from `1.0.4.0`. Every sealed product MP carries the new
+version so SCOM recognizes the release as an upgrade. It adds friendly Management Pack display
 names to every capability pack so SCOM Administration no longer exposes dotted internal IDs. It
 also removes the empty duplicate `Failover clusters` state view from Availability while retaining
 the working `Failover Clusters` view backed by Microsoft's authoritative cluster class.
@@ -15,6 +16,12 @@ the working `Failover Clusters` view backed by Microsoft's authoritative cluster
 The release gate now verifies that every product pack and every user-facing class, relationship,
 discovery, monitor, rule, task, view, folder, console task, string resource, and secure reference
 has a localized display string. Existing customer-owned overrides remain valid.
+
+## Version 1.0.4.0 prior release
+
+Version `1.0.4.0` remains the prior immutable release. Import `1.0.5.0` over every installed
+`HyperVPrivateCloud.*` product MP so the console corrections are applied through SCOM's supported
+versioned upgrade path.
 
 ## Version 1.0.3.0 discovery corrective release
 
