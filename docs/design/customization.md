@@ -89,8 +89,7 @@ Contoso.AzureLocal.Overrides.xml            ← customer-authored, references ou
 
 ## Azure Monitor Health Models
 
-This section currently applies to Azure Local. It applies to Hyper-V only if proposed
-[ADR 0023](decisions/0023-hyper-v-azure-monitor-through-arc-enabled-scvmm.md) is accepted with a go decision.
+This section applies exclusively to Azure Local. Hyper-V has no Azure Monitor health models and is customized via SCOM override management packs.
 
 ### Parameterization via Bicep
 

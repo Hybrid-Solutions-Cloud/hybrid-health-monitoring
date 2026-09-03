@@ -16,7 +16,7 @@ architecture, deployment artifacts, health state, release lifecycle, or navigati
 | Platform | SCOM Management Pack | Azure Monitor Health Models |
 |---|---|---|
 | **Azure Local** | [Accepted design baseline](azure-local/scom-mp.md) | [Accepted baseline; API revalidation next](azure-local/azure-monitor.md) |
-| **Hyper-V** | [Comprehensive proposed architecture; active evidence research](hyper-v/scom-mp.md) | [Conditional research track](hyper-v/azure-monitor.md) |
+| **Hyper-V** | [Production sealed suite (1.0.7.0)](hyper-v/scom-mp.md) | Not applicable (100% on-premises SCOM) |
 
 ## Source ownership
 
@@ -26,7 +26,7 @@ product source:
 | Platform | SCOM source | Azure Monitor source |
 |---|---|---|
 | Azure Local | `src/azure-local/scom-mp/` | `src/azure-local/azure-monitor/` |
-| Hyper-V | `src/hyper-v/scom-mp/` | `src/hyper-v/azure-monitor/` (reserved until ADR 0023 records a go decision) |
+| Hyper-V | `src/hyper-v/scom-mp/` | N/A (zero Azure Monitor components) |
 
 Optional SquaredUp content sits under the solution it visualizes. Shared research and build tooling
 must not become a shared runtime product dependency.
@@ -36,7 +36,6 @@ must not become a shared runtime product dependency.
 | Azure Local SCOM MP | [SquaredUp Dashboard Server](../azure-local/scom/squaredup/index.md) |
 | Azure Local Azure Monitor | [SquaredUp Cloud](../azure-local/azure-monitor/squaredup/index.md) |
 | Hyper-V SCOM MP | [SquaredUp Dashboard Server](../hyper-v/squaredup-dashboard-server.md) |
-| Hyper-V Azure Monitor | [SquaredUp Cloud](../hyper-v/squaredup-cloud.md), conditional with the solution |
 
 ## Shared design
 
@@ -68,13 +67,12 @@ of the accepted early ADRs describe Azure Local unless a page says otherwise.
 
 ## Hyper-V design
 
-The [Hyper-V platform design map](hyper-v/index.md) points to two independent solution boundaries:
+The [Hyper-V platform design map](hyper-v/index.md) governs the sovereign enterprise SCOM solution:
 
-- [Hyper-V SCOM Management Pack design](hyper-v/scom-mp.md) is the active first phase, includes a
-  [comprehensive architecture map](hyper-v/architecture.md), and has a required, research-refined
-  [Hyper-V Distributed Application](hyper-v/distributed-application.md); and
-- [Hyper-V Azure Monitor design](hyper-v/azure-monitor.md) remains conditional on the Arc-enabled
-  SCVMM research and ADR 0023.
+- [Hyper-V SCOM Management Pack design](hyper-v/scom-mp.md) includes the
+  [comprehensive architecture map](hyper-v/architecture.md) and the
+  [Hyper-V Distributed Application](hyper-v/distributed-application.md).
+  Hyper-V operates 100% on-premises with zero cloud or Azure Monitor dependencies.
 
 Hyper-V can reuse sound patterns, but its support matrix, topology, Network ATC/manual/SCVMM-SDN
 network paths, discoveries, signals, defaults, and thresholds require their own evidence.

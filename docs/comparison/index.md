@@ -15,7 +15,7 @@ migration, or Hyper-V-to-Azure migration. The two destination scopes are deliber
 | Platform | Migration scope |
 |---|---|
 | Azure Local | Azure Local SCOM Management Pack → Azure Local Azure Monitor Health Models |
-| Hyper-V | Hyper-V SCOM Management Pack → Hyper-V Azure Monitor Health Models, only if ADR 0023 records a go decision |
+| Hyper-V | Not applicable — Hyper-V remains 100% on-premises SCOM ("Hyper-V Wins") |
 
 ::: info Planned after both Azure Local surfaces ship
 Migration walkthroughs land after both implementation tracks are authored and validated.
@@ -48,5 +48,5 @@ the conceptual foundation for this migration lane, not a Hyper-V design contract
 | Custom SCOM MPs already in production | Greenfield Azure Local deployment |
 | Need on-prem alerting independent of Azure | Want Azure-native alerting + Workbooks + Grafana |
 
-For Azure Local, both surfaces use the same conceptual model where supported. Hyper-V migration
-guidance is conditional on the Arc-enabled SCVMM Azure Monitor track passing its research gate.
+For Azure Local, both surfaces use the same conceptual model where supported. Hyper-V has
+no Azure Monitor track and remains entirely sovereign on-premises SCOM.

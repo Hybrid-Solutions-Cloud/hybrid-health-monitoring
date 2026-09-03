@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-09-03 — Complete Removal of Azure Monitor from Hyper-V Solution
+
+- **Purged All Hyper-V Azure Monitor Files and Code**:
+  - Deleted documentation files: `docs/design/hyper-v/azure-monitor.md`, `docs/hyper-v/azure-monitor.md`, `docs/hyper-v/azure-monitor-research.md`, and `docs/hyper-v/squaredup-cloud.md`.
+  - Deleted source tree `src/hyper-v/azure-monitor/` including all Bicep templates (`main.bicep`, `modules/health-model.bicep`, parameters), KQL signal queries, and test scripts (`Test-HyperVHealthModel.ps1`, `hyper-v-health.workbook.json`).
+- **Cleaned Documentation and Navigation**:
+  - `docs/design/hyper-v/index.md`: Removed the Azure Monitor lane row and deleted the "Azure Monitor Health Models solution" section entirely. Affirmed 100% on-premises SCOM architecture.
+  - `docs/design/index.md`: Updated architecture matrix to mark Hyper-V Azure Monitor as "Not applicable (100% on-premises SCOM)", removed `src/hyper-v/azure-monitor` from source ownership, and removed SquaredUp Cloud from Hyper-V tooling.
+  - `docs/azure-local/azure-monitor/index.md`: Removed reference to Hyper-V Azure Monitor track.
+  - `docs/comparison/index.md`: Updated migration row to confirm Hyper-V remains 100% on-premises SCOM with zero Azure Monitor track.
+  - `docs/project/about.md`: Removed Azure Monitor Hyper-V scope item.
+  - `docs/design/customization.md`: Clarified Azure Monitor Health Models apply solely to Azure Local.
+  - `src/README.md` & `CONTRIBUTING.md`: Removed `src/hyper-v/azure-monitor` references.
+- **Verification**:
+  - `npm run docs:build` in `docs/`: Built completely clean in 41.98s with 0 broken links and 0 errors.
+  - `MpDependencies.Docs.Tests.ps1`: Passed 8/8 tests.
+  - `HyperVPrivateCloud.Overrides.Tests.ps1`: Passed 9/9 tests.
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: Passed 63/63 tests.
+
 ## 2026-09-03 — Sealed and Published Production Release 1.0.7.0
 
 - **Built, Sealed, and Validated 1.0.7.0**:

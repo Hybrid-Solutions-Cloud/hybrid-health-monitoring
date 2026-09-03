@@ -60,10 +60,7 @@ owns that decision.
 
 - standalone and failover-clustered Hyper-V topology approved by research;
 - optional SCVMM management context where supported; and
-- a SCOM Management Pack as the committed delivery surface.
-
-Azure Monitor for Hyper-V is considered only for Arc-enabled SCVMM environments and remains
-conditional on [ADR 0023](../design/decisions/0023-hyper-v-azure-monitor-through-arc-enabled-scvmm.md).
+- an enterprise SCOM Management Pack Suite as the exclusive 100% on-premises delivery surface. Hyper-V has zero Azure Monitor or Azure Arc dependencies.
 
 ### Out of scope
 

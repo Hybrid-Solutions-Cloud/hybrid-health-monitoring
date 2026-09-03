@@ -24,8 +24,7 @@ implemented. The service and APIs remain preview. Live deployment and fault evid
 before release.
 :::
 
-Hyper-V has a separate, conditional [Azure Monitor roadmap track](../../hyper-v/azure-monitor.md)
-through Arc-enabled SCVMM. It is not covered by the Azure Local prerequisites on this page.
+Hyper-V is monitored exclusively on-premises via System Center Operations Manager (SCOM) and has zero Azure Monitor dependencies.
 
 ## What lives here
 

@@ -10,11 +10,9 @@ Azure Local ADRs in this repository.
 ### Source ownership
 
 - Start in the platform root: `src/azure-local/` or `src/hyper-v/`.
-- Then select the solution root: `scom-mp/` or `azure-monitor/`.
 - Do not add runtime product source directly under `src/` or create shared platform runtime folders.
 - Keep optional SquaredUp content below the solution it visualizes.
-- The reserved `src/hyper-v/azure-monitor/` root accepts no deployable implementation until ADR
-  0023 records a go decision.
+- Hyper-V is an on-premises SCOM-only suite located in `src/hyper-v/scom-mp/`.
 - See [ADR 0030](docs/design/decisions/0030-platform-first-source-tree.md) and
   [the source-tree contract](src/README.md).
 

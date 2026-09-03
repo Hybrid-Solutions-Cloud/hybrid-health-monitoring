@@ -9,8 +9,7 @@ src/
 │   ├── scom-mp/
 │   └── azure-monitor/
 └── hyper-v/
-    ├── scom-mp/
-    └── azure-monitor/
+    └── scom-mp/
 ```
 
 ## Runtime boundaries
@@ -19,11 +18,7 @@ src/
 |---|---|---|---|
 | Azure Local | SCOM Management Pack | Committed | `azure-local/scom-mp/` |
 | Azure Local | Azure Monitor Health Models | Committed | `azure-local/azure-monitor/` |
-| Hyper-V | SCOM Management Pack | Committed and first implementation priority | `hyper-v/scom-mp/` |
-| Hyper-V | Azure Monitor through Arc-enabled SCVMM | Conditional research track | `hyper-v/azure-monitor/` |
-
-The conditional Hyper-V Azure Monitor source root exists so the repository boundary is stable. It
-contains no deployable implementation until ADR 0023 records a go decision.
+| Hyper-V | SCOM Management Pack Suite | Production release (1.0.7.0) | `hyper-v/scom-mp/` |
 
 Azure Local and Hyper-V SCOM are independent products. They do not share sealed libraries,
 classes, namespaces, packages, Distributed Applications, signing identities, or runtime references.
