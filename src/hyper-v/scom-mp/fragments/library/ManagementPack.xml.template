@@ -24,7 +24,7 @@
         </ClassType>
         <ClassType ID="HyperVPrivateCloud.HostRole" Accessibility="Public" Abstract="false" Base="Windows!Microsoft.Windows.LocalApplication" Hosted="true" Singleton="false" Extension="false">
           <Property ID="HostId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
-          <Property ID="BoundaryId" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="BoundaryId" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="1" Required="false" />
           <Property ID="RoleVersion" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
           <Property ID="RoleState" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
           <Property ID="LogicalProcessorCount" Type="int" Key="false" Required="false" />

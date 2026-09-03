@@ -192,6 +192,24 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         $script:Discovery.SelectSingleNode("//Discovery[@ID='HyperVPrivateCloud.HostRole.Seed.Discovery']//Setting/Name[contains(text(),'HostRole') and contains(text(),'/HostId')]") | Should -Not -BeNullOrEmpty
     }
 
+    It 'allows the registry seed to create HostRole before topology resolves its boundary' {
+        $boundaryProperty = $script:Library.SelectSingleNode("//ClassType[@ID='HyperVPrivateCloud.HostRole']/Property[@ID='BoundaryId']")
+        $boundaryProperty | Should -Not -BeNullOrEmpty
+        $boundaryProperty.Key | Should -Be 'false'
+        $boundaryProperty.Required | Should -Be 'false'
+    }
+
+    It 'terminates successful relationship discoveries with an explicit zero exit code' {
+        foreach ($relativePath in @(
+                'fragments/capabilities/s2d/Discover-HyperVPrivateCloudS2DRelationships.ps1.template',
+                'fragments/capabilities/vmm/Discover-HyperVPrivateCloudVmmHostRelationships.ps1.template'
+            )) {
+            $text = Get-Content -LiteralPath (Join-Path $script:V2Root $relativePath) -Raw
+            $text | Should -Match '(?s)\$api\.Return\([^\r\n]+\)\s*# CommandExecuter.+?exit 0' -Because "$relativePath must explicitly report successful process termination after submitting discovery data"
+            $text | Should -Match '(?s)catch\s*\{.+?LogScriptEvent.+?throw' -Because "$relativePath must continue to fail genuine discovery exceptions"
+        }
+    }
+
     It 'keeps every probe script runnable under pwsh -File on a SCOM agent' {
         # Defects found by the 2026-08-31 review: a .NET type literal for the COM script API, [bool] parameters that
         # cannot bind the string "true" that pwsh -File passes, and the warning stream (WinPS compatibility module

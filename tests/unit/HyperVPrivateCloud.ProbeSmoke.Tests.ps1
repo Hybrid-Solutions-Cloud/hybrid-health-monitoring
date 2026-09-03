@@ -54,6 +54,9 @@ Describe 'Hyper-V Private Cloud Monitoring probe smoke test' {
     Remove-Item -LiteralPath $discoveryBuilt -Recurse -Force -ErrorAction SilentlyContinue
     $discoverySummary = @(@{ CaseCount = $discoveryCases.Count; ScriptCount = @($discoveryCases.ScriptName | Sort-Object -Unique).Count })
     $discoveryData = @($discoveryCases | ForEach-Object { @{ Pack = $_.Pack; ScriptName = $_.ScriptName; Case = $_ } })
+    if ($env:HCS_SMOKE_SCRIPT_FILTER) {
+        $discoveryData = @($discoveryData | Where-Object { $_.ScriptName -match $env:HCS_SMOKE_SCRIPT_FILTER })
+    }
     if ($env:HCS_SMOKE_LIMIT) { $discoveryData = @($discoveryData | Select-Object -First ([int]$env:HCS_SMOKE_LIMIT)) }
 
     BeforeAll {
@@ -223,6 +226,13 @@ function New-Object {
         # 2. stdout carries nothing but DataItem XML (warnings or objects on stdout break the property-bag parse).
         $out = "$($result.StdOut)".Trim()
         if ($out.Length -gt 0) { $out | Should -Match '^<DataItem' -Because "stdout must start with a DataItem: $context" }
+
+        # CommandExecuter rejects an otherwise-valid DataItem when the child leaves stderr populated or exits
+        # non-zero. A script that submitted data must therefore also terminate cleanly.
+        if ($out -match '<DataItem') {
+            $result.ExitCode | Should -Be 0 -Because "submitted data requires a successful process exit: $context"
+            $stderrText.Trim() | Should -BeNullOrEmpty -Because "submitted data requires an empty stderr stream: $context"
+        }
 
         # 3. Either a DataItem came back, or the script failed through its own catch path and logged the reason.
         if ($result.ExitCode -eq 0) {
