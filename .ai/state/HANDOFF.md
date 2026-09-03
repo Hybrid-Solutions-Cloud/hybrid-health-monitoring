@@ -5,7 +5,13 @@
 - **Committed & Pushed to `main`**:
   - `db65723`: `feat(hyper-v): implement 2-pack override model and central operator tasks AB#7319`
   - `09557cf`: `docs(hyper-v): update architecture docs, separate health models, and clean navigation AB#7319`
+  - `25b6f43`: `feat(docs): add interactive full-screen zoom and pan diagram overlay AB#7319`
   - Pushed cleanly to `https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring.git` (`main -> main`).
+- **Interactive Full-Screen Diagram Viewer with Zoom & Pan**:
+  - Implemented `DiagramViewerModal.vue`, `useDiagramViewer.ts`, and `Layout.vue` supporting full-screen zoom and pan for all Mermaid diagrams and architecture images.
+  - Controls include Zoom in (`+`), Zoom out (`-`), Reset/Fit (`0`), percentage indicator, and Close (`Esc`).
+  - Supports mouse-wheel zooming, click-and-drag panning, touch pinch-to-zoom, and keyboard shortcuts (`+`, `-`, `0`, `Esc`).
+  - Verified with real browser execution via `browser_subagent` across multiple doc pages.
 - **Main Page (`docs/index.md`) Realignment**:
   - Clarified that Hyper-V Private Cloud and Azure Local are **not part of the same health model**. They are distinct products with separate management pack suites and zero shared runtime dependencies.
   - Removed all Azure Monitor references from Hyper-V. Hyper-V Private Cloud is 100% on-premises SCOM ("Hyper-V Wins").
