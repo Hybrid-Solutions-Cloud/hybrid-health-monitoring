@@ -18,8 +18,8 @@ hero:
       text: View the roadmap
       link: /project/roadmap
     - theme: alt
-      text: Download Hyper-V SCOM 1.0.4.0
-      link: /downloads/hyper-v-private-cloud
+      text: Download HAAS-SDR 8-pack 1.0.4.0
+      link: /downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.4.0.zip
 features:
   - title: Azure Local
     details: A committed SCOM Management Pack and Azure Monitor Health Models for the full Azure Local infrastructure stack.
