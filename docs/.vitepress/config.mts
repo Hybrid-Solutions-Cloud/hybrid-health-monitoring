@@ -13,12 +13,12 @@ const base = '/hybrid-health-monitoring/'
 // ---------------------------------------------------------------------------
 
 const hyperVDesign = {
-  text: 'Design and architecture',
+  text: 'Hyper-V architecture and design',
   collapsed: true,
   items: [
-    { text: 'Design map', link: '/design/hyper-v/' },
+    { text: 'Architecture overview', link: '/design/hyper-v/' },
     { text: 'Solution design', link: '/design/hyper-v/scom-mp' },
-    { text: 'Architecture', link: '/design/hyper-v/architecture' },
+    { text: 'Core architecture', link: '/design/hyper-v/architecture' },
     { text: 'Management pack structure', link: '/design/hyper-v/management-pack-structure' },
     { text: 'V2 dependencies and ownership', link: '/design/hyper-v/v2-dependency-and-ownership-contract' },
     { text: 'Class and relationship model', link: '/design/hyper-v/class-and-relationship-model' },
@@ -56,7 +56,6 @@ const hyperVSidebar = [
     collapsed: true,
     items: [
       { text: 'SquaredUp Dashboard Server', link: '/hyper-v/squaredup-dashboard-server' },
-      { text: 'SquaredUp Cloud', link: '/hyper-v/squaredup-cloud' },
     ],
   },
   {
@@ -71,10 +70,10 @@ const hyperVSidebar = [
 ]
 
 const azureLocalDesign = {
-  text: 'Design and architecture',
+  text: 'Azure Local architecture and design',
   collapsed: true,
   items: [
-    { text: 'Design map', link: '/design/azure-local/' },
+    { text: 'Architecture map', link: '/design/azure-local/' },
     { text: 'Solution design', link: '/design/azure-local/scom-mp' },
     { text: 'Architecture', link: '/design/azure-local/architecture' },
     { text: 'Management pack structure', link: '/design/azure-local/management-pack-structure' },
@@ -342,11 +341,12 @@ export default defineConfig({
       { text: 'Azure Local', link: '/azure-local/' },
       { text: 'Downloads', link: '/downloads/hyper-v-private-cloud' },
       {
-        text: 'Reference',
+        text: 'Architecture & Reference',
         items: [
-          { text: 'Design and architecture', link: '/design/' },
-          { text: 'Architecture decisions', link: '/design/decisions/' },
-          { text: 'SCOM → Azure Monitor', link: '/comparison/' },
+          { text: 'Architecture overview', link: '/design/' },
+          { text: 'Hyper-V architecture', link: '/design/hyper-v/' },
+          { text: 'Azure Local architecture', link: '/design/azure-local/' },
+          { text: 'Architecture decisions (ADRs)', link: '/design/decisions/' },
           { text: 'Integrations', link: '/integrations/' },
         ],
       },

@@ -14,17 +14,17 @@ for the Hyper-V topology approved by the research and ADR gates.
 | Capability | Implementation |
 |---|---|
 | Topology | Stable classes and relationships for approved standalone, clustered, and SCVMM-managed configurations |
-| Discovery | Supported PowerShell and CIM/WMI discovery workflows with offline fixtures |
-| Health | Availability, performance, configuration, and applicable security rollups |
+| Discovery | Supported PowerShell 7+ and CIM/WMI discovery workflows with offline fixtures |
+| Health | Availability, performance, configuration, and management domain service rollups |
 | Monitoring | Unit, aggregate, and dependency monitors plus event and performance collection rules |
 | Distributed Application | A Hyper-V-owned service root for every supported cluster or standalone host, with dynamic component membership, rollup, views, reports, dashboards, and SLO targeting |
-| Customization | Separate customer-owned Discovery and Monitoring override MPs with optional Lab, Standard, and Strict starter templates |
-| Operations | State, alert, performance, and topology views with optional SquaredUp dashboards |
-| Release contract | Four required core MPs, nine optional capability MPs, optional profile-specific override starters, manifests, checksums, and profile bundles |
+| Customization | Separate customer-owned Discovery and Monitoring override MPs (`HyperVPrivateCloud.Discovery.Overrides` and `HyperVPrivateCloud.Monitoring.Overrides`) |
+| Operations | State, alert, performance, and topology views with central operations diagnostic tasks |
+| Release contract | Four required core MPs, nine optional capability MPs, starter override packs, manifests, and release checksums |
 
 ## Delivery state
 
-Version `1.0.6.0` is permanently sealed, offline verified, and published in this repository (ADR 0054). Its
+Version `1.0.6.0` is permanently sealed, offline verified, and published in this repository. Its
 public key token is `54d0fb1159995c86`.
 
 **[Download Hyper-V Private Cloud Monitoring now](../downloads/hyper-v-private-cloud.md).**
@@ -38,9 +38,8 @@ The comprehensive implemented design is available in the
 classes and relationships, staged discovery, workflows and cookdown, health and alerts, dynamic DA
 membership and rollup, authoring standards, least privilege, operability, testing, and release.
 
-The design now defines the sealed-versus-unsealed boundary in detail. Discovery and Monitoring each
-have a corresponding customer-owned override MP; the Default Management Pack is never used. Lab,
-Standard, and Strict are optional public starter templates, not automatically imported policy. See
+The design strictly defines the sealed-versus-unsealed boundary. Discovery and Monitoring each
+have a corresponding customer-owned override MP; the Default Management Pack is never used. See
 the [override and tuning architecture](../design/hyper-v/override-and-tuning-architecture.md) and
 the public [Management Pack administration guide](management-pack-guide.md).
 

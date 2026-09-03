@@ -187,6 +187,50 @@ flowchart LR
 - Explicitly document whether disappearance means deletion, stale topology, monitoring failure, or
   temporary unavailability.
 
+## Implemented class reference
+
+The following table documents every class implemented in the Hyper-V Private Cloud Monitoring solution:
+
+### Core Service and Distributed Application Classes
+
+| Class ID | Base Class | Hosting Parent | Key Property | Role in Solution |
+|---|---|---|---|---|
+| `HyperVPrivateCloud.Service` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.Service` | Unhosted (Root) | `BoundaryId` | Root of the Distributed Application representing a Failover Cluster or Standalone Host. |
+| `HyperVPrivateCloud.ComputeComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains `HyperVPrivateCloud.HostRole` and physical server hardware objects. |
+| `HyperVPrivateCloud.VirtualMachineComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains `HyperVPrivateCloud.VirtualMachine` instances with 25% rollup policy. |
+| `HyperVPrivateCloud.StorageComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains CSVs, S2D pools, Pure Storage arrays, and SMB shares. |
+| `HyperVPrivateCloud.NetworkComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains virtual switches, physical adapters, ToR ports, and firewalls. |
+| `HyperVPrivateCloud.AvailabilityComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains cluster quorum, clustered roles, and heartbeat monitors. |
+| `HyperVPrivateCloud.ManagementInfrastructureComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains AD domain services, DNS resolution services, and WDS deployment services. |
+| `HyperVPrivateCloud.MonitoringPipelineComponent` | `SystemCenter!Microsoft.SystemCenter.ServiceDesigner.ServiceComponent` | Unhosted (DA Branch) | `Id` | Contains `HyperVPrivateCloud.MonitoringPipeline` self-monitoring instances. |
+
+### Operational Managed Object Classes
+
+| Class ID | Base Class | Hosting Parent | Key Property | Purpose |
+|---|---|---|---|---|
+| `HyperVPrivateCloud.HostRole` | `Windows!Microsoft.Windows.ComputerRole` | `Windows!Microsoft.Windows.Computer` | `PrincipalName` (inherited) | Represents the Hyper-V host role on a Windows Server node. |
+| `HyperVPrivateCloud.VirtualMachine` | `System!System.LogicalEntity` | `HyperVPrivateCloud.HostRole` | `VirtualMachineId` (VM GUID) | Discovered per-VM object tracking configuration, heartbeat, integration services, and memory. |
+| `HyperVPrivateCloud.ClusterSharedVolume` | `System!System.LogicalEntity` | `HyperVPrivateCloud.HostRole` | `VolumeId` | Discovered CSV volume representing shared cluster disk storage. |
+| `HyperVPrivateCloud.ActiveDirectoryService` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `ServiceName` | Tracks host AD secure channel, domain controller connectivity, and AD site. |
+| `HyperVPrivateCloud.DnsService` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `ServiceName` | Tracks adapter DNS resolver configuration and forward name resolution. |
+| `HyperVPrivateCloud.DeploymentService` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `ServiceName` | Tracks Windows Deployment Services (WDSServer), TFTP, and PXE listeners. |
+| `HyperVPrivateCloud.MonitoringPipeline` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `PipelineId` | Tracks PowerShell 7 engine health, discovery freshness, and probe execution. |
+
+### Capability Classes
+
+| Capability | Target Class ID | Base Class | Hosting Parent | Integration Scope |
+|---|---|---|---|---|
+| **Cluster** | `HyperVPrivateCloud.Capability.Cluster.ClusterRole` | `Windows!Microsoft.Windows.ComputerRole` | `Cluster!Microsoft.Windows.Cluster.VirtualServer` | Executes once per cluster on the active core quorum node. |
+| **Storage** | `HyperVPrivateCloud.Capability.Storage.StorageFabricRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Evaluates MPIO paths, iSCSI sessions, and Fibre Channel fabrics. |
+| **S2D** | `HyperVPrivateCloud.Capability.S2D.S2DFabricRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Evaluates Storage Spaces Direct pools, virtual disks, and faults. |
+| **Pure Storage** | `HyperVPrivateCloud.Capability.PureStorage.PureStorageArrayRole` | `System!System.LogicalEntity` | Unhosted | Correlates FlashArray hardware and volume health into the DA. |
+| **File Services** | `HyperVPrivateCloud.Capability.FileServices.FileServicesRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors SMB clients, shares, and SOFS storage endpoints. |
+| **Physical Network** | `HyperVPrivateCloud.Capability.PhysicalNetwork.PhysicalNetworkRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors physical adapters, link states, discards, and ToR switch port LLDP info. |
+| **Network ATC** | `HyperVPrivateCloud.Capability.NetworkATC.NetworkATCRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors Network ATC intent compliance, drift, and RDMA/QoS policies. |
+| **SDN** | `HyperVPrivateCloud.Capability.SDN.SDNRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors host-side Network Controller binding, certificates, and virtual networks. |
+| **VMM** | `HyperVPrivateCloud.Capability.VMM.VMMRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors SCVMM fabric connectivity, agent versions, and failed jobs. |
+
+
 ## Boundary variants
 
 ```mermaid

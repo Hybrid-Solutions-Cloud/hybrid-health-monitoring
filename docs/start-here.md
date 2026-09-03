@@ -5,70 +5,68 @@ description: Pick the solution that matches your infrastructure and follow the n
 
 # Start here
 
-This site covers two independent monitoring solutions. They share design vocabulary but ship
-separately, install separately, and have different prerequisites.
+This site covers two independent monitoring solutions. They are completely separate platforms with distinct operational boundaries, separate management packs, and independent prerequisites:
+- **Hyper-V Private Cloud**: Sovereign, 100% on-premises enterprise monitoring delivered through System Center Operations Manager (SCOM).
+- **Azure Local**: Independent SCOM and cloud-native Azure Monitor tracks for Azure Local (formerly Azure Stack HCI).
 
-Work out which one you need, then follow its numbered path.
+Follow the path below that matches your infrastructure.
 
 ---
 
 ## Which solution do I need?
 
-| If your infrastructure is… | Use | Delivered through |
+| If your infrastructure is… | Solution to use | Delivered through |
 |---|---|---|
-| **Hyper-V hosts** — standalone or failover-clustered, with SAN, S2D, SMB, SDN, or VMM | [Hyper-V Private Cloud Monitoring](#path-hyper-v-with-scom) | SCOM |
-| **Azure Local** (formerly Azure Stack HCI), and you already run SCOM | [Azure Local SCOM management pack](#path-azure-local-with-scom) | SCOM |
-| **Azure Local**, and you want cloud-native monitoring | [Azure Local Azure Monitor health model](#path-azure-local-with-azure-monitor) | Azure Monitor |
+| **Hyper-V Private Cloud** — standalone or clustered hosts, SAN, S2D, SMB, SDN, SCVMM, or AD/DNS management infrastructure | **[Hyper-V Private Cloud Monitoring](#path-hyper-v-with-scom)** *(Flagship)* | SCOM 2019 / 2022 / 2025 |
+| **Azure Local** (formerly Azure Stack HCI), and you run SCOM | **[Azure Local SCOM Management Pack](#path-azure-local-with-scom)** | SCOM 2022 / 2025 (Lab Preview) |
+| **Azure Local**, and you want cloud-native monitoring | **[Azure Local Azure Monitor Health Model](#path-azure-local-with-azure-monitor)** | Azure Monitor & Azure Arc |
 
-::: tip Running both?
-Hyper-V and Azure Local are separate products with separate management packs. If you run both, deploy
-them independently — start with whichever is more urgent and repeat the other path afterwards. See
-[why they are separate](/design/decisions/0021-platform-and-delivery-track-architecture).
+::: tip Independent deployments
+Hyper-V and Azure Local are separate products with separate management packs and different health models. If your environment hosts both, deploy them independently.
 :::
 
 ---
 
-## Path: Hyper-V with SCOM {#path-hyper-v-with-scom}
+## Path: Hyper-V with SCOM (Flagship Solution) {#path-hyper-v-with-scom}
 
-The most complete solution on this site. Four required packs plus nine optional capability packs you
-choose from based on what your environment actually runs.
+This is the fully realized, production-ready flagship solution. It consists of four core packs plus optional capability packs based on your infrastructure (Clustering, Storage, S2D, File Services, Physical Network, Network ATC, SDN, VMM, and Pure Storage).
 
-1. **[Read the prerequisites](/hyper-v/prerequisites)** — do this first. Most failed imports are a
-   missing Microsoft or vendor management pack, and this page lists every one of them with exact
-   versions and download links.
-2. **[Choose your capabilities](/hyper-v/prerequisites#choose-your-capabilities)** — decide which of
-   the nine optional packs apply so you only obtain the prerequisites you actually need.
-3. **[Download the release](/downloads/hyper-v-private-cloud)** — take the sealed bundle that
-   matches your deployment profile.
-4. **[Follow the administration guide](/hyper-v/management-pack-guide)** — import, verify, and tune.
-5. **[Review the monitoring catalog policy](/hyper-v/monitoring-catalog)** — understand what is
-   monitored out of the box and what is opt-in.
-
-**Time to first health data:** allow a working day if you need to obtain Microsoft prerequisite packs
-and configure Run As profiles for VMM, SDN, or Pure Storage.
+1. **[Check the prerequisites](/hyper-v/prerequisites)**: Ensure required Microsoft base packs (Windows Server, Cluster, IIS/PowerShell) are imported.
+2. **[Download the release](/downloads/hyper-v-private-cloud)**: Download the sealed production 12-pack bundle (`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.6.0.zip`).
+3. **[Follow the administration guide](/hyper-v/management-pack-guide)**:
+   - Import the sealed `.mp` packs into SCOM.
+   - Configure agent proxying on all cluster nodes and Hyper-V hosts.
+4. **[Apply the 2-Pack Override Solution](/hyper-v/operations-guide#tuning-overrides)**:
+   - Apply [`HyperVPrivateCloud.Discovery.Overrides.xml`](/hyper-v/operations-guide#tuning-overrides) to set discovery schedules and scopes.
+   - Apply [`HyperVPrivateCloud.Monitoring.Overrides.xml`](/hyper-v/operations-guide#tuning-overrides) for baseline monitor thresholds, rules, and alert settings.
+5. **[Leverage the Central Operations Hub](/hyper-v/operations-guide)**:
+   - Run built-in operator diagnostic tasks directly from the SCOM console:
+     - `TestDomainHealth`: Validate Active Directory secure channel and domain controllers.
+     - `TestDnsResolution`: Verify host DNS records and SRV registrations.
+     - `TestPortConnectivity`: Run deep fabric port tests across gateways and domain controllers.
+     - `TestPxeWdsHealth`: Check bare-metal deployment services and TFTP/PXE listeners.
+     - `GetLldpNeighbor`: Discover connected Top-of-Rack switch ports and chassis IDs.
+     - `PfcEtsCounters`: Inspect RDMA PFC pause frames and QoS priority drop counters.
 
 ---
 
 ## Path: Azure Local with SCOM {#path-azure-local-with-scom}
 
 ::: warning Lab preview
-These packs remain under development and are not publicly downloadable.
+The Azure Local SCOM packs remain under active development in the lab and are not yet released for general production.
 :::
 
-1. **[Read the prerequisites](/azure-local/scom/prerequisites)** — shorter than the Hyper-V list; these packs
-   reference only management packs that ship with SCOM.
-2. **[Follow the management pack guide](/azure-local/scom/management-pack-guide)** — development and validation guidance only.
+1. **[Read the prerequisites](/azure-local/scom/prerequisites)** — lists the built-in SCOM dependencies.
+2. **[Follow the management pack guide](/azure-local/scom/management-pack-guide)** — development and validation guidance.
 3. **[Review the monitoring catalog](/azure-local/scom/monitoring-catalog)**.
 
 ---
 
 ## Path: Azure Local with Azure Monitor {#path-azure-local-with-azure-monitor}
 
-Cloud-native. No management packs — this is Azure-side configuration, and the prerequisites are
-substantial.
+Cloud-native monitoring for Azure Local clusters using Azure Arc, Azure Monitor Insights, and native Resource Health.
 
-1. **[Read the prerequisites](/azure-local/azure-monitor/prerequisites)** — sixteen items, most of them blocking.
-   Budget real time for Arc registration, Insights enablement, and RBAC.
+1. **[Read the cloud prerequisites](/azure-local/azure-monitor/prerequisites)** — Arc registration, Insights enablement, DCRs, and Azure RBAC assignments.
 2. **[Understand the entity model](/azure-local/azure-monitor/diagrams/entity-graph)**.
 3. **[Read the health model overview](/azure-local/azure-monitor/)**.
 
@@ -76,22 +74,22 @@ substantial.
 
 ## SCOM vs. Azure Monitor (Azure Local Only)
 
-For **Azure Local**, you have a choice between on-premises SCOM and cloud-native Azure Monitor. The two tracks differ in prerequisites, cost model, and deployment requirements:
+For **Azure Local**, operators can choose between on-premises SCOM and cloud-native Azure Monitor:
+- **[SCOM → Azure Monitor comparison](/comparison/)**: Detailed comparison of architecture, costs, and alerting semantics.
+- **[Concept mapping](/design/concept-mapping)**: How SCOM classes, health states, and rollups map to Azure Monitor entities.
 
-- [SCOM → Azure Monitor comparison](/comparison/)
-- [Concept mapping](/design/concept-mapping) — how SCOM classes, health states, and rollups correspond to Azure Monitor entities
-
-For **Hyper-V Private Cloud**, SCOM is the definitive, authoritative monitoring engine. Hyper-V has no dependency on Azure Arc or Azure Monitor.
+*Note: For **Hyper-V Private Cloud**, SCOM is the sole authoritative monitoring platform; there is no Azure Monitor dependency.*
 
 ---
 
-## Where things live
+## Where to find documentation
 
-| I want… | Go to |
+| If you want to… | Go to |
 |---|---|
-| To install something | The prerequisites page for your solution, then its guide |
-| To know what is monitored | The monitoring catalog for your solution |
-| To understand a design choice | [Architecture decisions](/design/decisions/) |
-| To see the architecture | [Design and architecture](/design/) |
-| To wire alerts into ServiceNow | [Integrations](/integrations/) |
-| To know what is shipping when | [Roadmap](/project/roadmap) |
+| **Deploy Hyper-V monitoring** | [Hyper-V Prerequisites](/hyper-v/prerequisites) and [Administration Guide](/hyper-v/management-pack-guide) |
+| **Download management packs** | [Hyper-V Downloads](/downloads/hyper-v-private-cloud) |
+| **Operate and troubleshoot** | [Operations & Troubleshooting Hub](/hyper-v/operations-guide) |
+| **Understand thresholds and tuning** | [Monitoring Catalog Policy](/hyper-v/monitoring-catalog) |
+| **Review architecture and design** | [Architecture & Reference Overview](/design/) |
+| **Connect alerts to ServiceNow** | [Integrations](/integrations/) |
+| **View project roadmap** | [Roadmap](/project/roadmap) |

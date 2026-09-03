@@ -208,10 +208,133 @@ customer Discovery Overrides MP; monitor, rule, alert, and collection changes re
 customer Monitoring Overrides MP. See
 [Override and tuning architecture](override-and-tuning-architecture.md).
 
-## Release-default gate
+## Detailed health rollup and dependency hierarchy
 
-The architecture is accepted. Released defaults cannot be certified until threshold and lab
-research provides threshold evidence, fault/recovery results, noise assessment, VM expected-state
-policy, and final
-Must/Should/Could/Collect/Diagnostic
-classification.
+The Distributed Application aggregates thousands of underlying property-bag signals into a clean, hierarchical health model:
+
+```mermaid
+graph TD
+    Service["Hyper-V Private Cloud Service (DA Root)"]:::root
+
+    subgraph DA_Branches["7 Distributed Application Component Groups"]
+        ComputeComp["Compute Component"]:::comp
+        VMComp["Virtual Machines Component (25% Threshold)"]:::comp
+        StorageComp["Storage Component"]:::comp
+        NetComp["Network Component"]:::comp
+        AvailComp["Availability & Clustering Component"]:::comp
+        MgmtComp["Management Infrastructure Component"]:::comp
+        PipeComp["Monitoring Pipeline Component"]:::comp
+    end
+
+    Service --> ComputeComp
+    Service --> VMComp
+    Service --> StorageComp
+    Service --> NetComp
+    Service --> AvailComp
+    Service --> MgmtComp
+    Service --> PipeComp
+
+    subgraph Managed_Entities["Monitored Managed Entities"]
+        HostRole["Hyper-V Host Role"]:::entity
+        VMEntity["Virtual Machine Instances"]:::entity
+        CSVEntity["Cluster Shared Volumes"]:::entity
+        ADEntity["Active Directory Service"]:::entity
+        DNSEntity["DNS Resolution Service"]:::entity
+        WDSEntity["PXE / Deployment Service"]:::entity
+        PipeEntity["Monitoring Pipeline Instance"]:::entity
+    end
+
+    ComputeComp --> HostRole
+    VMComp --> VMEntity
+    StorageComp --> CSVEntity
+    MgmtComp --> ADEntity
+    MgmtComp --> DNSEntity
+    MgmtComp --> WDSEntity
+    PipeComp --> PipeEntity
+
+    subgraph Leaf_Monitors["Sample Unit Monitors (Leaf Signals)"]
+        M_VMMS["VMMS & HCS Service State"]:::leaf
+        M_CPU["CPU & Memory Pressure"]:::leaf
+        M_VMState["VM State & Heartbeat"]:::leaf
+        M_CSV["CSV Space & Redirected IO"]:::leaf
+        M_AD["AD Secure Channel & Trust"]:::leaf
+        M_DNS["Host DNS Resolution"]:::leaf
+        M_WDS["PXE / TFTP UDP Listeners"]:::leaf
+        M_Pipe["PowerShell 7 Self-Test"]:::leaf
+    end
+
+    HostRole --> M_VMMS
+    HostRole --> M_CPU
+    VMEntity --> M_VMState
+    CSVEntity --> M_CSV
+    ADEntity --> M_AD
+    DNSEntity --> M_DNS
+    WDSEntity --> M_WDS
+    PipeEntity --> M_Pipe
+
+    classDef root fill:#0078D4,color:#fff,stroke:none
+    classDef comp fill:#4f46e5,color:#fff,stroke:none
+    classDef entity fill:#059669,color:#fff,stroke:none
+    classDef leaf fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+```
+
+### Rollup policy specifics
+
+1. **Virtual Machines Rollup (Anti-Noise Guard)**:
+   - Rollup Monitor: `HyperVPrivateCloud.VirtualMachines.Members.Availability.Dependency.Monitor`
+   - Algorithm: `Percentage`
+   - Parameter: `25` (Requires >25% of VMs to be unhealthy before degrading the Virtual Machines component)
+   - `MemberUnAvailable`: `Success` (An unmonitored or newly provisioned VM does not poison the health tree)
+2. **Management Infrastructure Rollup**:
+   - Rollup Monitors: `DomainHealth`, `DnsHealth`, `DeploymentService` roll directly into `ManagementInfrastructureComponent`.
+   - Algorithm: `WorstOf` (Because Active Directory and DNS are critical prerequisites for cluster authentication and host operations).
+3. **Compute and Host Rollup**:
+   - Evaluates host services (`vmms`, `hcs`), hypervisor presence, host headroom, and reboot status.
+   - Algorithm: `WorstOf` for core service availability; Warning for pending reboots.
+
+## Implemented monitor catalog and override settings
+
+The table below details core unit monitors, their health dimensions, default intervals, warning/error evaluation criteria, and overridable parameters:
+
+| Monitor ID | Target Class | Dimension | Default Interval | Warning / Critical Condition | Overridable Parameters |
+|---|---|---|---|---|---|
+| `Host.VmmsService.Monitor` | `HostRole` | Availability | 60s | VMMS service stopped | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.HostComputeService.Monitor` | `HostRole` | Availability | 60s | HCS service stopped | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.Hypervisor.Monitor` | `HostRole` | Availability | 300s | Hypervisor present flag false | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.CpuPressure.Monitor` | `HostRole` | Performance | 120s | CPU usage > 90% (Warning), > 95% (Critical) | `WarningThreshold`, `CriticalThreshold`, `SampleCount` |
+| `Host.AvailableMemory.Monitor` | `HostRole` | Performance | 120s | Free RAM < 2048 MB (Warning), < 1024 MB (Critical) | `WarningThresholdMB`, `CriticalThresholdMB` |
+| `Host.PendingReboot.Monitor` | `HostRole` | Configuration | 3600s | CBS or Windows Update reboot pending | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.DomainHealth.Monitor` | `ActiveDirectoryService` | Availability | 900s | AD secure channel broken or PDC unreachable | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.DnsHealth.Monitor` | `DnsService` | Configuration | 900s | Adapter DNS missing or forward resolution failing | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.DeploymentService.Monitor` | `DeploymentService` | Availability | 900s | WDSServer stopped or TFTP/PXE ports closed | `IntervalSeconds`, `TimeoutSeconds` |
+| `Host.PipelineFreshness.Monitor` | `MonitoringPipeline` | Availability | 300s | PowerShell 7 engine failure or telemetry drift | `IntervalSeconds`, `MaxDriftSeconds` |
+| `Vm.State.Monitor` | `VirtualMachine` | Availability | 60s | VM not in expected operational state | `IntervalSeconds`, `TimeoutSeconds` |
+| `Vm.Heartbeat.Monitor` | `VirtualMachine` | Availability | 60s | Integration services heartbeat missed | `IntervalSeconds`, `MissedThreshold` |
+| `Vm.IntegrationServices.Monitor` | `VirtualMachine` | Configuration | 300s | Integration components outdated or degraded | `IntervalSeconds`, `TimeoutSeconds` |
+| `Vm.MemoryPressure.Monitor` | `VirtualMachine` | Performance | 120s | VM memory demand > 95% of limit | `WarningThreshold`, `SampleCount` |
+| `Vm.StorageLatency.Monitor` | `VirtualMachine` | Performance | 120s | Average virtual disk latency > 40ms | `LatencyThresholdMs`, `SampleCount` |
+| `Vm.StorageQueue.Monitor` | `VirtualMachine` | Performance | 120s | Virtual disk queue depth > 32 | `QueueDepthThreshold`, `SampleCount` |
+| `Cluster.Quorum.Monitor` | `ClusterRole` | Availability | 60s | Cluster quorum degraded or offline | `IntervalSeconds`, `TimeoutSeconds` |
+| `Cluster.CSVState.Monitor` | `ClusterRole` | Availability | 60s | CSV volume offline or in redirected IO mode | `IntervalSeconds`, `TimeoutSeconds` |
+| `Cluster.CSVFreeSpace.Monitor` | `ClusterRole` | Performance | 300s | Free space < 15% (Warning), < 5% (Critical) | `WarningPercent`, `CriticalPercent` |
+
+## Operator tasks catalog
+
+The management pack suite equips operators with read-only diagnostics and controlled remediations directly from the SCOM console:
+
+| Task Name | Target Class | Type | What it does |
+|---|---|---|---|
+| `TestDomainHealth` | `ActiveDirectoryService` | Diagnostic | Validates domain trust, secure channel status, PDC emulator responsiveness, and AD site topology. |
+| `TestDnsResolution` | `DnsService` | Diagnostic | Probes adapter DNS server configuration, forward name resolution, and domain controller SRV record lookups. |
+| `TestPortConnectivity` | `HostRole` | Diagnostic | Performs TCP synthetic port checks against default gateways (HTTP/HTTPS/SMB) and Domain Controllers (LDAP/RPC/Kerberos/SMB/WinRM). |
+| `TestPxeWdsHealth` | `DeploymentService` | Diagnostic | Verifies WDSServer service status, active UDP listeners on ports 67/68/69/4011, and the REMINST deployment share. |
+| `GetLldpNeighbor` | `PhysicalNetworkRole` | Diagnostic | Probes physical host adapters and driver DCB properties to extract connected ToR switch port IDs and chassis IDs. |
+| `PfcEtsCounters` | `PhysicalNetworkRole` | Diagnostic | Gathers real-time RDMA Activity, PFC pause frames, DCB traffic classes, and QoS priority policy drop counters. |
+| `CollectDiagnosticSummary` | `HostRole` | Diagnostic | Generates a complete environmental summary of the host, Hyper-V services, and PowerShell 7 runtime health. |
+| `RestartVmms` | `HostRole` | Remediation | Gracefully restarts the Virtual Machine Management Service (`vmms`). Requires operator confirmation. |
+| `RestartHcs` | `HostRole` | Remediation | Gracefully restarts the Host Compute Service (`hcs`). Requires operator confirmation. |
+| `MoveCsvCoordinator` | `ClusterRole` | Remediation | Rebalances or live-moves CSV ownership to an optimal cluster node. |
+| `DrainNode` | `ClusterRole` | Remediation | Pauses and safely live-migrates all virtual machines away from the target host for maintenance. |
+| `ResumeNode` | `ClusterRole` | Remediation | Resumes cluster scheduling on a maintenance-completed node. |
+| `LiveMigrateVm` | `VirtualMachine` | Remediation | Initiates a live migration of the target VM to the best available host in the cluster. |
+

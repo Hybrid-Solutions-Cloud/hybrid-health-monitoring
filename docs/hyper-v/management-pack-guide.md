@@ -68,7 +68,7 @@ against a discovered host. Do not approve the installation unless the result sho
 
 The MP does not fall back to Windows PowerShell. A missing or relocated executable produces a
 workflow failure that must be corrected before monitoring can be considered healthy. See
-[ADR 0047](../design/decisions/0047-hyper-v-v2-explicit-powershell-7-execution.md) for the execution
+the [security and operability architecture](../design/hyper-v/security-and-operability.md) for the execution
 and security contract and Microsoft's
 [PowerShell installation guidance](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows).
 

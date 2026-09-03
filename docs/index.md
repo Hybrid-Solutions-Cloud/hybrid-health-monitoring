@@ -39,34 +39,51 @@ features:
 
 This project defines production-grade health monitoring for enterprise **Hyper-V Private Clouds** and **Azure Local hybrid infrastructure**. 
 
-Hyper-V Private Cloud Monitoring is the primary flagship solution: a fully realized, production-ready SCOM management pack suite architected for complete visibility into host compute, virtual machines, failover clustering, storage fabrics, physical and virtual networks, and management domain services. Azure Local is maintained as a completely separate, independent product track with its own dedicated SCOM and Azure Monitor delivery surfaces.
+**Hyper-V Private Cloud Monitoring is the flagship solution**: a fully realized, production-ready SCOM management pack suite engineered specifically for private cloud virtualization fabrics—encompassing host compute, virtual machines, failover clustering, storage fabrics (CSV, S2D, SAN, Pure Storage), physical and software-defined networking, and core management domain services (Active Directory, DNS, PXE/WDS).
 
-## Platform architecture
+**Azure Local** is maintained as a completely separate, independent product track with its own dedicated SCOM and Azure Monitor delivery surfaces.
 
-Both platforms are architecturally distinct and share zero runtime dependencies:
+::: important Two completely separate health models
+Hyper-V Private Cloud and Azure Local are **not part of the same health model**. They are two separate platforms with distinct operational boundaries, independent Management Pack suites, and zero shared runtime dependencies:
+- **Hyper-V Private Cloud** runs 100% on-premises via System Center Operations Manager (SCOM 2019, 2022, 2025) with PowerShell 7+. It has no dependency on Azure Arc, Azure Monitor, or cloud connectivity.
+- **Azure Local** (formerly Azure Stack HCI) is an independent platform track with its own distinct SCOM management pack and separate cloud-native Azure Monitor health models.
+:::
+
+## Sovereign platform architectures
 
 ```mermaid
 graph TD
-    Root["Hybrid Infrastructure Health"]:::root
-    Root --> HV["Hyper-V Private Cloud"]
-    Root --> AzL["Azure Local (Independent Track)"]
-    HV --> HVS["Enterprise SCOM Management Packs (Production Released)"]
-    AzL --> AzLS["SCOM Management Pack (Lab Development)"]
-    AzL --> AzLA["Azure Monitor Health Model (Cloud-Native)"]
+    Root["Hybrid Infrastructure Health Monitoring"]:::root
+    Root --> HV["Hyper-V Private Cloud (Flagship)"]:::flagship
+    Root --> AzL["Azure Local (Independent Track)"]:::independent
+
+    subgraph HVTrack["Hyper-V Sovereign SCOM Health Model"]
+        HV --> HVS["Enterprise SCOM Management Pack Suite (v1.0.6.0)"]
+        HVS --> HVDA["7-Branch Distributed Application Engine"]
+        HVS --> HVOps["Central Operations & Troubleshooting Hub"]
+        HVS --> HVMgmt["Management Domain Health (AD / DNS / WDS)"]
+    end
+
+    subgraph AzLTrack["Azure Local Separate Health Model"]
+        AzL --> AzLS["Dedicated SCOM Management Pack (Lab Preview)"]
+        AzL --> AzLA["Cloud-Native Azure Monitor Health Model (Arc-Enabled)"]
+    end
 
     classDef root fill:#0078D4,color:#fff,stroke:none
+    classDef flagship fill:#107c41,color:#fff,stroke:none
+    classDef independent fill:#5c2d91,color:#fff,stroke:none
 ```
 
-## Tracks at a glance
+## Solution tracks at a glance
 
-| Platform | Delivery Track | Status | Primary Use Case |
+| Platform | Delivery Track | Health Model Status | Architecture & Runtime |
 |---|---|---|---|
-| **Hyper-V Private Cloud** | SCOM Management Pack Suite | **Production Release (1.0.6.0)** | Enterprise on-premises private clouds, Failover Clusters, SCVMM, SAN/S2D/Pure, SDN, AD/DNS |
-| **Azure Local** | SCOM Management Pack | Lab Development | On-premises SCOM monitoring for Azure Local clusters |
-| **Azure Local** | Azure Monitor Health Models | Committed Cloud-Native Track | Cloud-native observability via Azure Arc and Azure Monitor |
+| **Hyper-V Private Cloud (Flagship)** | SCOM Management Pack Suite | **Production Release (1.0.6.0)** | 100% on-premises SCOM (2019 / 2022 / 2025), PowerShell 7+, zero cloud dependency |
+| **Azure Local** | SCOM Management Pack | Lab Preview | Independent SCOM management pack for Azure Local HCI clusters |
+| **Azure Local** | Azure Monitor Health Models | Committed Cloud Track | Cloud-native observability via Azure Arc and Azure Monitor |
 
-::: tip Completely independent solutions
-Hyper-V Private Cloud and Azure Local have separate design, source, deployment, and release boundaries. The Hyper-V suite runs 100% on System Center Operations Manager without any cloud or Azure Monitor dependencies.
+::: tip Sovereign operation for Hyper-V
+The Hyper-V Private Cloud solution has no Azure Monitor or Azure Arc requirement. All topology discovery, health evaluation, property-bag probing, alert rules, and diagnostic tasks execute locally on-premises via SCOM agents.
 :::
 
 ## Companion tooling
