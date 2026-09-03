@@ -182,11 +182,11 @@
                 <RequireOutput>true</RequireOutput>
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
                 <DefaultEventPolicy>
-                  <StdOutMatches Operator="DoesNotMatchRegularExpression">(?s)^\s*&lt;DataItem\b.*(?:/&gt;|&lt;/DataItem&gt;)\s*$</StdOutMatches>
-                  <StdErrMatches>\a+</StdErrMatches>
+                  <!-- The typed discovery data source parses and validates the returned DataItem. Do not
+                       pre-validate stdout with CommandExecuter's different regular-expression engine. -->
+                  <StdErrMatches>.+</StdErrMatches>
                   <ExitCodeMatches>[^0]+</ExitCodeMatches>
                 </DefaultEventPolicy>
-                <EventPolicy />
               </DataSource>
             </MemberModules>
             <Composition><Node ID="Pwsh" /></Composition>
@@ -215,11 +215,10 @@
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
                 <OutputType>System.PropertyBagData</OutputType>
                 <DefaultEventPolicy>
-                  <StdOutMatches Operator="DoesNotMatchRegularExpression">(?s)^\s*&lt;DataItem\b.*(?:/&gt;|&lt;/DataItem&gt;)\s*$</StdOutMatches>
-                  <StdErrMatches>\a+</StdErrMatches>
+                  <!-- The typed property-bag probe parses and validates the returned DataItem. -->
+                  <StdErrMatches>.+</StdErrMatches>
                   <ExitCodeMatches>[^0]+</ExitCodeMatches>
                 </DefaultEventPolicy>
-                <EventPolicy />
               </ProbeAction>
             </MemberModules>
             <Composition><Node ID="Pwsh" /></Composition>
@@ -247,8 +246,7 @@
                 <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
                 <RequireOutput>false</RequireOutput>
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
-                <DefaultEventPolicy><StdOutMatches /><StdErrMatches>\a+</StdErrMatches><ExitCodeMatches>[^0]+</ExitCodeMatches></DefaultEventPolicy>
-                <EventPolicy />
+                <DefaultEventPolicy><StdErrMatches>.+</StdErrMatches><ExitCodeMatches>[^0]+</ExitCodeMatches></DefaultEventPolicy>
               </WriteAction>
             </MemberModules>
             <Composition><Node ID="Pwsh" /></Composition>

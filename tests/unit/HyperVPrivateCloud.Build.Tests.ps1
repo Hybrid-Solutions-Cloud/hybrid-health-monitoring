@@ -95,15 +95,13 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
             Should -Be 'Collect Hyper-V diagnostic and PowerShell runtime summary'
     }
 
-    It 'accepts single-line and multiline SCOM DataItem output' {
-        $singleLine = '<DataItem type="System.PropertyBagData"><Property Name="State" Variant="8">Good</Property></DataItem>'
-        $multiline = "<DataItem type=`"System.DiscoveryData`">`n<DiscoveryType>0</DiscoveryType>`n</DataItem>"
+    It 'delegates DataItem validation to the typed module and classifies stderr and nonzero exits' {
         foreach ($moduleId in 'HyperVPrivateCloud.Pwsh.DiscoveryProvider', 'HyperVPrivateCloud.Pwsh.PropertyBagProbe') {
             $module = $script:Library.SelectSingleNode("//*[@ID='$moduleId']")
-            $stdoutPolicy = $module.SelectSingleNode('.//DefaultEventPolicy/StdOutMatches')
-            $stdoutPolicy.Operator | Should -Be 'DoesNotMatchRegularExpression'
-            [regex]::IsMatch($singleLine, $stdoutPolicy.InnerText) | Should -BeTrue
-            [regex]::IsMatch($multiline, $stdoutPolicy.InnerText) | Should -BeTrue
+            $module.SelectSingleNode('.//DefaultEventPolicy/StdOutMatches') | Should -BeNullOrEmpty
+            $module.SelectSingleNode('.//DefaultEventPolicy/StdErrMatches').InnerText | Should -Be '.+'
+            $module.SelectSingleNode('.//DefaultEventPolicy/ExitCodeMatches').InnerText | Should -Be '[^0]+'
+            $module.SelectSingleNode('.//EventPolicy') | Should -BeNullOrEmpty
         }
     }
 
@@ -495,6 +493,15 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         @($script:ClusterCapability.SelectNodes("//DependencyMonitor[@RelationshipType='HyperVPrivateCloud.Capability.Cluster.AvailabilityContainsClusterRole']") | ForEach-Object MemberMonitor) | Sort-Object | Should -Be @('Health!System.Health.AvailabilityState', 'Health!System.Health.ConfigurationState', 'Health!System.Health.PerformanceState')
     }
 
+    It 'detects local cluster membership when a seeded HostRole has no BoundaryId yet' {
+        $csvScript = $script:ClusterCapability.SelectSingleNode("//ScriptName[text()='HyperVPrivateCloud.Cluster.CsvHealth.ps1']/following-sibling::ScriptBody[1]").InnerText
+        $csvScript | Should -Match 'try \{ \$cluster = Get-Cluster -ErrorAction Stop \}'
+        $csvScript | Should -Match "Get-Service -Name 'ClusSvc'"
+        $csvScript | Should -Match '\[string\]::IsNullOrWhiteSpace\(\$BoundaryId\)'
+        $csvScript | Should -Match '\$BoundaryId = "cluster:'
+        $csvScript | Should -Not -Match "if \(\$BoundaryId -notlike 'cluster:\*'\)"
+    }
+
     It 'ships authoritative cluster, node, role, network, CSV, performance, and alert operator views beneath core folders' {
         @($script:ClusterCapability.SelectNodes('//View')).Count | Should -Be 7
         $script:ClusterCapability.SelectSingleNode("//View[@ID='HyperVPrivateCloud.Capability.Cluster.ClusterRole.State.View']") | Should -BeNullOrEmpty
@@ -771,6 +778,9 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         $monitor.Configuration.RequireRdma | Should -Be 'false'
         $script:FileServicesCapability.OuterXml | Should -Match 'ContinuouslyAvailable'
         $script:FileServicesCapability.OuterXml | Should -Match 'ClientRdmaCapable'
+        $healthScript = $script:FileServicesCapability.SelectSingleNode("//ScriptName[text()='HyperVPrivateCloud.FileServices.Health.ps1']/following-sibling::ScriptBody[1]").InnerText
+        $healthScript | Should -Match '\$required = @\(Get-HcsRequiredShare\)'
+        $healthScript | Should -Not -Match '\$required = Get-HcsRequiredShare'
     }
 
     It 'provides SMB, SOFS, Microsoft service, alert, and performance views under Storage' {

@@ -7,9 +7,8 @@ description: Sealed SCOM Management Packs, public override packs, manifests, and
 
 Sealed SCOM Management Packs for Hyper-V private cloud infrastructure. The release contains 13
 product packs: four always-required packs plus nine independently selectable capability packs.
-Upgrade every `HyperVPrivateCloud.*` pack already installed in the management group; an existing
-eight-pack deployment remains an eight-pack deployment. Do not remove installed capability packs
-merely because four packs are classified as core.
+The primary deployment ZIP upgrades all 12 non-PureStorage solution packs together. Pure Storage
+remains separately selectable because it requires the vendor Management Pack.
 
 ::: tip Read the prerequisites first
 The Microsoft and vendor Management Packs each capability requires are **not** redistributed here,
@@ -17,13 +16,13 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.0.5.0
+## Current release: 1.0.6.0
 
-`1.0.5.0` is an in-place corrective upgrade over `1.0.4.0`. Every one of the 13 sealed product MPs
-has version `1.0.5.0`, so SCOM recognizes the release as an upgrade. It gives every capability MP a friendly
-SCOM display name and removes the empty duplicate lowercase `Failover clusters` view while keeping
-the working Microsoft-backed `Failover Clusters` view. It also includes the `1.0.3.0` HostRole seed
-and S2D/VMM process-termination corrections. All 13 product Management Packs
+`1.0.6.0` is an in-place corrective upgrade over `1.0.3.0` through `1.0.5.0`. Every one of the 13
+sealed product MPs has version `1.0.6.0`, so SCOM recognizes the release as an upgrade. It removes
+the CommandExecuter stdout regex that discarded valid PowerShell discovery and monitor DataItems,
+fixes singleton File Services results under StrictMode, and detects real cluster membership when a
+seeded HostRole has not yet received its topology BoundaryId. All 13 product Management Packs
 are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
 strong-name checked, and covered by the published SHA-256 manifest. The release catalog contains 13
 sealed Management Packs and optional starter templates: 162 unit monitors, 111
@@ -41,7 +40,7 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the HAAS-SDR eight-pack upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.5.0.zip)** — the exact eight sealed `1.0.5.0` MPs already in scope: Library, Discovery, Monitoring, Presentation, Cluster, S2D, VMM, and PhysicalNetwork. It contains no override MPs.
+- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.6.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.0.6.0`. It contains no override MPs.
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
 - [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
 - [Download optional override starters](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — alternative Lab, Standard, and Strict templates for 11 profiles; select and review one Discovery/Monitoring pair only.
@@ -50,9 +49,9 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.0.5.0`](/downloads/hyper-v-private-cloud/1.0.5.0/release-assets.json). The `latest` directory
+[`1.0.6.0`](/downloads/hyper-v-private-cloud/1.0.6.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
-The previous release stays under [`1.0.4.0`](/downloads/hyper-v-private-cloud/1.0.4.0/release-assets.json).
+The previous release stays under [`1.0.5.0`](/downloads/hyper-v-private-cloud/1.0.5.0/release-assets.json).
 Engineering builds published briefly during 2026-08-30/31 were withdrawn before any deployment
 ([ADR 0054](../design/decisions/0054-the-real-1000-version-reset.md)).
 

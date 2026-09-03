@@ -847,7 +847,8 @@ $timestamp = [DateTimeOffset]::FromUnixTimeSeconds($SourceDateEpoch)
 $completeStage = Join-Path $workingRoot 'bundle-complete'
 $coreStage = Join-Path $workingRoot 'bundle-core'
 $overrideStage = Join-Path $workingRoot 'bundle-overrides'
-foreach ($path in @($completeStage, $coreStage, $overrideStage)) { [System.IO.Directory]::CreateDirectory($path) | Out-Null }
+$deploymentStage = Join-Path $workingRoot 'bundle-deployment'
+foreach ($path in @($completeStage, $coreStage, $overrideStage, $deploymentStage)) { [System.IO.Directory]::CreateDirectory($path) | Out-Null }
 foreach ($artifact in $sealedArtifacts) { Copy-HcsFile -Source (Join-Path $assetsPath $artifact.file) -Destination (Join-Path $completeStage "ManagementPacks/$($artifact.file)") }
 Copy-HcsFile -Source $releaseManifestPath -Destination (Join-Path $completeStage 'release-manifest.json')
 Copy-HcsFile -Source (Join-Path $stagingRoot 'README.md') -Destination (Join-Path $completeStage 'README.md')
@@ -855,6 +856,8 @@ foreach ($file in Get-ChildItem -LiteralPath $overrideRoot -File -Recurse) { Cop
 
 $coreIds = @($manifest.artifacts | Where-Object { $_.required -and $_.implementationStatus -eq 'Authored' } | ForEach-Object id)
 foreach ($id in $coreIds) { Copy-HcsFile -Source (Join-Path $assetsPath "$id.mp") -Destination (Join-Path $coreStage "ManagementPacks/$id.mp") }
+$deploymentIds = @($contract.profiles | Where-Object id -eq 'CompletePrivateCloud' | Select-Object -ExpandProperty capabilities | ForEach-Object { "HyperVPrivateCloud.Capability.$_" }) + $coreIds
+foreach ($id in $deploymentIds | Sort-Object -Unique) { Copy-HcsFile -Source (Join-Path $assetsPath "$id.mp") -Destination (Join-Path $deploymentStage "$id.mp") }
 Copy-HcsFile -Source $releaseManifestPath -Destination (Join-Path $coreStage 'release-manifest.json')
 Copy-HcsFile -Source (Join-Path $stagingRoot 'README.md') -Destination (Join-Path $coreStage 'README.md')
 foreach ($file in Get-ChildItem -LiteralPath $overrideRoot -File -Recurse) { Copy-HcsFile -Source $file.FullName -Destination (Join-Path $overrideStage (Get-HcsRelativePath -BasePath $stagingRoot -Path $file.FullName)) }
@@ -865,10 +868,12 @@ $bundleFiles = [System.Collections.Generic.List[string]]::new()
 $completeZip = Join-Path $assetsPath 'Hyper-V-Private-Cloud-Monitoring-Complete.zip'
 $coreZip = Join-Path $assetsPath 'Hyper-V-Private-Cloud-Monitoring-Core.zip'
 $overridesZip = Join-Path $assetsPath 'Hyper-V-Private-Cloud-Monitoring-Overrides.zip'
+$deploymentZip = Join-Path $assetsPath "Hyper-V-Private-Cloud-Monitoring-Deployment-$Version.zip"
 Write-HcsDeterministicZip -SourcePath $completeStage -DestinationPath $completeZip -Timestamp $timestamp
 Write-HcsDeterministicZip -SourcePath $coreStage -DestinationPath $coreZip -Timestamp $timestamp
 Write-HcsDeterministicZip -SourcePath $overrideStage -DestinationPath $overridesZip -Timestamp $timestamp
-foreach ($path in @($completeZip, $coreZip, $overridesZip)) { $bundleFiles.Add($path) }
+Write-HcsDeterministicZip -SourcePath $deploymentStage -DestinationPath $deploymentZip -Timestamp $timestamp
+foreach ($path in @($completeZip, $coreZip, $overridesZip, $deploymentZip)) { $bundleFiles.Add($path) }
 
 foreach ($deploymentProfile in $contract.profiles) {
     $profileStage = Join-Path $workingRoot "bundle-profile-$($deploymentProfile.id)"

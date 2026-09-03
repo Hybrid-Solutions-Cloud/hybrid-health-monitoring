@@ -1,5 +1,25 @@
 # Current task
 
+## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.6.0
+
+- Live SCOM 2025 validation of `1.0.3.0` proved HostRole seed recovery but showed all PowerShell
+  discovery/property-bag workflows rejected by CommandExecuter's stdout event-policy regex.
+  Canonical providers now leave stdout validation to the typed SCOM parser, classify stderr and
+  nonzero exits, and contain neither the empty `EventPolicy` nor the `\a+` sentinel.
+- File Services preserves singleton required-share output as an array. CSV health detects local
+  Failover Cluster membership when the staged HostRole BoundaryId is empty and emits detailed
+  events 8702/8304 with reproduction and remediation guidance.
+- The generated deployment ZIP now contains exactly 12 non-PureStorage solution MPs, including
+  SDN, Storage, File Services, and Network ATC; no overrides. Independent validation hashes every
+  embedded MP against the sealed release asset.
+- Source commit `4ebcaec`; unit tests `206/206`; workflow smoke `63/63`; VitePress build passes.
+  Production sealing and independent validation pass for 13 product MPs and 66 starter MPs at
+  `1.0.6.0`, token `54d0fb1159995c86`. Deployment ZIP SHA-256 is
+  `3097fcb08273591233c0bcf74f214616529b4e51ba27cc49a2484d38138d47a2`.
+- Next: commit the exact immutable/latest assets, push and merge, wait for Pages, and verify the
+  public 12-pack download. Then import all 12 packs together and run the stated 16/0 acceptance
+  after one four-hour seed plus one 30-minute topology cycle.
+
 ## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.5.0
 
 - `1.0.4.0` already existed in the operator management group, so the console/view correction is

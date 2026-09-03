@@ -6,11 +6,11 @@ description: Public operator guide for building, installing, validating, tuning,
 # Hyper-V Management Pack administration guide
 
 This guide explains how Hyper-V Private Cloud Monitoring is installed, tuned, validated,
-upgraded, and removed. Version `1.0.5.0` is permanently sealed with public key token
+upgraded, and removed. Version `1.0.6.0` is permanently sealed with public key token
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 1.0.5.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
+**[Download version 1.0.6.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
 the [operations guide](operations-guide.md) covers day-two use: console layout, tuning, tasks.
  Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
@@ -35,9 +35,9 @@ Each supported capability is a separate sealed adapter. Publisher-owned prerequi
 redistributed in the HCS download and must be installed before the corresponding adapter.
 
 “Four core MPs” is a dependency classification, not an instruction to reduce an existing
-installation to four files. When upgrading, import the `1.0.5.0` replacement for every
-`HyperVPrivateCloud.*` MP already installed. For example, a management group with eight product MPs
-before the upgrade must have those same eight product MPs at `1.0.5.0` afterward.
+installation to four files. The `1.0.6.0` deployment ZIP contains all 12 non-PureStorage solution
+MPs so one import upgrades Library, Discovery, Monitoring, Presentation, Cluster, Storage, S2D,
+File Services, Network ATC, Physical Network, SDN, and VMM together. Pure Storage is separate.
 
 ### PowerShell 7 execution prerequisite
 
@@ -130,7 +130,7 @@ storage objects. The S2D package's Cluster and Windows Server prerequisites must
 and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
 volumes, and file shares.
 
-The current HCS product release is `1.0.5.0`. Independently, its S2D adapter references the lowest
+The current HCS product release is `1.0.6.0`. Independently, its S2D adapter references the lowest
 compatible **Microsoft.Storage.Library** identity while requiring Microsoft's inspected `1.0.47.4`
 S2D package as the supported minimum. These Microsoft dependency versions are not the HCS product
 version. The adapter contributes DA membership, health rollup, query-pipeline coverage, and views
@@ -310,6 +310,10 @@ Then import only the capability MPs selected by the deployment profile, after im
 capability's Microsoft or vendor prerequisites. The complete ZIP is a distribution archive, not an
 instruction to enable every adapter in every environment.
 
+For an existing HAAS-SDR installation, use the 12-pack deployment ZIP. Select all 12 files in one
+`Import-SCOMManagementPack` operation so SCOM resolves their internal dependency graph together.
+Do not remove the old MPs first, and do not import any starter override from the archive.
+
 If a release uses a Management Pack bundle, the release record will state which dependencies remain
 separate prerequisites. Use the Operations Manager import review to resolve every dependency before
 committing the import. Do not import any customer override MP until its referenced sealed MP is
@@ -332,6 +336,46 @@ Wait for configuration distribution and then verify:
 
 Do not compensate for missing or duplicate topology by changing monitoring thresholds. Resolve the
 discovery problem first.
+
+## Troubleshoot a dark or partially upgraded installation
+
+First prove that the complete solution was upgraded. This command must return exactly 12 rows at
+`1.0.6.0` for the non-PureStorage deployment; any other version is a failed/partial import:
+
+```powershell
+Get-SCOMManagementPack |
+    Where-Object Name -like 'HyperVPrivateCloud.*' |
+    Where-Object Name -ne 'HyperVPrivateCloud.Capability.PureStorage' |
+    Sort-Object Name |
+    Select-Object Name, Version, Sealed
+```
+
+If SDN, Storage, File Services, or Network ATC still shows `1.0.3.0`, re-import the 12 files from
+`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.6.0.zip` together. Do not change or remove the 523
+customer overrides, do not disable agent proxy, and do not shorten the seed intervals to compensate.
+
+For event 21414 or 21406, record the workflow name, command line, script arguments, stdout, stderr,
+and process exit code. In `1.0.6.0`, stdout is not classified by a regex; the typed SCOM module parses
+the DataItem. Therefore a new 21414 means stderr contains text or the child exited nonzero. Extract
+the named script from the MP resource, run the exact `pwsh.exe -NoLogo -NoProfile -NonInteractive
+-ExecutionPolicy Bypass -File ...` command shown in the event, redirect stdout and stderr to separate
+files, and inspect `$LASTEXITCODE`. Fix the first exception in stderr; do not edit the returned XML.
+
+Event 8702 is File Services health. Its text includes `Facet`, `ErrorType`, and `Error`. Run
+`Get-VM`, `Get-VMHardDiskDrive`, and `Get-SmbConnection` under the agent account. Install missing
+Hyper-V/SMB management features or correct the reported permission/query failure. The singleton
+`.Count` failure is corrected in `1.0.6.0` by preserving required-share output as an array.
+
+Event 8304 is Failover Cluster/CSV health. Its text includes the computer, supplied BoundaryId,
+exception type, and failed query. Run `Get-Cluster`, `Get-ClusterNode`, `Get-ClusterSharedVolume`,
+and `Get-Counter -ListSet 'Cluster CSV File System'` under the agent account. If `Get-Cluster` is
+missing, run `Install-WindowsFeature RSAT-Clustering-PowerShell`; otherwise repair the first failing
+cluster/counter query. An empty staged BoundaryId no longer classifies a real cluster node as
+standalone—the script derives `cluster:<name>` from `Get-Cluster`.
+
+After all 12 versions match, allow one four-hour seed cycle plus the 30-minute topology cycle. Then
+run `Test-SdrHyperVPrivateCloudMonitoring.ps1`. Acceptance is `16/0`, four HostRole instances, and
+two ClusterRole instances. Investigate any remaining `NotReady` row by its workflow and event text.
 
 ## Create customer override MPs
 
@@ -427,8 +471,8 @@ Generate a customer-owned pair with:
     -TuningTier Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
-    -Version '1.0.5.0' `
-    -ProductVersion '1.0.5.0' `
+    -Version '1.0.6.0' `
+    -ProductVersion '1.0.6.0' `
     -PublicKeyToken '54d0fb1159995c86' `
     -OutputPath './out/contoso-overrides'
 ```
@@ -436,7 +480,7 @@ Generate a customer-owned pair with:
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
 installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
 Neither product fact has a default because guessing produces unresolved references at import time.
-The product version and token above are the facts for release `1.0.5.0`; confirm them against the
+The product version and token above are the facts for release `1.0.6.0`; confirm them against the
 governed release manifest before generating files for a later release.
 
 The catalog explicitly names every workflow, target class, local module, property, and
@@ -448,7 +492,7 @@ groups; generation fails on cross-unsealed-MP group references.
 
 The repository's 66 `.xml.example` source files remain generator drift evidence. The
 [public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
-contains the optional starter XML files generated for product `1.0.5.0` and token
+contains the optional starter XML files generated for product `1.0.6.0` and token
 `54d0fb1159995c86`.
 
 Then:

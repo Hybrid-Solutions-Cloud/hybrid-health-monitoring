@@ -1,5 +1,32 @@
 # Handoff
 
+## 2026-09-03 — Hyper-V 1.0.6.0 runtime recovery and complete deployment
+
+Live HAAS-SDR evidence on installed `1.0.3.0` showed HostRole seed fixed (4/4) but every PowerShell
+discovery and monitor rejected downstream. The shared CommandExecuter providers no longer apply a
+stdout regex: typed discovery/property-bag modules parse the DataItem. Stderr `.+` and nonzero exits
+remain failure policies; ambiguous empty `EventPolicy` and legacy `\a+` were removed. File Services
+wraps required-share results in arrays. CSV health calls `Get-Cluster` even with an empty staged
+BoundaryId, uses ClusSvc evidence to distinguish a real cluster query failure from standalone, and
+derives `cluster:<name>`. Events 8702/8304 now contain context, exception details, commands, and
+remediation; the public administration guide has a full troubleshooting procedure.
+
+The previous hand-built eight-pack deployment omitted SDN, Storage, File Services, and Network ATC,
+leaving those installed packs at `1.0.3.0`. Release packaging now generates and independently
+validates one flat 12-pack deployment ZIP (four core + all eight non-PureStorage capabilities), no
+overrides, with each embedded MP hashed against the validated sealed asset. Pure Storage remains
+separate. Source commit is `4ebcaec2e1142d2fef4eb4d6743a723b5beec980`; full unit suite passes
+206/206, workflow smoke passes 63/63, test-mode VSAE package validation passes, and VitePress builds.
+
+Production output `D:/tmp/hcs-hyperv-release-1.0.6.0` passes VSAE, strong-name, and independent
+release validation: 13 product MPs and 66 starter MPs all at `1.0.6.0`, releaseEligible=true, token
+`54d0fb1159995c86`. The 12-pack ZIP is 632491 bytes, SHA-256
+`3097fcb08273591233c0bcf74f214616529b4e51ba27cc49a2484d38138d47a2`. Key material was deleted.
+Exact assets are copied to immutable `1.0.6.0` and `latest`, both hash-identical and independently
+validated. Next: commit publication, push/PR/merge, verify Pages and direct download, then import all
+12 together. Do not change 523 overrides, proxy, capability scope, or intervals. Acceptance remains
+16/0, four HostRole, two ClusterRole after four-hour seed plus 30-minute topology.
+
 ## 2026-09-03 — Hyper-V 1.0.5.0 version-increased publication
 
 The operator confirmed `1.0.4.0` already exists in HAAS-SDR, so the console/display-name and

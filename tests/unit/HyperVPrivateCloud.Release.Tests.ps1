@@ -78,6 +78,7 @@ Describe 'Hyper-V Private Cloud release tooling' {
                 'Hyper-V-Private-Cloud-Monitoring-Complete.zip',
                 'Hyper-V-Private-Cloud-Monitoring-Core.zip',
                 'Hyper-V-Private-Cloud-Monitoring-Overrides.zip',
+                'Hyper-V-Private-Cloud-Monitoring-Deployment-',
                 'release-manifest.json',
                 'release-assets.json',
                 'SHA256SUMS.txt'
@@ -87,6 +88,8 @@ Describe 'Hyper-V Private Cloud release tooling' {
         $script:PackageText | Should -Match 'foreach \(\$deploymentProfile in \$contract\.profiles\)'
         $script:PackageText | Should -Match 'foreach \(\$tier in \$contract\.overrideTiers\)'
         $script:ValidationText | Should -Match "Complete ZIP has the wrong override count"
+        $script:ValidationText | Should -Match 'exactly the 12 non-PureStorage solution MPs'
+        $script:ValidationText | Should -Match 'Deployment ZIP MP differs from the validated sealed asset'
     }
 
     It 'excludes signing material and validates every published checksum' {

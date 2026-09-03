@@ -86,28 +86,41 @@ $groupFailoverEventCount = 0
 $groupDetail = 'No cluster role information is available.'
 
 try {
-    if ($BoundaryId -notlike 'cluster:*') {
+    if (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-Cluster')) {
         $state = 'NotApplicable'
-        $detail = 'This Hyper-V host belongs to a standalone boundary; Failover Cluster and CSV depth monitoring is not applicable.'
-    }
-    elseif (-not (Test-HcsCapability -ModuleName 'FailoverClusters' -CommandName 'Get-Cluster')) {
-        $state = 'NotApplicable'
-        $detail = 'The FailoverClusters PowerShell module is unavailable; Failover Cluster and CSV depth metrics were not collected. Install RSAT-Clustering-PowerShell.'
+        $detail = "The FailoverClusters PowerShell module is unavailable on '$ComputerName'; Failover Cluster and CSV metrics were not collected. Install-WindowsFeature RSAT-Clustering-PowerShell, verify Get-Cluster is available to Local System, then restart the HealthService. Supplied BoundaryId='$BoundaryId'."
     }
     else {
-        $cluster = Get-Cluster -ErrorAction Stop
+        $cluster = $null
+        try { $cluster = Get-Cluster -ErrorAction Stop }
+        catch {
+            $clusterService = Get-Service -Name 'ClusSvc' -ErrorAction SilentlyContinue
+            if ($BoundaryId -like 'cluster:*' -or $null -ne $clusterService) { throw }
+        }
 
-        # ---- Cluster nodes ---------------------------------------------------
-        $nodes = Get-HcsSafeCollection { Get-ClusterNode -Cluster $cluster -ErrorAction Stop }
-        $nodeCount = $nodes.Count
-        foreach ($node in $nodes) {
-            $nodeState = Get-HcsStatusText -InputObject $node -Name 'State'
-            if ($nodeState -match 'Down|Joining|Unknown') { $nodeDownCount++ }
-            if ($nodeState -match 'Paused') { $nodePausedCount++ }
+        if ($null -eq $cluster) {
+            $state = 'NotApplicable'
+            $detail = 'This Hyper-V host is not a Failover Cluster node; Failover Cluster and CSV depth monitoring is not applicable.'
         }
-        if ($nodeCount -gt 0) {
-            $nodeDetail = "Cluster '$($cluster.Name)' has $nodeCount node(s): $nodeDownCount not up, $nodePausedCount paused."
-        }
+        else {
+            # HostRole is initially created by the registry seed and its optional BoundaryId is populated
+            # later by topology discovery. Detect real cluster membership locally so that an empty staged
+            # property cannot silently disable CSV monitoring during convergence or after a stale update.
+            if ([string]::IsNullOrWhiteSpace($BoundaryId) -or $BoundaryId -notlike 'cluster:*') {
+                $BoundaryId = "cluster:$(([string]$cluster.Name).ToLowerInvariant())"
+            }
+
+            # ---- Cluster nodes ---------------------------------------------------
+            $nodes = Get-HcsSafeCollection { Get-ClusterNode -Cluster $cluster -ErrorAction Stop }
+            $nodeCount = $nodes.Count
+            foreach ($node in $nodes) {
+                $nodeState = Get-HcsStatusText -InputObject $node -Name 'State'
+                if ($nodeState -match 'Down|Joining|Unknown') { $nodeDownCount++ }
+                if ($nodeState -match 'Paused') { $nodePausedCount++ }
+            }
+            if ($nodeCount -gt 0) {
+                $nodeDetail = "Cluster '$($cluster.Name)' has $nodeCount node(s): $nodeDownCount not up, $nodePausedCount paused."
+            }
 
         # ---- Quorum and witness ----------------------------------------------
         $quorum = $null
@@ -247,12 +260,14 @@ try {
             }
         }
 
-        $detail = "Failover Cluster and CSV depth metrics collected on '$ComputerName'. $csvDetail $nodeDetail $quorumDetail $networkDetail $groupDetail"
+            $detail = "Failover Cluster and CSV depth metrics collected on '$ComputerName' for '$BoundaryId'. $csvDetail $nodeDetail $quorumDetail $networkDetail $groupDetail"
+        }
     }
 }
 catch {
     $state = 'Critical'
-    $detail = "Failover Cluster and CSV depth collection failed on '$ComputerName': $($_.Exception.Message)"
+    $failureType = $_.Exception.GetType().FullName
+    $detail = "Failover Cluster and CSV collection failed. Computer='$ComputerName'; SuppliedBoundaryId='$BoundaryId'; ErrorType='$failureType'; Error='$($_.Exception.Message)'. Run Get-Cluster, Get-ClusterNode, Get-ClusterSharedVolume, and Get-Counter -ListSet 'Cluster CSV File System' as Local System; repair the first failing query, then restart the HealthService."
     $api.LogScriptEvent('HyperVPrivateCloud.Cluster.CsvHealth.ps1', 8304, 1, $detail)
 }
 
