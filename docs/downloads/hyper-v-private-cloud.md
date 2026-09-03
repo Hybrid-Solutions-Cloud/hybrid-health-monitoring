@@ -5,8 +5,11 @@ description: Sealed SCOM Management Packs, public override packs, manifests, and
 
 # Download Hyper-V Private Cloud Monitoring
 
-Sealed SCOM Management Packs for Hyper-V private cloud infrastructure — four required core packs,
-nine optional capability packs, and public override starters for 11 deployment profiles.
+Sealed SCOM Management Packs for Hyper-V private cloud infrastructure. The release contains 13
+product packs: four always-required packs plus nine independently selectable capability packs.
+Upgrade every `HyperVPrivateCloud.*` pack already installed in the management group; an existing
+eight-pack deployment remains an eight-pack deployment. Do not remove installed capability packs
+merely because four packs are classified as core.
 
 ::: tip Read the prerequisites first
 The Microsoft and vendor Management Packs each capability requires are **not** redistributed here,
@@ -22,8 +25,8 @@ supplied its boundary, and valid S2D/VMM relationship discovery data could be re
 PowerShell child process did not terminate explicitly with exit code zero. Both are corrected and
 guarded by regression tests. All 13 product Management Packs
 are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
-strong-name checked, and covered by the published SHA-256 manifest. The release contains 13 sealed
-Management Packs, 66 public override packs, and 14 deterministic bundles: 162 unit monitors, 111
+strong-name checked, and covered by the published SHA-256 manifest. The release catalog contains 13
+sealed Management Packs and optional starter templates: 162 unit monitors, 111
 dependency roll-ups, 80 rules, 22 discoveries, 116 views, 63 operator tasks plus 4 console tasks,
 and 234 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
 (Fibre Channel, iSCSI, MPIO), SMB/SOFS, Network ATC, physical networking, SDN host binding, VMM and
@@ -38,9 +41,10 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — all four core MPs, all nine capability MPs, and all 66 public override MPs.
-- [Download the four core MPs](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation.
-- [Download all public overrides](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — 11 deployment profiles with Lab, Standard, and Strict Discovery/Monitoring pairs.
+- **[Download the HAAS-SDR eight-pack upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.3.0.zip)** — the exact eight sealed `1.0.3.0` MPs already in scope: Library, Discovery, Monitoring, Presentation, Cluster, S2D, VMM, and PhysicalNetwork. It contains no override MPs.
+- **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
+- [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
+- [Download optional override starters](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — alternative Lab, Standard, and Strict templates for 11 profiles; select and review one Discovery/Monitoring pair only.
 - [Download SHA-256 checksums](/downloads/hyper-v-private-cloud/latest/SHA256SUMS.txt)
 - [View the release manifest](/downloads/hyper-v-private-cloud/latest/release-manifest.json)
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)

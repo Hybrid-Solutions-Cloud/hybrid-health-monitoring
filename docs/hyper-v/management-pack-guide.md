@@ -20,7 +20,7 @@ lab preview is superseded and is not compatible with this signing identity.
 
 | Deliverable | Purpose |
 |---|---|
-| Sealed product MPs | Four core MPs and nine separately installable capability adapters |
+| Sealed product MPs | 13 total: four always-required MPs and nine separately installable capability adapters |
 | Management Pack guide | Prerequisites, import, verification, tuning, upgrade, rollback, removal, and troubleshooting |
 | Monitoring catalog | Workflow IDs, targets, defaults, overrideable parameters, knowledge, and evidence |
 | Override starter files | Generator and separate customer-owned Discovery and Monitoring output for Lab, Standard, and Strict |
@@ -33,6 +33,11 @@ The sealed MPs are product-owned. Every active override is stored in customer-ow
 The four required core MPs have no optional Cluster, CSV, S2D, SAN, Pure, SDN, or VMM dependency.
 Each supported capability is a separate sealed adapter. Publisher-owned prerequisite MPs are not
 redistributed in the HCS download and must be installed before the corresponding adapter.
+
+“Four core MPs” is a dependency classification, not an instruction to reduce an existing
+installation to four files. When upgrading, import the `1.0.3.0` replacement for every
+`HyperVPrivateCloud.*` MP already installed. For example, a management group with eight product MPs
+before the upgrade must have those same eight product MPs at `1.0.3.0` afterward.
 
 ### PowerShell 7 execution prerequisite
 
@@ -125,10 +130,12 @@ storage objects. The S2D package's Cluster and Windows Server prerequisites must
 and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
 volumes, and file shares.
 
-The HCS adapter references the lowest compatible Microsoft MP identity (`1.0.1.0`) while requiring
-the inspected `1.0.47.4` package as the supported minimum. It contributes DA membership, health
-rollup, query-pipeline coverage, and views only. Microsoft S2D faults, ongoing jobs, leaf monitors,
-alerts, and performance rules remain authoritative.
+The current HCS product release is `1.0.3.0`. Independently, its S2D adapter references the lowest
+compatible **Microsoft.Storage.Library** identity while requiring Microsoft's inspected `1.0.47.4`
+S2D package as the supported minimum. These Microsoft dependency versions are not the HCS product
+version. The adapter contributes DA membership, health rollup, query-pipeline coverage, and views
+only. Microsoft S2D faults, ongoing jobs, leaf monitors, alerts, and performance rules remain
+authoritative.
 
 The authored `Capability.PureStorage` adapter has these prerequisites and support boundaries:
 

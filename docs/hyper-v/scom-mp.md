@@ -20,7 +20,7 @@ for the Hyper-V topology approved by the research and ADR gates.
 | Distributed Application | A Hyper-V-owned service root for every supported cluster or standalone host, with dynamic component membership, rollup, views, reports, dashboards, and SLO targeting |
 | Customization | Separate customer-owned Discovery and Monitoring override MPs with optional Lab, Standard, and Strict starter templates |
 | Operations | State, alert, performance, and topology views with optional SquaredUp dashboards |
-| Release contract | Four required core MPs, nine optional capability MPs, 66 public override MPs, manifests, checksums, and profile bundles |
+| Release contract | Four required core MPs, nine optional capability MPs, optional profile-specific override starters, manifests, checksums, and profile bundles |
 
 ## Delivery state
 
