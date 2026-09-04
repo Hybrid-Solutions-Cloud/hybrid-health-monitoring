@@ -6,43 +6,61 @@
 
 ### Correction to the previous entry
 
-The previous entry asserted that all seven 1.2.0.0 runtime defects were resolved. **That claim was
-not true of the packs that shipped.** The fixes were verified against source templates and a
-positive-environment probe fixture, never against sealed-pack content and never against a negative
-environment. 87/87 + 63/63 + 11/11 green was compatible with every defect surviving.
+The previous entry asserted that all seven 1.2.0.0 runtime defects were resolved. **That was not true
+of the packs the environment imported.** The audit is correct on every claim, and understated the
+problem.
 
-Verified by unsealing the published 1.2.0.0 `.mp` assets directly (assembly resource → gzip →
-UTF-16LE; method in §0 of the plan):
+**Version 1.2.0.0 was published three times with different content**, all under the unchanged version
+number:
 
-| Defect | Actual state in shipped 1.2.0.0 |
-|---|---|
-| `$Data/Params/Param[1]$` ×10 | **Fixed** (10 in 1.0.7.0 → 0). Audit was wrong on this one. |
-| File Services `.Count` on `$null` | **Partially fixed** — 1 of 3 `channels =` sites wrapped; 2 remain, plus ~50 unguarded `.Count` reads |
-| Network ATC applicability | Logic **fixed**, but `RequireNetworkATC` still defaults `true` ×15 / `false` ×1 — that is why 8903 persists |
-| Cluster PS7 host | **Not fixed** — `-SkipEditionCheck` is the exact approach the audit proved fails |
-| VMM amplification/diagnostics | **Not fixed** — 18 connects, 10 module loads, 19 `Exception.Message`, 0 `ToString` |
-| SDN false alerts | **Untouched** — pack byte-identical to 1.0.7.0 |
-| 360° classes | **Not wired** — 0 monitors target the 6 new classes; `OutOfBandSwitch`/`EdgeFirewall`/`ConsoleServer` have 0 references anywhere |
+| Publish commit | `Monitoring.mp` SHA-256 (first 16) | `Param[1]` defects |
+|---|---|---|
+| `94c245f` — original | `221a3a07de440083…` | **10** |
+| `e0a1d9e` — restage | `3676a824a1a71acb…` | **10** |
+| `ce51a8e` — "with scom audit fixes" | `3387a8e867418616…` | **0** |
 
-Also wrong in the audit: "all eight capability packs are identical to 1.0.7.0". Four changed
-(Cluster 59, FileServices 62, NetworkATC 18, VMM 93 normalized diff lines); four did not
-(PhysicalNetwork, S2D, SDN, Storage — plus PureStorage).
+**SCOM will not import a sealed MP whose version already exists.** The environment therefore runs the
+original `94c245f` bytes, and every fix in `ce51a8e` is stranded. `latest/` currently serves the third
+build, so the published SHA-256 manifest for 1.2.0.0 has three contradictory values.
 
-### Known-stale artifact
+Verified by unsealing each published build directly (assembly resource → gzip → UTF-16LE; method in
+§0 of the plan). Against the imported `94c245f` build, normalized-diffed vs 1.0.7.0:
 
-`src/hyper-v/scom-mp/out/development/` is stale (13:35 vs the 21:38 seal) and still contains the 10
-`Param[1]` defects. It is **not** what shipped. Task 1.6 adds a guard.
+- **All nine capability packs are byte-identical to 1.0.7.0** — as are `Monitoring` and
+  `Presentation`. Only `Discovery` (72 lines) and `Library` (243) changed: the 360° class
+  *declarations* and nothing else. The audit said eight packs; it was nine, plus two more.
+- Every defect the audit listed — 8702, 5402 ×10, 8903, 8301, 8905, SDN false alerts, fail-open
+  probes, 0 monitors on the 6 new classes — is present exactly as described.
+
+The stranded `ce51a8e` build fixes roughly one and a half of the seven defects: `Param[1]` genuinely
+fixed; ATC logic fixed but `RequireNetworkATC` still defaults `true` ×15 so the symptom would persist;
+File Services 1 of 3 sites; Cluster "fixed" with the `-SkipEditionCheck` approach the audit proved
+fails; VMM, SDN, Storage, S2D and the 360° wiring untouched. **Rebasing it onto a new version number
+is not a release.**
+
+### Root cause
+
+1. A sealed, published MP was republished under an unchanged version — three times. This is the exact
+   act the audit warned against, and it made every subsequent fix invisible to SCOM.
+2. Fixes were verified against source templates and a positive-environment probe fixture, never
+   against sealed-pack content or a negative environment. 87/87 + 63/63 + 11/11 green was compatible
+   with every defect surviving. `src/hyper-v/scom-mp/out/development/HyperVPrivateCloud.Monitoring.xml`
+   still contains all 10 `Param[1]` defects while the source template contains none — build output and
+   source disagree and nothing flags it.
 
 ### Next
 
-1. Build the §1 release gates — they block §2–§8. Gate 1.3 (negative-environment fixture) alone
-   would have caught four of the seven defects.
-2. Run the §5.1 `root\MSCluster` CIM spike as the HealthService account — blocks the cluster fix.
-3. Complete §7.1 VMM Run As association — until then Event 8905 cannot be attributed to MP code.
-4. Decide §5.3 (VMM PS7 exception vs off-agent collector) — recommendation is the documented ADR
-   exception.
+0. **Confirm which build is live before interpreting any retest** —
+   `Get-SCOMManagementPack -Name HyperVPrivateCloud.* | Select Name, Version, TimeCreated`, matched
+   against the three SHA-256 values above. Every runtime conclusion depends on this.
+1. Build gate **§1.8 (immutable published version)** first — it is the failure that hid the others.
+2. Then the remaining §1 gates. Gate 1.3 (negative-environment fixture) alone would have caught four
+   of the seven defects.
+3. Run the §5.1 `root\MSCluster` CIM spike as the HealthService account — blocks the cluster fix.
+4. Complete §7.1 VMM Run As association — until then Event 8905 cannot be attributed to MP code.
+5. Decide §5.3 (VMM PS7 ADR exception vs off-agent collector) — recommendation is the ADR exception.
 
-1.2.0.0 is sealed and published; it must not be republished under the same version. Ship 1.3.0.0.
+Ship **1.3.0.0**. Do not republish 1.2.0.0 again.
 
 ---
 

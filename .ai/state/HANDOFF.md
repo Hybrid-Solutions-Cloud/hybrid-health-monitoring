@@ -1379,3 +1379,51 @@ orphaned pages. `docs/public/downloads/**` was deliberately not touched by the r
   probe fixture) alone would have caught four of the seven defects. Then run the §5.1
   `root\MSCluster` CIM spike as the HealthService account. Ship as 1.3.0.0; 1.2.0.0 is sealed and
   published and must not be republished under the same version.
+
+# 2026-09-03 (correction) — 1.2.0.0 was published three times under one version
+
+Supersedes the entry above it. My first reconciliation unsealed the **current working-tree** 1.2.0.0
+assets and concluded several audit claims were wrong. That was the wrong build.
+
+- **`git log -- docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` returns three commits** —
+  `94c245f` (original publish), `e0a1d9e` (restage), `ce51a8e` ("with scom audit fixes"). Each
+  rewrote all 13 sealed `.mp` files under the unchanged version `1.2.0.0`. Published
+  `SHA256SUMS.txt` for `Monitoring.mp` accordingly holds three different values:
+  `221a3a07…`, `3676a824…`, `3387a8e8…`. `latest/` serves the third.
+- **SCOM will not import a sealed MP whose version already exists**, so the audited environment ran
+  the original `94c245f` bytes. Every fix in `ce51a8e` is stranded and invisible.
+- **Against the imported `94c245f` build, the audit is correct on every claim and understated it:**
+  all nine capability packs are byte-identical to 1.0.7.0 after version normalization, and so are
+  `Monitoring` and `Presentation`. Only `Discovery` (72 lines) and `Library` (243) changed — the 360°
+  class declarations, nothing else. `Param[1]` ×10 present; ATC `$Mode -in (…)` clause present; both
+  File Services `channels =` sites unguarded.
+- **The stranded `ce51a8e` build fixes about 1.5 of 7 defects.** `Param[1]` genuinely 10 → 0. ATC
+  `$Mode` clause removed **but `RequireNetworkATC` still defaults `true` ×15 / `false` ×1**, so 8903
+  would persist — fixing the logic did not fix the symptom. File Services 1 of 3 `channels =` sites,
+  with ~50 unguarded `.Count` reads remaining. Cluster "fixed" by adding `-SkipEditionCheck`, the
+  exact approach the audit proved fails. VMM (18 connects / 10 module loads / 19 `Exception.Message`
+  / 0 `ToString`), SDN, Storage, S2D and the 360° monitor wiring untouched.
+- **Root cause is two-layered:** (1) a sealed published pack was republished under an unchanged
+  version, three times — the act the audit's closing paragraph warned against; (2) verification ran
+  against source templates and a positive-environment fixture, never against sealed-pack content or a
+  negative environment. `out/development/HyperVPrivateCloud.Monitoring.xml` still holds all 10
+  `Param[1]` while the source template holds none, and nothing flags the disagreement.
+- **Method worth keeping:** a sealed `.mp` is a .NET assembly whose `MPResources.resources` holds a
+  `ManagementPack` entry of **gzip-compressed UTF-16LE XML**. `grep` on a `.mp` returns zero matches
+  for content that is present — this is why static verification could not distinguish fixed from
+  unfixed. Recipe in §0 of the plan; becomes gates 1.1/1.2.
+- **What changed in the repo:** no product code. `PLAN-1.3.0.0-REMEDIATION.md` (rewritten around the
+  corrected finding, adds gate 1.8 immutable-published-version and §9 item 0 confirm-live-build), and
+  `.ai/state/CURRENT_TASK.md`.
+- **Commands run:** read-only git extraction and unsealing into the session scratchpad. No build, no
+  seal, no Azure write operations, no pushes.
+- **Branch:** `main`.
+- **Blockers / decisions needed:** (1) confirm which build is live in the management group before any
+  retest is interpreted; (2) §5.3 — VMM has no CIM equivalent, so PS7-only governance must yield
+  either a documented ADR exception for VMM workflows or an off-agent collector (recommend the ADR
+  exception); (3) §7.1 VMM Run As association; (4) whether SDN is intended to be active at all;
+  (5) §8.5 — whether to restore the published 1.2.0.0 directory to its original `94c245f` bytes so the
+  published hash matches what was released and imported.
+- **Next action:** Build gate §1.8 (release tool refuses to write into an existing published version
+  directory; published `SHA256SUMS.txt` immutable) before anything else — it is the failure that hid
+  the other six. Then the remaining §1 gates, then §5.1. Ship 1.3.0.0.
