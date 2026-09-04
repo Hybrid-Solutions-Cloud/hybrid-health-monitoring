@@ -780,6 +780,17 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             throw "Discovery script contains the CDATA terminator: $discoveryScriptPath"
         }
         $content = $content.Replace('{{TOPOLOGY_DISCOVERY_SCRIPT}}', $discoveryScript.TrimEnd())
+        # Physical-fabric seed discovery and the per-device health probe.
+        $discoveryDirectory = Split-Path -Parent $sourcePath
+        foreach ($token in @(
+                @('FABRIC_SEED_DISCOVERY_SCRIPT', 'Discover-HyperVPrivateCloudFabricSeed.ps1.template'),
+                @('FABRIC_HEALTH_SCRIPT', 'Get-HyperVPrivateCloudFabricHealth.ps1.template'))) {
+            $fabricPath = Join-Path $discoveryDirectory $token[1]
+            if (-not (Test-Path -LiteralPath $fabricPath -PathType Leaf)) { throw "Fabric script source does not exist: $fabricPath" }
+            $fabricScript = Get-Content -LiteralPath $fabricPath -Raw
+            if ($fabricScript.Contains(']]>')) { throw "Fabric script contains the CDATA terminator: $fabricPath" }
+            $content = $content.Replace(('{{' + $token[0] + '}}'), $fabricScript.TrimEnd())
+        }
     }
     if ($artifact.kind -eq 'Monitoring') {
         $monitoringDirectory = Split-Path -Parent $sourcePath

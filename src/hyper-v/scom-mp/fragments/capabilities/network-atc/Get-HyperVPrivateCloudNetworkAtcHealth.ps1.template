@@ -4,7 +4,7 @@ param(
         'Capability', 'Intent', 'Adapter', 'Global',
         'ProvisioningDrift', 'ComplianceDrift', 'ApplyFailure', 'AdapterSymmetry',
         'RdmaState', 'RdmaConfigurationDrift', 'DcbPfc', 'EtsPolicy',
-        'QosTrafficClass', 'VmSwitch', 'ClusterConsistency', 'GlobalDrift', 'IntentInventory')][string]$Mode,
+        'QosTrafficClass', 'VmSwitch', 'ClusterConsistency', 'GlobalDrift', 'IntentInventory', 'All')][string]$Mode,
     [Parameter(Mandatory)][string]$ComputerName,
     [string]$IntentName,
     [string]$AdapterNames,
@@ -731,9 +731,25 @@ if ($Mode -eq 'IntentInventory') {
     $api.ReturnItems()
 }
 else {
+    # Cookdown: the host-level facets share one acquisition so SCOM runs a single pwsh process per
+    # interval instead of one per monitor. Intent-scoped facets stay separate because they are keyed
+    # per intent instance and already cook down through the IntentInventory path above.
+    # @() wraps the whole conditional: a single-element else branch would unroll to a bare scalar and
+    # $x.Count would then throw under StrictMode (the Event 8702 defect).
+    $hostFacets = @('Capability', 'Global', 'GlobalDrift', 'EtsPolicy', 'QosTrafficClass', 'ClusterConsistency')
+    $facetsToRun = @(if ($Mode -eq 'All') { $hostFacets } else { $Mode })
+
     $bag = $api.CreatePropertyBag()
-    $result = Get-HcsModeResult -Mode $Mode -IntentName $IntentName -AdapterNames $AdapterNames -IsStorageIntent $IsStorageIntent
-    $bag.AddValue('NetworkAtcState', [string]$result[0])
-    $bag.AddValue('NetworkAtcStateDetail', [string]$result[1])
+    $result = $null
+    foreach ($facet in $facetsToRun) {
+        $result = Get-HcsModeResult -Mode $facet -IntentName $IntentName -AdapterNames $AdapterNames -IsStorageIntent $IsStorageIntent
+        $bag.AddValue(($facet + 'State'), [string]$result[0])
+        $bag.AddValue(($facet + 'StateDetail'), [string]$result[1])
+    }
+    # Retained so a single-Mode invocation (tasks, diagnostics) still emits the original names.
+    if ($facetsToRun.Count -eq 1 -and $null -ne $result) {
+        $bag.AddValue('NetworkAtcState', [string]$result[0])
+        $bag.AddValue('NetworkAtcStateDetail', [string]$result[1])
+    }
     $api.Return($bag)
 }

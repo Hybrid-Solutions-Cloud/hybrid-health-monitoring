@@ -1,0 +1,121 @@
+#Requires -Version 7.0
+# Health for a discovered physical-fabric device: top-of-rack switch, out-of-band switch, edge
+# firewall, console server or chassis BMC.
+#
+# This runs against the DEVICE'S OWN management address, taken from the discovered object, rather
+# than inferring device health from the Hyper-V host. The previous host-side checks were misleading:
+# top-of-rack health reported Good whenever any physical NIC was up, edge-firewall health merely
+# pinged the host's default gateway, and chassis health read Win32_ComputerSystem.Status, which
+# reports the operating system's view of the computer rather than baseboard hardware.
+#
+# Reachability is layered so a device answers on the evidence it actually offers: a management TCP
+# port is stronger evidence than ICMP, and ICMP is stronger than nothing. A device that answers on
+# neither is Critical; a device that answers ICMP but not its management port is Warning, because it
+# is powered but not manageable.
+param(
+    [Parameter(Mandatory)][ValidateSet('TopOfRackSwitch', 'OutOfBandSwitch', 'EdgeFirewall', 'ConsoleServer', 'PhysicalChassis')][string]$DeviceKind,
+    [Parameter(Mandatory)][string]$DeviceName,
+    [string]$ManagementAddress = '',
+    [string]$ManagementPorts = '',
+    [int]$TimeoutSeconds = 5
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$bag = $api.CreatePropertyBag()
+
+# Default management ports per device kind. Overridable so a site can point at its own listeners.
+function Get-HcsDefaultPort {
+    param([string]$Kind)
+    switch ($Kind) {
+        'TopOfRackSwitch' { return @(22, 443) }
+        'OutOfBandSwitch' { return @(22, 443) }
+        'EdgeFirewall' { return @(443, 22) }
+        'ConsoleServer' { return @(22, 443) }
+        'PhysicalChassis' { return @(443, 623) }   # Redfish, IPMI RMCP
+        default { return @(443) }
+    }
+}
+
+function Test-HcsTcpPort {
+    param([string]$Address, [int]$Port, [int]$Timeout)
+    $client = $null
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $async = $client.BeginConnect($Address, $Port, $null, $null)
+        if (-not $async.AsyncWaitHandle.WaitOne([timespan]::FromSeconds($Timeout))) { return $false }
+        $client.EndConnect($async)
+        return $client.Connected
+    }
+    catch { return $false }
+    finally { if ($null -ne $client) { $client.Close() } }
+}
+
+$state = 'NotApplicable'
+$detail = "No management address is configured for $DeviceKind '$DeviceName'; reachability was not evaluated."
+$icmp = $false
+$portOpen = $false
+$openPort = 0
+
+try {
+    if (-not [string]::IsNullOrWhiteSpace($ManagementAddress) -and $ManagementAddress -ne 'local-ipmi') {
+        try { $icmp = [bool](Test-Connection -ComputerName $ManagementAddress -Count 1 -Quiet -ErrorAction SilentlyContinue) }
+        catch { $icmp = $false }
+
+        # @() wraps the whole conditional so an empty override cannot unroll to $null and throw on
+        # .Count under StrictMode.
+        $ports = @(if ([string]::IsNullOrWhiteSpace($ManagementPorts)) { Get-HcsDefaultPort -Kind $DeviceKind }
+            else { ([string]$ManagementPorts -split ',') | ForEach-Object { [int]([string]$_).Trim() } })
+
+        foreach ($port in $ports) {
+            if (Test-HcsTcpPort -Address $ManagementAddress -Port $port -Timeout $TimeoutSeconds) { $portOpen = $true; $openPort = $port; break }
+        }
+
+        if ($portOpen) {
+            $state = 'Good'
+            $detail = "$DeviceKind '$DeviceName' ($ManagementAddress) is reachable and answering on management port $openPort."
+        }
+        elseif ($icmp) {
+            $state = 'Warning'
+            $detail = "$DeviceKind '$DeviceName' ($ManagementAddress) answers ICMP but no management port ($($ports -join ', ')) accepted a connection, so it is powered but not manageable."
+        }
+        else {
+            $state = 'Critical'
+            $detail = "$DeviceKind '$DeviceName' ($ManagementAddress) did not answer ICMP or any management port ($($ports -join ', '))."
+        }
+    }
+    elseif ($ManagementAddress -eq 'local-ipmi') {
+        # Chassis with a local BMC and no declared address: read baseboard health over IPMI rather
+        # than reporting the operating system's opinion of the computer.
+        $sensorFailures = 0
+        $sensorRead = $false
+        try {
+            $ipmi = Get-CimInstance -Namespace 'root/wmi' -ClassName 'Microsoft_IPMI' -ErrorAction Stop | Select-Object -First 1
+            if ($null -ne $ipmi) { $sensorRead = $true }
+        }
+        catch { $sensorRead = $false }
+        if ($sensorRead) {
+            $state = 'Good'
+            $detail = "Chassis '$DeviceName' baseboard management controller responded over the local IPMI interface."
+        }
+        else {
+            $state = 'Warning'
+            $detail = "Chassis '$DeviceName' exposes no reachable baseboard management controller; declare its BMC address on the fabric seed discovery to monitor hardware health."
+        }
+    }
+}
+catch {
+    # A probe failure is a fault, not an absence of findings.
+    $state = 'Critical'
+    $detail = "$DeviceKind '$DeviceName' health probe failed: $($_.Exception.Message)"
+    $api.LogScriptEvent('HyperVPrivateCloud.FabricHealth.ps1', 8311, 1, "$detail`n$($_.Exception.ToString())")
+}
+
+$bag.AddValue('FabricDeviceState', $state)
+$bag.AddValue('FabricDeviceStateDetail', $detail)
+$bag.AddValue('FabricDeviceIcmp', [double]$(if ($icmp) { 1 } else { 0 }))
+$bag.AddValue('FabricDeviceManagementPort', [double]$openPort)
+$api.Return($bag)

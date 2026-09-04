@@ -366,7 +366,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'builds a core Discovery MP with host seed and staged topology workflows' {
         $discoveries = @($script:Discovery.SelectNodes('/ManagementPack/Monitoring/Discoveries/Discovery'))
-        $discoveries.Count | Should -Be 3
+        # HostRole seed, topology, product group, and the physical fabric seed.
+        $discoveries.Count | Should -Be 4
         @($discoveries.ID) | Should -Contain 'HyperVPrivateCloud.HostRole.Seed.Discovery'
         @($discoveries.ID) | Should -Contain 'HyperVPrivateCloud.Topology.Discovery'
         @($discoveries.ID) | Should -Contain 'HyperVPrivateCloud.Product.Group.Discovery'

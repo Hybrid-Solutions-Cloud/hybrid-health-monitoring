@@ -1,0 +1,149 @@
+#Requires -Version 7.0
+# Seed discovery for the physical fabric: top-of-rack switches, out-of-band management switches, edge
+# firewalls, console servers and chassis BMCs.
+#
+# These devices cannot host a SCOM agent and do not announce themselves, so they are declared through
+# overridable seed parameters on this discovery and the instances are created from that declaration.
+# Where nothing is declared, nothing is discovered: the classes stay empty and no monitor evaluates,
+# which is the correct outcome for a site that has not supplied endpoints. Previously the fabric
+# monitors targeted the Hyper-V host and reported chassis, switch and firewall health that had never
+# been measured, while the six fabric classes carried no health of their own.
+#
+# Seed format, per device, comma separated:   Name=Address
+# Example:  LAB-RTP-DCF-LEAF-11=10.1.2.11,LAB-RTP-DCF-LEAF-12=10.1.2.12
+param(
+    [string]$SourceId,
+    [string]$ManagedEntityId,
+    [string]$ComputerName,
+    [string]$BoundaryId,
+    [string]$TopOfRackSwitches = '',
+    [string]$OutOfBandSwitches = '',
+    [string]$EdgeFirewalls = '',
+    [string]$ConsoleServers = '',
+    [string]$ChassisBmcAddresses = ''
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$WarningPreference = 'SilentlyContinue'
+
+$api = New-Object -ComObject 'MOM.ScriptAPI'
+$script:DiscoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+function Get-HcsStableId {
+    param([string]$Value)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes([string]$Value))
+        return -join ($bytes[0..7] | ForEach-Object { $_.ToString('x2') })
+    }
+    finally { $sha.Dispose() }
+}
+
+function Add-HcsProperty {
+    param($Instance, [string]$Property, $Value)
+    if ($null -ne $Value -and -not [string]::IsNullOrWhiteSpace([string]$Value)) { $Instance.AddProperty($Property, [string]$Value) }
+}
+
+# @() wraps the whole pipeline so an empty seed string cannot unroll to $null and throw on .Count
+# under StrictMode.
+function Get-HcsSeedEntry {
+    param([string]$Seed)
+    return , @(
+        foreach ($entry in ([string]$Seed -split ',')) {
+            $trimmed = ([string]$entry).Trim()
+            if ([string]::IsNullOrWhiteSpace($trimmed)) { continue }
+            $parts = $trimmed -split '=', 2
+            $name = ([string]$parts[0]).Trim()
+            $address = if ($parts.Count -gt 1) { ([string]$parts[1]).Trim() } else { $name }
+            if ([string]::IsNullOrWhiteSpace($name)) { continue }
+            [pscustomobject]@{ Name = $name; Address = $address }
+        }
+    )
+}
+
+try {
+    if ([string]::IsNullOrWhiteSpace($BoundaryId)) {
+        $api.Return($script:DiscoveryData)
+        return
+    }
+
+    foreach ($switch in (Get-HcsSeedEntry -Seed $TopOfRackSwitches)) {
+        $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']$")
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/SwitchId$" ('tor:' + (Get-HcsStableId "$BoundaryId|$($switch.Name)"))
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/SwitchName$" $switch.Name
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/ManagementIp$" $switch.Address
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/Role$" 'DataFabric'
+        Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" $switch.Name
+        $script:DiscoveryData.AddInstance($instance)
+    }
+
+    foreach ($switch in (Get-HcsSeedEntry -Seed $OutOfBandSwitches)) {
+        $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch']$")
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch']/SwitchId$" ('oob:' + (Get-HcsStableId "$BoundaryId|$($switch.Name)"))
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch']/SwitchName$" $switch.Name
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch']/ManagementIp$" $switch.Address
+        Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" $switch.Name
+        $script:DiscoveryData.AddInstance($instance)
+    }
+
+    foreach ($firewall in (Get-HcsSeedEntry -Seed $EdgeFirewalls)) {
+        $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.EdgeFirewall']$")
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.EdgeFirewall']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.EdgeFirewall']/FirewallId$" ('fw:' + (Get-HcsStableId "$BoundaryId|$($firewall.Name)"))
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.EdgeFirewall']/DeviceName$" $firewall.Name
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.EdgeFirewall']/ManagementIp$" $firewall.Address
+        Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" $firewall.Name
+        $script:DiscoveryData.AddInstance($instance)
+    }
+
+    foreach ($console in (Get-HcsSeedEntry -Seed $ConsoleServers)) {
+        $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ConsoleServer']$")
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ConsoleServer']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ConsoleServer']/ApplianceId$" ('console:' + (Get-HcsStableId "$BoundaryId|$($console.Name)"))
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ConsoleServer']/Hostname$" $console.Name
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ConsoleServer']/ManagementIp$" $console.Address
+        Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" $console.Name
+        $script:DiscoveryData.AddInstance($instance)
+    }
+
+    # The chassis is the one fabric object with a local fallback: this host's own BMC address can be
+    # read from SMBIOS when no seed is supplied, so the object exists even before endpoints are
+    # declared. Its health still comes from the BMC, not from Win32_ComputerSystem.Status.
+    $chassisSeeds = @(Get-HcsSeedEntry -Seed $ChassisBmcAddresses)
+    if ($chassisSeeds.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($ComputerName)) {
+        $localBmc = ''
+        try {
+            $ipmi = Get-CimInstance -Namespace 'root/wmi' -ClassName 'Microsoft_IPMI' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($null -ne $ipmi) { $localBmc = 'local-ipmi' }
+        }
+        catch { $localBmc = '' }
+        if (-not [string]::IsNullOrWhiteSpace($localBmc)) {
+            $chassisSeeds = @([pscustomobject]@{ Name = $ComputerName; Address = $localBmc })
+        }
+    }
+
+    foreach ($chassis in $chassisSeeds) {
+        $product = $null
+        try { $product = Get-CimInstance -ClassName 'Win32_ComputerSystemProduct' -ErrorAction SilentlyContinue } catch { $product = $null }
+        $instance = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']$")
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/BoundaryId$" $BoundaryId
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/ChassisId$" ('chassis:' + (Get-HcsStableId "$BoundaryId|$($chassis.Name)"))
+        Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/BmcIpv4Address$" $chassis.Address
+        if ($null -ne $product) {
+            Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/Manufacturer$" $product.Vendor
+            Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/Model$" $product.Name
+            Add-HcsProperty $instance "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/SerialNumber$" $product.IdentifyingNumber
+        }
+        Add-HcsProperty $instance "$MPElement[Name='System!System.Entity']/DisplayName$" ("Chassis - " + $chassis.Name)
+        $script:DiscoveryData.AddInstance($instance)
+    }
+
+    $api.Return($script:DiscoveryData)
+}
+catch {
+    $api.LogScriptEvent('HyperVPrivateCloud.FabricSeed.Discovery.ps1', 8310, 1, $_.Exception.ToString())
+    throw
+}
