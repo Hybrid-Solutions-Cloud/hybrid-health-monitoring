@@ -186,7 +186,16 @@ function New-Object {
             $stdout = Join-Path $dir 'stdout.txt'; $stderr = Join-Path $dir 'stderr.txt'
             $env:HCS_SMOKE_MARKER = $marker
             $commandLine = "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$scriptPath`" $arguments"
-            $process = Start-Process -FilePath (Get-Command pwsh).Source -ArgumentList $commandLine -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            # Launch on the edition the pack's probe module actually uses. Cluster and VMM run on the
+            # Windows PowerShell host because FailoverClusters and VirtualMachineManager are Windows
+            # PowerShell modules; running them under pwsh here would exercise the WinPSCompat bridge
+            # the product deliberately no longer depends on, and its remoting warning would pollute
+            # stdout and break the property-bag parse.
+            $hostExe = if ($Case.Body -match '#Requires -Version 5\.1') {
+                Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+            }
+            else { (Get-Command pwsh).Source }
+            $process = Start-Process -FilePath $hostExe -ArgumentList $commandLine -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
             return [pscustomobject]@{
                 ExitCode = $process.ExitCode
                 StdOut = (Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue)
