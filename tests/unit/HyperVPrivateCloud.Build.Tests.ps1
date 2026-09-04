@@ -39,6 +39,100 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         $script:Library.SelectSingleNode("//DisplayString[@ElementID='HyperVPrivateCloud.Service']/Name").InnerText | Should -Be 'Hyper-V Private Cloud'
     }
 
+    It 'emits every property that an alert description references' {
+        # The 1.3.3.0 audit found all 11 VMM fabric monitors requesting VmmFabricStateDetail while the
+        # shared Mode=All probe emitted per-facet <Facet>StateDetail, so alerts fired with a blank
+        # description. Nothing checked that a monitor's AlertParameter names a property a script
+        # actually produces.
+        $packs = @($script:Monitoring, $script:ClusterCapability, $script:StorageCapability, $script:S2DCapability,
+            $script:FileServicesCapability, $script:PhysicalNetworkCapability, $script:NetworkAtcCapability,
+            $script:SdnCapability, $script:VmmCapability, $script:PureCapability)
+        $unresolved = New-Object System.Collections.Generic.List[string]
+        foreach ($pack in $packs) {
+            $emitted = New-Object System.Collections.Generic.HashSet[string]
+            foreach ($body in @($pack.SelectNodes('//ScriptBody'))) {
+                foreach ($match in [regex]::Matches($body.InnerText, "AddValue\(\s*'([A-Za-z0-9_]+)'")) { [void]$emitted.Add($match.Groups[1].Value) }
+                # Write-HcsState '<Name>' emits both <Name> and <Name>Detail through the shared helper.
+                foreach ($match in [regex]::Matches($body.InnerText, "Write-HcsState\s+'([A-Za-z0-9_]+)'")) {
+                    [void]$emitted.Add($match.Groups[1].Value)
+                    [void]$emitted.Add($match.Groups[1].Value + 'Detail')
+                }
+                # AddValue(<var> + 'Suffix') and AddValue("$var...") forms used by the depth probes.
+                foreach ($match in [regex]::Matches($body.InnerText, 'AddValue\(\s*"([A-Za-z0-9_]+)"')) { [void]$emitted.Add($match.Groups[1].Value) }
+                # Names emitted indirectly: collected into a list or assigned to a variable and then
+                # passed to Write-HcsState/AddValue. If the literal appears in the script it is produced.
+                foreach ($match in [regex]::Matches($body.InnerText, "'([A-Za-z0-9_]+State)'")) {
+                    [void]$emitted.Add($match.Groups[1].Value)
+                    [void]$emitted.Add($match.Groups[1].Value + 'Detail')
+                }
+                # Interpolated names such as "${facet}StateDetail" resolve at runtime from a known list.
+                foreach ($match in [regex]::Matches($body.InnerText, '\$fabricModes\s*=\s*@\(([^)]*)\)')) {
+                    foreach ($facet in [regex]::Matches($match.Groups[1].Value, "'([A-Za-z0-9_]+)'")) {
+                        [void]$emitted.Add($facet.Groups[1].Value + 'State')
+                        [void]$emitted.Add($facet.Groups[1].Value + 'StateDetail')
+                    }
+                }
+            }
+            if ($emitted.Count -eq 0) { continue }
+            foreach ($monitor in @($pack.SelectNodes('//UnitMonitor'))) {
+                foreach ($match in [regex]::Matches($monitor.OuterXml, "Property\[@Name='([A-Za-z0-9_]+)'\]")) {
+                    $name = $match.Groups[1].Value
+                    if (-not $emitted.Contains($name)) { $unresolved.Add("$($monitor.ID) -> $name") }
+                }
+            }
+        }
+        $unresolved | Should -BeNullOrEmpty -Because 'every alert/condition property must be emitted by a probe script'
+    }
+
+    It 'points every shared-acquisition monitor at a property that acquisition path emits' {
+        # The general test above cannot see WHICH code path emits a property. The VMM blank-alert
+        # defect passed it: VmmFabricStateDetail was still emitted by the single-Mode path while the
+        # monitors ran Mode=All, which emits <Facet>StateDetail. This asserts the cookdown invariant
+        # directly -- a monitor whose data source passes Mode=All must name a facet property.
+        $fabricModes = @()
+        foreach ($body in @($script:VmmCapability.SelectNodes('//ScriptBody'))) {
+            $match = [regex]::Match($body.InnerText, '\$fabricModes\s*=\s*@\(([^)]*)\)')
+            if ($match.Success) { $fabricModes = @([regex]::Matches($match.Groups[1].Value, "'([A-Za-z0-9_]+)'") | ForEach-Object { $_.Groups[1].Value }) }
+        }
+        $fabricModes.Count | Should -BeGreaterThan 0
+        $valid = New-Object System.Collections.Generic.HashSet[string]
+        foreach ($facet in $fabricModes) { [void]$valid.Add($facet + 'State'); [void]$valid.Add($facet + 'StateDetail') }
+        # <Mode>All</Mode> is set on the MONITOR TYPE's data source, not on the individual monitor, so
+        # find the types that use it and then the monitors bound to those types.
+        $allModeTypes = New-Object System.Collections.Generic.HashSet[string]
+        foreach ($monitorType in @($script:VmmCapability.SelectNodes('//UnitMonitorType'))) {
+            if ($monitorType.OuterXml -match '<Mode>All</Mode>') { [void]$allModeTypes.Add([string]$monitorType.ID) }
+        }
+        $allModeTypes.Count | Should -BeGreaterThan 0
+        $wrong = New-Object System.Collections.Generic.List[string]
+        foreach ($monitor in @($script:VmmCapability.SelectNodes('//UnitMonitor'))) {
+            if (-not $allModeTypes.Contains(([string]$monitor.TypeID))) { continue }
+            foreach ($match in [regex]::Matches($monitor.OuterXml, "Property\[@Name='([A-Za-z0-9_]+)'\]")) {
+                if (-not $valid.Contains($match.Groups[1].Value)) { $wrong.Add("$($monitor.ID) -> $($match.Groups[1].Value)") }
+            }
+        }
+        $wrong | Should -BeNullOrEmpty -Because 'a Mode=All monitor must read a property the all-facets path emits'
+    }
+    It 'never submits a property bag or discovery data twice' {
+        # The cookdown rewrite left two consecutive $api.Return($bag) calls in the VMM fabric probe,
+        # so the Mode=All path submitted duplicate data.
+        $packs = @($script:Library, $script:Discovery, $script:Monitoring, $script:ClusterCapability,
+            $script:StorageCapability, $script:S2DCapability, $script:FileServicesCapability,
+            $script:PhysicalNetworkCapability, $script:NetworkAtcCapability, $script:SdnCapability,
+            $script:VmmCapability, $script:PureCapability)
+        $duplicates = New-Object System.Collections.Generic.List[string]
+        foreach ($pack in $packs) {
+            foreach ($body in @($pack.SelectNodes('//ScriptBody'))) {
+                $lines = $body.InnerText -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' -and $_ -notmatch '^#' }
+                for ($i = 1; $i -lt $lines.Count; $i++) {
+                    if ($lines[$i] -match '^\$api\.Return\(' -and $lines[$i - 1] -match '^\$api\.Return\(') {
+                        $duplicates.Add("$($body.ParentNode.ScriptName): $($lines[$i])")
+                    }
+                }
+            }
+        }
+        $duplicates | Should -BeNullOrEmpty -Because 'a workflow must submit its data exactly once'
+    }
     It 'validates against the official SCOM Management Pack XSD' {
         # 1.3.2.0 shipped with ModuleTypes children out of order and SCOM rejected every import with
         # "The element 'ModuleTypes' has invalid child element 'DataSourceModuleType'". Nothing in the

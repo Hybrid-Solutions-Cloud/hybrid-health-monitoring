@@ -175,7 +175,11 @@ try {
             Test-HcsLocalHost -Value ([string](Get-HcsPropertyValue -InputObject $_ -Name @('Host', 'ComputerName', 'PSComputerName')))
         })
     $globalOverrideKinds = @($globalOverrides | ForEach-Object { Get-HcsOverrideKind -InputObject $_ } | Sort-Object -Unique)
-    if ($globalOverrides.Count -gt 0 -or $globalStatusRecords.Count -gt 0) {
+    # Global ATC configuration exists on every host that has intents; global OVERRIDES are optional and
+    # most deployments have none. Gating on overrides meant a perfectly valid ATC host with intents but
+    # no global overrides received none of the global ATC monitors (ETS policy, QoS traffic class,
+    # global configuration health). Intents are the correct evidence that ATC is deployed here.
+    if ($intents.Count -gt 0 -or $globalOverrides.Count -gt 0 -or $globalStatusRecords.Count -gt 0) {
         $globalStatus = $globalStatusRecords | Select-Object -First 1
         $global = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus']$")
         Add-HcsProperty $global "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName

@@ -26,6 +26,20 @@ try {
         $api.Return($discoveryData)
         return
     }
+    # This discovery targets Microsoft.Windows.Cluster.VirtualServer, which covers EVERY clustered
+    # virtual server -- SQL instances, the VMM service, file server roles -- not just the cluster core.
+    # HKLM:\Cluster\ClusterName is identical on every node, so without this gate the script created one
+    # ClusterRole per virtual server and SCOM ended up with duplicate cluster objects (observed for
+    # mgt-sdr-sqlc and mgt-sdr-vmmc), which in turn raised duplicate quorum alerts for one cluster.
+    # The cluster core virtual server is the one whose network name IS the cluster name.
+    $targetLabel = ([string]$PrincipalName).Split('.')[0]
+    $clusterLabel = ([string]$clusterName).Split('.')[0]
+    if (-not $targetLabel.Equals($clusterLabel, [StringComparison]::OrdinalIgnoreCase)) {
+        # A clustered application's virtual server, not the cluster core: not our object.
+        $api.Return($discoveryData)
+        return
+    }
+
     $boundaryId = 'cluster:' + $clusterName.ToLowerInvariant()
 
     $role = $discoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.Cluster.ClusterRole']$")

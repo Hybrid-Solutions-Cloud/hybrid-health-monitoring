@@ -98,7 +98,7 @@ try {
     Add-HcsProperty $storageComponent "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId
 
     $mpioMap = Get-HcsMpioDriveMap
-    $sanAttachmentCount = 0; $iscsiSessionCount = 0; $fcPortCount = 0
+    $sanAttachmentCount = 0; $iscsiSessionCount = 0; $fcPortCount = 0; $mpioDiskCount = 0
     $lunByDiskNumber = @{}
     foreach ($disk in @(Get-Disk -ErrorAction Stop | Where-Object { -not $_.IsBoot -and -not $_.IsSystem -and [string]$_.BusType -in @('iSCSI', 'Fibre Channel', 'SAS', 'RAID') })) {
         $identitySource = @([string]$disk.UniqueId, [string]$disk.SerialNumber) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1
@@ -139,6 +139,7 @@ try {
         Add-HcsProperty $attachment "$MPElement[Name='System!System.Entity']/DisplayName$" ("Disk $($disk.Number) - $($disk.BusType) - $pathCount path(s)")
         $script:DiscoveryData.AddInstance($attachment)
         $sanAttachmentCount++
+        if ($null -ne $mpio) { $mpioDiskCount++ }
         Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostContainsAttachment']$" $hostInstance $attachment
         Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.LogicalUnitContainsAttachment']$" $lun $attachment
         Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.ComponentContainsAttachment']$" $storageComponent $attachment
@@ -231,11 +232,14 @@ try {
     # Participation object: created ONLY where this host actually has SAN-attached storage. The three
     # host-level SAN monitors (iSCSI error rate, iSCSI auth failure, MPIO failover) target this class,
     # so a host with only local or S2D storage is never evaluated for SAN health.
-    if ($sanAttachmentCount -gt 0 -or $iscsiSessionCount -gt 0 -or $fcPortCount -gt 0) {
+    # A non-boot SAS or RAID disk is ordinary local storage, not SAN. Requiring an MPIO-claimed disk,
+    # an iSCSI session or a Fibre Channel port stops SAN/MPIO monitoring switching itself on for a
+    # plain local RAID controller.
+    if ($mpioDiskCount -gt 0 -or $iscsiSessionCount -gt 0 -or $fcPortCount -gt 0) {
         $participation = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']$")
         Add-HcsProperty $participation "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
         Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']/ParticipationId$" 'san-storage'
-        Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']/MpioDiskCount$" $sanAttachmentCount
+        Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']/MpioDiskCount$" $mpioDiskCount
         Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']/IscsiSessionCount$" $iscsiSessionCount
         Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']/FibreChannelPortCount$" $fcPortCount
         Add-HcsProperty $participation "$MPElement[Name='System!System.Entity']/DisplayName$" "SAN storage participation on $ComputerName"

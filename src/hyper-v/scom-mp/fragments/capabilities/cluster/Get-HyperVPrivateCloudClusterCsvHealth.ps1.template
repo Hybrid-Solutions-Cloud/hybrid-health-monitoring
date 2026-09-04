@@ -12,7 +12,7 @@ function Test-HcsCapability {
     # module, so a plain import is sufficient. Do NOT reintroduce -SkipEditionCheck or
     # -UseWindowsPowerShell: both are PowerShell 7 parameters and raise ParameterBindingException
     # under 5.1. They existed only to work around running this module under pwsh.exe.
-    try { Import-Module -Name $ModuleName -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
+    try { Import-Module -Name $ModuleName -WarningAction SilentlyContinue -ErrorAction SilentlyContinue } catch { }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
 
@@ -39,10 +39,17 @@ function Get-HcsNumber {
     return $Default
 }
 
+# Query failures must be visible. Returning an empty collection made a failed node, network, group,
+# CSV, event or performance query indistinguishable from "nothing found", and because the probe starts
+# at Good that reported a broken cluster as healthy. Failures are recorded and surfaced by the caller.
+$script:HcsCollectionFailures = [System.Collections.Generic.List[string]]::new()
 function Get-HcsSafeCollection {
-    param([scriptblock]$Query)
-    try { return @(& $Query) }
-    catch { return @() }
+    param([scriptblock]$Query, [string]$Name = 'cluster query')
+    try { return , @(& $Query) }
+    catch {
+        $script:HcsCollectionFailures.Add("$Name failed: $($_.Exception.Message)")
+        return , @()
+    }
 }
 
 $api = New-Object -ComObject 'MOM.ScriptAPI'
@@ -196,7 +203,25 @@ try {
                 StartTime    = $windowStart
             } -ErrorAction Stop
         }
-        $groupFailoverEventCount = $failoverEvents.Count
+        # Raw event count is not a failover count. A single role transition emits 1069 once per failed
+        # resource plus 1205/1254 for the role, so one flapping role produced 1,152 "failovers" over 24h.
+        # Collapse to distinct role transitions: group by the role name carried in the event properties
+        # and a five-minute bucket, so a burst from one transition counts once.
+        $transitionKeys = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        foreach ($failoverEvent in $failoverEvents) {
+            $roleName = 'unknown'
+            try {
+                $props = @($failoverEvent.Properties)
+                foreach ($prop in $props) {
+                    $value = [string]$prop.Value
+                    if (-not [string]::IsNullOrWhiteSpace($value)) { $roleName = $value; break }
+                }
+            }
+            catch { $roleName = 'unknown' }
+            $bucket = [int][math]::Floor($failoverEvent.TimeCreated.ToUniversalTime().Ticks / [timespan]::FromMinutes(5).Ticks)
+            [void]$transitionKeys.Add("$roleName|$bucket")
+        }
+        $groupFailoverEventCount = $transitionKeys.Count
         if ($groupCount -gt 0) {
             $groupDetail = "$groupCount cluster role(s): $groupOfflineCount offline, $groupFailedCount failed or partially online. $groupFailoverEventCount failover event(s) in the last $FailoverWindowHours hour(s)."
         }
@@ -272,6 +297,15 @@ catch {
     $failureType = $_.Exception.GetType().FullName
     $detail = "Failover Cluster and CSV collection failed. Computer='$ComputerName'; SuppliedBoundaryId='$BoundaryId'; ErrorType='$failureType'; Error='$($_.Exception.Message)'. Run Get-Cluster, Get-ClusterNode, Get-ClusterSharedVolume, and Get-Counter -ListSet 'Cluster CSV File System' as Local System; repair the first failing query, then restart the HealthService."
     $api.LogScriptEvent('HyperVPrivateCloud.Cluster.CsvHealth.ps1', 8304, 1, $detail)
+}
+
+# A query that failed is not a query that found nothing. If any collection failed, the probe must not
+# report Good: every downstream count (nodes, networks, groups, CSVs, failover events) would be zero
+# and read as healthy. Surface it as Warning with the failing query named.
+if ($script:HcsCollectionFailures.Count -gt 0) {
+    if ($state -eq 'Good') { $state = 'Warning' }
+    $detail = "$detail Cluster data collection was incomplete: $($script:HcsCollectionFailures -join '; '). Counts below are partial and must not be read as healthy."
+    $api.LogScriptEvent('HyperVPrivateCloud.Cluster.CsvHealth.ps1', 8304, 2, $detail)
 }
 
 $bag.AddValue('ClusterCsvHealthState', $state)

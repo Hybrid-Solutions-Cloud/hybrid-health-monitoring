@@ -336,7 +336,10 @@ foreach ($facet in $modesToRun) {
     $state = 'Good'
     $detail = "VMM fabric check '$facet' completed with no finding on '$ComputerName'."
     if ($null -ne $connectError) {
-        $state = if ($facet -eq 'ManagementService') { 'Critical' } else { 'NotApplicable' }
+        # A failed VMM connection is a real fault, not 'not applicable'. These monitors only exist where
+        # SCOM discovered a VMM management server, so the capability always applies here. NotApplicable
+        # is evaluated as healthy by the Good filter and would hide the outage.
+        $state = if ($facet -eq 'ManagementService') { 'Critical' } else { 'Warning' }
         $detail = "VMM fabric check '$facet' could not run on '$ComputerName' because the VMM connection failed: $($connectError.Exception.Message)"
     }
     else {
@@ -645,8 +648,9 @@ foreach ($facet in $modesToRun) {
                 $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, "$detail`n$($_.Exception.ToString())")
             }
             else {
-                $state = 'NotApplicable'
-                $detail = "VMM fabric check '$facet' was skipped on '$ComputerName': $($_.Exception.Message)"
+                # A query failure is a fault, not a not-applicable capability; NotApplicable reads as healthy.
+                $state = 'Warning'
+                $detail = "VMM fabric check '$facet' could not be evaluated on '$ComputerName': $($_.Exception.Message)"
             }
         }
     }
@@ -659,5 +663,4 @@ if ($modesToRun.Count -eq 1) {
     $bag.AddValue('VmmFabricState', $state)
     $bag.AddValue('VmmFabricStateDetail', $detail)
 }
-$api.Return($bag)
 $api.Return($bag)
