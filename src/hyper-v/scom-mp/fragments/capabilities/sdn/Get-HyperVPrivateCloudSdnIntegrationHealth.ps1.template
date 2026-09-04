@@ -22,10 +22,13 @@ function Get-HcsService {
 }
 
 function Get-HcsServiceState {
+    # Returns: NotInstalled | Disabled | <Status> | Unknown.
+    # 'Unknown' means the query itself failed and must never be treated as evidence of SDN.
     param([string]$Name)
     try {
         $service = Get-Service -Name $Name -ErrorAction SilentlyContinue
         if ($null -eq $service) { return 'NotInstalled' }
+        if ([string]$service.StartType -eq 'Disabled') { return 'Disabled' }
         return [string]$service.Status
     }
     catch { return 'Unknown' }
@@ -334,9 +337,15 @@ try {
     $slbState = Get-HcsServiceState -Name 'SlbHostAgent'
     $requireSdnValue = ConvertTo-HcsBoolean -Value $RequireSDN
     $requireSlbValue = ConvertTo-HcsBoolean -Value $RequireSlbHostAgent
-    $detected = -not [string]::IsNullOrWhiteSpace($hostId) -or $ncState -ne 'NotInstalled' -or $slbState -ne 'NotInstalled'
+    # SDN participation requires POSITIVE evidence of Network Controller registration. On Windows
+    # Server 2025 NcHostAgent and SlbHostAgent are in-box on every Hyper-V host -- present, stopped
+    # and disabled until SDN is deployed -- so "the service exists" is not evidence. The previous OR
+    # of three weak signals made $detected true on every non-SDN host, which then fell through to the
+    # "HostId registry value is missing" Warning below and alerted the whole estate.
+    $ncUsable = $ncState -notin @('NotInstalled', 'Disabled', 'Unknown')
+    $detected = (-not [string]::IsNullOrWhiteSpace($hostId)) -and $ncUsable
 
-    $state = 'Good'
+    $state = 'NotApplicable'
     $detail = 'Windows Server SDN is not detected on this host; the capability is Not Applicable.'
     if (-not $detected -and $requireSdnValue) {
         $state = 'Critical'
