@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.3.3.0] — 2026-09-04
+
+Corrects a schema defect that made every 1.3.2.0 management pack unimportable. SCOM rejected the
+suite with:
+
+> The element 'ModuleTypes' has invalid child element 'DataSourceModuleType'.
+> List of possible elements expected: 'WriteActionModuleType'.
+
+The Management Pack schema requires `ModuleTypes` children grouped in order — all
+`DataSourceModuleType`, then `ProbeActionModuleType`, then `WriteActionModuleType`. The Windows
+PowerShell module types introduced in 1.3.1.0 were appended after the existing PowerShell 7
+`WriteActionModuleType`, which is invalid. Every pack in the suite references the library, so every
+import failed.
+
+This shipped because the build validated XML well-formedness only. Well-formed XML can still be
+schema-invalid, and element order is exactly what a well-formedness check cannot see. The release
+pipeline carries this validation through VSAE, but it had been skipped because the approved Microsoft
+dependency packs are not present on the build host — an incorrect trade, since XSD validation is
+schema-only and needs no dependency packs.
+
+`tools/Test-HyperVPrivateCloudSchema.ps1` now runs the same validation SCOM performs at import, using
+the official schema extracted from `Microsoft.EnterpriseManagement.Core.dll`. It requires no
+management group, no SDK and no dependency packs, and is enforced by the build test suite.
+
+No monitoring behaviour changes from 1.3.2.0.
+
 ## [1.3.2.0] — 2026-09-04
 
 Corrective release resolving every runtime defect found in the SCOM operational audit of 1.2.0.0, plus
@@ -407,6 +433,32 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 * **phase-2:** Docs reorg — promote Design to top-level section + author ADRs 0002-0010 ([de266cb](https://github.com/AzureLocal/azurelocal-scom-mp/commit/de266cb668d8c6ff63f7ec697e773841b99b653d))
 
 ## Changelog
+
+## [1.3.3.0] — 2026-09-04
+
+Corrects a schema defect that made every 1.3.2.0 management pack unimportable. SCOM rejected the
+suite with:
+
+> The element 'ModuleTypes' has invalid child element 'DataSourceModuleType'.
+> List of possible elements expected: 'WriteActionModuleType'.
+
+The Management Pack schema requires `ModuleTypes` children grouped in order — all
+`DataSourceModuleType`, then `ProbeActionModuleType`, then `WriteActionModuleType`. The Windows
+PowerShell module types introduced in 1.3.1.0 were appended after the existing PowerShell 7
+`WriteActionModuleType`, which is invalid. Every pack in the suite references the library, so every
+import failed.
+
+This shipped because the build validated XML well-formedness only. Well-formed XML can still be
+schema-invalid, and element order is exactly what a well-formedness check cannot see. The release
+pipeline carries this validation through VSAE, but it had been skipped because the approved Microsoft
+dependency packs are not present on the build host — an incorrect trade, since XSD validation is
+schema-only and needs no dependency packs.
+
+`tools/Test-HyperVPrivateCloudSchema.ps1` now runs the same validation SCOM performs at import, using
+the official schema extracted from `Microsoft.EnterpriseManagement.Core.dll`. It requires no
+management group, no SDK and no dependency packs, and is enforced by the build test suite.
+
+No monitoring behaviour changes from 1.3.2.0.
 
 ## [1.3.2.0] — 2026-09-04
 

@@ -58,7 +58,7 @@ graph TD
     Root --> AzL["Azure Local (Independent Track)"]:::independent
 
     subgraph HVTrack["Hyper-V Sovereign SCOM Health Model"]
-        HV --> HVS["Enterprise SCOM Management Pack Suite (v1.3.2.0)"]
+        HV --> HVS["Enterprise SCOM Management Pack Suite (v1.3.3.0)"]
         HVS --> HVDA["360° Distributed Application Service Model"]
         HVS --> HVOps["Central Operations & Troubleshooting Hub"]
         HVS --> HVMgmt["Complete Management Domain (AD / DNS / WDS / DHCP)"]
@@ -78,7 +78,7 @@ graph TD
 
 | Platform | Delivery Track | Health Model Status | Architecture & Runtime |
 |---|---|---|---|
-| **Hyper-V Private Cloud (Flagship)** | SCOM Management Pack Suite | **Production Release (1.3.2.0)** | "Private Cloud Powered by Hyper-V: A 360° View" — 100% on-premises SCOM (2019 / 2022 / 2025), PowerShell 7+, zero cloud dependency |
+| **Hyper-V Private Cloud (Flagship)** | SCOM Management Pack Suite | **Production Release (1.3.3.0)** | "Private Cloud Powered by Hyper-V: A 360° View" — 100% on-premises SCOM (2019 / 2022 / 2025), PowerShell 7+, zero cloud dependency |
 | **Azure Local** | SCOM Management Pack | Lab Preview | Independent SCOM management pack for Azure Local HCI clusters |
 | **Azure Local** | Azure Monitor Health Models | Committed Cloud Track | Cloud-native observability via Azure Arc and Azure Monitor |
 
@@ -96,7 +96,7 @@ visualization layers for SCOM and Azure Monitor environments respectively.
 ## Project status
 
 ::: info Hyper-V SCOM release available
-Hyper-V Private Cloud Monitoring `1.3.2.0` is the current sealed production release ("Private Cloud Powered by Hyper-V: A 360° View") and is available from
+Hyper-V Private Cloud Monitoring `1.3.3.0` is the current sealed production release ("Private Cloud Powered by Hyper-V: A 360° View") and is available from
 the [Hyper-V download page](/downloads/hyper-v-private-cloud). Azure Local remains an independent development
 track. See the [project roadmap](/project/roadmap) for upcoming milestones.
 :::

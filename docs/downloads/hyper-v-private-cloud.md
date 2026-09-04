@@ -16,9 +16,9 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.3.2.0 — Private Cloud Powered by Hyper-V: A 360° View
+## Current release: 1.3.3.0 — Private Cloud Powered by Hyper-V: A 360° View
 
-`1.3.2.0` is the current production release. Every one of the 13 sealed product MPs has version `1.3.2.0`,
+`1.3.3.0` is the current production release. Every one of the 13 sealed product MPs has version `1.3.3.0`,
 delivering the full 360° Private Cloud Distributed Application service model. This includes complete
 fabric modeling across physical server chassis/hardware, top-of-rack data switches, out-of-band management switches,
 perimeter firewalls, Opengear out-of-band console servers, DHCP/IPAM, management domain services (Active Directory,
@@ -38,7 +38,7 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.2.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.3.2.0`. It contains no override MPs.
+- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.3.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.3.3.0`. It contains no override MPs.
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
 - [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
 - [Download canonical override templates](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — Discovery and Monitoring override templates; select and review one Discovery/Monitoring pair only.
@@ -47,7 +47,7 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
 The immutable versioned files are also retained under
-[`1.3.2.0`](/downloads/hyper-v-private-cloud/1.3.2.0/release-assets.json). The `latest` directory
+[`1.3.3.0`](/downloads/hyper-v-private-cloud/1.3.3.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
 The previous releases stay under [`1.0.7.0`](/downloads/hyper-v-private-cloud/1.0.7.0/release-assets.json) and [`1.0.6.0`](/downloads/hyper-v-private-cloud/1.0.6.0/release-assets.json).
 

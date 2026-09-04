@@ -6,7 +6,7 @@ description: Current release status for the Hyper-V and Azure Local SCOM Managem
 # SCOM Management Pack release status
 
 ::: tip Hyper-V release available
-Use the [Hyper-V Private Cloud Monitoring `1.3.2.0` download](hyper-v-private-cloud.md). The former
+Use the [Hyper-V Private Cloud Monitoring `1.3.3.0` download](hyper-v-private-cloud.md). The former
 Hyper-V `0.1.0` preview is withdrawn and must not be installed or mixed with the current product.
 :::
 
