@@ -39,6 +39,18 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         $script:Library.SelectSingleNode("//DisplayString[@ElementID='HyperVPrivateCloud.Service']/Name").InnerText | Should -Be 'Hyper-V Private Cloud'
     }
 
+    It 'validates against the official SCOM Management Pack XSD' {
+        # 1.3.2.0 shipped with ModuleTypes children out of order and SCOM rejected every import with
+        # "The element 'ModuleTypes' has invalid child element 'DataSourceModuleType'". Nothing in the
+        # build caught it: [xml]$text proves well-formedness, not schema validity, and the MP schema
+        # constrains element ORDER. This runs the same validation SCOM runs at import.
+        $schemaTool = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'src/hyper-v/scom-mp/tools/Test-HyperVPrivateCloudSchema.ps1'
+        if (-not (Test-Path -LiteralPath 'C:\Program Files (x86)\MSBuild\Microsoft\VSAC\Microsoft.EnterpriseManagement.Core.dll')) {
+            Set-ItResult -Skipped -Because 'VSAE (Microsoft.EnterpriseManagement.Core.dll) is not installed on this agent'
+            return
+        }
+        { & $schemaTool -Path $script:Output } | Should -Not -Throw
+    }
     It 'executes every first-party workflow through the public PowerShell 7 command-executor boundary' {
         $discoveryProvider = $script:Library.SelectSingleNode("//DataSourceModuleType[@ID='HyperVPrivateCloud.Pwsh.DiscoveryProvider']")
         $propertyBagProbe = $script:Library.SelectSingleNode("//ProbeActionModuleType[@ID='HyperVPrivateCloud.Pwsh.PropertyBagProbe']")
