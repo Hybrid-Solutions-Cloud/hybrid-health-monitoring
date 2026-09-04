@@ -59,6 +59,7 @@ graph TD
     MgmtInfra --> ADDS["Active Directory Domain & Secure Channel"]
     MgmtInfra --> DNS["DNS Services & Name Resolution"]
     MgmtInfra --> PXEWDS["PXE / WDS Bare-Metal Deployment"]
+    MgmtInfra -.-> Opengear["Opengear OOB Console Servers (Optional Capability)"]
 
     Network --> VSwitches["Virtual Switches & SET Teams"]
     Network --> PhysAdapters["Host Physical Adapters"]
@@ -77,7 +78,7 @@ graph TD
     class Service root
     class Compute,VMs,Storage,Network,Avail,MgmtInfra,MonPipe core
     class HostRoles,ADDS,DNS,PXEWDS,VSwitches,PhysAdapters,CSVs leaf
-    class DellOME,ToRPorts,FortiGate,S2DPools,PureArrays,SMBShares opt
+    class DellOME,ToRPorts,FortiGate,Opengear,S2DPools,PureArrays,SMBShares opt
 ```
 
 ## Component contract
@@ -89,7 +90,7 @@ graph TD
 | Storage and Replica | CSVs, approved storage paths, disks, VHD/VHDX dependencies, S2D, Pure Storage, and SMB shares | Availability or data-integrity critical where the dependency is required |
 | Networking | Physical-to-virtual topology, virtual switches, SET uplinks, ToR switch ports (LLDP/CDP), and optional Fortinet firewalls/DHCP | Availability-critical for required paths; configuration drift can be lower impact |
 | Availability and clustering | Windows Server Failover Cluster resources, quorum, networks, and CSV coordinator states | Availability-critical |
-| Management infrastructure | Dedicated management domain services: Active Directory trust/channel, DNS resolution, and PXE/WDS bare-metal deployment | Availability-critical (cloud cannot authenticate or resolve resources without AD/DNS) |
+| Management infrastructure | Dedicated management domain services: Active Directory trust/channel, DNS resolution, PXE/WDS bare-metal deployment, and optional Opengear out-of-band console access | Availability-critical (cloud cannot authenticate or resolve resources without AD/DNS) |
 | Monitoring pipeline | PowerShell 7 engine, agent telemetry, required discovery freshness, workflow health, and collection paths | Root-impacting so missing telemetry cannot look Healthy |
 
 ## Dynamic membership

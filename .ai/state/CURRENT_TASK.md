@@ -34,11 +34,13 @@
 - All unit test suites passed 100% (Build: 87/87, Overrides: 9/9, Release: 11/11, Integration: 5/5).
 - VitePress documentation built clean in 45s with 0 broken links and 0 errors.
 
-## Roadmap: Optional Capability Packs (Fortinet & Dell OME)
+## Roadmap: Optional Capability Packs (Opengear, Fortinet, Dell OME, Generic Network)
 
 - Architecture for optional capabilities:
-  - `HyperVPrivateCloud.Capability.Fortinet`: Standalone pack for Fortinet firewall gateway and DHCP monitoring; correlates into `NetworkComponent` when deployed, zero dependency on core when absent.
-  - `HyperVPrivateCloud.Capability.DellOME`: Standalone pack integrating Dell OpenManage Enterprise MP health into `ComputeComponent`.
+  - `HyperVPrivateCloud.Capability.Opengear`: Standalone out-of-band management pack for Opengear console servers (OM2200, CM8100, IM7200); monitors console server appliance health, dual power supplies, cellular/LTE failover connection, environmental/temperature sensors, and serial console port link states; rolls up into `ManagementComponent` of the Distributed Application.
+  - `HyperVPrivateCloud.Capability.Fortinet`: Standalone pack for Fortinet FortiGate firewall gateway, HA cluster state, and DHCP scope monitoring; correlates into `NetworkComponent` and `ManagementComponent` when deployed, zero dependency on core when absent.
+  - `HyperVPrivateCloud.Capability.DellOME`: Standalone pack integrating Dell OpenManage Enterprise MP health (chassis, power, thermal, storage controllers) into `ComputeComponent`.
+  - `HyperVPrivateCloud.Capability.Network.GenericSNMP`: Vendor-neutral SNMP v2c/v3 adapter using `System.NetworkManagement.Library` for any Top-of-Rack data switch (Cisco, Arista, Dell) and Out-of-Band management switch.
 
 ## Active correction — 2026-09-03 Hyper-V Private Cloud 1.0.6.0
 
