@@ -328,6 +328,112 @@
         <OutputType>System!System.CommandOutput</OutputType>
         <InputType>System!System.BaseData</InputType>
       </WriteActionModuleType>
+
+      <!-- Windows PowerShell (5.1) execution hosts. FailoverClusters and VirtualMachineManager ship
+           only as Windows PowerShell modules; under pwsh.exe their WinPSCompat bridge does not
+           initialise reliably in the HealthService context (Event 8301, and the
+           System.Diagnostics.Eventing.EventDescriptor type-load that -SkipEditionCheck produces).
+           Workflows using those modules must target these types instead of the Pwsh.* ones.
+           Scripts routed here must be 5.1-compatible: no ??, ?:, ForEach-Object -Parallel, or
+           Test-Connection -TargetName. -->
+      <DataSourceModuleType ID="HyperVPrivateCloud.WinPS.DiscoveryProvider" Accessibility="Public" Batching="false">
+        <Configuration>
+          <xsd:element name="IntervalSeconds" type="xsd:integer" minOccurs="1" />
+          <xsd:element name="ScriptName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ScriptBody" type="xsd:string" minOccurs="1" />
+          <xsd:element name="Arguments" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <DataSource ID="WinPS" TypeID="System!System.CommandExecuterDiscoveryDataSource">
+                <IntervalSeconds>$Config/IntervalSeconds$</IntervalSeconds>
+                <ApplicationName>%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</ApplicationName>
+                <WorkingDirectory />
+                <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
+                <SecureInput />
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+                <RequireOutput>true</RequireOutput>
+                <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
+                <DefaultEventPolicy>
+                  <!-- The typed discovery data source parses and validates the returned DataItem. Do not
+                       pre-validate stdout with CommandExecuter's different regular-expression engine. -->
+                  <StdErrMatches>.+</StdErrMatches>
+                  <ExitCodeMatches>[^0]+</ExitCodeMatches>
+                </DefaultEventPolicy>
+              </DataSource>
+            </MemberModules>
+            <Composition><Node ID="WinPS" /></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.Discovery.Data</OutputType>
+      </DataSourceModuleType>
+      <ProbeActionModuleType ID="HyperVPrivateCloud.WinPS.PropertyBagProbe" Accessibility="Public" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element name="ScriptName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ScriptBody" type="xsd:string" minOccurs="1" />
+          <xsd:element name="Arguments" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" /></OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="WinPS" TypeID="System!System.CommandExecuterProbePropertyBagBase">
+                <ApplicationName>%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</ApplicationName>
+                <WorkingDirectory />
+                <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
+                <SecureInput />
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+                <RequireOutput>true</RequireOutput>
+                <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
+                <OutputType>System.PropertyBagData</OutputType>
+                <DefaultEventPolicy>
+                  <!-- The typed property-bag probe parses and validates the returned DataItem. -->
+                  <StdErrMatches>.+</StdErrMatches>
+                  <ExitCodeMatches>[^0]+</ExitCodeMatches>
+                </DefaultEventPolicy>
+              </ProbeAction>
+            </MemberModules>
+            <Composition><Node ID="WinPS" /></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+        <InputType>System!System.BaseData</InputType>
+      </ProbeActionModuleType>
+      <WriteActionModuleType ID="HyperVPrivateCloud.WinPS.WriteAction" Accessibility="Public" Batching="false">
+        <Configuration>
+          <xsd:element name="ScriptName" type="xsd:string" minOccurs="1" />
+          <xsd:element name="ScriptBody" type="xsd:string" minOccurs="1" />
+          <xsd:element name="Arguments" type="xsd:string" minOccurs="0" />
+          <xsd:element name="TimeoutSeconds" type="xsd:integer" minOccurs="1" />
+        </Configuration>
+        <OverrideableParameters><OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" /></OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <WriteAction ID="WinPS" TypeID="System!System.CommandExecuter">
+                <ApplicationName>%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe</ApplicationName>
+                <WorkingDirectory />
+                <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
+                <SecureInput />
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+                <RequireOutput>false</RequireOutput>
+                <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
+                <DefaultEventPolicy><StdErrMatches>.+</StdErrMatches><ExitCodeMatches>[^0]+</ExitCodeMatches></DefaultEventPolicy>
+              </WriteAction>
+            </MemberModules>
+            <Composition><Node ID="WinPS" /></Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.CommandOutput</OutputType>
+        <InputType>System!System.BaseData</InputType>
+      </WriteActionModuleType>
     </ModuleTypes>
   </TypeDefinitions>
   <LanguagePacks>

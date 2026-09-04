@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 5.1
 param(
     [string]$SourceId,
     [string]$ManagedEntityId,
@@ -107,7 +107,9 @@ try {
     }
 
     try {
-        Import-Module -Name $module.Name -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction Stop
+        # Windows PowerShell 5.1 host: VirtualMachineManager is native here. -UseWindowsPowerShell
+        # is a PowerShell 7 parameter and raises ParameterBindingException under 5.1.
+        Import-Module -Name $module.Name -WarningAction SilentlyContinue -ErrorAction Stop
     }
     catch {
         Import-Module -Name $module.Path -ErrorAction Stop

@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 5.1
 # Virtual Machine Manager operator tasks, run on the VMM management server under the VMM Run As profile.
 param(
     [ValidateSet('FailedJobs', 'HostStatus', 'AgentVersions', 'LibraryStatus', 'RefreshHost')]
@@ -20,7 +20,9 @@ try {
     $module = Get-Module -ListAvailable -Name VirtualMachineManager -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -eq $module) { throw 'The VirtualMachineManager PowerShell module is not available on this server.' }
     try {
-        Import-Module -Name $module.Name -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction Stop
+        # Windows PowerShell 5.1 host: VirtualMachineManager is native here. -UseWindowsPowerShell
+        # is a PowerShell 7 parameter and raises ParameterBindingException under 5.1.
+        Import-Module -Name $module.Name -WarningAction SilentlyContinue -ErrorAction Stop
     }
     catch {
         Import-Module -Name $module.Path -ErrorAction Stop -WarningAction SilentlyContinue

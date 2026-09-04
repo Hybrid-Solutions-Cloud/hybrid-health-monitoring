@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 5.1
 # Discovers one HyperVPrivateCloud.Capability.Cluster.ClusterRole per failover cluster, hosted by the
 # cluster's core virtual server (Microsoft.Windows.Cluster.VirtualServer). Workflows targeted at that object
 # run once, on whichever node owns the cluster core group, and fail over with it, so cluster-wide facts

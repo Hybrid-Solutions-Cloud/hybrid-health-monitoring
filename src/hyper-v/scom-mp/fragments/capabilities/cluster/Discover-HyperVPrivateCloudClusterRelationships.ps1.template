@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 5.1
 param(
     [string]$SourceId,
     [string]$ManagedEntityId,
@@ -12,20 +12,12 @@ $WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
-
     if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
-    try { Import-Module -Name $ModuleName -SkipEditionCheck -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
-    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
-    try { Import-Module -Name $ModuleName -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
-    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
+    # This workflow runs on the Windows PowerShell 5.1 host, where FailoverClusters is a native
+    # module, so a plain import is sufficient. Do NOT reintroduce -SkipEditionCheck or
+    # -UseWindowsPowerShell: both are PowerShell 7 parameters and raise ParameterBindingException
+    # under 5.1. They existed only to work around running this module under pwsh.exe.
     try { Import-Module -Name $ModuleName -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
-    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
-    $system32Module = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\Modules\$ModuleName\$ModuleName.psd1"
-    if (Test-Path -LiteralPath $system32Module) {
-        try { Import-Module -Name $system32Module -SkipEditionCheck -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
-        if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
-        try { Import-Module -Name $system32Module -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
-    }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
 
