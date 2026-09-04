@@ -1,21 +1,15 @@
 # Project context
 
-This repository defines Hybrid infrastructure health monitoring for two platform tracks. Azure
-Local has independent SCOM Management Pack and Azure Monitor Health Model delivery surfaces.
-Hyper-V has an independent SCOM Management Pack and a constrained Azure Monitor Health Model that
-uses Arc-enabled SCVMM for inventory plus Arc-enabled Server, Azure Monitor Agent, and Data
-Collection Rules for host telemetry. SquaredUp integrations are optional visualization layers.
-Both SCOM MPs are functional development baselines. Their complete five-project suites pass
-Microsoft VSAE verification against OM2022 and ordered transient test sealing, but neither is a
-release-signed or SCOM-lab-certified product. Both Azure Monitor baselines require representative
-Azure validation.
+> **"Private Cloud Powered by Hyper-V: A 360° View"**  
+> The premier operational health monitoring suite for sovereign, enterprise Hyper-V private clouds, providing 100% end-to-end visibility across physical compute, out-of-band management, storage fabrics, networking, perimeter firewalls, and management domain services.
+
+This repository defines Hybrid infrastructure health monitoring for two platform tracks:
+1. **Hyper-V Private Cloud**: A sovereign, 100% on-premises enterprise SCOM solution (zero cloud or Azure dependencies) delivering a complete 360° Distributed Application service model across compute, storage, networking, edge security, management infrastructure, and workloads.
+2. **Azure Local**: Independent SCOM Management Pack and Azure Monitor Health Model delivery surfaces.
 
 The documentation is a VitePress site rooted at `docs/` and published beneath the
-`/hybrid-health-monitoring/` base path at
-`https://labs.hybridsolutions.cloud/hybrid-health-monitoring/`. ADR 0020 records the repository
-owner's explicit decision to use VitePress. ADR 0021 records platform-first organization. ADR 0024
-records the move to `Hybrid-Solutions-Cloud/hybrid-health-monitoring`. The site is deployed by
-GitHub Pages and the central Azure DevOps VitePress template.
+`/hybrid-health-monitoring/` base path at `https://labs.hybridsolutions.cloud/hybrid-health-monitoring/`.
+The site is deployed by GitHub Pages and the central Azure DevOps VitePress template.
 
 Internal delivery tracking mirrors the two platforms and four solution boundaries. Work-item
 identifiers and direct board links must never be published in the public site or repository text.

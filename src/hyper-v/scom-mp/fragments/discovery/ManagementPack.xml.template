@@ -54,6 +54,12 @@
           <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService" />
           <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.DnsService" />
           <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.DeploymentService" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.PhysicalChassis" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.EdgeFirewall" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.ConsoleServer" />
+          <DiscoveryClass TypeID="HCSV2Library!HyperVPrivateCloud.DhcpService" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.BoundaryContainsHostRole" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.BoundaryContainsVirtualMachine" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.BoundaryContainsVirtualSwitch" />
@@ -75,6 +81,7 @@
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsDnsService" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsDeploymentService" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ComputeComponentContainsHostRole" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ComputeComponentContainsPhysicalChassis" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.VirtualMachineComponentContainsVirtualMachine" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.VirtualMachineComponentContainsRuntime" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.AvailabilityComponentContainsRuntime" />
@@ -84,6 +91,11 @@
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.StorageComponentContainsVirtualHardDisk" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsVirtualSwitch" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsVirtualNetworkAdapter" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsTopOfRackSwitch" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsOutOfBandSwitch" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsEdgeFirewall" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsConsoleServer" />
+          <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsDhcpService" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.MonitoringComponentContainsPipeline" />
           <DiscoveryRelationship TypeID="HCSV2Library!HyperVPrivateCloud.MonitoringComponentContainsHostRole" />
         </DiscoveryTypes>

@@ -304,6 +304,62 @@ try {
         }
     } catch {}
 
+    # Discover Physical Server Hardware / Chassis
+    try {
+        $csp = Get-CimInstance -ClassName Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
+        if ($null -ne $csp -and -not [string]::IsNullOrWhiteSpace($csp.IdentifyingNumber)) {
+            $chassisId = [string]$csp.IdentifyingNumber
+            $mfg = [string]$csp.Vendor
+            $model = [string]$csp.Name
+            $chassisInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']$")
+            $chassisInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/BoundaryId$", $boundaryId)
+            $chassisInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/ChassisId$", $chassisId)
+            $chassisInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/Manufacturer$", $mfg)
+            $chassisInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/Model$", $model)
+            $chassisInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.PhysicalChassis']/SerialNumber$", $chassisId)
+            $chassisInstance.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", ("Physical Chassis ({0} {1})" -f $mfg, $model))
+            $discoveryData.AddInstance($chassisInstance)
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComputeComponentContainsPhysicalChassis']$" $components['Compute'] $chassisInstance
+        }
+    } catch {}
+
+    # Discover DHCP / IPAM Service
+    try {
+        $dhcpSvc = Get-Service -Name 'DHCPServer' -ErrorAction SilentlyContinue
+        if ($null -ne $dhcpSvc) {
+            $dhcpInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DhcpService']$")
+            $dhcpInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DhcpService']/BoundaryId$", $boundaryId)
+            $dhcpInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DhcpService']/ServiceId$", ("dhcp-{0}" -f $nodeName))
+            $dhcpInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DhcpService']/ServerName$", $nodeName)
+            $dhcpInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.DhcpService']/ProviderType$", 'Microsoft Windows Server DHCP')
+            $dhcpInstance.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", ("DHCP Service ({0})" -f $nodeName))
+            $discoveryData.AddInstance($dhcpInstance)
+            Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementComponentContainsDhcpService']$" $components['Management'] $dhcpInstance
+        }
+    } catch {}
+
+    # Discover Top-of-Rack Physical Switches via LLDP/CDP correlation
+    try {
+        if (Get-Command Get-NetLldpAgent -ErrorAction SilentlyContinue) {
+            $lldpData = Get-NetLldpAgent -ErrorAction SilentlyContinue | Get-NetLldpNeighbor -ErrorAction SilentlyContinue
+            if ($lldpData) {
+                foreach ($neighbor in @($lldpData | Select-Object -Unique ChassisId, SystemName)) {
+                    if ($neighbor.SystemName) {
+                        $torId = [string]$neighbor.SystemName
+                        $torInstance = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']$")
+                        $torInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/BoundaryId$", $boundaryId)
+                        $torInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/SwitchId$", $torId)
+                        $torInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/SwitchName$", $torId)
+                        $torInstance.AddProperty("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch']/Role$", 'Top-of-Rack Data Switch')
+                        $torInstance.AddProperty("$MPElement[Name='System!System.Entity']/DisplayName$", ("ToR Switch ({0})" -f $torId))
+                        $discoveryData.AddInstance($torInstance)
+                        Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponentContainsTopOfRackSwitch']$" $components['Network'] $torInstance
+                    }
+                }
+            }
+        }
+    } catch {}
+
     # Enterprise Distributed Applications (singletons): the whole solution, the Hyper-V fabric across every
     # boundary, and the management stack. Every boundary's DA joins the fabric; its Management and Monitoring
     # Pipeline branches join the management stack. Singletons need no properties.

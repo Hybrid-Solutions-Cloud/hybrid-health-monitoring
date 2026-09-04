@@ -143,6 +143,49 @@
           <Property ID="TftpListenerPort" Type="int" Key="false" Required="false" />
           <Property ID="PxeProvider" Type="string" Key="false" CaseSensitive="false" MaxLength="128" MinLength="0" Required="false" />
         </ClassType>
+        <ClassType ID="HyperVPrivateCloud.PhysicalChassis" Accessibility="Public" Abstract="false" Base="System!System.LogicalEntity" Hosted="false" Singleton="false" Extension="false">
+          <Property ID="BoundaryId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="ChassisId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="Manufacturer" Type="string" Key="false" CaseSensitive="false" MaxLength="128" MinLength="0" Required="false" />
+          <Property ID="Model" Type="string" Key="false" CaseSensitive="false" MaxLength="128" MinLength="0" Required="false" />
+          <Property ID="SerialNumber" Type="string" Key="false" CaseSensitive="false" MaxLength="128" MinLength="0" Required="false" />
+          <Property ID="AssetTag" Type="string" Key="false" CaseSensitive="false" MaxLength="128" MinLength="0" Required="false" />
+          <Property ID="BmcIpv4Address" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+        </ClassType>
+        <ClassType ID="HyperVPrivateCloud.TopOfRackSwitch" Accessibility="Public" Abstract="false" Base="System!System.LogicalEntity" Hosted="false" Singleton="false" Extension="false">
+          <Property ID="BoundaryId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="SwitchId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="SwitchName" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="0" Required="false" />
+          <Property ID="ManagementIp" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+          <Property ID="Role" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+        </ClassType>
+        <ClassType ID="HyperVPrivateCloud.OutOfBandSwitch" Accessibility="Public" Abstract="false" Base="System!System.LogicalEntity" Hosted="false" Singleton="false" Extension="false">
+          <Property ID="BoundaryId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="SwitchId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="SwitchName" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="0" Required="false" />
+          <Property ID="ManagementIp" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+        </ClassType>
+        <ClassType ID="HyperVPrivateCloud.EdgeFirewall" Accessibility="Public" Abstract="false" Base="System!System.LogicalEntity" Hosted="false" Singleton="false" Extension="false">
+          <Property ID="BoundaryId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="FirewallId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="DeviceName" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="0" Required="false" />
+          <Property ID="ManagementIp" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+          <Property ID="HaRole" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+        </ClassType>
+        <ClassType ID="HyperVPrivateCloud.ConsoleServer" Accessibility="Public" Abstract="false" Base="System!System.LogicalEntity" Hosted="false" Singleton="false" Extension="false">
+          <Property ID="BoundaryId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="ApplianceId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="Hostname" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="0" Required="false" />
+          <Property ID="ManagementIp" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+          <Property ID="Model" Type="string" Key="false" CaseSensitive="false" MaxLength="128" MinLength="0" Required="false" />
+        </ClassType>
+        <ClassType ID="HyperVPrivateCloud.DhcpService" Accessibility="Public" Abstract="false" Base="System!System.LogicalEntity" Hosted="false" Singleton="false" Extension="false">
+          <Property ID="BoundaryId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="ServiceId" Type="string" Key="true" CaseSensitive="false" MaxLength="256" MinLength="1" Required="true" />
+          <Property ID="ServerName" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="0" Required="false" />
+          <Property ID="ScopeRange" Type="string" Key="false" CaseSensitive="false" MaxLength="256" MinLength="0" Required="false" />
+          <Property ID="ProviderType" Type="string" Key="false" CaseSensitive="false" MaxLength="64" MinLength="0" Required="false" />
+        </ClassType>
         <ClassType ID="HyperVPrivateCloud.Product.Group" Accessibility="Public" Abstract="false" Base="InstanceGroup!Microsoft.SystemCenter.InstanceGroup" Hosted="false" Singleton="true" Extension="false" />
       </ClassTypes>
       <RelationshipTypes>
@@ -178,6 +221,12 @@
         <RelationshipType ID="HyperVPrivateCloud.NetworkComponentContainsVirtualNetworkAdapter" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.NetworkComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="VirtualNetworkAdapter" Type="HyperVPrivateCloud.VirtualNetworkAdapter" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
         <RelationshipType ID="HyperVPrivateCloud.MonitoringComponentContainsPipeline" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.MonitoringComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="Pipeline" Type="HyperVPrivateCloud.MonitoringPipeline" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
         <RelationshipType ID="HyperVPrivateCloud.MonitoringComponentContainsHostRole" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.MonitoringComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="HostRole" Type="HyperVPrivateCloud.HostRole" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
+        <RelationshipType ID="HyperVPrivateCloud.ComputeComponentContainsPhysicalChassis" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.ComputeComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="PhysicalChassis" Type="HyperVPrivateCloud.PhysicalChassis" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
+        <RelationshipType ID="HyperVPrivateCloud.NetworkComponentContainsTopOfRackSwitch" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.NetworkComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="TopOfRackSwitch" Type="HyperVPrivateCloud.TopOfRackSwitch" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
+        <RelationshipType ID="HyperVPrivateCloud.NetworkComponentContainsOutOfBandSwitch" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.NetworkComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="OutOfBandSwitch" Type="HyperVPrivateCloud.OutOfBandSwitch" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
+        <RelationshipType ID="HyperVPrivateCloud.NetworkComponentContainsEdgeFirewall" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.NetworkComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="EdgeFirewall" Type="HyperVPrivateCloud.EdgeFirewall" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
+        <RelationshipType ID="HyperVPrivateCloud.ManagementComponentContainsConsoleServer" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.ManagementComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="ConsoleServer" Type="HyperVPrivateCloud.ConsoleServer" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
+        <RelationshipType ID="HyperVPrivateCloud.ManagementComponentContainsDhcpService" Accessibility="Public" Abstract="false" Base="System!System.Containment"><Source ID="Component" Type="HyperVPrivateCloud.ManagementComponent" MinCardinality="0" MaxCardinality="1" /><Target ID="DhcpService" Type="HyperVPrivateCloud.DhcpService" MinCardinality="0" MaxCardinality="2147483647" /></RelationshipType>
       </RelationshipTypes>
     </EntityTypes>
     <ModuleTypes>
@@ -310,6 +359,18 @@
         <DisplayString ElementID="HyperVPrivateCloud.ManagementComponentContainsActiveDirectoryService"><Name>Management Component contains Active Directory</Name><Description>Relates the management component to Active Directory Domain Services.</Description></DisplayString>
         <DisplayString ElementID="HyperVPrivateCloud.ManagementComponentContainsDnsService"><Name>Management Component contains DNS</Name><Description>Relates the management component to DNS infrastructure services.</Description></DisplayString>
         <DisplayString ElementID="HyperVPrivateCloud.ManagementComponentContainsDeploymentService"><Name>Management Component contains Deployment Service</Name><Description>Relates the management component to bare-metal deployment services.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.PhysicalChassis"><Name>Physical Server Chassis</Name><Description>Physical server hardware, chassis, power supplies, fans, and BMC management controller.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.TopOfRackSwitch"><Name>Top-of-Rack Switch</Name><Description>Physical Top-of-Rack (ToR) data switch providing host uplink connectivity and RDMA/PFC traffic flows.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.OutOfBandSwitch"><Name>Out-of-Band Management Switch</Name><Description>Physical Out-of-Band (OOB) network switch providing isolated management plane connectivity to BMCs, console servers, and management interfaces.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.EdgeFirewall"><Name>Perimeter Edge Firewall</Name><Description>Perimeter security firewall and gateway providing routing, NAT, threat inspection, and network boundary security.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.ConsoleServer"><Name>Opengear Out-of-Band Console Server</Name><Description>Opengear console server appliance providing emergency out-of-band serial console access, cellular failover, and rack environmental sensors.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.DhcpService"><Name>DHCP and IPAM Infrastructure</Name><Description>Dynamic Host Configuration Protocol (DHCP) and IP Address Management service providing automated IP assignment for cloud workloads and hosts.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.ComputeComponentContainsPhysicalChassis"><Name>Compute Component contains Physical Chassis</Name><Description>Relates the compute component to physical server chassis hardware.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.NetworkComponentContainsTopOfRackSwitch"><Name>Network Component contains Top-of-Rack Switch</Name><Description>Relates the network component to physical Top-of-Rack switches.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.NetworkComponentContainsOutOfBandSwitch"><Name>Network Component contains Out-of-Band Switch</Name><Description>Relates the network component to physical Out-of-Band management switches.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.NetworkComponentContainsEdgeFirewall"><Name>Network Component contains Edge Firewall</Name><Description>Relates the network component to perimeter edge firewalls.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.ManagementComponentContainsConsoleServer"><Name>Management Component contains Console Server</Name><Description>Relates the management component to out-of-band console servers.</Description></DisplayString>
+        <DisplayString ElementID="HyperVPrivateCloud.ManagementComponentContainsDhcpService"><Name>Management Component contains DHCP Service</Name><Description>Relates the management component to DHCP and IPAM infrastructure.</Description></DisplayString>
 {{ELEMENT_DISPLAY_STRINGS}}
       </DisplayStrings>
     </LanguagePack>
