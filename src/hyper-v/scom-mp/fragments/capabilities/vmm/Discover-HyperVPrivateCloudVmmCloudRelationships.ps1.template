@@ -50,6 +50,6 @@ try {
     $api.Return($script:DiscoveryData)
 }
 catch {
-    $api.LogScriptEvent('HyperVPrivateCloud.VMM.CloudRelationshipDiscovery.ps1', 8512, 1, $_.Exception.Message)
+    $api.LogScriptEvent('HyperVPrivateCloud.VMM.CloudRelationshipDiscovery.ps1', 8512, 1, $_.Exception.ToString())
     throw
 }

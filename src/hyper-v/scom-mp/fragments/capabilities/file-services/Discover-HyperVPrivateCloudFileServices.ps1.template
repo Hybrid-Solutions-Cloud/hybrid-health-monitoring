@@ -60,8 +60,8 @@ try {
     if (-not (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM')) { $api.Return($script:DiscoveryData); return }
     $hasSmbClient = Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection'
     $hasMultichannel = Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection'
-    $connections = if ($hasSmbClient) { @(Get-SmbConnection -ErrorAction SilentlyContinue) } else { @() }
-    $channels = if ($hasMultichannel) { @(Get-SmbMultichannelConnection -ErrorAction SilentlyContinue) } else { @() }
+    $connections = @(if ($hasSmbClient) { Get-SmbConnection -ErrorAction SilentlyContinue })
+    $channels = @(if ($hasMultichannel) { Get-SmbMultichannelConnection -ErrorAction SilentlyContinue })
 
     $storage = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")
     Add-HcsProperty $storage "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ComponentGroup']/BoundaryId$" $BoundaryId

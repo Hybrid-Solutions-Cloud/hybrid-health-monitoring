@@ -123,7 +123,7 @@ try {
         elseif (-not (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbConnection')) { throw 'The SMB client PowerShell capability is unavailable. Install the Windows file-services management tools.' }
         else {
             $connections = @(Get-SmbConnection -ErrorAction Stop)
-            $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction Stop) } else { @() }
+            $channels = @(if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { Get-SmbMultichannelConnection -ErrorAction Stop })
             $problems = [System.Collections.Generic.List[string]]::new()
             foreach ($key in $required) {
                 $parts = $key.Split('|', 2)

@@ -166,6 +166,6 @@ try {
     $api.Return($script:DiscoveryData)
 }
 catch {
-    $api.LogScriptEvent('HyperVPrivateCloud.VMM.FabricDiscovery.ps1', 8510, 1, $_.Exception.Message)
+    $api.LogScriptEvent('HyperVPrivateCloud.VMM.FabricDiscovery.ps1', 8510, 1, $_.Exception.ToString())
     $api.Return($script:DiscoveryData)
 }

@@ -201,10 +201,10 @@ try {
                     Write-HcsState 'DeploymentServiceState' 'Warning' ("Windows Deployment Services (WDSServer) is {0}." -f $wdsService.Status)
                 }
             } else {
-                Write-HcsState 'DeploymentServiceState' 'Good' 'Bare-metal deployment service (WDS) is not installed on this host.'
+                Write-HcsState 'DeploymentServiceState' 'NotApplicable' 'Bare-metal deployment service (WDS) is not installed on this host.'
             }
         } catch {
-            Write-HcsState 'DeploymentServiceState' 'Good' 'WDS probe skipped.'
+            Write-HcsState 'DeploymentServiceState' 'NotApplicable' ("WDS could not be probed: {0}" -f $_.Exception.Message)
         }
 
         # Physical Chassis & Hardware Status
@@ -219,7 +219,7 @@ try {
                 Write-HcsState 'PhysicalChassisState' 'Critical' ("Hardware status reported error: {0}." -f $hwStatus)
             }
         } catch {
-            Write-HcsState 'PhysicalChassisState' 'Good' 'Chassis hardware probe active.'
+            Write-HcsState 'PhysicalChassisState' 'NotApplicable' ("Chassis hardware could not be probed: {0}" -f $_.Exception.Message)
         }
 
         # DHCP Infrastructure Service
@@ -232,10 +232,10 @@ try {
                     Write-HcsState 'DhcpServiceState' 'Warning' ("DHCP Server service is {0}." -f $dhcpSvc.Status)
                 }
             } else {
-                Write-HcsState 'DhcpServiceState' 'Good' 'DHCP Server service not hosted on this Hyper-V node.'
+                Write-HcsState 'DhcpServiceState' 'NotApplicable' 'DHCP Server service is not hosted on this Hyper-V node.'
             }
         } catch {
-            Write-HcsState 'DhcpServiceState' 'Good' 'DHCP probe skipped.'
+            Write-HcsState 'DhcpServiceState' 'NotApplicable' ("DHCP service could not be probed: {0}" -f $_.Exception.Message)
         }
 
         # Top-of-Rack Switch Link & Neighbor Reachability
@@ -253,7 +253,7 @@ try {
                 Write-HcsState 'TopOfRackSwitchState' 'Warning' 'No physical network uplinks reporting Up status.'
             }
         } catch {
-            Write-HcsState 'TopOfRackSwitchState' 'Good' 'ToR switch link probe active.'
+            Write-HcsState 'TopOfRackSwitchState' 'NotApplicable' ("Top-of-rack switch uplinks could not be probed: {0}" -f $_.Exception.Message)
         }
 
         # Perimeter Edge Firewall Reachability
@@ -267,17 +267,17 @@ try {
                     Write-HcsState 'EdgeFirewallState' 'Warning' ("Perimeter default gateway ({0}) did not respond to ICMP echo." -f $defaultRoute.NextHop)
                 }
             } else {
-                Write-HcsState 'EdgeFirewallState' 'Good' 'Isolated or non-routed management network.'
+                Write-HcsState 'EdgeFirewallState' 'NotApplicable' 'No default route is present; isolated or non-routed management network.'
             }
         } catch {
-            Write-HcsState 'EdgeFirewallState' 'Good' 'Edge firewall reachability probe active.'
+            Write-HcsState 'EdgeFirewallState' 'NotApplicable' ("Edge firewall reachability could not be probed: {0}" -f $_.Exception.Message)
         }
 
         # Out-of-band Console Server Reachability (Opengear)
         try {
-            Write-HcsState 'ConsoleServerState' 'Good' 'Out-of-band console server management interface is verified.'
+            Write-HcsState 'ConsoleServerState' 'NotApplicable' 'No out-of-band console server endpoint is configured; no probe was performed.'
         } catch {
-            Write-HcsState 'ConsoleServerState' 'Good' 'Console server probe active.'
+            Write-HcsState 'ConsoleServerState' 'NotApplicable' ("Console server could not be probed: {0}" -f $_.Exception.Message)
         }
     }
 

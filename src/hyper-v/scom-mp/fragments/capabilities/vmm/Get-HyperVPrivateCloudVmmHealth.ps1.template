@@ -197,7 +197,7 @@ if ($Mode -eq 'Performance') {
     try {
         Import-HcsVmmModule
         $vmmServer = Get-SCVMMServer -ComputerName $ComputerName
-        $records = if ($isCloud) { @(Get-HcsCloudCapacity -VmmServer $vmmServer) } else { @(Get-HcsHostGroupCapacity -VmmServer $vmmServer) }
+        $records = @(if ($isCloud) { Get-HcsCloudCapacity -VmmServer $vmmServer } else { Get-HcsHostGroupCapacity -VmmServer $vmmServer })
         foreach ($record in $records) {
             $value = switch -Wildcard ($counterName) {
                 '*CPU Utilization*' { $record.CpuPercent }
@@ -210,7 +210,7 @@ if ($Mode -eq 'Performance') {
         }
     }
     catch {
-        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8904, 2, "VMM capacity performance collection failed on '$ComputerName': $($_.Exception.Message)")
+        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8904, 2, "VMM capacity performance collection failed on '$ComputerName': $($_.Exception.ToString())")
     }
 
     # No samples (VMM unreachable or query failed) means no data: never write a synthetic 0 % into the
@@ -433,10 +433,9 @@ try {
                 $unusable = [System.Collections.Generic.List[string]]::new()
                 foreach ($logicalNetwork in $logicalNetworks) {
                     $name = [string](Get-HcsPropertyValue -InputObject $logicalNetwork -Name @('Name'))
-                    $definitions = if (Test-HcsCommand -Name 'Get-SCLogicalNetworkDefinition') {
+                    $definitions = @(if (Test-HcsCommand -Name 'Get-SCLogicalNetworkDefinition') {
                         @(Get-SCLogicalNetworkDefinition -VMMServer $vmmServer -LogicalNetwork $logicalNetwork -ReturnAllTypes -ErrorAction SilentlyContinue)
-                    }
-                    else { @() }
+                    })
                     if ($definitions.Count -eq 0) { $unusable.Add("logical network '$name' has no network site") }
                 }
                 if ($unusable.Count -gt 0) {
@@ -615,7 +614,7 @@ catch {
     if ($Mode -in @('Core', 'ManagementService')) {
         $state = 'Critical'
         $detail = "VMM fabric check '$Mode' failed on '$ComputerName': $($_.Exception.Message)"
-        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, $detail)
+        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, "$detail`n$($_.Exception.ToString())")
     }
     else {
         $state = 'NotApplicable'

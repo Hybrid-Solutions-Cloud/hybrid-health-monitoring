@@ -106,6 +106,6 @@ try {
     exit 0
 }
 catch {
-    $api.LogScriptEvent('HyperVPrivateCloud.VMM.HostRelationshipDiscovery.ps1', 8511, 1, $_.Exception.Message)
+    $api.LogScriptEvent('HyperVPrivateCloud.VMM.HostRelationshipDiscovery.ps1', 8511, 1, $_.Exception.ToString())
     throw
 }

@@ -124,12 +124,12 @@ function Get-HcsIntentStatusRecord {
     $cacheKey = "$Name|$($GlobalOverrides.IsPresent)|$Computer"
     if ($null -eq (Get-Variable -Name HcsIntentStatusCache -Scope Script -ErrorAction SilentlyContinue)) { $script:HcsIntentStatusCache = @{} }
     if ($script:HcsIntentStatusCache.ContainsKey($cacheKey)) { return $script:HcsIntentStatusCache[$cacheKey] }
-    $records = if ($GlobalOverrides.IsPresent) {
+    $records = @(if ($GlobalOverrides.IsPresent) {
         @(Get-NetIntentStatus -ComputerName $Computer -GlobalOverrides -ErrorAction Stop)
     }
     else {
         @(Get-NetIntentStatus -Name $Name -ComputerName $Computer -ErrorAction Stop)
-    }
+    })
     $record = @($records | Where-Object { Test-HcsSameHost -Record $_ -Computer $Computer }) | Select-Object -First 1
     $script:HcsIntentStatusCache[$cacheKey] = $record
     return $record

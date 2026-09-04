@@ -34,7 +34,7 @@ function Get-HcsPropertyValue {
 function ConvertTo-HcsStringList {
     param([AllowNull()]$Value)
     if ($null -eq $Value) { return @() }
-    $values = if ($Value -is [string]) { $Value -split '[,;]' } else { @($Value) }
+    $values = @(if ($Value -is [string]) { $Value -split '[,;]' } else { $Value })
     return @($values | ForEach-Object { ([string]$_).Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
 }
 

@@ -203,6 +203,7 @@ if ($Mode -eq 'Performance') {
         $adapters = @(Get-HcsPhysicalAdapter | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Up' })
         $names = @($adapters | ForEach-Object { [string]$_.Name })
         $rates = if ($names.Count -gt 0) { Get-HcsAdapterRateSample -Name $names -Seconds $SampleSeconds } else { @{} }
+        if ($null -eq $rates) { $rates = @{} }
         foreach ($adapter in $adapters) {
             $adapterName = [string]$adapter.Name
             if (-not $rates.ContainsKey($adapterName)) { continue }
@@ -303,7 +304,7 @@ try {
         $adapters = @(Get-HcsPhysicalAdapter)
         if (-not $IncludeNonUplinkAdapters) {
             $monitored = @(Get-HcsMonitoredAdapterName)
-            $adapters = if ($monitored.Count -eq 0) { @() } else { @($adapters | Where-Object { $monitored -contains [string]$_.Name }) }
+            $adapters = @(if ($monitored.Count -eq 0) { } else { $adapters | Where-Object { $monitored -contains [string]$_.Name } })
         }
         if ($adapters.Count -eq 0) {
             $state = 'NotApplicable'
@@ -339,7 +340,7 @@ try {
         $adapters = @(Get-HcsPhysicalAdapter | Where-Object { [string](Get-HcsPropertyValue -InputObject $_ -Name @('Status')) -eq 'Up' })
         if (-not $IncludeNonUplinkAdapters) {
             $monitored = @(Get-HcsMonitoredAdapterName)
-            $adapters = if ($monitored.Count -eq 0) { @() } else { @($adapters | Where-Object { $monitored -contains [string]$_.Name }) }
+            $adapters = @(if ($monitored.Count -eq 0) { } else { $adapters | Where-Object { $monitored -contains [string]$_.Name } })
         }
         if ($adapters.Count -eq 0) {
             $state = 'NotApplicable'
