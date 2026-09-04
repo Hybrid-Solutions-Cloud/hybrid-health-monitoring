@@ -88,7 +88,7 @@ Describe 'Hyper-V Private Cloud release tooling' {
         $script:PackageText | Should -Match 'DeploymentProfile CompletePrivateCloud'
         $script:PackageText | Should -Match 'TuningTier Standard'
         $script:ValidationText | Should -Match "Complete ZIP has the wrong override count"
-        $script:ValidationText | Should -Match 'exactly the 12 non-PureStorage solution MPs'
+        $script:ValidationText | Should -Match 'all solution MPs at its root'
         $script:ValidationText | Should -Match 'Deployment ZIP MP differs from the validated sealed asset'
     }
 

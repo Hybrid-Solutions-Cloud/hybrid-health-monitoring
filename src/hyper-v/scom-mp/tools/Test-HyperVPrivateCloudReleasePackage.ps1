@@ -191,9 +191,9 @@ finally { $completeZip.Dispose() }
 $deploymentZipPath = Join-Path $assetsPath "Hyper-V-Private-Cloud-Monitoring-Deployment-$($manifest.productVersion).zip"
 $deploymentZip = [System.IO.Compression.ZipFile]::OpenRead($deploymentZipPath)
 try {
-    $expectedDeploymentFiles = @($manifest.artifacts | Where-Object id -ne 'HyperVPrivateCloud.Capability.PureStorage' | ForEach-Object file | Sort-Object)
+    $expectedDeploymentFiles = @($manifest.artifacts | ForEach-Object file | Sort-Object)
     $actualDeploymentFiles = @($deploymentZip.Entries | ForEach-Object FullName | Sort-Object)
-    Assert-HcsCondition -Condition (@(Compare-Object $expectedDeploymentFiles $actualDeploymentFiles).Count -eq 0) -Message 'Deployment ZIP must contain exactly the 12 non-PureStorage solution MPs at its root.'
+    Assert-HcsCondition -Condition (@(Compare-Object $expectedDeploymentFiles $actualDeploymentFiles).Count -eq 0) -Message 'Deployment ZIP must contain all solution MPs at its root.'
     foreach ($entry in $deploymentZip.Entries) {
         $asset = @($manifest.artifacts | Where-Object file -eq $entry.FullName)[0]
         $stream = $entry.Open()
