@@ -35,6 +35,12 @@
       <View ID="HyperVPrivateCloud.ActiveDirectory.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.ActiveDirectoryService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
       <View ID="HyperVPrivateCloud.Dns.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.DnsService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
       <View ID="HyperVPrivateCloud.Deployment.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.DeploymentService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.PhysicalChassis.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.PhysicalChassis" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.TopOfRackSwitch.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.OutOfBandSwitch.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.EdgeFirewall.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.EdgeFirewall" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.ConsoleServer.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.ConsoleServer" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
+      <View ID="HyperVPrivateCloud.DhcpService.State.View" Accessibility="Public" Enabled="true" Target="HCSV2Library!HyperVPrivateCloud.DhcpService" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true"><Category>Operations</Category><Criteria /></View>
     </Views>
     <Folders>
       <Folder ID="HyperVPrivateCloud.Root.Folder" Accessibility="Public" ParentFolder="SC!Microsoft.SystemCenter.Monitoring.ViewFolder.Root" />
@@ -65,6 +71,12 @@
       <FolderItem ElementID="HyperVPrivateCloud.ActiveDirectory.State.View" ID="HyperVPrivateCloud.ActiveDirectory.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Dns.State.View" ID="HyperVPrivateCloud.Dns.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Deployment.State.View" ID="HyperVPrivateCloud.Deployment.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.PhysicalChassis.State.View" ID="HyperVPrivateCloud.PhysicalChassis.State.View.FolderItem" Folder="HyperVPrivateCloud.Compute.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.TopOfRackSwitch.State.View" ID="HyperVPrivateCloud.TopOfRackSwitch.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.OutOfBandSwitch.State.View" ID="HyperVPrivateCloud.OutOfBandSwitch.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.EdgeFirewall.State.View" ID="HyperVPrivateCloud.EdgeFirewall.State.View.FolderItem" Folder="HyperVPrivateCloud.Networking.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.ConsoleServer.State.View" ID="HyperVPrivateCloud.ConsoleServer.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
+      <FolderItem ElementID="HyperVPrivateCloud.DhcpService.State.View" ID="HyperVPrivateCloud.DhcpService.State.View.FolderItem" Folder="HyperVPrivateCloud.Management.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Host.ActiveAlerts.View" ID="HyperVPrivateCloud.Host.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View" ID="HyperVPrivateCloud.VirtualMachineRuntime.ActiveAlerts.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
       <FolderItem ElementID="HyperVPrivateCloud.Host.Events.View" ID="HyperVPrivateCloud.Host.Events.View.FolderItem" Folder="HyperVPrivateCloud.Operations.Folder" />
@@ -106,6 +118,12 @@
     <DisplayString ElementID="HyperVPrivateCloud.ActiveDirectory.State.View"><Name>Active Directory Domain</Name><Description>State view of the management Active Directory domain, forest, PDC emulator, and secure channel health.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Dns.State.View"><Name>DNS Infrastructure</Name><Description>State view of DNS client resolution health and configured DNS servers for the private cloud.</Description></DisplayString>
     <DisplayString ElementID="HyperVPrivateCloud.Deployment.State.View"><Name>Bare-Metal Deployment</Name><Description>State view of Windows Deployment Services (WDS) and PXE boot infrastructure.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.PhysicalChassis.State.View"><Name>Physical Server Chassis</Name><Description>State view of physical server hardware, manufacturer, model, serial numbers, and BMC operational state.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.TopOfRackSwitch.State.View"><Name>Top-of-Rack Switches</Name><Description>State view of Top-of-Rack data network switches connected to private cloud server uplinks.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.OutOfBandSwitch.State.View"><Name>Out-of-Band Switches</Name><Description>State view of dedicated out-of-band management network switches.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.EdgeFirewall.State.View"><Name>Edge Firewalls</Name><Description>State view of perimeter firewalls and security gateways protecting the private cloud fabric.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.ConsoleServer.State.View"><Name>Console Servers</Name><Description>State view of out-of-band console terminal servers (Opengear) for serial console access.</Description></DisplayString>
+    <DisplayString ElementID="HyperVPrivateCloud.DhcpService.State.View"><Name>DHCP Services</Name><Description>State view of DHCP infrastructure services supplying IP configuration to private cloud workloads.</Description></DisplayString>
   </DisplayStrings></LanguagePack></LanguagePacks>
   <Resources><Assembly ID="HyperVPrivateCloud.ConsoleTask.Assembly" Accessibility="Internal" FileName="Res.dll" HasNullStream="true" QualifiedName="Res, Version=1.0.0.0" /></Resources>
 </ManagementPack>

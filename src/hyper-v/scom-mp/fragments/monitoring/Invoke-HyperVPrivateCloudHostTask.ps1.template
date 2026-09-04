@@ -6,6 +6,7 @@ param(
     [ValidateSet('VmInventory', 'HostHeadroom', 'EventTail', 'LiveMigrationSettings', 'SwitchConfiguration', 'PendingReboot', 'PipelineSelfTest', 'HyperVBpa',
         'VmDetail', 'VmPerformance', 'VmReplica',
         'TestDomainHealth', 'TestDnsResolution', 'TestPortConnectivity', 'TestPxeWdsHealth',
+        'TestChassisBmcConnectivity', 'TestNetworkSwitchConnectivity', 'TestFirewallGateway', 'TestOpengearPort', 'TestDhcpScopeHealth',
         'RestartVmms', 'RestartVmCompute', 'StartVm', 'StopVm', 'SaveVm', 'ResumeVm', 'RestartVm', 'MergeCheckpoints', 'CreateCheckpoint', 'ResumeReplication', 'MoveVmToBestNode')]
     [string]$Action = 'VmInventory',
     [string]$Parameter = '',
@@ -34,7 +35,7 @@ function Get-HcsVm {
 
 $lines.Add("Hyper-V Private Cloud task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
 try {
-    if ($Action -notin @('TestDomainHealth', 'TestDnsResolution', 'TestPortConnectivity', 'TestPxeWdsHealth')) {
+    if ($Action -notin @('TestDomainHealth', 'TestDnsResolution', 'TestPortConnectivity', 'TestPxeWdsHealth', 'TestChassisBmcConnectivity', 'TestNetworkSwitchConnectivity', 'TestFirewallGateway', 'TestOpengearPort', 'TestDhcpScopeHealth')) {
         if (-not (Import-HcsModule -Name 'Hyper-V')) { throw 'The Hyper-V PowerShell module is not available on this host.' }
     }
     switch ($Action) {
@@ -340,6 +341,189 @@ try {
                     $lines.Add("REMINST share exists on disk: $(Test-Path -LiteralPath $reminstShare.Path)")
                 } else {
                     $lines.Add("REMINST share not found.")
+                }
+            }
+        }
+        'TestChassisBmcConnectivity' {
+            Add-HcsSection 'Server chassis hardware and BMC connectivity'
+            $csProduct = Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
+            $system = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+            $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
+            $lines.Add("  Manufacturer: $(if ($csProduct) { $csProduct.Vendor } else { 'Unknown' })")
+            $lines.Add("  Model:        $(if ($csProduct) { $csProduct.Name } else { 'Unknown' })")
+            $lines.Add("  Serial/UUID:  $(if ($csProduct) { $csProduct.IdentifyingNumber } else { 'Unknown' })")
+            $lines.Add("  BIOS Version: $(if ($bios) { $bios.SMBIOSBIOSVersion } else { 'Unknown' })")
+            $lines.Add("  Chassis State: $(if ($system -and $system.Status) { $system.Status } else { 'OK' })")
+
+            Add-HcsSection 'BMC / Out-of-band management connectivity'
+            $bmcTarget = if (-not [string]::IsNullOrWhiteSpace($Parameter)) { $Parameter.Trim() } else { $null }
+            if ($null -eq $bmcTarget) {
+                try {
+                    $ipmi = Get-CimInstance -Namespace 'root\hardware' -ClassName 'IPMI_IPMIPROVIDER' -ErrorAction SilentlyContinue
+                    if ($ipmi -and $ipmi.IPv4Address) { $bmcTarget = $ipmi.IPv4Address }
+                } catch {}
+            }
+            if ($null -ne $bmcTarget) {
+                $lines.Add("  Target BMC IP: $bmcTarget")
+                $ping = Test-Connection -TargetName $bmcTarget -Count 1 -TimeoutSeconds 2 -Quiet -ErrorAction SilentlyContinue
+                $lines.Add("  Ping (ICMP): $(if ($ping) { '[SUCCESS] Responded' } else { '[WARNING] No response' })")
+                foreach ($port in @(443, 623)) {
+                    $client = [System.Net.Sockets.TcpClient]::new()
+                    try {
+                        $async = $client.BeginConnect($bmcTarget, $port, $null, $null)
+                        $connected = $async.AsyncWaitHandle.WaitOne(2000, $false)
+                        if ($connected -and $client.Connected) {
+                            $client.EndConnect($async)
+                            $lines.Add("  Port $port (TCP): [OPEN]")
+                        } else {
+                            $lines.Add("  Port $port (TCP): [CLOSED/FILTERED]")
+                        }
+                    } catch {
+                        $lines.Add("  Port $port (TCP): [FAIL] $($_.Exception.Message)")
+                    } finally {
+                        $client.Dispose()
+                    }
+                }
+            } else {
+                $lines.Add("  No BMC IP specified in task parameter and IPMI CIM provider not registered.")
+                $lines.Add("  (Tip: Supply the BMC/iDRAC/iLO IP address as the task parameter to probe directly).")
+            }
+        }
+        'TestNetworkSwitchConnectivity' {
+            Add-HcsSection 'Physical uplinks and switch neighbor connectivity'
+            $adapters = Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Sort-Object Name
+            foreach ($nic in $adapters) {
+                $lines.Add("  Adapter: $($nic.Name) | Status: $($nic.Status) | Speed: $($nic.LinkSpeed) | MAC: $($nic.MacAddress)")
+            }
+
+            Add-HcsSection 'LLDP / CDP neighbor discovery'
+            $lldpFound = $false
+            if (Get-Command Get-NetLldpAgent -ErrorAction SilentlyContinue) {
+                try {
+                    $agents = Get-NetLldpAgent -ErrorAction SilentlyContinue
+                    if ($agents) {
+                        $lldpFound = $true
+                        foreach ($agent in $agents) {
+                            $lines.Add("  LLDP Agent on $($agent.InterfaceAlias) [Address: $($agent.ChassisId)] Mode: $($agent.AdminStatus)")
+                        }
+                    }
+                } catch {}
+            }
+            if (-not $lldpFound) {
+                $lines.Add("  LLDP agent query returned no active neighbors or Data Center Bridging (DCB) is not enabled.")
+            }
+
+            Add-HcsSection 'Default gateway reachability'
+            $gw = Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled = TRUE" -ErrorAction SilentlyContinue | Where-Object { $null -ne $_.DefaultIPGateway } | Select-Object -ExpandProperty DefaultIPGateway -First 1
+            if ($gw) {
+                $ping = Test-Connection -TargetName $gw -Count 2 -TimeoutSeconds 2 -ErrorAction SilentlyContinue
+                if ($ping) {
+                    $avgTime = ($ping | Measure-Object -Property ResponseTime -Average).Average
+                    $lines.Add("  [PASS] Default Gateway ($gw) responded in average $($avgTime) ms.")
+                } else {
+                    $lines.Add("  [FAIL] Default Gateway ($gw) did not respond to ICMP ping.")
+                }
+            } else {
+                $lines.Add("  No default gateway configured on active adapters.")
+            }
+        }
+        'TestFirewallGateway' {
+            Add-HcsSection 'Perimeter edge firewall and gateway diagnostics'
+            $gw = if (-not [string]::IsNullOrWhiteSpace($Parameter)) { $Parameter.Trim() } else {
+                Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled = TRUE" -ErrorAction SilentlyContinue | Where-Object { $null -ne $_.DefaultIPGateway } | Select-Object -ExpandProperty DefaultIPGateway -First 1
+            }
+            if ($gw) {
+                $lines.Add("  Firewall / Gateway Target: $gw")
+                $ping = Test-Connection -TargetName $gw -Count 3 -TimeoutSeconds 2 -ErrorAction SilentlyContinue
+                if ($ping) {
+                    $avg = ($ping | Measure-Object -Property ResponseTime -Average).Average
+                    $lines.Add("  [PASS] Gateway ping successful. Average latency: $avg ms.")
+                } else {
+                    $lines.Add("  [FAIL] Gateway did not respond to ICMP echo.")
+                }
+
+                foreach ($port in @(80, 443, 8443)) {
+                    $client = [System.Net.Sockets.TcpClient]::new()
+                    try {
+                        $async = $client.BeginConnect($gw, $port, $null, $null)
+                        $ok = $async.AsyncWaitHandle.WaitOne(2000, $false)
+                        if ($ok -and $client.Connected) {
+                            $client.EndConnect($async)
+                            $lines.Add("  Management Port $port (TCP): [REACHABLE]")
+                        } else {
+                            $lines.Add("  Management Port $port (TCP): [FILTERED / CLOSED]")
+                        }
+                    } catch {
+                        $lines.Add("  Management Port $port (TCP): [ERROR] $($_.Exception.Message)")
+                    } finally {
+                        $client.Dispose()
+                    }
+                }
+            } else {
+                $lines.Add("  No gateway IP found and no target parameter provided.")
+            }
+        }
+        'TestOpengearPort' {
+            Add-HcsSection 'Out-of-band console server (Opengear) reachability'
+            $ogTarget = if (-not [string]::IsNullOrWhiteSpace($Parameter)) { $Parameter.Trim() } else { '192.168.0.1' }
+            $lines.Add("  Opengear Target IP: $ogTarget")
+            $ping = Test-Connection -TargetName $ogTarget -Count 2 -TimeoutSeconds 2 -ErrorAction SilentlyContinue
+            if ($ping) {
+                $lines.Add("  [PASS] Opengear console server responded to ICMP echo.")
+            } else {
+                $lines.Add("  [WARNING] Opengear console server did not respond to ICMP echo.")
+            }
+
+            foreach ($port in @(22, 443)) {
+                $client = [System.Net.Sockets.TcpClient]::new()
+                try {
+                    $async = $client.BeginConnect($ogTarget, $port, $null, $null)
+                    $ok = $async.AsyncWaitHandle.WaitOne(2000, $false)
+                    if ($ok -and $client.Connected) {
+                        $client.EndConnect($async)
+                        $lines.Add("  Service Port $port ($(if ($port -eq 22) { 'SSH' } else { 'HTTPS' })): [OPEN]")
+                    } else {
+                        $lines.Add("  Service Port $port ($(if ($port -eq 22) { 'SSH' } else { 'HTTPS' })): [CLOSED / UNREACHABLE]")
+                    }
+                } catch {
+                    $lines.Add("  Service Port ${port}: [FAIL] $($_.Exception.Message)")
+                } finally {
+                    $client.Dispose()
+                }
+            }
+            $lines.Add("  (Tip: Supply the Opengear appliance IP as task parameter to test a specific console server).")
+        }
+        'TestDhcpScopeHealth' {
+            Add-HcsSection 'DHCP infrastructure service and scope status'
+            $dhcpSvc = Get-Service -Name 'DHCPServer' -ErrorAction SilentlyContinue
+            if ($null -eq $dhcpSvc) {
+                $lines.Add("  DHCP Server service (DHCPServer) is not installed on this host.")
+                $lines.Add("  This node consumes DHCP from an external router, firewall, or appliance.")
+            } else {
+                $lines.Add("  Service Status: $($dhcpSvc.Status)")
+                $lines.Add("  Startup Type:   $($dhcpSvc.StartType)")
+
+                if (Get-Command Get-DhcpServerv4Scope -ErrorAction SilentlyContinue) {
+                    try {
+                        $scopes = Get-DhcpServerv4Scope -ErrorAction SilentlyContinue
+                        if ($scopes) {
+                            Add-HcsSection 'IPv4 DHCP scopes'
+                            foreach ($scope in $scopes) {
+                                $stats = Get-DhcpServerv4ScopeStatistics -ScopeId $scope.ScopeId -ErrorAction SilentlyContinue
+                                $lines.Add("  Scope: $($scope.ScopeId) ($($scope.Name)) - State: $($scope.State)")
+                                $lines.Add("    Subnet: $($scope.SubnetMask) | Range: $($scope.StartRange) - $($scope.EndRange)")
+                                if ($stats) {
+                                    $lines.Add("    Addresses: Total=$($stats.TotalAddresses), InUse=$($stats.InUse), Free=$($stats.Free), PercentInUse=$([math]::Round($stats.PercentageInUse, 1))%")
+                                }
+                            }
+                        } else {
+                            $lines.Add("  No active IPv4 scopes configured on this DHCP server.")
+                        }
+                    } catch {
+                        $lines.Add("  Error querying DHCP scopes: $($_.Exception.Message)")
+                    }
+                } else {
+                    $lines.Add("  DhcpServer module cmdlets not available.")
                 }
             }
         }

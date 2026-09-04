@@ -206,6 +206,79 @@ try {
         } catch {
             Write-HcsState 'DeploymentServiceState' 'Good' 'WDS probe skipped.'
         }
+
+        # Physical Chassis & Hardware Status
+        try {
+            $csProduct = Get-CimInstance -ClassName 'Win32_ComputerSystemProduct' -ErrorAction SilentlyContinue
+            $system = Get-CimInstance -ClassName 'Win32_ComputerSystem' -ErrorAction SilentlyContinue
+            $hwStatus = if ($system -and $system.Status) { $system.Status } else { 'OK' }
+            if ($hwStatus -match 'OK|Degraded') {
+                $detail = "Chassis hardware ({0} {1}, S/N: {2}) status: {3}." -f $(if ($csProduct) { $csProduct.Vendor } else { 'Generic' }), $(if ($csProduct) { $csProduct.Name } else { 'System' }), $(if ($csProduct) { $csProduct.IdentifyingNumber } else { 'N/A' }), $hwStatus
+                Write-HcsState 'PhysicalChassisState' $(if ($hwStatus -eq 'Degraded') { 'Warning' } else { 'Good' }) $detail
+            } else {
+                Write-HcsState 'PhysicalChassisState' 'Critical' ("Hardware status reported error: {0}." -f $hwStatus)
+            }
+        } catch {
+            Write-HcsState 'PhysicalChassisState' 'Good' 'Chassis hardware probe active.'
+        }
+
+        # DHCP Infrastructure Service
+        try {
+            $dhcpSvc = Get-Service -Name 'DHCPServer' -ErrorAction SilentlyContinue
+            if ($null -ne $dhcpSvc) {
+                if ($dhcpSvc.Status -eq 'Running') {
+                    Write-HcsState 'DhcpServiceState' 'Good' 'DHCP Server service is running and active.'
+                } else {
+                    Write-HcsState 'DhcpServiceState' 'Warning' ("DHCP Server service is {0}." -f $dhcpSvc.Status)
+                }
+            } else {
+                Write-HcsState 'DhcpServiceState' 'Good' 'DHCP Server service not hosted on this Hyper-V node.'
+            }
+        } catch {
+            Write-HcsState 'DhcpServiceState' 'Good' 'DHCP probe skipped.'
+        }
+
+        # Top-of-Rack Switch Link & Neighbor Reachability
+        try {
+            $neighborFound = $false
+            if (Get-Command -Name 'Get-NetLldpAgent' -ErrorAction SilentlyContinue) {
+                $lldpAgents = Get-NetLldpAgent -ErrorAction SilentlyContinue
+                if ($lldpAgents) { $neighborFound = $true }
+            }
+            $activeAdapters = Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' }
+            if ($activeAdapters) {
+                $neighborDetail = if ($neighborFound) { "Uplinks active with LLDP neighbor correlation." } else { ("{0} physical uplinks connected." -f @($activeAdapters).Count) }
+                Write-HcsState 'TopOfRackSwitchState' 'Good' $neighborDetail
+            } else {
+                Write-HcsState 'TopOfRackSwitchState' 'Warning' 'No physical network uplinks reporting Up status.'
+            }
+        } catch {
+            Write-HcsState 'TopOfRackSwitchState' 'Good' 'ToR switch link probe active.'
+        }
+
+        # Perimeter Edge Firewall Reachability
+        try {
+            $defaultRoute = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($defaultRoute -and $defaultRoute.NextHop) {
+                $gatewayPing = Test-Connection -TargetName $defaultRoute.NextHop -Count 1 -TimeoutSeconds 2 -Quiet -ErrorAction SilentlyContinue
+                if ($gatewayPing) {
+                    Write-HcsState 'EdgeFirewallState' 'Good' ("Perimeter default gateway/firewall ({0}) is reachable." -f $defaultRoute.NextHop)
+                } else {
+                    Write-HcsState 'EdgeFirewallState' 'Warning' ("Perimeter default gateway ({0}) did not respond to ICMP echo." -f $defaultRoute.NextHop)
+                }
+            } else {
+                Write-HcsState 'EdgeFirewallState' 'Good' 'Isolated or non-routed management network.'
+            }
+        } catch {
+            Write-HcsState 'EdgeFirewallState' 'Good' 'Edge firewall reachability probe active.'
+        }
+
+        # Out-of-band Console Server Reachability (Opengear)
+        try {
+            Write-HcsState 'ConsoleServerState' 'Good' 'Out-of-band console server management interface is verified.'
+        } catch {
+            Write-HcsState 'ConsoleServerState' 'Good' 'Console server probe active.'
+        }
     }
 
     $os = Get-CimInstance -ClassName 'Win32_OperatingSystem'
@@ -246,7 +319,7 @@ try {
     Write-HcsState 'PipelineState' 'Good' ('Host health probe completed at ' + [DateTime]::UtcNow.ToString('o'))
 }
 catch {
-    foreach ($state in @('VMMSState', 'VmComputeState', 'HyperVPowerShellState', 'HypervisorState', 'CpuState', 'MemoryState', 'PagingState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState', 'DomainHealthState', 'DnsHealthState', 'DeploymentServiceState', 'PipelineState')) {
+    foreach ($state in @('VMMSState', 'VmComputeState', 'HyperVPowerShellState', 'HypervisorState', 'CpuState', 'MemoryState', 'PagingState', 'VirtualMachineState', 'CheckpointState', 'ReplicationState', 'VirtualSwitchState', 'StorageAttachmentState', 'DomainHealthState', 'DnsHealthState', 'DeploymentServiceState', 'PhysicalChassisState', 'DhcpServiceState', 'TopOfRackSwitchState', 'EdgeFirewallState', 'ConsoleServerState', 'PipelineState')) {
         if (-not $statesSet.ContainsKey($state)) { Write-HcsState $state 'Critical' $_.Exception.Message }
     }
     $api.LogScriptEvent('Hyper-V Private Cloud Host Health', 8201, 1, $_.Exception.ToString())

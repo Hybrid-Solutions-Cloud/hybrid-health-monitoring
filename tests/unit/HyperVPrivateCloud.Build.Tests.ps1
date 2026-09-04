@@ -307,16 +307,16 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
     }
 
     It 'implements core host and agent-hosted per-VM monitoring' {
-        @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 42
-        # 21 Service-level rollups (7 branches x Availability/Performance/Configuration) + 21 domain-specific component rollups.
-        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 57
+        @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 47
+        # 21 Service-level rollups (7 branches x Availability/Performance/Configuration) + 21 domain-specific component rollups + 7 physical fabric component rollups.
+        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 64
         @($script:Monitoring.SelectNodes('//DependencyMonitor') | Where-Object { $_.ID -match '.Enterprise.' }).Count | Should -Be 15
         # 24 performance collection + 8 Hyper-V event collection + 10 Hyper-V event alert rules.
         @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 42
         @($script:Monitoring.SelectNodes("//Rule[Category='EventCollection']")).Count | Should -Be 8
         @($script:Monitoring.SelectNodes("//Rule[Category='Alert']")).Count | Should -Be 10
-        # Diagnostic summary + 14 host tasks + 12 per-VM tasks (operator task catalogue, ADR 0053 follow-up).
-        @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 27
+        # Diagnostic summary + 19 host tasks (including 5 physical fabric diagnostics) + 12 per-VM tasks (operator task catalogue, ADR 0053 follow-up).
+        @($script:Monitoring.SelectNodes('//Task')).Count | Should -Be 32
         @($script:Monitoring.SelectNodes('//Recovery')).Count | Should -Be 2
         foreach ($recovery in @($script:Monitoring.SelectNodes('//Recovery'))) { $recovery.Enabled | Should -Be 'false' -Because 'recoveries ship disabled (Holman)' }
         @($script:Monitoring.SelectNodes('//Diagnostic')).Count | Should -Be 1
@@ -324,8 +324,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
             $script:Monitoring.SelectSingleNode("//DisplayString[@ElementID='$($task.ID)']/Name") | Should -Not -BeNullOrEmpty -Because "task $($task.ID) needs a display name"
             if ($task.ID -ne 'HyperVPrivateCloud.DiagnosticSummary.Task') { $script:Monitoring.SelectSingleNode("//KnowledgeArticle[@ElementID='$($task.ID)']") | Should -Not -BeNullOrEmpty -Because "task $($task.ID) needs knowledge" }
         }
-        # Every unit monitor (42), every alert rule (10) and every catalogue task (26) carries operator knowledge.
-        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 78
+        # Every unit monitor (47), every alert rule (10) and every catalogue task (31) carries operator knowledge.
+        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 88
         # Legacy monitors superseded by the threshold-type depth monitors ship disabled so one condition never alerts twice.
         foreach ($legacy in @('HyperVPrivateCloud.Host.Cpu.Monitor', 'HyperVPrivateCloud.Host.Memory.Monitor', 'HyperVPrivateCloud.Host.Paging.Monitor', 'HyperVPrivateCloud.VmRuntime.MemoryPressure.Monitor')) {
             $script:Monitoring.SelectSingleNode("//UnitMonitor[@ID='$legacy']").Enabled | Should -Be 'false'
