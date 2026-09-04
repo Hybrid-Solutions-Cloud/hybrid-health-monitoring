@@ -98,3 +98,26 @@ HealthService account); SDN/Storage/S2D applicability classes; cookdown; 360° m
 `$` for `a`; a here-string insertion broke three templates). Both were caught by parse-checking against
 the git baseline and reverted. **Parse-check every generated edit against baseline before writing** —
 `git status` alone does not reveal this.
+
+## Handoff prompt for the remaining work
+
+**[`.ai/state/NEXT-SESSION-PROMPT.md`](NEXT-SESSION-PROMPT.md)** — paste as the opening prompt of a
+fresh session. Covers Tasks A–F: Cluster CIM port (spike-gated), applicability, cookdown, the 360°
+model, release gates, and shipping 1.3.0.0.
+
+**Measured corrections to the audit's framing**, from the unsealed 1.2.0.0 packs:
+
+- **S2D (16 monitors) and VMM (13)** already hang off Microsoft's own discoveries
+  (`…StorageSpacesDirect.StorageSubSystem`, `…VirtualMachineManager.Discovery.VMMManagementServer`).
+  They are correctly gated — **do not "fix" them.** VMM's problem is the Run As association plus
+  amplification and diagnostics, not applicability.
+- **File Services is the real applicability defect** — 12 of 12 monitors target `HostRole`.
+  Storage (4 of 25), ATC (3 of 16) and Cluster (3 of 16) are partially ungated.
+- **SDN has a gate, but it is too permissive and fails open.**
+  `$sdnDetected = -not [string]::IsNullOrWhiteSpace($hostId) -or $ncState -ne 'NotInstalled' -or $slbState -ne 'NotInstalled'`
+  — an OR of three weak signals, and `Get-HcsServiceState` returns `'Unknown'` from its catch, which is
+  `-ne 'NotInstalled'`, so a failed service query *enables* SDN monitoring.
+- **Cookdown blocker identified precisely:** probes run one `pwsh.exe` per workflow via
+  `System.CommandExecuterDiscoveryDataSource`; SCOM cooks down only byte-identical DataSource config,
+  and the per-facet `Mode` value in `$Config/Arguments$` is what makes each unique. Facet selection
+  must move into the ConditionDetection filter.
