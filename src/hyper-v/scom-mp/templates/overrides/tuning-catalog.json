@@ -119,10 +119,10 @@
         { "id": "CsvFreeSpace", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.FreeSpace.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
         { "id": "CsvOffline", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.Offline.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
         { "id": "CsvPaused", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.Paused.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
-        { "id": "CsvQueueDepth", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.QueueDepth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
-        { "id": "CsvReadLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.ReadLatency.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "CsvQueueDepth", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.QueueDepth.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
+        { "id": "CsvReadLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.ReadLatency.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
         { "id": "CsvRedirectedAccess", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.RedirectedAccess.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
-        { "id": "CsvWriteLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.WriteLatency.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "CsvWriteLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.WriteLatency.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
         { "id": "GroupFailed", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.Group.Failed.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
         { "id": "GroupFailover", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.Group.Failover.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
         { "id": "NetworkDown", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.Network.Down.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
@@ -136,13 +136,13 @@
     { "id": "Cluster.CsvFreeSpace", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "CsvFreeSpace", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.FreeSpace.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }] },
     { "id": "Cluster.CsvOffline", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "CsvOffline", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.Offline.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }] },
     { "id": "Cluster.CsvPaused", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "CsvPaused", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.Paused.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }] },
-    { "id": "Cluster.CsvQueueDepth", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "CsvQueueDepth", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.QueueDepth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" }] },
+    { "id": "Cluster.CsvQueueDepth", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "CsvQueueDepth", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.QueueDepth.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }] },
     { "id": "Cluster.CsvRedirectedAccess", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "CsvRedirectedAccess", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.RedirectedAccess.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }] },
     {
       "id": "Cluster.CsvLatency", "capability": "Cluster", "kind": "Monitor",
       "targets": [
-        { "id": "CsvReadLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.ReadLatency.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
-        { "id": "CsvWriteLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.WriteLatency.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" }
+        { "id": "CsvReadLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.ReadLatency.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" },
+        { "id": "CsvWriteLatency", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.CSV.WriteLatency.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }
       ]
     },
     { "id": "Cluster.GroupFailed", "capability": "Cluster", "kind": "Monitor", "targets": [{ "id": "GroupFailed", "workflowRef": "HCSV2Cluster", "workflowId": "HyperVPrivateCloud.Capability.Cluster.Group.Failed.Monitor", "contextRef": "HCSV2Cluster", "contextClassId": "HyperVPrivateCloud.Capability.Cluster.ClusterRole" }] },
@@ -176,7 +176,7 @@
       "id": "NetworkATC.Monitors", "capability": "NetworkATC", "kind": "Monitor",
       "targets": [
         { "id": "AdapterReadiness", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.AdapterReadiness.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
-        { "id": "CapabilityHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.CapabilityHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "CapabilityHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.CapabilityHealth.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus" },
         { "id": "GlobalConfigurationHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationHealth.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus" },
         { "id": "IntentHealth", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentHealth.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" }
       ]
@@ -193,11 +193,11 @@
       "targets": [
         { "id": "AdapterSymmetry", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.AdapterSymmetry.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "DcbPfcCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.DcbPfcCompliance.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
-        { "id": "EtsPolicyCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.EtsPolicyCompliance.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "EtsPolicyCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.EtsPolicyCompliance.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus" },
         { "id": "IntentApplyFailure", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentApplyFailure.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "IntentComplianceDrift", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentComplianceDrift.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "IntentProvisioningDrift", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.IntentProvisioningDrift.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
-        { "id": "QosTrafficClass", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.QosTrafficClass.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "QosTrafficClass", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.QosTrafficClass.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.GlobalConfigurationStatus" },
         { "id": "RdmaConfigurationDrift", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.RdmaConfigurationDrift.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "RdmaState", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.RdmaState.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" },
         { "id": "VmSwitchCompliance", "workflowRef": "HCSV2NetworkATC", "workflowId": "HyperVPrivateCloud.Capability.NetworkATC.VmSwitchCompliance.Monitor", "contextRef": "HCSV2NetworkATC", "contextClassId": "HyperVPrivateCloud.Capability.NetworkATC.NetworkIntentNodeStatus" }
@@ -249,7 +249,7 @@
     { "id": "S2D.VirtualDiskIncompleteRedundancy", "capability": "S2D", "kind": "Monitor", "targets": [{ "id": "VirtualDiskIncompleteRedundancy", "workflowRef": "HCSV2S2D", "workflowId": "HyperVPrivateCloud.Capability.S2D.VirtualDisk.IncompleteRedundancy.Monitor", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem" }] },
     { "id": "S2D.VirtualDiskRepair", "capability": "S2D", "kind": "Monitor", "targets": [{ "id": "VirtualDiskRepair", "workflowRef": "HCSV2S2D", "workflowId": "HyperVPrivateCloud.Capability.S2D.VirtualDisk.Repair.Monitor", "contextRef": "S2D", "contextClassId": "Microsoft.Windows.Server.10.0.Storage.StorageSpacesDirect.StorageSubSystem" }] },
     { "id": "SDN.Discovery", "capability": "SDN", "kind": "Discovery", "targets": [{ "id": "Relationships", "workflowRef": "HCSV2SDN", "workflowId": "HyperVPrivateCloud.Capability.SDN.Relationship.Discovery", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole", "module": "PowerShellDiscovery" }] },
-    { "id": "SDN.Monitors", "capability": "SDN", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2SDN", "workflowId": "HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" }] },
+    { "id": "SDN.Monitors", "capability": "SDN", "kind": "Monitor", "targets": [{ "id": "IntegrationHealth", "workflowRef": "HCSV2SDN", "workflowId": "HyperVPrivateCloud.Capability.SDN.IntegrationHealth.Monitor", "contextRef": "HCSV2SDN", "contextClassId": "HyperVPrivateCloud.Capability.SDN.HostBinding" }] },
     {
       "id": "SDN.HostBindingMonitors", "capability": "SDN", "kind": "Monitor",
       "targets": [
@@ -278,7 +278,7 @@
         { "id": "AttachmentAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.AttachmentAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostAttachment" },
         { "id": "AttachmentRedundancy", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.AttachmentRedundancy.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostAttachment" },
         { "id": "FibreChannelPortAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.FibreChannelPortAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.FibreChannelPort" },
-        { "id": "IntegrationHealth", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IntegrationHealth.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
+        { "id": "IntegrationHealth", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IntegrationHealth.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostParticipation" },
         { "id": "IscsiSessionAvailability", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiSessionAvailability.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.IscsiSession" }
       ]
     },
@@ -304,9 +304,9 @@
     {
       "id": "Storage.HostEventMonitors", "capability": "Storage", "kind": "Monitor",
       "targets": [
-        { "id": "IscsiAuthenticationFailure", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiAuthenticationFailure.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
-        { "id": "IscsiConnectionErrorRate", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiConnectionErrorRate.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" },
-        { "id": "MultipathFailoverEvent", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathFailoverEvent.Monitor", "contextRef": "HCSV2Library", "contextClassId": "HyperVPrivateCloud.HostRole" }
+        { "id": "IscsiAuthenticationFailure", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiAuthenticationFailure.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostParticipation" },
+        { "id": "IscsiConnectionErrorRate", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.IscsiConnectionErrorRate.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostParticipation" },
+        { "id": "MultipathFailoverEvent", "workflowRef": "HCSV2Storage", "workflowId": "HyperVPrivateCloud.Capability.Storage.MultipathFailoverEvent.Monitor", "contextRef": "HCSV2Storage", "contextClassId": "HyperVPrivateCloud.Capability.Storage.HostParticipation" }
       ]
     },
     {

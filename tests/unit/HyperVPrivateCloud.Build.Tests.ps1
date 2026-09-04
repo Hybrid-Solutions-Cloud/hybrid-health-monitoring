@@ -505,7 +505,9 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         $clusterWide = @($script:ClusterCapability.SelectNodes('//UnitMonitor') | Where-Object { $_.ID -notmatch 'CSV.(ReadLatency|WriteLatency|QueueDepth)' })
         $clusterWide.Count | Should -Be 13
         foreach ($monitor in $clusterWide) { [string]$monitor.Target | Should -Be 'HyperVPrivateCloud.Capability.Cluster.ClusterRole' }
-        foreach ($monitor in @($script:ClusterCapability.SelectNodes('//UnitMonitor') | Where-Object { $_.ID -match 'CSV.(ReadLatency|WriteLatency|QueueDepth)' })) { [string]$monitor.Target | Should -Be 'HCSV2Library!HyperVPrivateCloud.HostRole' }
+        # CSV latency and queue depth describe the cluster, not the host, and must not evaluate on a
+        # standalone Hyper-V host. ClusterRole is discovered only on an actual cluster node.
+        foreach ($monitor in @($script:ClusterCapability.SelectNodes('//UnitMonitor') | Where-Object { $_.ID -match 'CSV.(ReadLatency|WriteLatency|QueueDepth)' })) { [string]$monitor.Target | Should -Be 'HyperVPrivateCloud.Capability.Cluster.ClusterRole' }
         foreach ($rollup in $script:ClusterCapability.SelectNodes('//DependencyMonitor')) {
             [string]$rollup.MemberMonitor | Should -BeIn @('Health!System.Health.AvailabilityState', 'Health!System.Health.PerformanceState', 'Health!System.Health.ConfigurationState')
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
@@ -551,8 +553,9 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'defines Windows-owned SAN projection classes without duplicating vendor or S2D objects' {
         $classes = @($script:StorageCapability.SelectNodes('//ClassType'))
-        $classes.Count | Should -Be 5
+        $classes.Count | Should -Be 6
         @($classes.ID) | Should -Be @(
+            'HyperVPrivateCloud.Capability.Storage.HostParticipation',
             'HyperVPrivateCloud.Capability.Storage.LogicalUnit',
             'HyperVPrivateCloud.Capability.Storage.HostAttachment',
             'HyperVPrivateCloud.Capability.Storage.IscsiSession',
@@ -564,7 +567,7 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'discovers complete LUN, attachment, transport, and VHDX correlation topology' {
         @($script:StorageCapability.SelectNodes('//RelationshipType')).Count | Should -Be 13
-        @($script:StorageCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 5
+        @($script:StorageCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 6
         @($script:StorageCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 13
         foreach ($id in @('VirtualDiskMappingReferencesVirtualHardDisk', 'VirtualDiskMappingReferencesLogicalUnit', 'VirtualHardDiskUsesLogicalUnit')) {
             $script:StorageCapability.SelectSingleNode("//RelationshipType[contains(@ID,'$id')]") | Should -Not -BeNullOrEmpty
