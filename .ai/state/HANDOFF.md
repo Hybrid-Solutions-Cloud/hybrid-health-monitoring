@@ -1331,3 +1331,51 @@ orphaned pages. `docs/public/downloads/**` was deliberately not touched by the r
 - **Next action:** Publish the exact production assets under the versioned and `latest` download
   paths, merge the release change, then import this exact sealed build into the ProductLabs SCOM
   management group in dependency order and validate runtime health.
+
+# 2026-09-03 — 1.2.0.0 audit reconciliation and 1.3.0.0 remediation plan
+
+- **Trigger:** SCOM HAAS-SDR operational audit of the imported 1.2.0.0 suite (42 custom objects,
+  7 Healthy / 22 Error / 13 Uninitialized, 129 unresolved alerts, repeat count 2,995 → 3,142).
+- **What changed:** No product code. Added `PLAN-1.3.0.0-REMEDIATION.md`; rewrote
+  `.ai/state/CURRENT_TASK.md`, whose previous entry incorrectly asserted all seven 1.2.0.0 runtime
+  defects were resolved.
+- **Method (new, reusable):** Sealed `.mp` files were unsealed and inspected directly — the `.mp` is
+  a .NET assembly whose `MPResources.resources` holds a `ManagementPack` entry containing
+  **gzip-compressed UTF-16LE XML**. Plain `grep` on a `.mp` returns zero matches for content that is
+  present; this is why 1.2.0.0 shipped defects while all verification passed. Full recipe in §0 of
+  the plan. This becomes release gates 1.1/1.2.
+- **Findings against shipped 1.2.0.0 (not source):**
+  - `$Data/Params/Param[1]$` suppression: **fixed** (10 in 1.0.7.0 → 0). The audit was wrong here.
+  - The audit's "all eight capability packs identical to 1.0.7.0" is half right — Cluster (59),
+    FileServices (62), NetworkATC (18) and VMM (93) have normalized diffs; PhysicalNetwork, S2D,
+    SDN, Storage and PureStorage are identical.
+  - File Services: 1 of 3 `channels =` sites wrapped; two remain, plus ~50 unguarded `.Count` reads
+    under StrictMode. Event 8702 explained.
+  - Network ATC: the `$Mode -in (...)` clause was correctly removed, but `RequireNetworkATC` still
+    defaults `true` ×15 / `false` ×1 — the *default configuration*, not the logic, sustains 8903.
+    The audit's diagnosis was wrong; its symptom was real.
+  - Cluster: 1.2.0.0 added `-SkipEditionCheck`, the exact approach the audit proved fails with
+    `Could not load type 'System.Diagnostics.Eventing.EventDescriptor'`. Effectively a no-op.
+  - VMM: 18 `Get-SCVMMServer`, 10 `Import-Module`, 19 `Exception.Message`, 0 `Exception.ToString`.
+  - 360° model: all six new classes declared with a `DiscoveryClass` entry but **0 unit monitors
+    target them**; `OutOfBandSwitch`, `EdgeFirewall` and `ConsoleServer` have zero `MPElement`
+    references anywhere in the suite.
+  - Fail-open: `"probe active."` Good-returns ×8 in `Monitoring.xml`.
+  - Probe host confirmed as `%ProgramFiles%\PowerShell\7\pwsh.exe` via
+    `System.CommandExecuterDiscoveryDataSource`, one process per workflow — the amplification
+    mechanism, and the reason the per-facet `Mode` argument defeats cookdown.
+- **Root cause:** Fixes were verified against source templates and a positive-environment probe
+  fixture, never against sealed-pack content or a negative environment. `out/development` is stale
+  (13:35 vs the 21:38 seal) and still contains the 10 `Param[1]` defects.
+- **Commands run:** read-only inspection and unsealing into the session scratchpad. No build, no
+  seal, no Azure write operations, no pushes.
+- **Branch:** `main`.
+- **Blockers / decisions needed:** (1) §5.3 — VMM has no CIM equivalent, so PS7-only governance must
+  yield either a documented ADR exception for VMM workflows or an off-agent collector;
+  recommendation is the ADR exception. (2) §7.1 — until `HAAS\svc-scom-vmm` is associated with the
+  VMM Run As profile, Event 8905 cannot be attributed to MP code. (3) Whether SDN is intended to be
+  active at all.
+- **Next action:** Build the §1 release gates before any product fix — gate 1.3 (negative-environment
+  probe fixture) alone would have caught four of the seven defects. Then run the §5.1
+  `root\MSCluster` CIM spike as the HealthService account. Ship as 1.3.0.0; 1.2.0.0 is sealed and
+  published and must not be republished under the same version.
