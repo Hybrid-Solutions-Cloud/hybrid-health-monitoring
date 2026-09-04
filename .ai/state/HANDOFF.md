@@ -1,5 +1,35 @@
 # Handoff
 
+## 2026-09-03 — Resolved SCOM HAAS-SDR Audit Findings & Released 1.2.0.0
+
+- **Fixed All 7 Confirmed Runtime Defects from Audit Summary**:
+  - **1. File Services Script Defect (Event 8702)**:
+    - Fixed `$required = @(if (...) { Get-HcsRequiredShare } else { @() })` and ensured `Get-HcsRequiredShare` returns `@($result)` to prevent single-object unrolling under strict mode.
+    - Fixed `$EventId` null/empty checks with `@($EventId).Count` in `Get-HcsEventCount`.
+    - Removed the failure amplification cascade loop (lines 402–411 of `Get-HyperVPrivateCloudFileServicesHealth.ps1.template`) that marked 10 facet monitors `Warning` on a single probe acquisition failure.
+  - **2. Invalid Alert Definition (Event 5402)**:
+    - Removed `<SuppressionValue>$Data/Params/Param[1]$</SuppressionValue>` from `HyperVPrivateCloud.Host.Event.VmmsError.Alert.Rule` and all 9 other Windows event alert rules in `src/hyper-v/scom-mp/fragments/monitoring/ManagementPack.xml.template`.
+  - **3. VMM Execution-Context Failure (Events 8905, 8904, 8510)**:
+    - Added `-UseWindowsPowerShell` and `-SkipEditionCheck` fallback module loaders to `Get-HyperVPrivateCloudVmmHealth.ps1.template`, `Discover-HyperVPrivateCloudVmmFabric.ps1.template`, and `Invoke-HyperVPrivateCloudVmmTask.ps1.template`.
+    - Isolated facet monitors so only `Core` and `ManagementService` modes log Event 8905; secondary facets return `NotApplicable`.
+  - **4. Failover Cluster Execution-Context Failure (Event 8301)**:
+    - Added `Import-Module FailoverClusters -SkipEditionCheck` in `Test-HcsCapability` across cluster probe, discovery, and task templates.
+    - Suppressed remoting warning streams (`3>$null`) so no warning text is emitted before `<DataItem` on stdout.
+  - **5. Failure Amplification Elimination**:
+    - Eliminated cross-facet failure cascades across File Services and VMM probe scripts, isolating underlying probe errors from healthy monitors.
+  - **6. Network ATC Probe Isolation (Event 8903)**:
+    - In `Get-HyperVPrivateCloudNetworkAtcHealth.ps1.template`, changed probe behavior when NetworkATC is not installed: now returns `NotApplicable` cleanly and only throws if `$RequireNetworkATC` is explicitly configured.
+  - **7. Deployment Package Completeness**:
+    - Added `"PureStorage"` to `CompletePrivateCloud` in `contracts/packages.json`.
+    - Updated `Test-HyperVPrivateCloudReleasePackage.ps1` and `HyperVPrivateCloud.Release.Tests.ps1` to assert all 13 solution MPs are present at the root of `Hyper-V-Private-Cloud-Monitoring-Deployment-1.2.0.0.zip`.
+- **Validation Results**:
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: 63/63 passed (100%). Zero stdout pollution.
+  - `HyperVPrivateCloud.Build.Tests.ps1`: 87/87 passed (100%).
+  - `HyperVPrivateCloud.Release.Tests.ps1`: 11/11 passed (100%).
+  - Built, sealed with Key Vault key (`54d0fb1159995c86`), and verified all 13 Management Packs with Microsoft VSAE.
+  - Staged all 15 deterministic release bundles and documentation downloads to `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` and `latest/`.
+  - VitePress documentation built with 0 errors (`npm run docs:build`).
+
 ## 2026-09-03 — Complete 360° Private Cloud Monitoring: DA Rollups, Active Probes, Views & Operator Hub (v1.2.0.0)
 
 - **100% Full 360° Private Cloud Monitoring Solution Completed**:

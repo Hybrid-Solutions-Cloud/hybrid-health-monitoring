@@ -6,7 +6,7 @@
   "buildMode": "Release",
   "releaseEligible": true,
   "publicKeyToken": "54d0fb1159995c86",
-  "sourceCommit": "836536e0cf373cd03ad6a6a70e8556452783bdc6",
+  "sourceCommit": "66fa08b4a29164711b3a58781a681de9acbbd3e7",
   "sourceDateEpoch": 315532800,
   "verification": {
     "vsae": true,
@@ -29,91 +29,91 @@
       "file": "HyperVPrivateCloud.Library.mp",
       "kind": "Library",
       "required": true,
-      "sha256": "14edc51cd7eca41a48bfcc4c0104ba710b518351e2881e30a6aca2cc7787df0c"
+      "sha256": "5ec0d1b1b7a1d8c0bc6cc2f3628eb8f6e95083fca3d9b06a1956162bcf3c897e"
     },
     {
       "id": "HyperVPrivateCloud.Discovery",
       "file": "HyperVPrivateCloud.Discovery.mp",
       "kind": "Discovery",
       "required": true,
-      "sha256": "981d9530ea86abae12392a1f9d0fe6d01a3930fcc18976fdcbcae9e67c462607"
+      "sha256": "b869347190a86daa0e2fea83699dac35e94ce462ce4ce0b15e520cd20cc7c99e"
     },
     {
       "id": "HyperVPrivateCloud.Monitoring",
       "file": "HyperVPrivateCloud.Monitoring.mp",
       "kind": "Monitoring",
       "required": true,
-      "sha256": "3676a824a1a71acbf231a9f3ae673237581b8eda876acce37c98f0aedb2269a7"
+      "sha256": "3387a8e86741861606611dbdc08c17d74af6219c4f50d8b3df48376b6e705a09"
     },
     {
       "id": "HyperVPrivateCloud.Presentation",
       "file": "HyperVPrivateCloud.Presentation.mp",
       "kind": "Presentation",
       "required": true,
-      "sha256": "46c7b431a5073fc816d1d4e4fa6261eacd91ac43b8283d301e000037cf86c440"
+      "sha256": "e27f67d34d4cf52f58f86243a3e98ac86fa03a3b755d20189954cceb4530fe10"
     },
     {
       "id": "HyperVPrivateCloud.Capability.Cluster",
       "file": "HyperVPrivateCloud.Capability.Cluster.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "b8625deeab8cce261143894ffaaae6e983c10331eb584296963c8d76de960222"
+      "sha256": "d69f6d1fa161ff18e3112795a817933b1a15c3ec6c3437bf82de17ab7787c100"
     },
     {
       "id": "HyperVPrivateCloud.Capability.Storage",
       "file": "HyperVPrivateCloud.Capability.Storage.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "64d27f656dc1da3270d72bc86c9386c71b9e460bc93e439d052607faf4e4c39f"
+      "sha256": "7d8a429f347078ff9a6b39f7db470e506de003421a180b419dcc96eeb621bd28"
     },
     {
       "id": "HyperVPrivateCloud.Capability.S2D",
       "file": "HyperVPrivateCloud.Capability.S2D.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "8c63a733269054472da52f40e83cfde49348f5f06245da67283b098c96cde9b4"
+      "sha256": "e5fc53547e8d25b4289dca05e112ed4ef8b33f410a063c20c5b47642ca1a3058"
     },
     {
       "id": "HyperVPrivateCloud.Capability.PureStorage",
       "file": "HyperVPrivateCloud.Capability.PureStorage.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "fe1992dd7f26ce38ec7a4ac3dd3133c253a2e59e5ad335fbddd8f299f1989bc8"
+      "sha256": "21212af9c016e2bd2827f03c0a1147a1eb844b354664e9e79c595bf3c9288ed8"
     },
     {
       "id": "HyperVPrivateCloud.Capability.FileServices",
       "file": "HyperVPrivateCloud.Capability.FileServices.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "58a94b864e517d78c60e350ef3c19f12e12554b25fb238f40a545bcc3dd11f03"
+      "sha256": "e4afb1f5492d6b469cd440b7bd37fa7b392e7aca685b9e4be6d9dfa723a3d9fc"
     },
     {
       "id": "HyperVPrivateCloud.Capability.PhysicalNetwork",
       "file": "HyperVPrivateCloud.Capability.PhysicalNetwork.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "d1bbb3b303d8be1bb116fbee893a4ea9d53536e5ac74fa1430dcc72d7c7d00ac"
+      "sha256": "fadf7694618776cbd2eee1aa4b92acbe089d47fe0ca1a192805dd83dc5fa80a7"
     },
     {
       "id": "HyperVPrivateCloud.Capability.NetworkATC",
       "file": "HyperVPrivateCloud.Capability.NetworkATC.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "b6bf2ec461215b10827f87543d898ca924d5a9d1278ccd080c7bc860ae553deb"
+      "sha256": "5c0e763a0ae355adfd34397e889aef863cb81019f8688fe4e1dde48f687a0b12"
     },
     {
       "id": "HyperVPrivateCloud.Capability.SDN",
       "file": "HyperVPrivateCloud.Capability.SDN.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "291a3e0d86a52a91db4b78ca64137f9dfbcd675339ec83a1350099b7c3c3a579"
+      "sha256": "ba099b230eae3e1358f5d02fd3bf40858b142e4ff748cc8e87398eaaa9b07f72"
     },
     {
       "id": "HyperVPrivateCloud.Capability.VMM",
       "file": "HyperVPrivateCloud.Capability.VMM.mp",
       "kind": "Capability",
       "required": false,
-      "sha256": "67b684718b8e7c1c901b51dea981e5ce083869025e3de95debd7ded6a0efb3b1"
+      "sha256": "89b7cdbdd7ba4d71c6cbee185ae4ff6d82d3292a0e54a1a8a277d1b00e297f65"
     }
   ],
   "publicOverrides": [
@@ -121,13 +121,13 @@
       "profile": "Solution",
       "tier": "Standard",
       "file": "Overrides/HyperVPrivateCloud.Discovery.Overrides.xml",
-      "sha256": "f1d1a0716babf5d88bf5bd3a31f71b4eaaa278615a90dafe0f6fccb070a43d02"
+      "sha256": "a24dc14ce5b1a78270157e2941c8f5eb31c7f56c844514eacc3d236e02f15a9a"
     },
     {
       "profile": "Solution",
       "tier": "Standard",
       "file": "Overrides/HyperVPrivateCloud.Monitoring.Overrides.xml",
-      "sha256": "60f93fb6e76fd21397879a43eeb0c013dc5b809d4f7c2c06ff8ba659a7045d85"
+      "sha256": "276ac21e6700b6fc031e78f4f9c77500c8a21aefedf872b1d250c0d6e5ee2090"
     }
   ],
   "prerequisites": [

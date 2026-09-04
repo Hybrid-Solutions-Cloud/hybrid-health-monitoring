@@ -1,5 +1,29 @@
 # Current task
 
+## Completed — Resolved SCOM HAAS-SDR Audit Findings & Released 1.2.0.0
+
+- **Resolved All 7 Confirmed Runtime Defects & Audit Findings**:
+  1. **File Services script defect (Event 8702)**:
+     - Fixed `The property 'Count' cannot be found on this object` by safeguarding singleton array unrolling (`@($result)`) in `Get-HcsRequiredShare` and guarding null/empty event count evaluations (`@($EventId).Count`).
+     - Removed failure amplification cascade loop in `Get-HyperVPrivateCloudFileServicesHealth.ps1.template` (lines 402–411) that marked 10 facet monitors `Warning` on a single probe acquisition failure.
+  2. **Invalid alert definition (Event 5402)**:
+     - Removed `$Data/Params/Param[1]$` suppression value from `HyperVPrivateCloud.Host.Event.VmmsError.Alert.Rule` and all 9 other event alert rules in `src/hyper-v/scom-mp/fragments/monitoring/ManagementPack.xml.template`.
+  3. **VMM execution-context failure (Events 8905, 8904, 8510)**:
+     - Added `-UseWindowsPowerShell` / `-SkipEditionCheck` fallback module loader and isolated health facets in `Get-HyperVPrivateCloudVmmHealth.ps1.template` so only `Core` and `ManagementService` modes log Event 8905 and alert; secondary modes return `NotApplicable`.
+  4. **Failover Cluster execution-context failure (Event 8301)**:
+     - Added `Import-Module FailoverClusters -SkipEditionCheck` and warning stream suppression (`3>$null`) across cluster probe, discovery, and task scripts (`Get-HyperVPrivateCloudClusterCsvHealth.ps1.template`, `Get-HyperVPrivateCloudClusterIntegrationHealth.ps1.template`, `Discover-HyperVPrivateCloudClusterRelationships.ps1.template`, `Invoke-HyperVPrivateCloudClusterTask.ps1.template`).
+  5. **Network ATC probe isolation (Event 8903)**:
+     - Updated `Get-HyperVPrivateCloudNetworkAtcHealth.ps1.template` to evaluate `NotApplicable` cleanly when NetworkATC module is absent without throwing or logging Event 8903 errors on non-ATC hosts.
+  6. **Deployment Package Completeness (Defect 6)**:
+     - Added `PureStorage` capability to `CompletePrivateCloud` in `contracts/packages.json` and updated deployment ZIP assertions in `Test-HyperVPrivateCloudReleasePackage.ps1` and release tests. All 13 sealed solution MPs are packaged in `Hyper-V-Private-Cloud-Monitoring-Deployment-1.2.0.0.zip`.
+- **Validation**:
+  - `HyperVPrivateCloud.Build.Tests.ps1`: 87/87 tests passed (100%).
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: 63/63 probe smoke tests passed (100%), with zero stdout pollution.
+  - `HyperVPrivateCloud.Release.Tests.ps1`: 11/11 tests passed (100%).
+  - Sealed with Azure Key Vault token `54d0fb1159995c86` with full Microsoft VSAE verification.
+  - Built, validated, and staged all 15 deterministic release bundles and documentation downloads.
+  - VitePress documentation built cleanly in 39.96s with 0 errors.
+
 ## Completed — 100% Full 360° Private Cloud Monitoring (v1.2.0.0 Reseal)
 
 - Implemented all 4 operational layers to fulfill *"Private Cloud Powered by Hyper-V: A 360° View"*:
