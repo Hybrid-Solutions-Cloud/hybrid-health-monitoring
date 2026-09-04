@@ -1,0 +1,6 @@
+# Published release assets are byte-exact artifacts of a validated, sealed build. Their SHA-256
+# checksums are recorded inside SHA256SUMS.txt at packaging time, so any line-ending translation on
+# the way into or out of the repository makes the published checksum file disagree with the files it
+# describes -- `sha256sum -c SHA256SUMS.txt` failed for release-assets.json and release-manifest.json
+# on the live site for exactly this reason. Nothing under the download tree is ever converted.
+docs/public/downloads/** -text

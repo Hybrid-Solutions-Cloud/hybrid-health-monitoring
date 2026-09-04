@@ -46,6 +46,23 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 - [View the release manifest](/downloads/hyper-v-private-cloud/latest/release-manifest.json)
 - [View the public asset manifest](/downloads/hyper-v-private-cloud/latest/release-assets.json)
 
+## Verify what you downloaded
+
+`SHA256SUMS.txt` covers every file published alongside it, including the two manifests. Verify
+before importing:
+
+```powershell
+Get-Content SHA256SUMS.txt | ForEach-Object {
+    $expected, $name = $_ -split '\s+', 2
+    $name = $name.Trim()
+    $actual = (Get-FileHash $name -Algorithm SHA256).Hash
+    '{0,-8} {1}' -f $(if ($actual -eq $expected.ToUpper()) { 'OK' } else { 'MISMATCH' }), $name
+}
+```
+
+The checksum file is written by the Windows release packager and carries CRLF line endings, so on
+Linux or macOS strip them first: `tr -d '\r' < SHA256SUMS.txt | sha256sum -c -`.
+
 The immutable versioned files are also retained under
 [`1.3.4.0`](/downloads/hyper-v-private-cloud/1.3.4.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
