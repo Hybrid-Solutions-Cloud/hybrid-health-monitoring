@@ -41,8 +41,15 @@ if ([string]::IsNullOrWhiteSpace($Path)) {
     $Path = Join-Path (Split-Path $PSScriptRoot -Parent) 'out/development'
 }
 if (-not (Test-Path -LiteralPath $Path)) { throw "Path not found: '$Path'." }
-if (-not (Test-Path -LiteralPath $CoreAssemblyPath)) {
-    throw "Microsoft.EnterpriseManagement.Core.dll not found at '$CoreAssemblyPath'. Install VSAE or pass -CoreAssemblyPath."
+
+# The schema is vendored under scom-mp/schema so this gate runs on any build agent, including CI
+# runners without VSAE. VSAE is used only to refresh that copy. Never let this script silently skip:
+# an unimportable pack shipped once already because the check was not enforced.
+$vendoredSchemaRoot = Join-Path (Split-Path $PSScriptRoot -Parent) 'schema'
+$vendoredSchema = Join-Path $vendoredSchemaRoot 'ManagementPackSchema.v2.0.xsd'
+$useVendored = Test-Path -LiteralPath $vendoredSchema
+if (-not $useVendored -and -not (Test-Path -LiteralPath $CoreAssemblyPath)) {
+    throw "No Management Pack schema available: '$vendoredSchema' is missing and Microsoft.EnterpriseManagement.Core.dll was not found at '$CoreAssemblyPath'."
 }
 
 function Get-HcsManagementPackSchemaSet {
@@ -107,8 +114,18 @@ function Test-HcsManagementPackSchema {
     return , $errors
 }
 
-$schemaSet = Get-HcsManagementPackSchemaSet -CoreAssembly $CoreAssemblyPath
-Write-Host "Management Pack schema loaded ($($schemaSet.Count) schemas)."
+if ($useVendored) {
+    $schemaSet = New-Object System.Xml.Schema.XmlSchemaSet
+    $schemaSet.XmlResolver = New-Object System.Xml.XmlUrlResolver
+    [void]$schemaSet.Add($null, $vendoredSchema)
+    $schemaSet.Compile()
+    if ($schemaSet.Count -eq 0) { throw 'The vendored Management Pack schema failed to load; a zero-schema set would report every pack as valid.' }
+    Write-Host "Management Pack schema loaded from repo ($($schemaSet.Count) schemas)."
+}
+else {
+    $schemaSet = Get-HcsManagementPackSchemaSet -CoreAssembly $CoreAssemblyPath
+    Write-Host "Management Pack schema loaded from VSAE ($($schemaSet.Count) schemas)."
+}
 
 $failed = 0
 foreach ($file in Get-ChildItem -LiteralPath $Path -Filter *.xml -File | Sort-Object Name) {

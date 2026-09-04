@@ -44,11 +44,10 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         # "The element 'ModuleTypes' has invalid child element 'DataSourceModuleType'". Nothing in the
         # build caught it: [xml]$text proves well-formedness, not schema validity, and the MP schema
         # constrains element ORDER. This runs the same validation SCOM runs at import.
+        # The schema is vendored under src/hyper-v/scom-mp/schema, so this runs everywhere including
+        # CI runners without VSAE. It must never be skipped -- skipping is how 1.3.2.0 shipped.
         $schemaTool = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'src/hyper-v/scom-mp/tools/Test-HyperVPrivateCloudSchema.ps1'
-        if (-not (Test-Path -LiteralPath 'C:\Program Files (x86)\MSBuild\Microsoft\VSAC\Microsoft.EnterpriseManagement.Core.dll')) {
-            Set-ItResult -Skipped -Because 'VSAE (Microsoft.EnterpriseManagement.Core.dll) is not installed on this agent'
-            return
-        }
+        Test-Path -LiteralPath $schemaTool | Should -BeTrue
         { & $schemaTool -Path $script:Output } | Should -Not -Throw
     }
     It 'executes every first-party workflow through the public PowerShell 7 command-executor boundary' {
