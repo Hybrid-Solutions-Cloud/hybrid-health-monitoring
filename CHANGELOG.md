@@ -1,5 +1,93 @@
 # Changelog
 
+## [1.3.2.0] — 2026-09-04
+
+Corrective release resolving every runtime defect found in the SCOM operational audit of 1.2.0.0, plus
+the applicability and cookdown work that audit exposed. All 13 sealed product MPs carry version
+`1.3.2.0`, signed with public key token `54d0fb1159995c86`.
+
+**Runtime defects fixed**
+
+- File Services no longer raises `The property 'Count' cannot be found on this object` (Event 8702).
+  Ten StrictMode null-collapse sites were fixed across File Services, Network ATC, Physical Network
+  and VMM, and the cascade that marked ten unevaluated SMB facets `Warning` on a single probe failure
+  was removed.
+- Ten Windows event rules no longer carry the invalid `$Data/Params/Param[1]$` suppression (Event 5402).
+- Network ATC no longer throws on hosts without ATC (Event 8903): `RequireNetworkATC` defaulted to
+  `true` in fifteen unit monitors and is now `false`.
+- Failover Cluster and VMM workflows run on the Windows PowerShell host, because `FailoverClusters` and
+  `VirtualMachineManager` ship only as Windows PowerShell modules. The `-SkipEditionCheck` and
+  `-UseWindowsPowerShell` workarounds are removed; both are PowerShell 7 parameters that raise
+  `ParameterBindingException` under 5.1 (Event 8301).
+- SDN no longer reports a host as SDN-enabled because an in-box `NcHostAgent` service exists. Detection
+  now requires a populated Network Controller `HostId` **and** a host agent that is not absent,
+  disabled or unreadable, in both the discovery and the health workflow.
+- VMM events 8510/8511/8512/8904/8905 log the full exception chain instead of `Exception.Message`.
+- Nine probes no longer return `Good` from a `catch` block or claim health they never measured.
+
+**Applicability**
+
+Every capability monitor now targets the object it describes rather than the Hyper-V host. File
+Services and Storage gained participation classes discovered only where UNC-backed virtual disks or
+SAN-attached storage actually exist; Cluster, Network ATC and SDN monitors moved onto their existing
+discovery-gated classes. Capabilities that are not deployed no longer instantiate at all.
+
+**360° model**
+
+The physical chassis, DHCP, top-of-rack switch, edge firewall and console-server monitors target their
+own infrastructure classes instead of the Hyper-V host, so those objects carry their own health.
+Edge firewall, console server and out-of-band switch have no discovery yet and are documented as
+pending; their classes remain because a sealed management pack upgrade cannot remove class types.
+
+**Performance**
+
+The eleven VMM fabric monitors share one data source configuration and one VMM connection instead of
+eleven, so a single initialization failure no longer produces eleven failing workflows.
+
+## [1.3.2.0] — 2026-09-04
+
+Corrective release resolving every runtime defect found in the SCOM operational audit of 1.2.0.0, plus
+the applicability and cookdown work that audit exposed. All 13 sealed product MPs carry version
+`1.3.2.0`, signed with public key token `54d0fb1159995c86`.
+
+**Runtime defects fixed**
+
+- File Services no longer raises `The property 'Count' cannot be found on this object` (Event 8702).
+  Ten StrictMode null-collapse sites were fixed across File Services, Network ATC, Physical Network
+  and VMM, and the cascade that marked ten unevaluated SMB facets `Warning` on a single probe failure
+  was removed.
+- Ten Windows event rules no longer carry the invalid `$Data/Params/Param[1]$` suppression (Event 5402).
+- Network ATC no longer throws on hosts without ATC (Event 8903): `RequireNetworkATC` defaulted to
+  `true` in fifteen unit monitors and is now `false`.
+- Failover Cluster and VMM workflows run on the Windows PowerShell host, because `FailoverClusters` and
+  `VirtualMachineManager` ship only as Windows PowerShell modules. The `-SkipEditionCheck` and
+  `-UseWindowsPowerShell` workarounds are removed; both are PowerShell 7 parameters that raise
+  `ParameterBindingException` under 5.1 (Event 8301).
+- SDN no longer reports a host as SDN-enabled because an in-box `NcHostAgent` service exists. Detection
+  now requires a populated Network Controller `HostId` **and** a host agent that is not absent,
+  disabled or unreadable, in both the discovery and the health workflow.
+- VMM events 8510/8511/8512/8904/8905 log the full exception chain instead of `Exception.Message`.
+- Nine probes no longer return `Good` from a `catch` block or claim health they never measured.
+
+**Applicability**
+
+Every capability monitor now targets the object it describes rather than the Hyper-V host. File
+Services and Storage gained participation classes discovered only where UNC-backed virtual disks or
+SAN-attached storage actually exist; Cluster, Network ATC and SDN monitors moved onto their existing
+discovery-gated classes. Capabilities that are not deployed no longer instantiate at all.
+
+**360° model**
+
+The physical chassis, DHCP, top-of-rack switch, edge firewall and console-server monitors target their
+own infrastructure classes instead of the Hyper-V host, so those objects carry their own health.
+Edge firewall, console server and out-of-band switch have no discovery yet and are documented as
+pending; their classes remain because a sealed management pack upgrade cannot remove class types.
+
+**Performance**
+
+The eleven VMM fabric monitors share one data source configuration and one VMM connection instead of
+eleven, so a single initialization failure no longer produces eleven failing workflows.
+
 ## [1.0.5.0] — 2026-09-03
 
 Version-increased corrective upgrade from `1.0.4.0`. All 13 sealed product MPs now carry version
@@ -319,6 +407,94 @@ First release of Hyper-V Private Cloud Monitoring under its own product-named id
 * **phase-2:** Docs reorg — promote Design to top-level section + author ADRs 0002-0010 ([de266cb](https://github.com/AzureLocal/azurelocal-scom-mp/commit/de266cb668d8c6ff63f7ec697e773841b99b653d))
 
 ## Changelog
+
+## [1.3.2.0] — 2026-09-04
+
+Corrective release resolving every runtime defect found in the SCOM operational audit of 1.2.0.0, plus
+the applicability and cookdown work that audit exposed. All 13 sealed product MPs carry version
+`1.3.2.0`, signed with public key token `54d0fb1159995c86`.
+
+**Runtime defects fixed**
+
+- File Services no longer raises `The property 'Count' cannot be found on this object` (Event 8702).
+  Ten StrictMode null-collapse sites were fixed across File Services, Network ATC, Physical Network
+  and VMM, and the cascade that marked ten unevaluated SMB facets `Warning` on a single probe failure
+  was removed.
+- Ten Windows event rules no longer carry the invalid `$Data/Params/Param[1]$` suppression (Event 5402).
+- Network ATC no longer throws on hosts without ATC (Event 8903): `RequireNetworkATC` defaulted to
+  `true` in fifteen unit monitors and is now `false`.
+- Failover Cluster and VMM workflows run on the Windows PowerShell host, because `FailoverClusters` and
+  `VirtualMachineManager` ship only as Windows PowerShell modules. The `-SkipEditionCheck` and
+  `-UseWindowsPowerShell` workarounds are removed; both are PowerShell 7 parameters that raise
+  `ParameterBindingException` under 5.1 (Event 8301).
+- SDN no longer reports a host as SDN-enabled because an in-box `NcHostAgent` service exists. Detection
+  now requires a populated Network Controller `HostId` **and** a host agent that is not absent,
+  disabled or unreadable, in both the discovery and the health workflow.
+- VMM events 8510/8511/8512/8904/8905 log the full exception chain instead of `Exception.Message`.
+- Nine probes no longer return `Good` from a `catch` block or claim health they never measured.
+
+**Applicability**
+
+Every capability monitor now targets the object it describes rather than the Hyper-V host. File
+Services and Storage gained participation classes discovered only where UNC-backed virtual disks or
+SAN-attached storage actually exist; Cluster, Network ATC and SDN monitors moved onto their existing
+discovery-gated classes. Capabilities that are not deployed no longer instantiate at all.
+
+**360° model**
+
+The physical chassis, DHCP, top-of-rack switch, edge firewall and console-server monitors target their
+own infrastructure classes instead of the Hyper-V host, so those objects carry their own health.
+Edge firewall, console server and out-of-band switch have no discovery yet and are documented as
+pending; their classes remain because a sealed management pack upgrade cannot remove class types.
+
+**Performance**
+
+The eleven VMM fabric monitors share one data source configuration and one VMM connection instead of
+eleven, so a single initialization failure no longer produces eleven failing workflows.
+
+## [1.3.2.0] — 2026-09-04
+
+Corrective release resolving every runtime defect found in the SCOM operational audit of 1.2.0.0, plus
+the applicability and cookdown work that audit exposed. All 13 sealed product MPs carry version
+`1.3.2.0`, signed with public key token `54d0fb1159995c86`.
+
+**Runtime defects fixed**
+
+- File Services no longer raises `The property 'Count' cannot be found on this object` (Event 8702).
+  Ten StrictMode null-collapse sites were fixed across File Services, Network ATC, Physical Network
+  and VMM, and the cascade that marked ten unevaluated SMB facets `Warning` on a single probe failure
+  was removed.
+- Ten Windows event rules no longer carry the invalid `$Data/Params/Param[1]$` suppression (Event 5402).
+- Network ATC no longer throws on hosts without ATC (Event 8903): `RequireNetworkATC` defaulted to
+  `true` in fifteen unit monitors and is now `false`.
+- Failover Cluster and VMM workflows run on the Windows PowerShell host, because `FailoverClusters` and
+  `VirtualMachineManager` ship only as Windows PowerShell modules. The `-SkipEditionCheck` and
+  `-UseWindowsPowerShell` workarounds are removed; both are PowerShell 7 parameters that raise
+  `ParameterBindingException` under 5.1 (Event 8301).
+- SDN no longer reports a host as SDN-enabled because an in-box `NcHostAgent` service exists. Detection
+  now requires a populated Network Controller `HostId` **and** a host agent that is not absent,
+  disabled or unreadable, in both the discovery and the health workflow.
+- VMM events 8510/8511/8512/8904/8905 log the full exception chain instead of `Exception.Message`.
+- Nine probes no longer return `Good` from a `catch` block or claim health they never measured.
+
+**Applicability**
+
+Every capability monitor now targets the object it describes rather than the Hyper-V host. File
+Services and Storage gained participation classes discovered only where UNC-backed virtual disks or
+SAN-attached storage actually exist; Cluster, Network ATC and SDN monitors moved onto their existing
+discovery-gated classes. Capabilities that are not deployed no longer instantiate at all.
+
+**360° model**
+
+The physical chassis, DHCP, top-of-rack switch, edge firewall and console-server monitors target their
+own infrastructure classes instead of the Hyper-V host, so those objects carry their own health.
+Edge firewall, console server and out-of-band switch have no discovery yet and are documented as
+pending; their classes remain because a sealed management pack upgrade cannot remove class types.
+
+**Performance**
+
+The eleven VMM fabric monitors share one data source configuration and one VMM connection instead of
+eleven, so a single initialization failure no longer produces eleven failing workflows.
 
 All notable changes to Hybrid Infrastructure Health Monitoring are documented here.
 

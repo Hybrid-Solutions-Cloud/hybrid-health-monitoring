@@ -9,7 +9,7 @@ Hyper-V Private Cloud Monitoring is an enterprise on-premises monitoring suite e
 
 | Design lane | Commitment | Status |
 |---|---|---|
-| [SCOM Management Pack](scom-mp.md) | Committed | Production release sealed (1.2.0.0); full architecture contracts published |
+| [SCOM Management Pack](scom-mp.md) | Committed | Production release sealed (1.3.2.0); full architecture contracts published |
 
 ## SCOM Management Pack solution
 
