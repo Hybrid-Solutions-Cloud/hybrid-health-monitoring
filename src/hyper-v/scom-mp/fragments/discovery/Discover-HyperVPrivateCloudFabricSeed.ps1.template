@@ -112,7 +112,10 @@ try {
     # The chassis is the one fabric object with a local fallback: this host's own BMC address can be
     # read from SMBIOS when no seed is supplied, so the object exists even before endpoints are
     # declared. Its health still comes from the BMC, not from Win32_ComputerSystem.Status.
-    $chassisSeeds = @(Get-HcsSeedEntry -Seed $ChassisBmcAddresses)
+    # Get-HcsSeedEntry already returns a wrapped array (return , @(...)). Wrapping it again with @()
+    # produces an array whose single element is the inner array, so Count is 1 even when empty and the
+    # loop yields an array instead of an entry. Take it as returned.
+    $chassisSeeds = Get-HcsSeedEntry -Seed $ChassisBmcAddresses
     if ($chassisSeeds.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($ComputerName)) {
         $localBmc = ''
         try {
