@@ -69,3 +69,32 @@ Ship **1.3.0.0**. Do not republish 1.2.0.0 again.
 Prior entries for the 1.2.0.0 release, 360° build-out, management domain health, and the 2-pack
 override architecture are preserved in git history. The 1.2.0.0 "all defects resolved" summary is
 superseded by the correction above.
+
+---
+
+## Progress — 2026-09-03, first fix commit (`456a8a0`)
+
+**Fixed in source** (ships in 1.3.0.0; not yet built or sealed):
+
+- **ATC 8903** — `RequireNetworkATC` default `true` → `false` in all 15 unit monitors. This, not the
+  guard logic, was the live cause.
+- **StrictMode null-collapse (8702)** — scanned all 85 conditional assignments; 15 use the result as a
+  collection; 10 genuinely unsafe, all fixed (File Services ×3, ATC ×2, PhysicalNetwork ×3, VMM ×2).
+  Confirmed empirically under pwsh 7 that the old pattern yields `$null` and `.Count` throws
+  `PropertyNotFoundException` — the exact Event 8702 text. PhysicalNetwork `$rates` is a hashtable and
+  got a null guard, **not** an `@()` wrap.
+- **Fail-open probes** — 9 sites returning `Good` from a catch or not-applicable branch now return
+  `NotApplicable` with the real reason. The console-server probe had no probe at all and claimed
+  "is verified"; now honest.
+- **VMM diagnostics** — events 8510/8511/8512/8904/8905 now log `Exception.ToString()`.
+
+Every modified template parses clean against its HEAD baseline (checked with the PowerShell parser).
+
+**Not yet done:** Cluster `root\MSCluster` CIM (needs the §5.1 spike on a real host as the
+HealthService account); SDN/Storage/S2D applicability classes; cookdown; 360° monitor targeting; the
+§1 release gates; build/seal/stage 1.3.0.0.
+
+**Process note:** two mid-session edits corrupted files (a flattened array made `.Replace()` swap every
+`$` for `a`; a here-string insertion broke three templates). Both were caught by parse-checking against
+the git baseline and reverted. **Parse-check every generated edit against baseline before writing** —
+`git status` alone does not reveal this.
