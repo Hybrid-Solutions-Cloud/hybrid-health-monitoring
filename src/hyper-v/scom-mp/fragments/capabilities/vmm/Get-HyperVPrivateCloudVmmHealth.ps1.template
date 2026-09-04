@@ -3,7 +3,7 @@ param(
     [string]$ComputerName,
     [int]$JobLookbackHours = 24,
     [int]$FailedJobCriticalCount = 1,
-    [ValidateSet('Core', 'ManagementService', 'AgentCommunication', 'AgentVersionDrift', 'LogicalNetwork', 'VMNetwork', 'VMNetworkBinding', 'VirtualSwitchUplink', 'HostGroupCapacity', 'CloudCapacity', 'JobFailureRate', 'ProTip', 'Performance')][string]$Mode = 'Core',
+    [ValidateSet('Core', 'ManagementService', 'AgentCommunication', 'AgentVersionDrift', 'LogicalNetwork', 'VMNetwork', 'VMNetworkBinding', 'VirtualSwitchUplink', 'HostGroupCapacity', 'CloudCapacity', 'JobFailureRate', 'ProTip', 'Performance', 'All')][string]$Mode = 'Core',
     [string]$Counter,
     [int]$WarningCpuPercent = 75,
     [int]$CriticalCpuPercent = 90,
@@ -308,13 +308,39 @@ if ($Mode -eq 'Core') {
     return
 }
 
-$state = 'Good'
-$detail = "VMM fabric check '$Mode' completed with no finding on '$ComputerName'."
 
+# Cookdown: one execution evaluates every fabric facet and emits a property per facet, so all eleven
+# fabric monitors share one DataSource configuration and SCOM runs a single pwsh process per interval
+# instead of one per monitor. Previously each monitor passed its own <Mode>, which made every
+# DataSource config unique, defeated cookdown, and turned one VMM connection failure into eleven
+# separate failing workflows and eleven 8905 events.
+$fabricModes = @('ManagementService', 'AgentCommunication', 'AgentVersionDrift', 'LogicalNetwork', 'VMNetwork', 'VMNetworkBinding', 'VirtualSwitchUplink', 'HostGroupCapacity', 'CloudCapacity', 'JobFailureRate', 'ProTip')
+$modesToRun = if ($Mode -eq 'All') { $fabricModes } else { @($Mode) }
+
+# Connect once. A connection failure is a single event, not one per facet.
+$vmmServer = $null
+$connectError = $null
 try {
     Import-HcsVmmModule
     $vmmServer = Get-SCVMMServer -ComputerName $ComputerName
+}
+catch {
+    $connectError = $_
+    $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, "VMM connection failed on '$ComputerName': $($_.Exception.Message)`n$($_.Exception.ToString())")
+}
 
+$state = 'Good'
+$detail = ''
+foreach ($facet in $modesToRun) {
+    $Mode = $facet
+    $state = 'Good'
+    $detail = "VMM fabric check '$facet' completed with no finding on '$ComputerName'."
+    if ($null -ne $connectError) {
+        $state = if ($facet -eq 'ManagementService') { 'Critical' } else { 'NotApplicable' }
+        $detail = "VMM fabric check '$facet' could not run on '$ComputerName' because the VMM connection failed: $($connectError.Exception.Message)"
+    }
+    else {
+        try {
     if ($Mode -eq 'ManagementService') {
         $stopped = [System.Collections.Generic.List[string]]::new()
         $missing = [System.Collections.Generic.List[string]]::new()
@@ -611,19 +637,27 @@ try {
             }
         }
     }
-}
-catch {
-    if ($Mode -in @('Core', 'ManagementService')) {
-        $state = 'Critical'
-        $detail = "VMM fabric check '$Mode' failed on '$ComputerName': $($_.Exception.Message)"
-        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, "$detail`n$($_.Exception.ToString())")
+        }
+        catch {
+            if ($facet -eq 'ManagementService') {
+                $state = 'Critical'
+                $detail = "VMM fabric check '$facet' failed on '$ComputerName': $($_.Exception.Message)"
+                $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, "$detail`n$($_.Exception.ToString())")
+            }
+            else {
+                $state = 'NotApplicable'
+                $detail = "VMM fabric check '$facet' was skipped on '$ComputerName': $($_.Exception.Message)"
+            }
+        }
     }
-    else {
-        $state = 'NotApplicable'
-        $detail = "VMM fabric check '$Mode' skipped on '$ComputerName' because VMM server is unreachable or initialization failed: $($_.Exception.Message)"
-    }
+    $bag.AddValue("${facet}State", $state)
+    $bag.AddValue("${facet}StateDetail", $detail)
 }
 
-$bag.AddValue('VmmFabricState', $state)
-$bag.AddValue('VmmFabricStateDetail', $detail)
+# Retained so a single-Mode invocation (tasks, diagnostics) still emits the original property names.
+if ($modesToRun.Count -eq 1) {
+    $bag.AddValue('VmmFabricState', $state)
+    $bag.AddValue('VmmFabricStateDetail', $detail)
+}
+$api.Return($bag)
 $api.Return($bag)
