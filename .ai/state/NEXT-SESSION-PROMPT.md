@@ -37,14 +37,18 @@ built or sealed since. Your job is the structural half plus the release.
   `[System.Management.Automation.Language.Parser]::ParseInput($t,[ref]$null,[ref]$errs)`, compare the
   count to `git show HEAD:<path>`, and only then write. Two bulk edits silently corrupted templates
   last session (one swapped every `$` for `a`); `git status` and targeted `grep` did not reveal it.
-- PowerShell 7 only (`#Requires -Version 7.0`, `Set-StrictMode -Version Latest`,
-  `$ErrorActionPreference = 'Stop'`), Markdown docs only, commits as
-  `type(scope): description AB#7319`.
+- **PowerShell 7 is the default, not an absolute.** Most scripts are PS7
+  (`#Requires -Version 7.0`, `Set-StrictMode -Version Latest`, `$ErrorActionPreference = 'Stop'`).
+  **Where a product ships only a Windows PowerShell module, use Windows PowerShell for those
+  workflows.** `FailoverClusters` and `VirtualMachineManager` are both Windows PowerShell modules —
+  running them under Windows PowerShell is the correct, supported design, not an exception needing
+  sign-off. Do not contort a workflow into PS7 to satisfy a rule that does not apply. Markdown docs
+  only; commits as `type(scope): description AB#7319`.
 - Confirm before any Azure write, any `az` state change, or installing anything.
 
 ---
 
-## Task A — Cluster: replace the PowerShell-host dependency with CIM
+## Task A — Cluster and VMM: run them on the PowerShell edition their module supports
 
 **Defect (Event 8301):** the cluster probes report "FailoverClusters PowerShell is unavailable" while
 `FailoverClusters 2.0.0.0` is installed, `Get-Cluster` works interactively, both clusters are online,
@@ -54,35 +58,42 @@ WinPSCompat bridge does not reliably initialize under the HealthService account.
 by adding `Import-Module FailoverClusters -SkipEditionCheck`, which the audit proved fails with
 `Could not load type 'System.Diagnostics.Eventing.EventDescriptor' from assembly 'System.Core'`.
 
-**A1 — Spike first; everything else in this task depends on it.** On one Hyper-V host, running **as
-the HealthService account, not interactively as an admin**, confirm:
+**The fix is to stop forcing these workflows onto PS7.** `FailoverClusters` and
+`VirtualMachineManager` are Windows PowerShell modules; run them under Windows PowerShell. This is the
+supported design and needs no exception or sign-off.
 
-```powershell
-Get-CimInstance -Namespace root\MSCluster -ClassName MSCluster_Cluster
-Get-CimInstance -Namespace root\MSCluster -ClassName MSCluster_Node
-Get-CimInstance -Namespace root\MSCluster -ClassName MSCluster_ClusterSharedVolume
-Get-CimInstance -Namespace root\MSCluster -ClassName MSCluster_Resource
-Get-CimInstance -Namespace root\MSCluster -ClassName MSCluster_Network
-```
+**A1 — Add a Windows PowerShell probe module.** The library already defines
+`HyperVPrivateCloud.Pwsh.PropertyBagProbe` and `Pwsh.DiscoveryProvider`, both built on
+`System.CommandExecuterDiscoveryDataSource` invoking
+`%ProgramFiles%\PowerShell\7\pwsh.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$`.
+Add sibling types — `HyperVPrivateCloud.WinPS.PropertyBagProbe` and `WinPS.DiscoveryProvider` — that are
+identical except for `ApplicationName`:
+`%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe`. Same shape, same contract, minimal risk.
+Adding module types to a sealed library is an **addition**, which in-place upgrade permits.
 
-CIM is native to PS7 and needs no module, which is why it is the recommended design — but confirm it
-returns under the service identity before committing to it. `root\MSCluster` may require the cluster
-CIM provider and elevated rights; if it does not return, say so and stop rather than inventing a
-workaround. **Report the actual output.**
-
-**A2** — If A1 succeeds, port these to CIM:
+**A2 — Move the Cluster and VMM workflows onto it.** Cluster:
 `fragments/capabilities/cluster/Get-HyperVPrivateCloudClusterCsvHealth.ps1.template`,
 `Get-HyperVPrivateCloudClusterIntegrationHealth.ps1.template`,
 `Discover-HyperVPrivateCloudClusterRelationships.ps1.template`,
-`Invoke-HyperVPrivateCloudClusterTask.ps1.template`.
-Remove `-SkipEditionCheck` and the `3>$null` warning suppression that hides the real failure.
+`Invoke-HyperVPrivateCloudClusterTask.ps1.template`. VMM: the five templates under
+`fragments/capabilities/vmm/`. Remove `-SkipEditionCheck` and the `3>$null` warning suppression that
+hides the real failure — with the right host, neither is needed.
 
-**A3** — Replace the misleading "the FailoverClusters PowerShell module is missing" message. If a
-query fails, report the actual host-context error, not a false prerequisite claim.
+**A3 — Make those scripts genuinely 5.1-compatible.** Drop `#Requires -Version 7.0` (use
+`#Requires -Version 5.1`) and remove PS7-only syntax from them: null-coalescing `??` and `??=`,
+ternary `? :`, `-Parallel` on `ForEach-Object`, `Test-Connection -TargetName` (5.1 uses
+`-ComputerName`), and `Get-Service`/`Get-CimInstance` parameter sets that differ. `Set-StrictMode
+-Version Latest` and `$ErrorActionPreference = 'Stop'` still apply. **Verify by parsing each script
+with the Windows PowerShell 5.1 parser, not the PS7 one** — a PS7 parser accepts syntax 5.1 rejects.
 
-**A4** — Map the property surface honestly. `MSCluster_*` field names differ from the cmdlet output
-(for example `MSCluster_Node.State` is an integer, not `Up`/`Down`). Do not guess the enumerations —
-verify each against the returned objects in A1 and write the mapping into the script as a comment.
+**A4 — Replace the misleading "the FailoverClusters PowerShell module is missing" message.** If a query
+fails, report the actual error, not a false prerequisite claim.
+
+**A5 — Optional, only if it is easy:** `root\MSCluster` CIM works natively from PS7 with no module and
+is arguably more robust for the read-only cluster queries. It is no longer necessary now that Windows
+PowerShell is available, so treat it as a possible later optimisation, not a prerequisite. If you do
+explore it, verify the property surface against real objects — `MSCluster_Node.State` is an integer,
+not `Up`/`Down` — and do not guess enumerations.
 
 ---
 
@@ -101,8 +112,15 @@ does not apply. That is not what the shipped packs do — measured monitor targe
 | Network ATC | 3 of 16 | `HyperVPrivateCloud.HostRole` | Partially ungated — **B3** |
 | Cluster | 3 of 16 | `HyperVPrivateCloud.HostRole` | Partially ungated — **B3** |
 
-**B1 — SDN: the gate exists but is too permissive and fails open.** In
-`fragments/capabilities/sdn/Discover-HyperVPrivateCloudSdnRelationships.ps1.template`:
+**B1 — SDN: the gate exists but is too permissive and fails open.**
+
+> **SDN is a shipping capability going live soon, and customers will run it.** Do not weaken, disable
+> or strip SDN monitoring to make the current environment quiet. All 14 SDN monitors must work fully
+> where a Network Controller is deployed. The defect is purely the *detection* — it reports "SDN
+> present" on hosts that have none. Fix the gate; keep the capability whole. Treat a false negative
+> (SDN deployed but not discovered) as the more serious failure of the two.
+
+In `fragments/capabilities/sdn/Discover-HyperVPrivateCloudSdnRelationships.ps1.template`:
 
 ```powershell
 $sdnDetected = -not [string]::IsNullOrWhiteSpace($hostId) -or $ncState -ne 'NotInstalled' -or $slbState -ne 'NotInstalled'
@@ -112,8 +130,13 @@ Two problems. It is an **OR of three weak signals**, so a present-but-stopped in
 service is enough to instantiate 14 SDN monitors. And `Get-HcsServiceState` returns `'Unknown'` from
 its `catch`, which is `-ne 'NotInstalled'` — so **a failed service query also enables SDN monitoring**.
 Replace with evidence of actual SDN participation: a non-empty `HostId` **and** `NcHostAgent` actually
-present and configured. Treat `'Unknown'` as not-detected. Confirm against the environment, which has
-no Network Controller deployed — the correct result there is zero SDN instances.
+present and configured. Treat `'Unknown'` as not-detected, and log why detection was inconclusive so a
+genuinely SDN-enabled host that fails to discover is diagnosable rather than silent.
+
+**Validate the gate in both directions.** In the current environment, which has no Network Controller,
+the correct result is zero SDN instances. In an SDN-enabled environment it must discover the host
+binding and light up all 14 monitors. A gate that is only tested on the negative side is how the
+opposite defect ships next.
 
 **B2 — File Services: all 12 monitors target `HostRole`, so they run on every host.** The environment
 has no UNC-hosted virtual disks, so the correct state is NotApplicable and instead it produces false
@@ -205,6 +228,13 @@ Add to `tests/unit/HyperVPrivateCloud.Release.Tests.ps1` and the build tooling:
   `VirtualMachineManager`, no NC host agent, no MPIO, no UNC-backed VHDs. Every probe must return
   `NotApplicable`, throw nothing, and write no error events. **This gate alone would have caught four
   of the seven defects.**
+- **E3b** A matching **positive-environment fixture** per capability — SDN especially, since it is
+  going live. Where the capability's evidence is present, discovery must create the instances and the
+  monitors must evaluate. E3 on its own would let an over-tightened gate ship as "quiet", which for SDN
+  means a customer with a Network Controller gets no monitoring at all.
+- **E3c** Run the Windows PowerShell workflows (Cluster, VMM) through both fixtures under
+  **`powershell.exe`, not `pwsh.exe`**, and parse them with the 5.1 parser. A PS7-only harness proves
+  nothing about a 5.1 workflow.
 - **E4** StrictMode scan: any `$x = if (…)` / `foreach` / `switch` assignment whose `.Count`,
   `.Length` or indexer is later read without `@()` normalization. Beware hashtable cases — an `@()`
   wrap breaks them; they need a null guard instead.
@@ -268,20 +298,24 @@ Get-SCOMManagementPack -Name HyperVPrivateCloud.* | Select-Object Name, Version,
   with the association in place.
 - Reconcile privilege: the docs specify VMM **Read-Only Administrator** scoped to host groups, clouds
   and library servers; the account holds full **VMM Administrator**. Align one to the other.
+- **SDN Run As association is required, not conditional** — SDN is going live. Establish the Network
+  Controller Run As account and profile association, and document it in the prerequisites the same way
+  the VMM profile is documented.
 - Add a prerequisite verification task so a missing Run As association surfaces as an explicit
   prerequisite failure rather than an obscure type-initializer exception.
 
 ---
 
-## Two decisions that need the operator, not you
+## Decisions already made — do not reopen these
 
-1. **VMM execution model.** PS7-only is a hard rule, but `VirtualMachineManager` is a Windows
-   PowerShell module with no CIM equivalent. Either (a) a documented ADR exception permitting a Windows
-   PowerShell probe host for VMM workflows only, or (b) move VMM collection off-agent to a dedicated
-   collector with a documented identity. **Recommendation: (a)** — narrower blast radius, no new
-   deployment surface, and the exception is auditable. Record the outcome as an ADR and amend the
-   scripting standard rather than leaving code silently non-conformant.
-2. **Whether SDN is intended to be active at all.** If not, B1 makes the SDN Run As question moot.
+1. **Execution model: settled.** PowerShell 7 is the default, not a hard rule. `FailoverClusters` and
+   `VirtualMachineManager` run under Windows PowerShell because that is what the products support.
+   No ADR exception, no off-agent collector, no CIM port required — see Task A. Do not re-litigate this
+   or contort a workflow to stay on PS7.
+2. **SDN is in scope and going live.** Customers will run SDN. The capability stays whole and must be
+   validated in an SDN-enabled environment before release; only the detection gate is defective. The
+   SDN Run As association is therefore **required**, not conditional — treat it alongside the VMM Run As
+   item in the prerequisites section.
 
 ## How to report back
 
