@@ -156,6 +156,7 @@ try {
         Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostParticipation']/UncBackedDiskCount$" $uncDiskCount
         Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostParticipation']/ShareCount$" $shares.Count
         Add-HcsProperty $participation "$MPElement[Name='System!System.Entity']/DisplayName$" "SMB storage participation on $ComputerName"
+        $script:DiscoveryData.AddInstance($participation)
     }
     $api.Return($script:DiscoveryData)
 }
