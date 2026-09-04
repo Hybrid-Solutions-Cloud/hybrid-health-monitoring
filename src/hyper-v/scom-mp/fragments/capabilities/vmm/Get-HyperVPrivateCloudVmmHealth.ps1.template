@@ -315,7 +315,9 @@ if ($Mode -eq 'Core') {
 # DataSource config unique, defeated cookdown, and turned one VMM connection failure into eleven
 # separate failing workflows and eleven 8905 events.
 $fabricModes = @('ManagementService', 'AgentCommunication', 'AgentVersionDrift', 'LogicalNetwork', 'VMNetwork', 'VMNetworkBinding', 'VirtualSwitchUplink', 'HostGroupCapacity', 'CloudCapacity', 'JobFailureRate', 'ProTip')
-$modesToRun = if ($Mode -eq 'All') { $fabricModes } else { @($Mode) }
+# @() must wrap the WHOLE conditional: a single-element else branch unrolls to a bare string,
+# and $x.Count on a scalar throws under Set-StrictMode -Version Latest. Same defect as Event 8702.
+$modesToRun = @(if ($Mode -eq 'All') { $fabricModes } else { $Mode })
 
 # Connect once. A connection failure is a single event, not one per facet.
 $vmmServer = $null

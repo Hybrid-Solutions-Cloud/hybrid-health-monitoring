@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 param(
     [Parameter(Mandatory)][string]$ComputerName,
-    [ValidateSet('Integration', 'AdapterLink', 'AdapterSpeed', 'AdapterErrors', 'AdapterDiscards', 'SwitchPort', 'PortCorrelation', 'VlanMismatch', 'PortUtilization', 'Performance')][string]$Mode = 'Integration',
+    [ValidateSet('Integration', 'AdapterLink', 'AdapterSpeed', 'AdapterErrors', 'AdapterDiscards', 'SwitchPort', 'PortCorrelation', 'VlanMismatch', 'PortUtilization', 'Performance', 'All')][string]$Mode = 'Integration',
     [string]$Counter,
     [int]$MinimumLinkSpeedMbps = 10000,
     [int]$WarningErrorsPerSecond = 1,
@@ -249,10 +249,23 @@ if ($Mode -eq 'Performance') {
 }
 
 $bag = $api.CreatePropertyBag()
-$state = 'Good'
-$detail = 'All external Hyper-V switch uplinks have stable Windows network-adapter identities for SCOM network-topology correlation.'
 
-try {
+# Cookdown: one execution evaluates every facet and emits a property per facet, so all nine monitors
+# share one DataSource configuration and SCOM runs a single pwsh process per interval instead of nine.
+# Previously each monitor passed its own <Mode>, making every DataSource config unique, defeating
+# cookdown and fanning one adapter-query failure out into nine workflows and nine events.
+$networkFacets = @('Integration', 'AdapterLink', 'AdapterSpeed', 'AdapterErrors', 'AdapterDiscards', 'SwitchPort', 'PortCorrelation', 'VlanMismatch', 'PortUtilization')
+# @() must wrap the WHOLE conditional: a single-element else branch unrolls to a bare string,
+# and $x.Count on a scalar throws under Set-StrictMode -Version Latest. Same defect as Event 8702.
+$facetsToRun = @(if ($Mode -eq 'All') { $networkFacets } else { $Mode })
+
+$state = 'Good'
+$detail = ''
+foreach ($facet in $facetsToRun) {
+    $Mode = $facet
+    $state = 'Good'
+    $detail = 'All external Hyper-V switch uplinks have stable Windows network-adapter identities for SCOM network-topology correlation.'
+    try {
     if ($Mode -eq 'Integration') {
         if (-not (Test-HcsCommand -Name 'Get-VMSwitch')) {
             throw 'Get-VMSwitch is unavailable. Install Hyper-V-PowerShell with management tools.'
@@ -543,13 +556,20 @@ try {
             }
         }
     }
-}
-catch {
-    $state = 'Critical'
-    $detail = "Physical-network integration probe failed on '$ComputerName': $($_.Exception.Message)"
-    $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.IntegrationHealth.ps1', 8803, 1, $detail)
+    }
+    catch {
+        # A probe failure is a fault, not an absence of findings.
+        $state = 'Critical'
+        $detail = "Physical-network probe '$facet' failed on '$ComputerName': $($_.Exception.Message)"
+        $api.LogScriptEvent('HyperVPrivateCloud.PhysicalNetwork.IntegrationHealth.ps1', 8803, 1, $detail)
+    }
+    $bag.AddValue("${facet}State", $state)
+    $bag.AddValue("${facet}StateDetail", $detail)
 }
 
-$bag.AddValue('PhysicalNetworkIntegrationState', $state)
-$bag.AddValue('PhysicalNetworkIntegrationStateDetail', $detail)
+# Retained so a single-Mode invocation (tasks, diagnostics) still emits the original property names.
+if ($facetsToRun.Count -eq 1) {
+    $bag.AddValue('PhysicalNetworkIntegrationState', $state)
+    $bag.AddValue('PhysicalNetworkIntegrationStateDetail', $detail)
+}
 $api.Return($bag)

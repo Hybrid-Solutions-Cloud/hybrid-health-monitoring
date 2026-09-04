@@ -66,8 +66,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
                     [void]$emitted.Add($match.Groups[1].Value + 'Detail')
                 }
                 # Interpolated names such as "${facet}StateDetail" resolve at runtime from a known list.
-                foreach ($match in [regex]::Matches($body.InnerText, '\$fabricModes\s*=\s*@\(([^)]*)\)')) {
-                    foreach ($facet in [regex]::Matches($match.Groups[1].Value, "'([A-Za-z0-9_]+)'")) {
+                foreach ($match in [regex]::Matches($body.InnerText, '\$[A-Za-z]*(Modes|Facets)\s*=\s*@\(([^)]*)\)')) {
+                    foreach ($facet in [regex]::Matches($match.Groups[2].Value, "'([A-Za-z0-9_]+)'")) {
                         [void]$emitted.Add($facet.Groups[1].Value + 'State')
                         [void]$emitted.Add($facet.Groups[1].Value + 'StateDetail')
                     }
@@ -112,6 +112,34 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
             }
         }
         $wrong | Should -BeNullOrEmpty -Because 'a Mode=All monitor must read a property the all-facets path emits'
+    }
+    It 'never reads .Count on a conditional assignment that can unroll to a scalar' {
+        # Event 8702 was "The property 'Count' cannot be found on this object": PowerShell unrolls the
+        # output of an if/foreach/switch, so `$x = if (c) { one } else { @() }` yields a bare scalar or
+        # $null, and $x.Count then throws under Set-StrictMode -Version Latest. The @() must wrap the
+        # WHOLE conditional. This shipped once as Event 8702 and was reintroduced twice by the cookdown
+        # rewrites, so it is now enforced.
+        $packs = @($script:Library, $script:Discovery, $script:Monitoring, $script:ClusterCapability,
+            $script:StorageCapability, $script:S2DCapability, $script:FileServicesCapability,
+            $script:PhysicalNetworkCapability, $script:NetworkAtcCapability, $script:SdnCapability,
+            $script:VmmCapability, $script:PureCapability)
+        $risky = New-Object System.Collections.Generic.List[string]
+        foreach ($pack in $packs) {
+            foreach ($body in @($pack.SelectNodes('//ScriptBody'))) {
+                $lines = $body.InnerText -split "`r?`n"
+                for ($i = 0; $i -lt $lines.Count; $i++) {
+                    if ($lines[$i] -notmatch '^\s*\$([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(if|foreach|switch|while)\s*\(') { continue }
+                    if ($lines[$i] -match '=\s*@\(\s*(if|foreach|switch|while)') { continue }
+                    $name = $Matches[1]
+                    $upper = [Math]::Min($i + 80, $lines.Count - 1)
+                    $rest = ($lines[($i + 1)..$upper]) -join "`n"
+                    if ($rest -match ('\$' + [regex]::Escape($name) + '\.Count\b')) {
+                        $risky.Add("$($body.ParentNode.ScriptName): `$$name")
+                    }
+                }
+            }
+        }
+        $risky | Should -BeNullOrEmpty -Because 'wrap the whole conditional in @() before reading .Count'
     }
     It 'never submits a property bag or discovery data twice' {
         # The cookdown rewrite left two consecutive $api.Return($bag) calls in the VMM fabric probe,
