@@ -236,6 +236,7 @@ function Get-HcsMonitoringContent {
         @('DeploymentService', 'DeploymentServiceState', 'Bare-metal deployment service health', 'ConfigurationState', 'ConfigurationHealth', 'Warning', 'Tracks bare-metal provisioning and Windows Deployment Services state.', 'Verify the WDSServer service status, TFTP listener on port 69, and PXE boot provider configuration.'),
         @('PhysicalChassis', 'PhysicalChassisState', 'Physical server chassis and hardware health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Tracks physical server hardware, chassis status, and BMC health.', 'Inspect physical chassis status via IPMI/Redfish or vendor management console, check power supplies, fans, and hardware event log.'),
         @('DhcpService', 'DhcpServiceState', 'DHCP infrastructure service health', 'AvailabilityState', 'AvailabilityHealth', 'Error', 'Tracks DHCP server service status and UDP port 67 listener.', 'Check the DHCPServer service status, scope activation, IP pool exhaustion, and DHCP event log.'),
+        @('OutOfBandSwitch', 'OutOfBandSwitchState', 'Out-of-band management switch reachability', 'AvailabilityState', 'AvailabilityHealth', 'Warning', 'Tracks network reachability to the out-of-band management switch that carries BMC and console traffic.', 'Verify the out-of-band switch management address, its uplink, and that the declared management port is listening.'),
         @('TopOfRackSwitch', 'TopOfRackSwitchState', 'Top-of-Rack data switch reachability', 'AvailabilityState', 'AvailabilityHealth', 'Warning', 'Tracks network reachability to the connected Top-of-Rack data switch.', 'Verify physical link on host uplinks, LLDP neighbor discovery, and gateway/switch IP reachability.'),
         @('EdgeFirewall', 'EdgeFirewallState', 'Edge perimeter firewall reachability', 'AvailabilityState', 'AvailabilityHealth', 'Warning', 'Tracks network reachability to the perimeter edge firewall or gateway.', 'Check default gateway connectivity, routing table, firewall status, and upstream WAN interface.'),
         @('ConsoleServer', 'ConsoleServerState', 'Out-of-band console server reachability', 'AvailabilityState', 'AvailabilityHealth', 'Warning', 'Tracks reachability of out-of-band console server appliance (Opengear).', 'Check out-of-band management network reachability, console server power/IP, and cellular fallback.'),
@@ -305,6 +306,7 @@ function Get-HcsTargetMonitorContent {
             'TopOfRackSwitch' = 'HCSV2Library!HyperVPrivateCloud.TopOfRackSwitch'
             'EdgeFirewall'    = 'HCSV2Library!HyperVPrivateCloud.EdgeFirewall'
             'ConsoleServer'   = 'HCSV2Library!HyperVPrivateCloud.ConsoleServer'
+            'OutOfBandSwitch' = 'HCSV2Library!HyperVPrivateCloud.OutOfBandSwitch'
         }
         $target = if ($Kind -eq 'Host' -and $fabricTargets.ContainsKey([string]$definition[0])) { $fabricTargets[[string]$definition[0]] }
                   elseif ($Kind -eq 'Host') { 'HCSV2Library!HyperVPrivateCloud.HostRole' }
@@ -318,6 +320,28 @@ function Get-HcsTargetMonitorContent {
             # Keyed inventory type: one probe run per host serves every VM. Expected state is computed
             # in-script with the same policy the discovery uses, so it is no longer passed per instance.
             '<PropertyName>{0}</PropertyName><VMId>$Target/Property[Type="HCSV2Library!HyperVPrivateCloud.VirtualMachineRuntime"]/VMId$</VMId><CheckpointWarningHours>168</CheckpointWarningHours><CheckpointCriticalHours>336</CheckpointCriticalHours><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>240</TimeoutSeconds>' -f $definition[1]
+        }
+        # Physical-fabric devices are probed at their own management address through
+        # Fabric.Device.MonitorType, not read out of the Hyper-V host's property bag. Each device kind
+        # supplies its name and management address from the discovered object. DhcpService stays on the
+        # host path because it genuinely is a local Windows service check.
+        $deviceProbes = @{
+            'PhysicalChassis' = @('PhysicalChassis', 'ChassisId', 'BmcIpv4Address')
+            'TopOfRackSwitch' = @('TopOfRackSwitch', 'SwitchName', 'ManagementIp')
+            'OutOfBandSwitch' = @('OutOfBandSwitch', 'SwitchName', 'ManagementIp')
+            'EdgeFirewall'    = @('EdgeFirewall', 'DeviceName', 'ManagementIp')
+            'ConsoleServer'   = @('ConsoleServer', 'Hostname', 'ManagementIp')
+        }
+        if ($Kind -eq 'Host' -and $deviceProbes.ContainsKey([string]$definition[0])) {
+            $probe = $deviceProbes[[string]$definition[0]]
+            $deviceClass = $fabricTargets[[string]$definition[0]]
+            $deviceConfig = "<DeviceKind>$($probe[0])</DeviceKind><DeviceName>`$Target/Property[Type=`"$deviceClass`"]/$($probe[1])`$</DeviceName><ManagementAddress>`$Target/Property[Type=`"$deviceClass`"]/$($probe[2])`$</ManagementAddress><ManagementPorts /><IntervalSeconds>300</IntervalSeconds><SyncTime /><TimeoutSeconds>120</TimeoutSeconds>"
+            [void]$monitors.AppendLine("      <UnitMonitor ID=`"$monitorId`" Accessibility=`"Public`" Enabled=`"$enabled`" Target=`"$target`" ParentMonitorID=`"Health!System.Health.$($definition[3])`" Remotable=`"true`" Priority=`"Normal`" TypeID=`"HyperVPrivateCloud.Fabric.Device.MonitorType`" ConfirmDelivery=`"true`"><Category>$($definition[4])</Category><AlertSettings AlertMessage=`"$messageId`"><AlertOnState>$alertState</AlertOnState><AutoResolve>true</AutoResolve><AlertPriority>Normal</AlertPriority><AlertSeverity>MatchMonitorHealth</AlertSeverity><AlertParameters><AlertParameter1>`$Data/Context/Property[@Name='FabricDeviceStateDetail']`$</AlertParameter1></AlertParameters></AlertSettings><OperationalStates><OperationalState ID=`"Good`" MonitorTypeStateID=`"Good`" HealthState=`"Success`" /><OperationalState ID=`"Warning`" MonitorTypeStateID=`"Warning`" HealthState=`"Warning`" /><OperationalState ID=`"Critical`" MonitorTypeStateID=`"Critical`" HealthState=`"Error`" /></OperationalStates><Configuration>$deviceConfig</Configuration></UnitMonitor>")
+            [void]$resources.AppendLine("<StringResource ID=`"$messageId`" />")
+            [void]$displays.AppendLine("    <DisplayString ElementID=`"$monitorId`"><Name>$($definition[2])</Name><Description>$($definition[6])</Description></DisplayString>")
+            [void]$displays.AppendLine("<DisplayString ElementID=`"$messageId`"><Name>$($definition[2])</Name><Description>{0}</Description></DisplayString>")
+            [void]$knowledge.AppendLine("    <KnowledgeArticle ElementID=`"$monitorId`" Visible=`"true`"><MamlContent><maml:section xmlns:maml=`"http://schemas.microsoft.com/maml/2004/10`"><maml:title>Summary</maml:title><maml:para>$($definition[6])$supersededNote</maml:para></maml:section><maml:section xmlns:maml=`"http://schemas.microsoft.com/maml/2004/10`"><maml:title>Operator response</maml:title><maml:para>$($definition[7])</maml:para></maml:section></MamlContent></KnowledgeArticle>")
+            continue
         }
         [void]$monitors.AppendLine("      <UnitMonitor ID=`"$monitorId`" Accessibility=`"Public`" Enabled=`"$enabled`" Target=`"$target`" ParentMonitorID=`"Health!System.Health.$($definition[3])`" Remotable=`"true`" Priority=`"Normal`" TypeID=`"$typeId`" ConfirmDelivery=`"true`"><Category>$($definition[4])</Category><AlertSettings AlertMessage=`"$messageId`"><AlertOnState>$alertState</AlertOnState><AutoResolve>true</AutoResolve><AlertPriority>Normal</AlertPriority><AlertSeverity>MatchMonitorHealth</AlertSeverity><AlertParameters><AlertParameter1>`$Data/Context/Property[@Name='$($definition[1])Detail']`$</AlertParameter1></AlertParameters></AlertSettings><OperationalStates><OperationalState ID=`"Good`" MonitorTypeStateID=`"Good`" HealthState=`"Success`" /><OperationalState ID=`"Warning`" MonitorTypeStateID=`"Warning`" HealthState=`"Warning`" /><OperationalState ID=`"Critical`" MonitorTypeStateID=`"Critical`" HealthState=`"Error`" /></OperationalStates><Configuration>$configuration</Configuration></UnitMonitor>")
         [void]$resources.AppendLine("<StringResource ID=`"$messageId`" />")
@@ -799,6 +823,7 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
             VM_HEALTH_SCRIPT = 'Get-HyperVPrivateCloudVmHealth.ps1.template'
             DIAGNOSTIC_SCRIPT = 'Get-HyperVPrivateCloudDiagnosticSummary.ps1.template'
             HOST_TASK_SCRIPT = 'Invoke-HyperVPrivateCloudHostTask.ps1.template'
+            FABRIC_HEALTH_SCRIPT = '../discovery/Get-HyperVPrivateCloudFabricHealth.ps1.template'
         }
         foreach ($entry in $scriptTokens.GetEnumerator()) {
             $monitoringScriptPath = Join-Path $monitoringDirectory $entry.Value
