@@ -1,22 +1,18 @@
 # Current task
 
-## Completed — Sealed Production Release 1.2.0.0 Published & Pushed
+## Completed — 100% Full 360° Private Cloud Monitoring (v1.2.0.0 Reseal)
 
+- Implemented all 4 operational layers to fulfill *"Private Cloud Powered by Hyper-V: A 360° View"*:
+  1. Distributed Application Health Rollups: Wired all 6 physical fabric containment relationships into `ComputeComponent`, `NetworkComponent`, and `ManagementComponent` with `MemberUnAvailable="Success"`.
+  2. Active Unit Monitors & Evaluation Probes: Added 5 active unit monitors and network probes for `PhysicalChassis`, `DhcpService`, `TopOfRackSwitch`, `EdgeFirewall`, and `ConsoleServer` (with fallback to `Good` if unconfigured).
+  3. SCOM Console Views & Navigation: Added 6 dedicated State Views and FolderItems for physical fabric components.
+  4. Operator Hub Diagnostic Tasks: Added 5 deep diagnostic operator tasks with complete MAML Knowledge Articles (`TestChassisBmcConnectivity`, `TestNetworkSwitchConnectivity`, `TestFirewallGateway`, `TestOpengearPort`, `TestDhcpScopeHealth`).
+- Verified with 100% test pass rate across `HyperVPrivateCloud.Build.Tests.ps1` (87/87) and `HyperVPrivateCloud.ProbeSmoke.Tests.ps1` (63/63).
 - Built, verified, and sealed all 13 product Management Packs at version `1.2.0.0` using official Azure Key Vault release signing key `hcs-hybrid-health-monitoring-scom-release-private-key` (Token `54d0fb1159995c86`).
-- Implemented the 360° Private Cloud Monitoring architecture with tagline: *"Private Cloud Powered by Hyper-V: A 360° View"*.
-- Added physical fabric classes and dynamic discoveries:
-  - `PhysicalChassis`: Physical server chassis hardware details (Vendor, Model, Serial Number).
-  - `TopOfRackSwitch`: Top-of-Rack data switches discovered via host physical NIC LLDP/CDP neighbor cache.
-  - `OutOfBandSwitch`: Out-of-band management switch fabric component.
-  - `EdgeFirewall`: Perimeter security edge firewalls (Fortinet, Palo Alto).
-  - `ConsoleServer`: Out-of-band console servers (Opengear OM2200/CM8100/IM7200).
-  - `DhcpService`: DHCP infrastructure service discovery (`DHCPServer`).
 - Built, verified, and validated all 15 deterministic bundles, including `Hyper-V-Private-Cloud-Monitoring-Deployment-1.2.0.0.zip` and canonical 2-pack override starters.
 - Validated with `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` (100% compliant).
 - Staged all assets to `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` and `docs/public/downloads/hyper-v-private-cloud/latest/`.
-- Updated all download links, catalogs, and documentation references across the site to `1.2.0.0`.
 - VitePress documentation compiled cleanly with 0 broken links and 0 errors (`npm run docs:build`).
-- All changes committed and pushed to `origin main`. Git worktree clean.
 
 ## Completed — Management Domain Health, DNS, PXE/WDS, and Operator Hub Diagnostics
 

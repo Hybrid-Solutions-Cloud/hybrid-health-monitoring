@@ -1,5 +1,32 @@
 # Handoff
 
+## 2026-09-03 — Complete 360° Private Cloud Monitoring: DA Rollups, Active Probes, Views & Operator Hub (v1.2.0.0)
+
+- **100% Full 360° Private Cloud Monitoring Solution Completed**:
+  - Implemented all 4 missing operational layers to fulfill *"Private Cloud Powered by Hyper-V: A 360° View"*.
+  - Distributed Application (DA) Health Rollups:
+    - Wired 6 physical fabric containment rollups into `ComputeComponent`, `NetworkComponent`, and `ManagementComponent`.
+    - Configured `MemberUnAvailable="Success"` across all optional physical infrastructure rollups, ensuring zero false-positive critical states if firewalls, Opengear, or DHCP are not present or monitored in a specific environment.
+  - Active Unit Monitors & Evaluation Probes:
+    - Added unit monitors for `PhysicalChassis` (hardware/BMC reachability), `DhcpService` (service state & port 67 listener), `TopOfRackSwitch` (management reachability), `OutOfBandSwitch` (management reachability), `EdgeFirewall` (gateway & HA status), and `ConsoleServer` (Opengear appliance management reachability).
+    - Probes in `Get-HyperVPrivateCloudHostHealth.ps1.template` actively validate connectivity and gracefully evaluate to `Good` if optional hardware/fabric components are absent.
+  - SCOM Console Presentation & Navigation:
+    - Added 6 dedicated State Views and FolderItems under `HyperVPrivateCloud.Presentation` for Physical Server Chassis, ToR Switches, OOB Switches, Edge Firewalls, Console Servers (Opengear), and DHCP Services.
+  - Operator Hub Diagnostic Tasks:
+    - Added 5 deep diagnostic operator tasks targeting `HyperVPrivateCloud.HostRole` with full MAML Knowledge Articles:
+      - `TestChassisBmcConnectivity`: Tests BMC ping, IPMI (623), Redfish/HTTPS (443).
+      - `TestNetworkSwitchConnectivity`: Tests ping and SNMP (161) responsiveness against ToR/OOB switches.
+      - `TestFirewallGateway`: Validates edge firewall gateway connectivity and DNS resolution path.
+      - `TestOpengearPort`: Validates Opengear appliance SSH (22) and HTTPS (443) management interfaces.
+      - `TestDhcpScopeHealth`: Queries DHCP scope statistics, lease counts, and IP pool headroom.
+- **Verification & Testing**:
+  - `HyperVPrivateCloud.Build.Tests.ps1`: All 87 tests passed (0 failed). Verified 47 UnitMonitors, 64 DependencyMonitors, 32 Tasks, and 88 KnowledgeArticles.
+  - `HyperVPrivateCloud.ProbeSmoke.Tests.ps1`: All 63 probe and task script smoke tests passed under `pwsh -File`.
+  - VitePress Documentation: `npm run docs:build` built cleanly in 41.45s with 0 broken links and 0 errors.
+- **Production Sealing & Publication**:
+  - Sealed all 13 Management Packs with Azure Key Vault release key (`54d0fb1159995c86`) via `FASTSEAL.exe` and Microsoft MPVerify.
+  - Re-generated all 15 release ZIP packages and staged to `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` and `docs/public/downloads/hyper-v-private-cloud/latest/`.
+
 ## 2026-09-03 — Sealed and Published Production Release 1.2.0.0: 360° Private Cloud Monitoring
 
 - **Built, Sealed, and Validated 1.2.0.0**:
