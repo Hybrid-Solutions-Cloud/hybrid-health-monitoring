@@ -25,7 +25,7 @@ then obtain only the prerequisites on that list.
 ## Before anything else: get the packs from the right place
 
 Download the sealed release from the [downloads page](../downloads/hyper-v-private-cloud.md) or
-from `docs/public/downloads/hyper-v-private-cloud/1.0.7.0/`.
+from `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/`.
 
 ::: danger Do not import from a local build directory
 If you build from source, `src/hyper-v/scom-mp/out/development/` may contain a **partial** build.

@@ -1,5 +1,25 @@
 # Handoff
 
+## 2026-09-03 — Sealed and Published Production Release 1.2.0.0: 360° Private Cloud Monitoring
+
+- **Built, Sealed, and Validated 1.2.0.0**:
+  - Retrieved permanent official release RSA private key from Azure Key Vault `kv-hcs-vault-01` (`hcs-hybrid-health-monitoring-scom-release-private-key`).
+  - Compiled and sealed all 13 Management Packs at version `1.2.0.0` using Microsoft VSAE FASTSEAL with public key token `54d0fb1159995c86`.
+  - Built all 15 release ZIP packages and checksum files (`Hyper-V-Private-Cloud-Monitoring-Deployment-1.2.0.0.zip`, `Hyper-V-Private-Cloud-Monitoring-Complete.zip`, Core, Overrides, and profile bundles).
+  - Validated package eligibility with `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` (100% compliant).
+  - Staged sealed `.mp` and `.zip` assets to:
+    - `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/`
+    - `docs/public/downloads/hyper-v-private-cloud/latest/`
+- **360° Private Cloud Monitoring Architecture ("Private Cloud Powered by Hyper-V: A 360° View")**:
+  - Authored physical fabric classes in `HyperVPrivateCloud.Library`: `PhysicalChassis`, `TopOfRackSwitch`, `OutOfBandSwitch`, `EdgeFirewall`, `ConsoleServer` (Opengear), and `DhcpService`.
+  - Dynamic topology discovery in `Discover-HyperVPrivateCloudTopology.ps1.template` dynamically discovers server chassis hardware details, connected ToR data switches via host physical NIC LLDP/CDP neighbor cache, and DHCP infrastructure services.
+  - Zero vendor lock-in with extensible abstract base classes in core and pluggable capability adapters.
+- **Exhaustive Documentation & Build**:
+  - Synchronized and updated all documentation across `docs/`, `README.md`, `src/README.md`, and catalogs to `1.2.0.0`.
+  - Rebuilt VitePress documentation site cleanly with 0 errors in 54.64s (`npm run docs:build`).
+- **Committed & Pushed to `main`**:
+  - Staged, committed, and pushed cleanly to `origin/main`. Git worktree clean.
+
 ## 2026-09-03 — Complete Removal of Azure Monitor from Hyper-V Solution
 
 - **Purged All Hyper-V Azure Monitor Files and Code**:

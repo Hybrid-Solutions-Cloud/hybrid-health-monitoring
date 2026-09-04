@@ -211,12 +211,18 @@ The following table documents every class implemented in the Hyper-V Private Clo
 | `HyperVPrivateCloud.HostRole` | `Windows!Microsoft.Windows.ComputerRole` | `Windows!Microsoft.Windows.Computer` | `PrincipalName` (inherited) | Represents the Hyper-V host role on a Windows Server node. |
 | `HyperVPrivateCloud.VirtualMachine` | `System!System.LogicalEntity` | `HyperVPrivateCloud.HostRole` | `VirtualMachineId` (VM GUID) | Discovered per-VM object tracking configuration, heartbeat, integration services, and memory. |
 | `HyperVPrivateCloud.ClusterSharedVolume` | `System!System.LogicalEntity` | `HyperVPrivateCloud.HostRole` | `VolumeId` | Discovered CSV volume representing shared cluster disk storage. |
-| `HyperVPrivateCloud.ActiveDirectoryService` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `ServiceName` | Tracks host AD secure channel, domain controller connectivity, and AD site. |
-| `HyperVPrivateCloud.DnsService` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `ServiceName` | Tracks adapter DNS resolver configuration and forward name resolution. |
-| `HyperVPrivateCloud.DeploymentService` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `ServiceName` | Tracks Windows Deployment Services (WDSServer), TFTP, and PXE listeners. |
-| `HyperVPrivateCloud.MonitoringPipeline` | `System!System.ApplicationComponent` | `HyperVPrivateCloud.HostRole` | `PipelineId` | Tracks PowerShell 7 engine health, discovery freshness, and probe execution. |
+| `HyperVPrivateCloud.ActiveDirectoryService` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `DomainFqdn` | Tracks host AD secure channel, domain controller connectivity, and AD site. |
+| `HyperVPrivateCloud.DnsService` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `DnsServerAddresses` | Tracks adapter DNS resolver configuration and forward name resolution. |
+| `HyperVPrivateCloud.DeploymentService` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `ServerName` | Tracks Windows Deployment Services (WDSServer), TFTP, and PXE listeners. |
+| `HyperVPrivateCloud.PhysicalChassis` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `ChassisId` | Tracks physical server hardware, chassis, manufacturer, model, and serial number. |
+| `HyperVPrivateCloud.TopOfRackSwitch` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `SwitchId` | Tracks physical Top-of-Rack data switch uplinks, role, and chassis correlation. |
+| `HyperVPrivateCloud.OutOfBandSwitch` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `SwitchId` | Tracks physical Out-of-Band management network switch infrastructure. |
+| `HyperVPrivateCloud.EdgeFirewall` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `FirewallId` | Tracks perimeter firewall appliances, HA cluster role, and routing gateway health. |
+| `HyperVPrivateCloud.ConsoleServer` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `ApplianceId` | Tracks Opengear out-of-band console servers, cellular failover, and serial ports. |
+| `HyperVPrivateCloud.DhcpService` | `System!System.LogicalEntity` | Unhosted (DA Member) | `BoundaryId`, `ServiceId` | Tracks DHCP and IPAM scope availability and pool exhaustion. |
+| `HyperVPrivateCloud.MonitoringPipeline` | `Windows!Microsoft.Windows.LocalApplication` | `Windows!Microsoft.Windows.Computer` | `PipelineId` | Tracks PowerShell 7 engine health, discovery freshness, and probe execution. |
 
-### Capability Classes
+### Capability Classes & Adapters
 
 | Capability | Target Class ID | Base Class | Hosting Parent | Integration Scope |
 |---|---|---|---|---|
@@ -229,6 +235,10 @@ The following table documents every class implemented in the Hyper-V Private Clo
 | **Network ATC** | `HyperVPrivateCloud.Capability.NetworkATC.NetworkATCRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors Network ATC intent compliance, drift, and RDMA/QoS policies. |
 | **SDN** | `HyperVPrivateCloud.Capability.SDN.SDNRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors host-side Network Controller binding, certificates, and virtual networks. |
 | **VMM** | `HyperVPrivateCloud.Capability.VMM.VMMRole` | `Windows!Microsoft.Windows.ComputerRole` | `HyperVPrivateCloud.HostRole` | Monitors SCVMM fabric connectivity, agent versions, and failed jobs. |
+| **Opengear** | `HyperVPrivateCloud.Capability.Opengear.ConsoleServerRole` | `System!System.LogicalEntity` | Unhosted | Out-of-band serial console appliance, cellular failover, and rack sensors. |
+| **Fortinet** | `HyperVPrivateCloud.Capability.Fortinet.FirewallRole` | `System!System.LogicalEntity` | Unhosted | FortiGate perimeter firewall, HA failover, and firewall-managed DHCP scopes. |
+| **Dell OME** | `HyperVPrivateCloud.Capability.DellOME.HardwareChassisRole` | `System!System.LogicalEntity` | Unhosted | Dell OpenManage Enterprise physical server hardware, PSU, and thermal telemetry. |
+| **Generic SNMP** | `HyperVPrivateCloud.Capability.Network.GenericSNMPRole` | `System!System.LogicalEntity` | Unhosted | Vendor-neutral SNMP v2c/v3 adapter for any ToR switch (Cisco, Arista) or firewall. |
 
 
 ## Boundary variants

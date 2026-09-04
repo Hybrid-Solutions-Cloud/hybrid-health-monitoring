@@ -1,14 +1,22 @@
 # Current task
 
-## Completed — Sealed Production Release 1.0.7.0 Published & Pushed
+## Completed — Sealed Production Release 1.2.0.0 Published & Pushed
 
-- Built, verified, and sealed all 13 product Management Packs at version `1.0.7.0` using official Azure Key Vault release signing key `hcs-hybrid-health-monitoring-scom-release-private-key` (Token `54d0fb1159995c86`).
-- Built, verified, and validated all 15 deterministic bundles, including `Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.7.0.zip` and canonical 2-pack override starters.
+- Built, verified, and sealed all 13 product Management Packs at version `1.2.0.0` using official Azure Key Vault release signing key `hcs-hybrid-health-monitoring-scom-release-private-key` (Token `54d0fb1159995c86`).
+- Implemented the 360° Private Cloud Monitoring architecture with tagline: *"Private Cloud Powered by Hyper-V: A 360° View"*.
+- Added physical fabric classes and dynamic discoveries:
+  - `PhysicalChassis`: Physical server chassis hardware details (Vendor, Model, Serial Number).
+  - `TopOfRackSwitch`: Top-of-Rack data switches discovered via host physical NIC LLDP/CDP neighbor cache.
+  - `OutOfBandSwitch`: Out-of-band management switch fabric component.
+  - `EdgeFirewall`: Perimeter security edge firewalls (Fortinet, Palo Alto).
+  - `ConsoleServer`: Out-of-band console servers (Opengear OM2200/CM8100/IM7200).
+  - `DhcpService`: DHCP infrastructure service discovery (`DHCPServer`).
+- Built, verified, and validated all 15 deterministic bundles, including `Hyper-V-Private-Cloud-Monitoring-Deployment-1.2.0.0.zip` and canonical 2-pack override starters.
 - Validated with `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` (100% compliant).
-- Staged all assets to `docs/public/downloads/hyper-v-private-cloud/1.0.7.0/` and `docs/public/downloads/hyper-v-private-cloud/latest/`.
-- Updated all download links and documentation references across the site to `1.0.7.0`.
+- Staged all assets to `docs/public/downloads/hyper-v-private-cloud/1.2.0.0/` and `docs/public/downloads/hyper-v-private-cloud/latest/`.
+- Updated all download links, catalogs, and documentation references across the site to `1.2.0.0`.
 - VitePress documentation compiled cleanly with 0 broken links and 0 errors (`npm run docs:build`).
-- All changes committed and pushed to `origin main` (`d0ed798`). Git worktree completely clean.
+- All changes committed and pushed to `origin main`. Git worktree clean.
 
 ## Completed — Management Domain Health, DNS, PXE/WDS, and Operator Hub Diagnostics
 

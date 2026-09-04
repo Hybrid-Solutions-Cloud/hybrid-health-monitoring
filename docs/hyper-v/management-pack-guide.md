@@ -6,11 +6,11 @@ description: Public operator guide for building, installing, validating, tuning,
 # Hyper-V Management Pack administration guide
 
 This guide explains how Hyper-V Private Cloud Monitoring is installed, tuned, validated,
-upgraded, and removed. Version `1.0.7.0` is permanently sealed with public key token
+upgraded, and removed. Version `1.2.0.0` ("Private Cloud Powered by Hyper-V: A 360° View") is permanently sealed with public key token
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 1.0.7.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
+**[Download version 1.2.0.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
 the [operations guide](operations-guide.md) covers day-two use: console layout, tuning, tasks.
  Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
@@ -35,7 +35,7 @@ Each supported capability is a separate sealed adapter. Publisher-owned prerequi
 redistributed in the HCS download and must be installed before the corresponding adapter.
 
 “Four core MPs” is a dependency classification, not an instruction to reduce an existing
-installation to four files. The `1.0.7.0` deployment ZIP contains all 12 non-PureStorage solution
+installation to four files. The `1.2.0.0` deployment ZIP contains all 12 non-PureStorage solution
 MPs so one import upgrades Library, Discovery, Monitoring, Presentation, Cluster, Storage, S2D,
 File Services, Network ATC, Physical Network, SDN, and VMM together. Pure Storage is separate.
 
@@ -130,7 +130,7 @@ storage objects. The S2D package's Cluster and Windows Server prerequisites must
 and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
 volumes, and file shares.
 
-The current HCS product release is `1.0.7.0`. Independently, its S2D adapter references the lowest
+The current HCS product release is `1.2.0.0`. Independently, its S2D adapter references the lowest
 compatible **Microsoft.Storage.Library** identity while requiring Microsoft's inspected `1.0.47.4`
 S2D package as the supported minimum. These Microsoft dependency versions are not the HCS product
 version. The adapter contributes DA membership, health rollup, query-pipeline coverage, and views
@@ -340,7 +340,7 @@ discovery problem first.
 ## Troubleshoot a dark or partially upgraded installation
 
 First prove that the complete solution was upgraded. This command must return exactly 12 rows at
-`1.0.7.0` for the non-PureStorage deployment; any other version is a failed/partial import:
+`1.2.0.0` for the non-PureStorage deployment; any other version is a failed/partial import:
 
 ```powershell
 Get-SCOMManagementPack |
@@ -351,7 +351,7 @@ Get-SCOMManagementPack |
 ```
 
 If SDN, Storage, File Services, or Network ATC still shows an older version, re-import the 12 files from
-`Hyper-V-Private-Cloud-Monitoring-Deployment-1.0.7.0.zip` together. Do not change or remove the
+`Hyper-V-Private-Cloud-Monitoring-Deployment-1.2.0.0.zip` together. Do not change or remove the
 customer overrides, do not disable agent proxy, and do not shorten the seed intervals to compensate.
 
 For event 21414 or 21406, record the workflow name, command line, script arguments, stdout, stderr,
@@ -470,8 +470,8 @@ Generate a customer-owned pair with:
     -TuningTier Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
-    -Version '1.0.7.0' `
-    -ProductVersion '1.0.7.0' `
+    -Version '1.2.0.0' `
+    -ProductVersion '1.2.0.0' `
     -PublicKeyToken '54d0fb1159995c86' `
     -OutputPath './out/contoso-overrides'
 ```
@@ -479,7 +479,7 @@ Generate a customer-owned pair with:
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
 installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
 Neither product fact has a default because guessing produces unresolved references at import time.
-The product version and token above are the facts for release `1.0.7.0`; confirm them against the
+The product version and token above are the facts for release `1.2.0.0`; confirm them against the
 governed release manifest before generating files for a later release.
 
 The catalog explicitly names every workflow, target class, local module, property, and
@@ -490,7 +490,7 @@ performance collection. A custom profile can define different same-MP Discovery 
 groups; generation fails on cross-unsealed-MP group references.
 
 The [public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
-contains the canonical override templates generated for product `1.0.7.0` and token
+contains the canonical override templates generated for product `1.2.0.0` and token
 `54d0fb1159995c86`.
 
 Then:
@@ -566,9 +566,109 @@ Microsoft's import/removal documentation before proceeding.
 | Editing or resealing the product MP | Leave signed product artifacts unchanged and use supported overrides |
 | Testing only alert creation | Validate recovery, closure, rollup, maintenance behavior, and data volume too |
 
+## Complete Component, Object, and Workflow Reference (360° Architecture)
+
+Release `1.2.0.0` provides the complete 360° service model for Hyper-V Private Clouds. Below is the exhaustive reference of all components, managed classes, discoveries, unit monitors, performance rules, operator diagnostic tasks, and override parameters.
+
+### 1. Component & Object Model Reference
+
+| Component Group | Managed Classes Contained | Discovery Workflow | Health Rollup Policy |
+|---|---|---|---|
+| **Compute Component** | `HyperVPrivateCloud.HostRole`<br>`HyperVPrivateCloud.PhysicalChassis` | `HyperVPrivateCloud.Topology.Discovery`<br>(CIM Win32_ComputerSystemProduct) | Worst-of (HostRole)<br>Best-of / Non-critical (Chassis hardware) |
+| **Virtual Machines Component** | `HyperVPrivateCloud.VirtualMachine`<br>`HyperVPrivateCloud.VirtualMachineRuntime`<br>`HyperVPrivateCloud.VirtualHardDisk`<br>`HyperVPrivateCloud.VirtualNetworkAdapter` | `HyperVPrivateCloud.Topology.Discovery`<br>(Hyper-V WMI / V2 Virtualization) | Percentage rollup (25% threshold: 25% of VMs degraded/unhealthy triggers component warning/critical) |
+| **Storage Component** | `HyperVPrivateCloud.ClusterSharedVolume`<br>`HyperVPrivateCloud.VirtualHardDisk`<br>`Capability.Storage.StorageFabricRole`<br>`Capability.S2D.S2DFabricRole`<br>`Capability.PureStorage.PureStorageArrayRole` | `Discover-HyperVPrivateCloudTopology.ps1`<br>`Discover-HyperVPrivateCloudStorageTopology.ps1`<br>`Discover-HyperVPrivateCloudS2DTopology.ps1` | Worst-of for required CSV paths & S2D pool health; vendor-isolated for Pure Storage |
+| **Networking Component** | `HyperVPrivateCloud.VirtualSwitch`<br>`HyperVPrivateCloud.VirtualNetworkAdapter`<br>`HyperVPrivateCloud.TopOfRackSwitch`<br>`HyperVPrivateCloud.OutOfBandSwitch`<br>`HyperVPrivateCloud.EdgeFirewall`<br>`Capability.PhysicalNetwork.PhysicalNetworkRole`<br>`Capability.NetworkATC.NetworkATCRole`<br>`Capability.SDN.SDNRole` | `Discover-HyperVPrivateCloudTopology.ps1`<br>(Get-VMSwitch, LLDP Neighbor Discovery)<br>`Discover-HyperVPrivateCloudPhysicalNetworkTopology.ps1`<br>`Discover-HyperVPrivateCloudNetworkATCTopology.ps1` | Worst-of for virtual switch & SET uplinks; redundancy-aware for dual ToR data switches |
+| **Availability & Clustering** | `Capability.Cluster.ClusterRole`<br>`Capability.Cluster.AvailabilityContainsMicrosoftClusterNode`<br>`Capability.Cluster.AvailabilityContainsMicrosoftClusterGroup` | `Discover-HyperVPrivateCloudClusterTopology.ps1`<br>(MS Clustering WMI / Get-Cluster) | Worst-of for cluster quorum & core cluster resources; best-of for cluster networks |
+| **Management Infrastructure** | `HyperVPrivateCloud.ActiveDirectoryService`<br>`HyperVPrivateCloud.DnsService`<br>`HyperVPrivateCloud.DeploymentService`<br>`HyperVPrivateCloud.ConsoleServer`<br>`HyperVPrivateCloud.DhcpService`<br>`Capability.VMM.VMMRole` | `Discover-HyperVPrivateCloudTopology.ps1`<br>(Win32_ComputerSystem, Get-DnsClientServerAddress, Get-Service WDSServer, DHCPServer) | Worst-of for AD Secure Channel & DNS resolution; operational warning for PXE/WDS/DHCP |
+| **Monitoring Pipeline** | `HyperVPrivateCloud.MonitoringPipeline` | `Discover-HyperVPrivateCloudTopology.ps1` | Worst-of (ensures telemetry integrity; missing telemetry cannot present as Healthy) |
+
+---
+
+### 2. Unit Monitors Catalog
+
+All monitors use PowerShell 7 (`pwsh.exe`) typed data items with native SCOM Cookdown to ensure a single probe execution per host feeds multiple monitors without CPU overhead.
+
+| Target Class | Monitor Name | Monitor Type | Default Interval | Warning / Error Condition | Overrideable Parameters |
+|---|---|---|---|---|---|
+| `HostRole` | `Host.Compute.Cpu` | ConsecutiveSamples (3) | 300s | CPU utilization > 85% Warning, > 95% Critical | `Threshold`, `NumSamples`, `IntervalSeconds` |
+| `HostRole` | `Host.Compute.Memory` | ConsecutiveSamples (3) | 300s | Available Memory < 4096 MB Warning, < 2048 MB Critical | `Threshold`, `NumSamples`, `IntervalSeconds` |
+| `HostRole` | `Host.Compute.VMMS` | ServiceMonitor | 60s | `vmms` (Hyper-V Virtual Machine Management) service Stopped | `IntervalSeconds`, `GenerateAlert` |
+| `HostRole` | `Host.Compute.VmCompute` | ServiceMonitor | 60s | `vmcompute` (Hyper-V Host Compute Service) Stopped | `IntervalSeconds`, `GenerateAlert` |
+| `HostRole` | `Host.Network.VirtualSwitch` | TwoState (Cooked Bag) | 300s | External Virtual Switch missing active physical NIC uplinks | `IntervalSeconds`, `TimeoutSeconds` |
+| `HostRole` | `Host.Domain.SecureChannel` | TwoState (Cooked Bag) | 600s | AD Domain Controller secure channel broken or RPC failure | `IntervalSeconds`, `TimeoutSeconds` |
+| `HostRole` | `Host.Domain.DnsResolution` | TwoState (Cooked Bag) | 600s | DNS forward/reverse resolution failure for cluster/AD FQDN | `IntervalSeconds`, `TimeoutSeconds` |
+| `HostRole` | `Host.Management.PxeWds` | TwoState (Cooked Bag) | 900s | WDSServer service stopped or TFTP listener port 69 unresponsive | `IntervalSeconds`, `TimeoutSeconds` |
+| `HostRole` | `Host.Pipeline.Freshness` | TwoState (Heartbeat) | 300s | PowerShell 7 probe execution failure or probe age > 900s | `IntervalSeconds`, `MaxAgeSeconds` |
+| `VirtualMachine` | `VM.State.Heartbeat` | TwoState (Cooked Bag) | 60s | VM Integration Services heartbeat lost or missed | `IntervalSeconds`, `GenerateAlert` |
+| `VirtualMachine` | `VM.State.Operational` | TwoState (Cooked Bag) | 60s | VM in Paused, Saved, or Suspended state unexpectedly | `IntervalSeconds`, `ExpectedState` |
+| `VirtualMachine` | `VM.Storage.VhdDisconnection` | TwoState (Cooked Bag) | 300s | Attached VHD/VHDX disk missing, detached, or inaccessible | `IntervalSeconds`, `TimeoutSeconds` |
+| `ClusterSharedVolume` | `CSV.State.VolumeStatus` | TwoState (Cooked Bag) | 120s | CSV volume state in Redirected Access, Detached, or Paused | `IntervalSeconds`, `RedirectedIsWarning` |
+| `ClusterSharedVolume` | `CSV.Capacity.FreeSpace` | TwoState (Threshold) | 300s | CSV free space < 15% Warning, < 5% Critical | `WarningThreshold`, `CriticalThreshold` |
+| `ClusterSharedVolume` | `CSV.Performance.Latency` | ConsecutiveSamples (3) | 300s | Disk read/write latency > 25ms Warning, > 50ms Critical | `LatencyThresholdMs`, `NumSamples` |
+| `Capability.S2D` | `S2D.Pool.Health` | TwoState (WMI Event) | Event / 300s | Storage Spaces Direct Pool Degraded or Unhealthy | `IntervalSeconds`, `GenerateAlert` |
+| `Capability.Storage` | `Storage.MPIO.PathRedundancy` | TwoState (Cooked Bag) | 300s | Active multipath count < configured optimized paths | `MinRequiredPaths`, `IntervalSeconds` |
+| `Capability.PhysicalNetwork` | `PhysicalNetwork.Link.Flapping` | ConsecutiveSamples (2) | 120s | Physical NIC link flap count > 3 in 5 minutes | `MaxFlapsPerInterval`, `IntervalSeconds` |
+| `Capability.NetworkATC` | `NetworkATC.Intent.Drift` | TwoState (Cooked Bag) | 600s | Host network configuration drifted from cluster Intent | `IntervalSeconds`, `AutoRemediate` |
+| `Capability.SDN` | `SDN.Host.Binding` | TwoState (Cooked Bag) | 300s | Host certificate expired or Network Controller connection lost | `IntervalSeconds`, `GenerateAlert` |
+
+---
+
+### 3. Performance Rules & Collection Catalog
+
+| Target Class | Rule Name | Counter Collected | Default Interval | Purpose |
+|---|---|---|---|---|
+| `HostRole` | `Host.Perf.CpuTotal` | `\Hyper-V Hypervisor Logical Processor(_Total)\% Total Run Time` | 300s | Core cluster host CPU load |
+| `HostRole` | `Host.Perf.MemoryAvailable` | `\Memory\Available MBytes` | 300s | Host physical memory headroom |
+| `HostRole` | `Host.Perf.ContextSwitches` | `\System\Context Switches/sec` | 300s | Kernel and hypervisor thread switching density |
+| `VirtualMachine` | `VM.Perf.CpuUsage` | `\Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time` | 300s | Individual VM compute consumption |
+| `VirtualMachine` | `VM.Perf.MemoryAssigned` | `\Hyper-V Dynamic Memory VM(*)\Physical Memory` | 300s | Assigned memory footprint |
+| `ClusterSharedVolume` | `CSV.Perf.ReadLatency` | `\Cluster CSV File System(*)\Avg. sec/Read` | 300s | Storage read latency telemetry |
+| `ClusterSharedVolume` | `CSV.Perf.WriteLatency` | `\Cluster CSV File System(*)\Avg. sec/Write` | 300s | Storage write latency telemetry |
+| `ClusterSharedVolume` | `CSV.Perf.IopsTotal` | `\Cluster CSV File System(*)\IO/sec` | 300s | Overall storage IOPS demand |
+| `Capability.PhysicalNetwork` | `PhysicalNetwork.Perf.InDiscard` | `\Network Interface(*)\Packets Received Discarded` | 300s | Inbound switch/NIC buffer drops |
+| `Capability.PhysicalNetwork` | `PhysicalNetwork.Perf.OutDiscard` | `\Network Interface(*)\Packets Outbound Discarded` | 300s | Outbound port queue congestion drops |
+
+---
+
+### 4. Operations Hub & Deep Troubleshooting Diagnostic Tasks
+
+Operators can invoke these targeted PowerShell 7 tasks directly from the SCOM Operations Console against discovered objects:
+
+| Target Class | Task Name | Display Name | Parameters | Purpose & Output |
+|---|---|---|---|---|
+| `HostRole` | `Task.TestDomainHealth` | **Test AD Secure Channel & Domain** | `-Verbose` | Validates Netlogon secure channel, PDC role connectivity, and replication status. |
+| `HostRole` | `Task.TestDnsResolution` | **Test DNS Resolution & Latency** | `-QueryName`, `-Server` | Resolves forward/reverse DNS records across all configured resolvers and measures query latency. |
+| `HostRole` | `Task.TestPortConnectivity` | **Test TCP / UDP Port Connectivity** | `-Destination`, `-Port` | Tests socket connection to management endpoints (SCVMM: 8100, SCOM: 5723, WDS: 69, SMB: 445). |
+| `HostRole` | `Task.TestPxeWdsHealth` | **Test PXE / WDS Deployment Service** | `-TestTftp` | Verifies `WDSServer` service, TFTP UDP 69 binding, and PXE boot provider authorization. |
+| `PhysicalNetwork` | `Task.GetLldpNeighbor` | **Discover ToR Switch Neighbor (LLDP/CDP)** | `-InterfaceName` | Reads host physical NIC neighbor cache; returns connected switch name, chassis ID, port ID, and VLANs. |
+| `PhysicalNetwork` | `Task.PfcEtsCounters` | **Query RDMA & PFC / ETS Pause Counters** | `-InterfaceName` | Reports RDMA Priority Flow Control (PFC) pause frames sent/received and buffer congestion drops. |
+| `VirtualMachine` | `Task.GetVmDiagnosticSummary` | **Get VM Diagnostic Summary** | `-VmName` | Detailed VM dump: uptime, memory allocation, vCPU count, integration component versions, checkpoint tree. |
+| `ClusterSharedVolume`| `Task.GetCsvDiagnostics` | **Get CSV Health & Coordinator State** | `-VolumeName` | Reports CSV coordinator node, direct vs. redirected I/O status, block size, and storage subsystem health. |
+
+---
+
+### 5. Overrides & Tuning Tiers
+
+Overrides are managed strictly through customer-owned, unsealed Management Packs:
+* **`HyperVPrivateCloud.Discovery.Overrides`**: Adjusts discovery intervals (default 1800s; Lab 600s, Strict 3600s).
+* **`HyperVPrivateCloud.Monitoring.Overrides`**: Adjusts monitor enablement, sample counts, thresholds, and alert generation.
+
+| Parameter | Lab Tier | Standard Tier (Default) | Strict Tier |
+|---|---|---|---|
+| **Host CPU Alert Threshold** | 90% (2 samples) | 85% (3 samples) | 80% (2 samples) |
+| **Available Memory Threshold** | 1024 MB | 2048 MB | 4096 MB |
+| **CSV Latency Threshold** | 50 ms | 25 ms | 15 ms |
+| **CSV Free Space Warning** | 10% | 15% | 20% |
+| **VM Degradation Rollup** | 50% threshold | 25% threshold | 10% threshold |
+| **Discovery Schedule** | Every 10 min | Every 30 min | Every 60 min |
+
+---
+
 ## Related design
 
 - [Override and tuning architecture](../design/hyper-v/override-and-tuning-architecture.md)
 - [Management Pack structure](../design/hyper-v/management-pack-structure.md)
 - [Monitoring catalog and threshold policy](monitoring-catalog.md)
 - [Validation and release architecture](../design/hyper-v/validation-and-release.md)
+- [Distributed Application design](../design/hyper-v/distributed-application.md)
+

@@ -18,7 +18,7 @@ src/
 |---|---|---|---|
 | Azure Local | SCOM Management Pack | Committed | `azure-local/scom-mp/` |
 | Azure Local | Azure Monitor Health Models | Committed | `azure-local/azure-monitor/` |
-| Hyper-V | SCOM Management Pack Suite | Production release (1.0.7.0) | `hyper-v/scom-mp/` |
+| Hyper-V | SCOM Management Pack Suite | Production release (1.2.0.0) | `hyper-v/scom-mp/` |
 
 Azure Local and Hyper-V SCOM are independent products. They do not share sealed libraries,
 classes, namespaces, packages, Distributed Applications, signing identities, or runtime references.
