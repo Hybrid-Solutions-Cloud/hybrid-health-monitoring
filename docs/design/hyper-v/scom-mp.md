@@ -5,7 +5,7 @@ description: Architecture map, research gates, and implementation contracts for 
 
 # Hyper-V SCOM Management Pack design
 
-This is the active first delivery lane. Hyper-V Private Cloud Monitoring `1.3.3.0` and its
+This is the active first delivery lane. Hyper-V Private Cloud Monitoring `1.3.4.0` and its
 governed release assets are published in this repository under public key token `54d0fb1159995c86`.
 Its design contracts are authoritative for Hyper-V.
 

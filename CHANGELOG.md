@@ -1,5 +1,106 @@
 # Changelog
 
+## [1.3.4.0] — 2026-09-04
+
+Closes every defect found in the 1.3.3.0 code audit and completes the 360° model: the physical
+fabric is now discovered and probed as itself rather than inferred from the Hyper-V host. All 13
+sealed product MPs carry version `1.3.4.0`, signed with public key token `54d0fb1159995c86`.
+
+**The physical fabric is now real monitoring**
+
+Five fabric monitors previously read the Hyper-V host's property bag, so the suite reported health
+for equipment it had never contacted:
+
+- chassis health came from `Win32_ComputerSystem.Status`, which is the operating system's view of the
+  computer rather than baseboard hardware;
+- top-of-rack health reported `Good` whenever any physical NIC was up; and
+- edge-firewall health merely pinged the host's default gateway.
+
+Each of the six fabric classes now carries health of its own, measured at the device. A new
+`HyperVPrivateCloud.Fabric.Seed.Discovery` creates the objects from overridable seed parameters, and
+a per-device probe runs against the address on the discovered object, layering evidence: a
+management port that accepts a connection is `Good`, ICMP alone is `Warning` because the device is
+powered but not manageable, and neither is `Critical`. Chassis defaults to ports 443 and 623 for
+Redfish and IPMI, with a local `root/wmi` `Microsoft_IPMI` fallback so the object exists before any
+endpoint is declared. `OutOfBandSwitch` gains the unit monitor it never had.
+
+**Declaring your fabric — required for switches, firewalls and console servers**
+
+Switches, firewalls, console servers and remote BMCs cannot host a SCOM agent and do not announce
+themselves, so they are declared rather than detected. Until you declare them, those classes stay
+empty and no monitor evaluates — the correct outcome for a site that has supplied no endpoints, but
+it does mean the fabric views are empty on a fresh import.
+
+Override `HyperVPrivateCloud.Fabric.Seed.Discovery` (target: `HyperVPrivateCloud.HostRole`, or a
+group of hosts) and set the parameters for the equipment behind those hosts. Each takes a
+comma-separated list of `Name=Address` pairs:
+
+| Parameter | Devices |
+|---|---|
+| `TopOfRackSwitches` | Data-fabric leaf/ToR switches |
+| `OutOfBandSwitches` | Out-of-band management switches |
+| `EdgeFirewalls` | Perimeter firewalls |
+| `ConsoleServers` | Opengear or equivalent console servers |
+| `ChassisBmcAddresses` | Remote baseboard management controllers |
+
+```text
+TopOfRackSwitches   = LAB-RTP-DCF-LEAF-11=10.1.2.11,LAB-RTP-DCF-LEAF-12=10.1.2.12
+OutOfBandSwitches   = LAB-RTP-OOB-SW-H77=10.1.2.60
+EdgeFirewalls       = lab-rtp-inf-fw=10.1.2.1
+ConsoleServers      = lab-rtp-console=10.1.2.50
+ChassisBmcAddresses = hv-sdr-01-bmc=10.1.3.11,hv-sdr-02-bmc=10.1.3.12
+```
+
+`ManagementPorts` on each fabric monitor overrides the default probe ports where a site listens
+elsewhere. A device with no declared address reports `NotApplicable` and raises no event.
+
+**Cookdown**
+
+Network ATC drops from seven DataSource configurations to four. The six host-level facets —
+Capability, Global, GlobalDrift, EtsPolicy, QosTrafficClass and ClusterConsistency — share one
+`Mode=All` acquisition, each monitor selecting its facet through `PropertyName`. Intent-scoped
+facets stay separate deliberately: they are keyed per intent instance and already cook down through
+the intent inventory path. Physical Network drops from five to three the same way. Cadences were
+aligned because differing `IntervalSeconds` alone defeats cookdown.
+
+Final state: Storage 6, VMM 5, Network ATC 4, Physical Network 3, Cluster 3, Storage Spaces Direct
+3, File Services 2. The remaining groups are per object type or deliberately different cadences, not
+fan-out.
+
+**Correctness fixes**
+
+- A conditional assignment read through `.Count` no longer collapses to `$null` under StrictMode —
+  the Event 8702 family. The build suite now fails any script that reintroduces the pattern.
+- The cluster role is gated to the cluster's core virtual server. Discovery targets every clustered
+  virtual server — SQL, VMM and others — each reading the same `HKLM:\Cluster\ClusterName`, which
+  produced duplicate cluster objects.
+- Cluster Shared Volume failover churn counts distinct role transitions rather than raw events 1069,
+  1205 and 1254; event 1069 fires once per failed resource, which is how a healthy cluster reported
+  1,152 failovers.
+- Quorum thresholds moved from Warning at margin 1 to Warning at 0 and Critical at -1. A healthy
+  two-node cluster with a witness has a margin of exactly 1, so the old threshold alerted on every
+  correctly configured cluster.
+- A collection that fails to enumerate now downgrades a `Good` result to `Warning` instead of
+  reporting health it never measured.
+- VMM facets other than the management service report `Warning` rather than `NotApplicable` when
+  they throw, so a real failure is no longer indistinguishable from an absent capability.
+- Probe exceptions log `Exception.ToString()` rather than `Exception.Message`, so the failing frame
+  reaches the operations log.
+
+**Testing**
+
+`tests/unit/HcsProbeFixture.psm1` runs a real probe template in a child `pwsh` with the SCOM script
+API replaced by a capture shim, and returns the property bag it produced. This tests what a probe
+*reports* for environments the build host does not have — previously only that it ran. Eleven
+fixtures assert that an undeclared device reports `NotApplicable` with no event, that an unreachable
+device reports `Critical` and never `Good` across all five device kinds, that a device answering a
+real listener reports `Good`, and that seed discovery creates exactly what was declared and ignores
+malformed entries without throwing. The harness throws when a probe produces no bag, so a broken
+fixture fails loudly rather than passing on `$null`.
+
+Suite: 224 tests, 0 failures. Every pack passes XSD schema validation, Microsoft VSAE verification
+and strong-name verification.
+
 ## [1.3.3.0] — 2026-09-04
 
 Corrects a schema defect that made every 1.3.2.0 management pack unimportable. SCOM rejected the

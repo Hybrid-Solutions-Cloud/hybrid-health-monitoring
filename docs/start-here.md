@@ -32,7 +32,7 @@ Hyper-V and Azure Local are separate products with separate management packs and
 This is the fully realized, production-ready flagship solution. It consists of four core packs plus optional capability packs based on your infrastructure (Clustering, Storage, S2D, File Services, Physical Network, Network ATC, SDN, VMM, and Pure Storage).
 
 1. **[Check the prerequisites](/hyper-v/prerequisites)**: Ensure required Microsoft base packs (Windows Server, Cluster, IIS/PowerShell) are imported.
-2. **[Download the release](/downloads/hyper-v-private-cloud)**: Download the sealed production 12-pack bundle (`Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.3.0.zip`).
+2. **[Download the release](/downloads/hyper-v-private-cloud)**: Download the sealed production 12-pack bundle (`Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.4.0.zip`).
 3. **[Follow the administration guide](/hyper-v/management-pack-guide)**:
    - Import the sealed `.mp` packs into SCOM.
    - Configure agent proxying on all cluster nodes and Hyper-V hosts.

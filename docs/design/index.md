@@ -16,7 +16,7 @@ architecture, deployment artifacts, health state, release lifecycle, or navigati
 | Platform | SCOM Management Pack | Azure Monitor Health Models |
 |---|---|---|
 | **Azure Local** | [Accepted design baseline](azure-local/scom-mp.md) | [Accepted baseline; API revalidation next](azure-local/azure-monitor.md) |
-| **Hyper-V** | [Production sealed suite (1.3.3.0)](hyper-v/scom-mp.md) | Not applicable (100% on-premises SCOM) |
+| **Hyper-V** | [Production sealed suite (1.3.4.0)](hyper-v/scom-mp.md) | Not applicable (100% on-premises SCOM) |
 
 ## Source ownership
 

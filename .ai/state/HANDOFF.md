@@ -1,5 +1,69 @@
 # Handoff
 
+## 2026-09-04 — 1.3.4.0 sealed, published, and live
+
+**Branch:** `main`. **Source commit sealed:** `25cc9b3691268e245233368d01314d3af79ec364`.
+Closes all eleven defects from the 1.3.3.0 code audit and completes the 360° model.
+
+### What changed
+
+- **Physical fabric is monitored at the device.** Five fabric monitors previously read the Hyper-V
+  host's property bag, so the suite reported health for equipment it had never contacted (chassis
+  health from `Win32_ComputerSystem.Status`, ToR `Good` whenever any physical NIC was up, edge
+  firewall = ping the host's default gateway). New `HyperVPrivateCloud.Fabric.Seed.Discovery`
+  declares devices through overridable `Name=Address` seed parameters; new
+  `Fabric.Device.MonitorType` probes each device's own management address, layering evidence
+  (management port = Good, ICMP only = Warning, neither = Critical). `OutOfBandSwitch` gained the
+  unit monitor it never had. All six fabric classes now carry their own health.
+- **Cookdown.** Network ATC 7→4 DataSource configurations, Physical Network 5→3. Final state:
+  Storage 6, VMM 5, ATC 4, PhysicalNetwork 3, Cluster 3, S2D 3, FileServices 2 — the remainder are
+  per object type or deliberately different cadences, not fan-out.
+- **Correctness.** StrictMode null-collapse (Event 8702 family) fixed and now guarded by a build
+  assertion; cluster role gated to the core virtual server (discovery targets every clustered
+  virtual server, producing duplicates); CSV failover churn counts distinct role transitions rather
+  than raw 1069/1205/1254; quorum thresholds moved Warning 1→0, Critical 0→-1; failed collections
+  downgrade Good→Warning; non-management-service VMM facets report Warning rather than
+  NotApplicable on exception; probes log `Exception.ToString()`.
+- **Testing.** `tests/unit/HcsProbeFixture.psm1` + 11 environment fixtures assert what a probe
+  *reports* for environments this build host lacks. It found a real chassis-discovery bug on first
+  run and a fake-green test of its own.
+- **Docs.** New "Declare the physical fabric" section in the management pack guide (seed format,
+  probe ports, evaluation table, the agent-reachability caveat); download-page catalogue counts
+  corrected against the sealed bytes (171 unit monitors, 121 dependency roll-ups, 80 rules,
+  23 discoveries, 124 views, 74 tasks, 254 knowledge articles); 26 version references across 12
+  Markdown files; CHANGELOG entry.
+
+### Commands run and results
+
+- `Invoke-Pester tests/unit` → **224 passed, 0 failed** (Build, EnvironmentFixture, Integration,
+  Overrides, ProbeSmoke, Release, MpDependencies.Docs). All packs schema-valid.
+- `New-HyperVPrivateCloudReleasePackage.ps1 -Version 1.3.4.0 -OverrideVersion 1.3.4.0 -BuildMode
+  Release -ApprovedReleaseSigningIdentity`, Key Vault key, deps `D:/tmp/hcs-hyperv-deps-1.4.0.0`
+  → 13 sealed MPs, 2 override MPs, 15 deterministic bundles, token `54d0fb1159995c86`.
+- `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` → **releaseEligible True**.
+- Sealed-byte assertions (unseal → gzip → UTF-16LE, not grep on the `.mp`): fabric seed parameters
+  and discovery present in Discovery; `Fabric.Device.MonitorType` and the probe body present in
+  Monitoring; cluster `OrdinalIgnoreCase` gate present in Cluster; `modesToRun` present in VMM;
+  `Get-HcsModeResult` present in Network ATC; `ModuleTypes` grouped in schema order in Library.
+- Assets published to `docs/public/downloads/hyper-v-private-cloud/1.3.4.0/` and `latest/`,
+  verified SHA-256 identical between the two. No prior version directory was touched.
+
+### Blockers / open questions
+
+- **Nothing has run against a live SCOM management group or a real Hyper-V host.** Runtime
+  acceptance is the 24h soak against the audit baseline: Error 22→0, Uninitialized 13→0, alert
+  repeats flat from 5,578, zero events 8702/8903/8301/8905/5402.
+- Environment prerequisite on the operator side: `HAAS\svc-scom-vmm` is not bound to the VMM Run As
+  profile, so VMM facets cannot be validated until it is.
+- The fabric views stay empty until an operator sets the seed overrides for their own equipment.
+
+### Next steps
+
+1. Import 1.3.4.0 as a version increase over 1.3.3.0, in dependency order.
+2. Bind the VMM Run As account; set the fabric seed overrides.
+3. Run the 24h soak and compare against the audit baseline.
+
+
 ## 2026-09-03 — Resolved SCOM HAAS-SDR Audit Findings & Released 1.2.0.0
 
 - **Fixed All 7 Confirmed Runtime Defects from Audit Summary**:
