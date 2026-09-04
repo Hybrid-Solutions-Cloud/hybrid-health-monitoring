@@ -51,6 +51,17 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
             $module.SelectSingleNode('.//CommandLine').InnerText | Should -Match '-NoProfile -NonInteractive.+-File'
         }
 
+        # FailoverClusters and VirtualMachineManager ship only as Windows PowerShell modules, so their
+        # workflows run on a 5.1 host. Both families must exist, each pinned to its own executable.
+        $winPsDiscovery = $script:Library.SelectSingleNode("//DataSourceModuleType[@ID='HyperVPrivateCloud.WinPS.DiscoveryProvider']")
+        $winPsProbe = $script:Library.SelectSingleNode("//ProbeActionModuleType[@ID='HyperVPrivateCloud.WinPS.PropertyBagProbe']")
+        $winPsWrite = $script:Library.SelectSingleNode("//WriteActionModuleType[@ID='HyperVPrivateCloud.WinPS.WriteAction']")
+        foreach ($module in @($winPsDiscovery, $winPsProbe, $winPsWrite)) {
+            $module | Should -Not -BeNullOrEmpty
+            $module.SelectSingleNode('.//ApplicationName').InnerText | Should -Be '%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe'
+            $module.SelectSingleNode('.//CommandLine').InnerText | Should -Match '-NoProfile -NonInteractive.+-File'
+        }
+
         $artifactText = (Get-ChildItem -LiteralPath $script:Output -Filter '*.xml' | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
         $artifactText | Should -Not -Match 'Microsoft\.Windows\.(TimedPowerShell|PowerShellPropertyBag|PowerShellWriteAction)'
         foreach ($scriptBody in @($script:Discovery.SelectNodes('//ScriptBody')) + @($script:Monitoring.SelectNodes('//ScriptBody')) + @(
@@ -59,7 +70,10 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
                 $script:FileServicesCapability.SelectNodes('//ScriptBody')) + @($script:PhysicalNetworkCapability.SelectNodes('//ScriptBody')) + @(
                 $script:NetworkAtcCapability.SelectNodes('//ScriptBody')) + @($script:SdnCapability.SelectNodes('//ScriptBody')) + @(
                 $script:VmmCapability.SelectNodes('//ScriptBody'))) {
-            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            # Cluster and VMM run on the Windows PowerShell host; everything else on PowerShell 7.
+            # The declared edition must match the probe module that executes the script.
+            $expectedVersion = if ($scriptBody.OwnerDocument.DocumentElement.OuterXml -match 'HyperVPrivateCloud\.WinPS\.') { '5.1' } else { '7.0' }
+            $scriptBody.InnerText | Should -Match ("^#Requires -Version " + [regex]::Escape($expectedVersion))
             $scriptBody.InnerText | Should -Match 'Set-StrictMode -Version Latest'
             # Task scripts (DiagnosticSummary and the *.Task.ps1 catalogue) return text through the write action, not a property bag.
             if ($scriptBody.ParentNode.ScriptName -notlike '*DiagnosticSummary*' -and $scriptBody.ParentNode.ScriptName -notlike '*.Task.ps1' -and $scriptBody.ParentNode.ScriptName -notlike '*HostTask.ps1') {
@@ -750,7 +764,18 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
     }
 
     It 'models complete Hyper-V over SMB share, path, and VHDX mapping topology' {
-        @($script:FileServicesCapability.SelectNodes('//ClassType')).Count | Should -Be 3
+        @($script:FileServicesCapability.SelectNodes('//ClassType')).Count | Should -Be 4
+
+        # File Services must not evaluate hosts that store no VHDs on SMB. All twelve monitors target
+        # the participation class, and discovery creates it only when a UNC-backed disk is present.
+        $participation = 'HyperVPrivateCloud.Capability.FileServices.HostParticipation'
+        $script:FileServicesCapability.SelectSingleNode("//ClassType[@ID='$participation']") | Should -Not -BeNullOrEmpty
+        $monitors = @($script:FileServicesCapability.SelectNodes('//UnitMonitor'))
+        $monitors.Count | Should -Be 12
+        foreach ($monitor in $monitors) { [string]$monitor.Target | Should -Be $participation }
+        $discoveryScripts = (@($script:FileServicesCapability.SelectNodes('//ScriptBody')) | ForEach-Object { $_.InnerText }) -join "`n"
+        $discoveryScripts | Should -Match 'if \(\$uncDiskCount -gt 0\)'
+        $discoveryScripts | Should -Match "CreateClassInstance\(.+$([regex]::Escape($participation))"
         foreach ($classId in @('SmbShare', 'SmbClientPath', 'SmbVhdxMapping')) {
             $script:FileServicesCapability.SelectSingleNode("//ClassType[@ID='HyperVPrivateCloud.Capability.FileServices.$classId']") | Should -Not -BeNullOrEmpty
         }
@@ -901,7 +926,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'contains syntactically valid PowerShell 7 Network ATC scripts' {
         foreach ($scriptBody in $script:NetworkAtcCapability.SelectNodes('//ScriptBody')) {
-            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $expectedVersion = if ($scriptBody.OwnerDocument.DocumentElement.OuterXml -match 'HyperVPrivateCloud\.WinPS\.') { '5.1' } else { '7.0' }
+            $scriptBody.InnerText | Should -Match ("^#Requires -Version " + [regex]::Escape($expectedVersion))
             $tokens = $null
             $parseErrors = $null
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
@@ -975,7 +1001,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'contains syntactically valid PowerShell 7 SDN scripts and actionable knowledge' {
         foreach ($scriptBody in $script:SdnCapability.SelectNodes('//ScriptBody')) {
-            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $expectedVersion = if ($scriptBody.OwnerDocument.DocumentElement.OuterXml -match 'HyperVPrivateCloud\.WinPS\.') { '5.1' } else { '7.0' }
+            $scriptBody.InnerText | Should -Match ("^#Requires -Version " + [regex]::Escape($expectedVersion))
             $tokens = $null
             $parseErrors = $null
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null
@@ -1078,7 +1105,8 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'contains syntactically valid PowerShell 7 VMM scripts and actionable knowledge' {
         foreach ($scriptBody in $script:VmmCapability.SelectNodes('//ScriptBody')) {
-            $scriptBody.InnerText | Should -Match '^#Requires -Version 7\.0'
+            $expectedVersion = if ($scriptBody.OwnerDocument.DocumentElement.OuterXml -match 'HyperVPrivateCloud\.WinPS\.') { '5.1' } else { '7.0' }
+            $scriptBody.InnerText | Should -Match ("^#Requires -Version " + [regex]::Escape($expectedVersion))
             $tokens = $null
             $parseErrors = $null
             [System.Management.Automation.Language.Parser]::ParseInput($scriptBody.InnerText, [ref]$tokens, [ref]$parseErrors) | Out-Null

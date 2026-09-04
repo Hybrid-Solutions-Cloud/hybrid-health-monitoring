@@ -70,9 +70,11 @@ try {
     Add-HcsProperty $hostRole "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.HostRole']/HostId$" $HostId
 
     $shares = @{}
+    $uncDiskCount = 0
     foreach ($vm in @(Get-VM -ErrorAction SilentlyContinue)) {
         $vmId = $vm.Id.ToString('D').ToLowerInvariant()
         foreach ($drive in @(Get-VMHardDiskDrive -VM $vm -ErrorAction SilentlyContinue | Where-Object Path -Like '\\*')) {
+            $uncDiskCount++
             $identity = Get-HcsUncIdentity $drive.Path
             if ($null -eq $identity) { continue }
             if (-not $shares.ContainsKey($identity.ShareId)) {
@@ -142,6 +144,18 @@ try {
             Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualMachine']$" $mapping $vmInstance
             Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualHardDisk']$" $mapping $disk
         }
+    }
+
+    # Participation object: created ONLY where this host actually stores VHDs on an SMB/UNC path.
+    # All File Services monitors target this class, so a host with no UNC-backed storage is not
+    # evaluated at all rather than being evaluated and reported NotApplicable twelve times over.
+    if ($uncDiskCount -gt 0) {
+        $participation = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostParticipation']$")
+        Add-HcsProperty $participation "$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$" $ComputerName
+        Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostParticipation']/ParticipationId$" 'smb-storage'
+        Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostParticipation']/UncBackedDiskCount$" $uncDiskCount
+        Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.FileServices.HostParticipation']/ShareCount$" $shares.Count
+        Add-HcsProperty $participation "$MPElement[Name='System!System.Entity']/DisplayName$" "SMB storage participation on $ComputerName"
     }
     $api.Return($script:DiscoveryData)
 }
