@@ -18,7 +18,8 @@ function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== 
 $lines.Add("Hyper-V Private Cloud cluster task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
 try {
     if (-not (Get-Module -ListAvailable -Name FailoverClusters -ErrorAction SilentlyContinue)) { throw 'The FailoverClusters PowerShell module is not available on this node.' }
-    Import-Module FailoverClusters -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+    try { Import-Module -Name FailoverClusters -SkipEditionCheck -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null } catch { }
+    Import-Module -Name FailoverClusters -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
     $cluster = Get-Cluster -ErrorAction Stop
     switch ($Action) {
         'ClusterSummary' {

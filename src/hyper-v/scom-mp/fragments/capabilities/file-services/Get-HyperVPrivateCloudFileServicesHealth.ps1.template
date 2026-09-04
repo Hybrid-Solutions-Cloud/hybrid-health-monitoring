@@ -58,7 +58,7 @@ function Get-HcsRequiredShare {
             if ($match.Success) { [void]$result.Add("$($match.Groups['server'].Value)|$($match.Groups['share'].Value)") }
         }
     }
-    return $result
+    return @($result)
 }
 
 function Get-HcsEventCount {
@@ -66,7 +66,7 @@ function Get-HcsEventCount {
     try {
         $filter = @{ LogName = $LogName; StartTime = (Get-Date).AddMinutes(-$WindowMinutes) }
         if (-not [string]::IsNullOrWhiteSpace($ProviderName)) { $filter['ProviderName'] = $ProviderName }
-        if ($EventId.Count -gt 0) { $filter['Id'] = $EventId }
+        if ($null -ne $EventId -and @($EventId).Count -gt 0) { $filter['Id'] = $EventId }
         return @(Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue).Count
     }
     catch { return 0 }
@@ -168,10 +168,10 @@ try {
             $shareAvailabilityStateDetail = 'The SMB PowerShell capability is unavailable on this host, so SMB detail monitoring is skipped.'
         }
         else {
-            $required = if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') { @(Get-HcsRequiredShare) } else { @() }
+            $required = @(if (Test-HcsCapability -ModuleName 'Hyper-V' -CommandName 'Get-VM') { Get-HcsRequiredShare } else { @() })
             $connections = @(Get-SmbConnection -ErrorAction SilentlyContinue)
-            $channels = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { @(Get-SmbMultichannelConnection -ErrorAction SilentlyContinue) } else { @() }
-            $localShares = if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbShare') { @(Get-SmbShare -ErrorAction SilentlyContinue | Where-Object { -not [bool](Get-HcsProperty -InputObject $_ -Name 'Special') }) } else { @() }
+            $channels = @(if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbMultichannelConnection') { Get-SmbMultichannelConnection -ErrorAction SilentlyContinue } else { @() })
+            $localShares = @(if (Test-HcsCapability -ModuleName 'SmbShare' -CommandName 'Get-SmbShare') { Get-SmbShare -ErrorAction SilentlyContinue | Where-Object { -not [bool](Get-HcsProperty -InputObject $_ -Name 'Special') } } else { @() })
 
             # Share availability across every UNC path that backs a virtual hard disk.
             if ($required.Count -eq 0) {
@@ -399,16 +399,7 @@ catch {
     }
 }
 
-# A failed detail probe must be visible: every facet state the probe never reached becomes Warning with the
-# failure text, instead of NotApplicable (which the monitor types evaluate as healthy).
-if ((Get-Variable -Name probeFailed -ValueOnly -ErrorAction SilentlyContinue) -and ($Facet -eq 'Detail')) {
-    foreach ($stateVariable in @('shareAvailabilityState', 'clientSessionErrorState', 'serverSessionErrorState', 'signingState', 'encryptionState', 'continuousAvailabilityState', 'witnessState', 'multichannelPathState', 'readLatencyState', 'writeLatencyState')) {
-        if ((Get-Variable -Name $stateVariable -ValueOnly -ErrorAction SilentlyContinue) -eq 'NotApplicable') {
-            Set-Variable -Name $stateVariable -Value 'Warning'
-            Set-Variable -Name ($stateVariable + 'Detail') -Value $serviceStateDetail
-        }
-    }
-}
+
 
 $bag.AddValue('FileServicesState', $state)
 $bag.AddValue('FileServicesStateDetail', $detail)

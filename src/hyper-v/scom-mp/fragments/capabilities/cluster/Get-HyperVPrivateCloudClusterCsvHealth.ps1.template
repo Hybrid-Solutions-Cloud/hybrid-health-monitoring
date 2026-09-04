@@ -7,9 +7,19 @@ $WarningPreference = 'SilentlyContinue'
 
 function Test-HcsCapability {
     param([string]$ModuleName, [string]$CommandName)
-    if (-not (Get-Module -ListAvailable -Name $ModuleName -ErrorAction SilentlyContinue)) { return $false }
-    try { Import-Module $ModuleName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue }
-    catch { return $false }
+    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
+    try { Import-Module -Name $ModuleName -SkipEditionCheck -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
+    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
+    try { Import-Module -Name $ModuleName -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
+    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
+    try { Import-Module -Name $ModuleName -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
+    if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
+    $system32Module = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\Modules\$ModuleName\$ModuleName.psd1"
+    if (Test-Path -LiteralPath $system32Module) {
+        try { Import-Module -Name $system32Module -SkipEditionCheck -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
+        if (Get-Command -Name $CommandName -ErrorAction SilentlyContinue) { return $true }
+        try { Import-Module -Name $system32Module -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction SilentlyContinue 3>$null } catch { }
+    }
     return $null -ne (Get-Command -Name $CommandName -ErrorAction SilentlyContinue)
 }
 

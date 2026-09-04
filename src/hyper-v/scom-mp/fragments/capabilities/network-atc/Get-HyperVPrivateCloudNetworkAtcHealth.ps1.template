@@ -176,11 +176,12 @@ try {
     $hasIntent = Test-HcsCapability -ModuleName 'NetworkATC' -CommandName 'Get-NetIntent'
     $hasStatus = $null -ne (Get-Command -Name Get-NetIntentStatus -ErrorAction SilentlyContinue)
     if (-not $hasIntent -or -not $hasStatus) {
-        if ($RequireNetworkATC -or $Mode -in @('Intent', 'Adapter', 'Global')) {
+        if ($RequireNetworkATC) {
             throw 'The NetworkATC module or Get-NetIntentStatus is unavailable. Install the NetworkATC Windows feature with management tools.'
         }
         $state = 'NotApplicable'
         $detail = 'Network ATC is not installed. Host networking is treated as ManualOrExternal because RequireNetworkATC is false.'
+        return @($state, $detail)
     }
     elseif ($Mode -eq 'Capability') {
         $intents = @(Get-NetIntent -ComputerName $ComputerName -ErrorAction Stop)

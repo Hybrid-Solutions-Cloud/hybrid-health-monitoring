@@ -19,7 +19,12 @@ $lines.Add("Hyper-V Private Cloud VMM task '$Action' on $ComputerName at $([Date
 try {
     $module = Get-Module -ListAvailable -Name VirtualMachineManager -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -eq $module) { throw 'The VirtualMachineManager PowerShell module is not available on this server.' }
-    Import-Module -Name $module.Path -ErrorAction Stop -WarningAction SilentlyContinue
+    try {
+        Import-Module -Name $module.Name -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction Stop
+    }
+    catch {
+        Import-Module -Name $module.Path -ErrorAction Stop -WarningAction SilentlyContinue
+    }
     $vmm = Get-SCVMMServer -ComputerName $ComputerName -ErrorAction Stop
     switch ($Action) {
         'FailedJobs' {

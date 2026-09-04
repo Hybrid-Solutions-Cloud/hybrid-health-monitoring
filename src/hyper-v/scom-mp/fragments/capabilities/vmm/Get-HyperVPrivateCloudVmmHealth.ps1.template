@@ -60,11 +60,17 @@ function Get-HcsPercentUsed {
 }
 
 function Import-HcsVmmModule {
+    if (Get-Command -Name 'Get-SCVMMServer' -ErrorAction SilentlyContinue) { return }
     $module = Get-Module -ListAvailable -Name 'VirtualMachineManager' | Select-Object -First 1
     if ($null -eq $module) {
         throw 'The VirtualMachineManager PowerShell module is unavailable. Install the matching VMM console on the VMM management server.'
     }
-    Import-Module -Name $module.Path -ErrorAction Stop
+    try {
+        Import-Module -Name $module.Name -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction Stop
+    }
+    catch {
+        Import-Module -Name $module.Path -ErrorAction Stop
+    }
 }
 
 function Get-HcsCapacityRecord {
@@ -606,9 +612,15 @@ try {
     }
 }
 catch {
-    $state = 'Critical'
-    $detail = "VMM fabric check '$Mode' failed on '$ComputerName': $($_.Exception.Message)"
-    $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, $detail)
+    if ($Mode -in @('Core', 'ManagementService')) {
+        $state = 'Critical'
+        $detail = "VMM fabric check '$Mode' failed on '$ComputerName': $($_.Exception.Message)"
+        $api.LogScriptEvent('HyperVPrivateCloud.VMM.Health.ps1', 8905, 1, $detail)
+    }
+    else {
+        $state = 'NotApplicable'
+        $detail = "VMM fabric check '$Mode' skipped on '$ComputerName' because VMM server is unreachable or initialization failed: $($_.Exception.Message)"
+    }
 }
 
 $bag.AddValue('VmmFabricState', $state)

@@ -106,7 +106,12 @@ try {
         return
     }
 
-    Import-Module -Name $module.Path -ErrorAction Stop
+    try {
+        Import-Module -Name $module.Name -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction Stop
+    }
+    catch {
+        Import-Module -Name $module.Path -ErrorAction Stop
+    }
     foreach ($commandName in @('Get-SCVMMServer', 'Get-SCLogicalNetwork', 'Get-SCLogicalNetworkDefinition', 'Get-SCVMNetwork')) {
         if ($null -eq (Get-Command -Name $commandName -ErrorAction SilentlyContinue)) {
             throw "Required VMM command '$commandName' is unavailable."
