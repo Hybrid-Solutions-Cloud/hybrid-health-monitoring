@@ -1,5 +1,34 @@
 # Handoff
 
+## 2026-09-05 — 1.3.5.0 production package sealed and staged
+
+Release source commit: `46f3bc962b30245c7dc7ef76495b77b496764979` (includes candidate
+`78bace5` plus release documentation and corrected embedded migration knowledge). The final clean
+Release build used the approved Key Vault signing identity and curated dependencies at
+`D:/tmp/hcs-hyperv-deps-1.4.0.0`. The temporary key file was deleted in `finally` and confirmed
+absent. Permanent public key token: `54d0fb1159995c86`.
+
+Final private build root:
+`D:/tmp/hcs-hyperv-release-1.3.5.0-final-20260905-0100`; final assets are its `assets/` child.
+`Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible` passed: 13 sealed MPs, 15
+deterministic bundles, Release mode, VSAE true, external dependency strong names true, and
+`releaseEligible=true`. Independent inspection confirmed every assembly and embedded MP identity
+is 1.3.5.0 with the permanent token and a valid strong name. Direct sealed-resource assertions
+confirmed the singleton, diagnostic-output, migration-event/knowledge, local Cluster query,
+empty-event/no-CSV, VMM memory-unit, and VMM uplink fixes.
+
+The exact 31-file asset set was copied without rebuilding to
+`docs/public/downloads/hyper-v-private-cloud/1.3.5.0/` and `latest/`; names, sizes, and SHA-256 hashes
+match the validated build root. The stale 1.3.4.0 deployment ZIP was removed only from `latest`;
+the immutable 1.3.4.0 directory remains untouched. Focused Hyper-V build/schema tests passed 92/92,
+the prior complete candidate run remains 241/241, VitePress built successfully, and diff hygiene
+passed. Next: commit/push these exact bytes and state, then monitor all final GitHub Actions jobs.
+
+Runtime boundary: the jump server still has sealed 1.3.4.0 plus the temporary topology hotfix. The
+1.3.5.0 sealed upgrade, permanent discovery takeover, hotfix removal, applicable post-upgrade
+monitor transitions, customer-override preservation against these exact bytes, and 24-hour soak
+have not been run and must not be claimed as passed.
+
 ## September 5 — commit/push and green Actions requested
 
 Implementation and signing-machine prompt are committed and pushed to `origin/main` as

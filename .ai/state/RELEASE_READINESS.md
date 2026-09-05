@@ -1,16 +1,19 @@
 # Hyper-V 1.3.5.0 release-readiness audit
 
-Status: **pre-sealing live scenarios passed; final sealed release not certified**.
-Updated 2026-09-05 from live HAAS-SDR testing on the jump server.
-Implementation and the signing-machine prompt are now committed and pushed in `78bace5`.
-The GitHub Actions run for the final pushed source must pass before the signing-machine handoff.
-The operator's finish line is release readiness, not merely XML ready for sealing. Workload VMs
-must not require SCOM agents. Sealing and publication remain reserved for another machine.
+Status: **pre-sealing live scenarios and offline sealed-package gates passed; sealed upgrade and
+24-hour soak not certified**.
+Updated 2026-09-05 after building on the approved VSAE/signing machine.
+Implementation is in `78bace5`; release-documentation and embedded-knowledge corrections are in
+clean source commit `46f3bc9`. The exact 1.3.5.0 assets built from that commit passed Microsoft VSAE,
+strong-name, identity, sealed-byte correction, package-content, deterministic bundle, and SHA-256
+validation with permanent token `54d0fb1159995c86`. Workload VMs do not require SCOM agents.
 
 ## Evidence completed
 
 | Check | Result |
 |---|---|
+| Final sealed package | 13 sealed MPs at 1.3.5.0; VSAE and strong names pass; releaseEligible true; source `46f3bc9` |
+| Published-byte staging | 31 exact files copied without rebuild to immutable 1.3.5.0 and `latest`; filename, size, and SHA-256 sets match the validated output |
 | Installed identity | All 13 sealed product MPs are 1.3.4.0; candidate XML is 1.3.5.0 |
 | Live topology | Corrected discovery succeeds on all four hosts through the discovery-only hotfix |
 | Inventory comparison | Actual Hyper-V: A01 31 VMs, A02 0, B01 0, B02 7; SCOM 38 VMs and runtime objects |

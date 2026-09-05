@@ -1,5 +1,16 @@
 # Current task
 
+## September 5 — 1.3.5.0 sealed and staged; publish and verify final Actions
+
+Version 1.3.5.0 was built in Release mode from clean source commit `46f3bc9`, using the permanent
+signing identity and the same curated sealed dependencies as 1.3.4.0. All 13 sealed MPs passed VSAE,
+strong-name, identity, sealed-byte correction, package-content, and checksum validation. The exact
+validated assets are staged in the immutable 1.3.5.0 and `latest` download trees. Commit and push
+those bytes, then require MP tests, docs build, and Pages deployment to pass for the final commit.
+
+Do not claim the sealed upgrade, permanent topology takeover/hotfix removal, or 24-hour soak passed;
+those remain post-publication runtime acceptance on the jump server.
+
 ## September 5 — source pushed; monitor Actions and hand off sealing
 
 All implementation changes and `.ai/state/SEALING_AGENT_PROMPT.md` were committed and pushed to
