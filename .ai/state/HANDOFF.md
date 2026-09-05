@@ -1,5 +1,240 @@
 # Handoff
 
+## September 5 — commit/push and green Actions requested
+
+The operator now explicitly authorized committing and pushing all candidate changes and waiting
+for GitHub Actions to pass. Use the existing work item from this release series in commit metadata.
+The signing-machine prompt is `.ai/state/SEALING_AGENT_PROMPT.md`; it covers the approved permanent
+identity, clean-source Release build, exact-byte checksums, docs changes, workflow monitoring and
+honest runtime-certification boundaries. No sealing or release-workflow dispatch is authorized on
+this jump server. Earlier statements that source must first be committed elsewhere are superseded
+by this request. The private ignored handoff ZIP is an earlier source snapshot; the pushed commit
+is authoritative for the signing machine, and private raw evidence remains local.
+
+`AGENTS.md` now records the operator's explicit clarification: PS7 is required where supported,
+and Windows PowerShell is permitted for SCOM/Cluster/VMM components requiring that runtime.
+This prevents the obsolete blanket prohibition from being reintroduced at the next session.
+
+## Final local validation — September 5, 00:23 ET
+
+Final full Pester run: **241 passed, 0 failed, 0 skipped**, 1667.21 seconds. Receipt:
+`tmp/release-final-pester.xml`. This includes every source change and the ClusterLocalQuery,
+GuestAgentBoundary, RuntimeRegression and VmmRuntimeRegression suites. Rebuilt candidate 1.3.5.0
+has all 13 XML packs schema-valid and includes the live-validated VMM correction. VitePress build
+passed. `git diff --check` passed. Branch remains `main`, base
+`dd7505db087f560ac6cb6693652c4e92ef1d673c`; changes are uncommitted, no commit/push/seal/publication.
+
+Refreshed transfer bundle: `src/hyper-v/scom-mp/out/sealing-handoff-1.3.5.0.zip`. Contents include
+19 changed/new source files, candidate XML and hashes, final Pester receipt, selected live scenario
+evidence, topology hotfix XML and signing-machine instructions. It is not a certified release.
+Next: commit reviewed source with the real work-item reference on the signing machine, build and
+verify the exact sealed artifact, import that upgrade, confirm override preservation and permanent
+discovery ownership, only then remove the topology hotfix, and complete the planned soak. Optional
+provider lanes absent here remain unproven. Residual test storage cleanup is recorded below.
+
+## LIVE TEST RESOURCES — lifecycle complete September 5; residual storage only
+
+The test VM was removed from A01 after successful migration and destination monitor initialization
+(Availability, Network, Pipeline Good). Both isolated private switches were removed. Both cleanup
+discoveries returned SUCCESS; SDK query now returns no test VM/runtime/vNIC objects. Removed the
+temporary ReleaseValidation task pack. The topology hotfix remains intentionally imported.
+Inventory is back to 38 VMs and 38 runtimes. Before/after unsealed MP exports show 63 of 64
+baseline packs byte-identical, including Hyper-V overrides; Dell.OME.Monitoring.Interval.Override
+differs only in two schedule timestamps (03:30/03:35 to 04:10/04:15 UTC). This work did not edit
+that pack; retain the external difference, do not revert it. Evidence: override-preservation.json.
+VitePress production build passed (352.35 seconds; bundle-size warning only).
+
+The execution policy rejected both the combined cleanup command and a narrowed literal UNC-path
+recursive removal. No storage deletion happened. Residual owned folder:
+`\\hv-sdr-a-01.haas.mgmt\c$\ClusterStorage\CSV01\HcsMpReleaseTests\HCS-MP-RT-260905`.
+It contains only the 4 MiB blank test-os.vhdx and empty test directories; both hosts have no test VM
+registration, and the folder contains no reparse points. Manual cleanup remains; do not bypass the
+tool policy. Everything below describes the completed scenario, not currently running resources.
+
+Operator explicitly authorized deployment and supported Windows PowerShell runtimes.
+Created isolated VM `HCS-MP-RT-260905`, Hyper-V ID `b2417555-2da9-407e-94f7-d75496c4ede0`,
+initial host `hv-sdr-a-02.haas.mgmt`, 512 MiB, generation 2, 2 GiB dynamic blank VHDX (no guest
+OS/SCOM agent). Exact owned storage root:
+`C:\ClusterStorage\CSV01\HcsMpReleaseTests\HCS-MP-RT-260905`.
+Created private, no-uplink switch `HCS-MP-Test-Isolated` on A02 and A01 only (identities in
+`tmp/release-test-switches.json`). VM identity in `tmp/release-test-vm.json`. Do not touch other
+VMs/switches or the parent CSV directory. VM ran on A01 after live migration and has now been removed;
+check actual owner before any action because migration tests will move it.
+
+SCOM stable VM object ID `ff4bac0a-31be-1ab9-d49f-c107aaa6ceb0`, A02 runtime object ID
+`40a49c3b-94f0-cda5-e56e-e7ef0f9ed80d`. Off + AutomaticStartAction Start correctly reached
+Availability Critical. Started VM at 23:49 ET; regular monitor recovered to Good by 23:54 ET,
+without health reset. Its isolated NIC was disconnected at approximately 23:55 ET for network
+fault detection; SCOM Network Warning and Networking.Members dependency Warning were observed
+by 23:59 ET. Reconnected to HCS-MP-Test-Isolated at approximately 00:00 ET on September 5;
+Network monitor recovered naturally to Good by 00:04 ET. Evidence: vm-availability-recovered.tsv,
+vm-network-fault.tsv, vm-network-recovered.tsv, network-component-fault.tsv.
+Live migration A02 to A01 succeeded at 00:04:48 ET with 0.2-second blackout. Both on-demand
+discoveries returned SUCCESS. SCOM stable VM and vNIC identities are unchanged; A02 runtime
+disappeared, A01 runtime was 9f21d56e-5b73-360f-c1d1-fe79aea5be27 (Availability/Network/Pipeline
+Good by 00:09 ET, now removed after deletion discovery).
+Evidence: vm-migration-result.json, vm-migration-events.json, vm-post-migration.tsv. Event 20413
+is confirmed as migration initiated, followed by successful completion 20415/20418.
+Temporary ReleaseValidation pack re-imported (builder `tmp/New-ReleaseValidationPack.ps1`, outputs
+under `tmp/release-validation/pack/`); now includes supported WinPS Cluster/VMM read-only tasks.
+
+Corrected Cluster probe passes as HealthService LocalSystem on all four Hyper-V nodes
+(CSV=1,node=2) and VMM01 (CSV=0,node=2), all exit0/empty stderr. Live VMM probe exposed TWO further confirmed
+bugs now fixed in source: TotalMemory bytes vs AvailableMemory MiB caused false 100% memory;
+empty LogicalNetworkMap converted to type-name string made spare disconnected NICs look like
+uplinks. Dedicated VmmRuntimeRegression tests: five passed. Corrected source also passed through
+SCOM Run As (vmm-fixed-probe.xml): host-group and uplink Good, genuine cloud Critical and logical
+network Warning retained. Final full Pester rerun passed 241 tests, result tmp/release-final-pester.xml.
+Cloud-SDR-HyperV quota alert is
+real: StorageUsageGB 2177 exceeds StorageGB 2048 (StorageCurrentGB 472 is a different metric).
+Ground-truth VMM properties collected independently with supported WinPS remoting at
+`tmp/release-validation/vmm-oracle-direct.json`; no production settings/quotas were altered.
+
+## 2026-09-04 — operator removed the two claimed blockers
+
+The operator explicitly directed deployment of a disposable VM, and clarified that the PS7 rule
+applies only to scripts/solutions that can run PS7. Windows PowerShell is allowed where Cluster/
+VMM require it. Stop asking for these permissions. Proceed with isolated VM lifecycle/migration
+tests and actual supported-runtime Cluster/VMM probes. Earlier blocker entries are superseded.
+
+## 2026-09-04 — continued release-readiness audit, not certified
+
+The operator clarified that the goal is complete release readiness. Read
+[RELEASE_READINESS.md](RELEASE_READINESS.md) first for the full evidence matrix and remaining gates.
+
+- Confirmed actual VM inventory (31/0/0/7) matches SCOM's 38 runtime objects. Ran real source Host
+  and VM probes through LocalSystem/PS7 on all four hosts; exit 0, empty stderr. No guest agents.
+- Enumerated per-object monitor states and external VMM/S2D targets. Accounted for topology-only
+  uninitialized classes and the explicitly disabled S2D media-error monitor. Two VM network
+  warnings agree with disconnected NICs. Cluster logs show actual replica-broker name failures.
+- Found additional passive-node Cluster collection access errors. Source now uses local rather
+  than named-cluster queries and records quorum collection failures instead of swallowing them.
+  This is a candidate fix awaiting live validation in an approved runtime, not a proven live fix.
+- Added `HyperVPrivateCloud.ClusterLocalQuery.Tests.ps1` and
+  `HyperVPrivateCloud.GuestAgentBoundary.Tests.ps1`. Full pre-final-edit suite: **232 passed**,
+  zero failed/skipped, NUnit at `tmp/release-readiness-pester.xml`. Post-edit regression/runtime:
+  **10 passed**; guest-agent contract: **2 passed**; EnvironmentFixture rerun: **11 passed**.
+  Rebuilt `tmp/candidate/` 1.3.5.0; all 13 XML MPs schema-valid. No sealing/VSAE verification here.
+- Existing Cluster/VMM scripts use Windows PowerShell, conflicting with the explicit PS7-only
+  governance contract. Direct native PS7 FailoverClusters tests on A02/B01 fail with an
+  EventDescriptor TypeLoadException. Do not use a PS5 shim without an operator-approved scoped
+  exception, or silently claim SkipEditionCheck solves this. A supported collector redesign is
+  the alternative and is a material architectural choice.
+- VMM's three Error monitors have old exception context, but current agent reports zero failed
+  workflows and lists them running. Today's unhealthy cause is still unproven. Both VMM agents
+  are Running/available. No disabling override was found; no customer overrides were changed.
+- Imported a temporary read-only ReleaseValidation task pack for host evidence/probe runs, then
+  removed it. The discovery-only Topology.Hotfix remains required. Local evidence under
+  `tmp/release-validation/`, `tmp/*monitor-states.tsv`, `tmp/override-audit/`, and the report.
+- Asked asynchronously which disposable VM may be used for migration/fault/recovery testing;
+  no answer yet. No workload was stopped, migrated, disconnected or modified. No services were
+  restarted, permissions expanded, alerts closed, or health reset.
+- Branch remains `main` at base `dd7505db087f560ac6cb6693652c4e92ef1d673c`, changes uncommitted.
+  The previous sealing ZIP is superseded; do not call it release-certified. Complete current
+  runtime validation, controlled fault/recovery, and exact signed import/upgrade/soak before
+  certifying. Sealing/publishing stays on the operator's other machine.
+
+## 2026-09-04 — operator clarification: no SCOM agents in workload VMs
+
+Workload VMs will not receive SCOM agents. Preserve host-side VM monitoring; do not interpret
+guest-agent absence as a fault or propose guest-agent installation as a repair. Source inspection
+confirms VirtualMachineRuntime instances use the Hyper-V host's Windows Computer PrincipalName
+and runtime monitors target those hosted objects. The retained live inventory likewise locates
+the VM-runtime objects on Hyper-V hosts. These objects do not represent guest agent installations.
+Guest OS/application internals are outside this host-observed coverage. No product or live changes
+were made for this clarification; the existing transfer ZIP predates this added handoff note.
+
+## 2026-09-04 — live jump-server repair; sealing deferred to another machine
+
+**Branch:** `main`, base `dd7505db087f560ac6cb6693652c4e92ef1d673c`. Changes are uncommitted.
+The operator authorized live SCOM testing and repair, explicitly reserving sealing and release
+publishing for another machine. Neither sealing nor publishing was attempted here.
+
+### Live findings and changes
+
+- Connected through the installed SCOM SDK to `HAAS-SDR` on `mgt-sdr-scom-01.haas.mgmt`.
+  All 13 installed sealed product MPs are **1.3.4.0**. All four Hyper-V agents permit proxying.
+- Confirmed the topology script runs under the real HealthService/LocalSystem with PowerShell
+  7.6.5 and emits discovery XML, but submitting its three empty singleton class instances causes
+  topology ingestion to fail. Controlled live discovery variants isolated this: removing those
+  three submissions restores complete class AND relationship ingestion through the existing
+  product discovery wrapper. Singleton objects remain relationship endpoints.
+- Imported **Hcs.HyperVPrivateCloud.Topology.Hotfix 1.0.0.0**, unsealed, referencing the installed
+  Library 1.3.4.0. It contains exactly one corrected discovery and no classes/monitors/rules/tasks/
+  overrides. Discovery ID: `71918f83-7221-0d7e-facf-944b1977f71a`.
+- Triggered that discovery on all four HostRole targets; each returned an inner `SUCCESS` result.
+  After removing the experimental `Hcs.Runtime.Diagnostics` pack, the SDK still reports **38 VMs,
+  38 VM-runtime objects, 40 VHDs, 38 virtual NICs, 4 monitoring pipelines, 2 AD and 2 DNS services**.
+  These topology classes were empty at baseline. VM properties contain real Running / Operating
+  normally values. Experimental test objects and workflows were removed with their test pack.
+- Do **not** remove the clean hotfix until the upgraded sealed Discovery pack has successfully
+  rediscovered every host. Its discovered data is the live bridge until that deployment.
+
+### Permanent source changes for candidate 1.3.5.0
+
+- Discovery topology template: no empty singleton class submissions.
+- Library template: `RequireOutput=true` for both diagnostic write-action wrappers. Live A/B
+  task execution proved false returns empty immediately; true returns LocalSystem and runtime
+  output. This correction is not yet in the installed sealed Library.
+- Monitoring template and ADR 0053: remove event 20413 (migration initiated) from LiveMigrationFailed.
+  Keep failure events 21502/21501/21125. Existing historical false alerts were not closed.
+- Cluster CSV probe: treat only Get-WinEvent's NoMatchingEventsFound as an empty event result;
+  retain access/missing-log failures. Skip CSV performance counters when there are no CSVs.
+  This addresses current 8304 empty-query warnings observed on the VMM cluster.
+- Fixture harness now distinguishes class/relationship submissions and counts empty class
+  instances. New RuntimeRegression tests cover these fixes and the temporary pack generator.
+- Dependency documentation exporter preserves the checked-out page's CRLF/LF convention;
+  Windows newline differences no longer masquerade as generated-document drift.
+- Added `tools/scom/New-HyperVTopologyHotfix.ps1` and temporary-repair instructions in
+  `tests/integration/README.md`. No public downloads or published version references changed.
+
+### Verification and retained evidence
+
+- Initial full `Invoke-Pester tests/unit`: 228 passed, 1 failed (Windows generated-doc newline
+  comparison). After the exporter fix, MpDependencies.Docs: **8 passed, 0 failed**.
+- Affected Build + EnvironmentFixture suites after the topology/harness changes:
+  **103 passed, 0 failed**. Focused topology ProbeSmoke: **2 passed, 0 failed**.
+- New RuntimeRegression suite: **8 passed, 0 failed**; covers empty event results vs access errors, no-CSV behavior,
+  migration event selection, singleton submissions, task output, and hotfix generation.
+- Built all 13 unsigned candidate XML MPs as **1.3.5.0**, public token `54d0fb1159995c86`, under
+  `tmp/candidate/`. All 13 pass the vendored SCOM schema. The hotfix also passes and was accepted
+  by the live management group. No candidate sealed artifacts exist.
+- Local evidence (gitignored): `tmp/live-scom-baseline.txt`, `tmp/live-scom-final.txt`,
+  `tmp/hotfix-*-trigger.xml`, `tmp/topology-task-output.xml`, `tmp/runtime-targets.json`, and
+  `tmp/live-export/`. `tmp/LiveScom.cs` / `.exe` is a small full-framework SDK helper driven by
+  PowerShell 7 because the installed OperationsManager module cannot load its framework types
+  natively in PS7. No remoting endpoints were enabled and no services restarted.
+- Removed the session's exact temporary probe directory from the Hyper-V host after copying its
+  files into local `tmp/remote-probe-evidence/`. No pre-existing host files were removed.
+- Useful commands: `Build-HyperVPrivateCloudManagementPacks.ps1 -Version 1.3.5.0 -PublicKeyToken
+  54d0fb1159995c86 -OutputPath tmp/candidate -RequireComplete`; schema validator against that
+  directory; Pester suites named above; SDK import, TriggerOnDemandDiscovery, inventory, and
+  exact experimental-pack uninstall. Live on-demand success was checked inside the response XML,
+  not inferred solely from the task status. Configuration propagation can take several minutes.
+
+### Remaining gates / handoff to sealing machine
+
+1. Transfer the source overlay/candidate bundle described in `tmp/sealing-handoff/README.md`.
+   Apply to the base commit, review, and commit with the required work-item reference. Release
+   tooling requires a clean committed source tree; no work-item number was invented here.
+2. On the approved signing machine, build/seal **1.3.5.0** with matching override version and the
+   permanent identity. Do not overwrite 1.3.4.0 assets. Run VSAE/signature/release gates.
+3. Import the sealed upgrade in dependency order. Confirm its own topology discovery succeeds
+   on all hosts, then remove only `Hcs.HyperVPrivateCloud.Topology.Hotfix` and recheck topology.
+4. Verify diagnostic output, migration alert filtering and CSV warnings from the sealed upgrade,
+   then complete monitor initialization, fault/recovery and the planned 24-hour soak.
+
+Transfer archive: `src/hyper-v/scom-mp/out/sealing-handoff-1.3.5.0.zip` (source overlay,
+13 unsigned candidate XML MPs, exact live hotfix XML, instructions; no signing material).
+
+**Not a blanket health certification:** the final immediate inventory still has real Error/Warning
+states and newly discovered Uninitialized objects (13 Error, 8 Warning, 168 Uninitialized,
+79 Success). Optional SAN/SMB/ATC class counts remain zero and were not certified as expected
+absence. No infrastructure settings, customer overrides, alert resolutions or monitor health were
+changed to force green. Runtime topology repair is proven; full sealed-upgrade acceptance remains.
+
+The older entries below are historical and must not be read as current runtime evidence.
+
 ## 2026-09-04 — 1.3.4.0 sealed, published, and live
 
 **Branch:** `main`. **Source commit sealed:** `25cc9b3691268e245233368d01314d3af79ec364`.

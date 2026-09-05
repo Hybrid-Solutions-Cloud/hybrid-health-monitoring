@@ -353,7 +353,10 @@ function Update-GeneratedBlock {
         throw "Documentation page is missing the generated block '$BlockName'. Expected markers:`n  $begin`n  $end"
     }
 
-    $replacement = $begin + "`n" + ($Body -join "`n") + "`n" + $end
+    # Match the checked-out page, including Windows CRLF checkouts. Newline conversion is not
+    # dependency drift and must not make an otherwise identical page fail the release checks.
+    $newline = if ($Content.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $replacement = $begin + $newline + ($Body -join $newline) + $newline + $end
     return [regex]::Replace($Content, $pattern, { $replacement }, 'Singleline')
 }
 

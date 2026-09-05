@@ -366,9 +366,9 @@ try {
     $solution = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.Solution']$")
     $fabric = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.Fabric']$")
     $managementStack = $discoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.ManagementStack']$")
-    $discoveryData.AddInstance($solution)
-    $discoveryData.AddInstance($fabric)
-    $discoveryData.AddInstance($managementStack)
+    # SCOM creates these singleton objects from the class declarations. Use them only as
+    # relationship endpoints: submitting their empty class instances causes this discovery
+    # payload to be rejected, including every otherwise valid host and VM instance.
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.SolutionContainsFabric']$" $solution $fabric
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.SolutionContainsManagementStack']$" $solution $managementStack
     Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.FabricContainsService']$" $fabric $service

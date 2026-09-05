@@ -68,7 +68,7 @@ availability aggregate, event views with no event rules, no product-wide alert s
    whole-aggregate roll-ups keep `Error` so an unreachable agent does.
 4. **Event monitoring is first-party.** No Microsoft pack covers Hyper-V's own event channels, so the
    Monitoring pack collects Error/Critical/Warning events from the eight Hyper-V admin channels and
-   alerts on verified failure signatures (live migration 21502/21501/21125/20413, hypervisor not
+   alerts on verified failure signatures (live migration 21502/21501/21125, hypervisor not
    running 3112) plus level-based error rules per channel with suppression on event number and VM.
 5. **One product-wide alert scope.** `HyperVPrivateCloud.Product.Group` is an instance group
    populated with every object contained by a Distributed Application; the Overview folder carries an
@@ -83,6 +83,29 @@ availability aggregate, event views with no event rules, no product-wide alert s
    zero. The tuning catalog's Standard tier equals the coded default by contract.
 
 ## Consequences
+
+### Follow-up live validation for the 1.3.5.0 candidate
+
+- Discovery must not submit empty singleton class instances. Use existing singleton objects as
+  relationship endpoints; an otherwise valid discovery payload can be rejected as a whole.
+- Cluster node-local CSV/quorum queries must omit the cluster network-name parameter. The
+  corrected queries were executed through HealthService LocalSystem on active and passive nodes
+  and a non-CSV management cluster. Windows PowerShell is used where those modules require it;
+  the PowerShell 7 requirement applies to components that support that runtime.
+- VMM host memory fields use different units: `TotalMemory` is bytes and `AvailableMemory` is
+  MiB. Convert before calculating utilization, and do not invent usage from a missing value.
+- An empty `LogicalNetworkMap` dictionary is not a virtual switch name. Ignore unused adapters
+  without `VirtualNetwork`; continue detecting disconnected adapters with actual switch bindings.
+- Corrected source probes under the SCOM Run As account eliminate the false memory/uplink
+  conditions while retaining real quota and logical-network-site faults. These task results are
+  source-runtime evidence, not proof that a new sealed product has been deployed.
+- An isolated, host-monitored VM without a SCOM guest agent demonstrated availability fault and
+  recovery and a disconnected-NIC warning, including the Networking dependency rollup. A blank
+  firmware VM cannot establish successful guest heartbeat or guest-OS health.
+
+The candidate still requires its exact sealed upgrade and post-upgrade certification evidence.
+
+### Earlier releases
 
 - All 13 packs pass Microsoft VSAE verification and seal; 135 unit tests pass, including the new
   script-hygiene and display-name tests. Total authored product: 162 unit monitors, 93 dependency

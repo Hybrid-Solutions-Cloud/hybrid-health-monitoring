@@ -1,5 +1,10 @@
 # Decisions
 
+- Operator clarification (2026-09-04): PowerShell 7 applies to scripts/solutions that can run it.
+  Use Windows PowerShell for platform modules that require it, including Cluster/VMM; do not
+  treat their supported runtime as a release blocker. Disposable VM deployment is authorized for
+  this release-validation session; keep it isolated and remove only session-owned test resources.
+
 - The repository uses VitePress, not MkDocs. This is an explicit repository-owner direction and is
   recorded in ADR 0020, which supersedes the MkDocs and `mike` portions of ADRs 0014 and 0017.
 - Site branding uses `docs/public/assets/images/azurelocal-scom-mp-icon.svg` for the navigation logo

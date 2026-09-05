@@ -10,10 +10,13 @@
 #>
 
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 $script:CaptureShim = @'
 $script:HcsEvents = [System.Collections.Generic.List[string]]::new()
 class HcsBag {
+    [string]$Kind = 'Bag'
+    [string]$TypeId = ''
     [hashtable]$Values = @{}
     [System.Collections.Generic.List[object]]$Instances = [System.Collections.Generic.List[object]]::new()
     [object]$Source
@@ -21,8 +24,8 @@ class HcsBag {
     [void] AddValue([string]$name, $value) { $this.Values[$name] = $value }
     [void] AddProperty([string]$name, $value) { $this.Values[$name] = $value }
     # A discovery data object is also a bag here, so it must answer the discovery surface too.
-    [object] CreateClassInstance([string]$id) { return [HcsBag]::new() }
-    [object] CreateRelationshipInstance([string]$id) { return [HcsBag]::new() }
+    [object] CreateClassInstance([string]$id) { $item = [HcsBag]::new(); $item.Kind = 'Class'; $item.TypeId = $id; return $item }
+    [object] CreateRelationshipInstance([string]$id) { $item = [HcsBag]::new(); $item.Kind = 'Relationship'; $item.TypeId = $id; return $item }
     [void] AddInstance($instance) { $this.Instances.Add($instance) }
 }
 class HcsApi {
@@ -73,6 +76,7 @@ $__captured['HcsBagCount'] = $api.Bags.Count
 $__discovered = 0
 foreach ($__bag in $api.Bags) { $__discovered += @($__bag.Instances).Count }
 $__captured['HcsInstanceCount'] = $__discovered
+$__captured['HcsEmptyClassInstanceCount'] = @($api.Bags | ForEach-Object { $_.Instances } | Where-Object { $_.Kind -eq 'Class' -and $_.Values.Count -eq 0 }).Count
 Write-Output ('<<<HCSFIXTURE>>>' + ($__captured | ConvertTo-Json -Depth 4 -Compress))
 '@
 

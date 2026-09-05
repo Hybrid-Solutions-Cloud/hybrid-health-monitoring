@@ -53,6 +53,7 @@ function Get-HcsDouble {
 
 function Get-HcsPercentUsed {
     param([AllowNull()]$Used, [AllowNull()]$Total)
+    if ($null -eq $Used -or $null -eq $Total) { return -1 }
     $totalValue = Get-HcsDouble $Total
     if ($totalValue -le 0) { return -1 }
     $usedValue = Get-HcsDouble $Used
@@ -100,12 +101,18 @@ function Get-HcsHostGroupCapacity {
     }
     foreach ($groupName in $groups.Keys) {
         $totalMemory = 0.0; $availableMemory = 0.0
+        $memoryComplete = $true
         $totalStorage = 0.0; $availableStorage = 0.0
         $logicalProcessors = 0.0; $cpuSamples = [System.Collections.Generic.List[double]]::new()
         $assignedProcessors = 0.0
         foreach ($vmHost in $groups[$groupName]) {
-            $totalMemory += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('TotalMemory'))
-            $availableMemory += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('AvailableMemory'))
+            $hostTotalMemory = Get-HcsPropertyValue -InputObject $vmHost -Name @('TotalMemory')
+            $hostAvailableMemory = Get-HcsPropertyValue -InputObject $vmHost -Name @('AvailableMemory')
+            if ($null -eq $hostTotalMemory -or $null -eq $hostAvailableMemory) { $memoryComplete = $false }
+            $totalMemory += Get-HcsDouble $hostTotalMemory
+            # VMM VMHost.TotalMemory is bytes; AvailableMemory is MiB. Mixing those units
+            # reported 100% used even on hosts with hundreds of GiB free (live VMM 2025).
+            $availableMemory += (Get-HcsDouble $hostAvailableMemory) * 1MB
             $totalStorage += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('TotalStorageCapacity'))
             $availableStorage += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('AvailableStorageCapacity'))
             $logicalProcessors += Get-HcsDouble (Get-HcsPropertyValue -InputObject $vmHost -Name @('LogicalProcessorCount', 'LogicalProcessors'))
@@ -116,7 +123,7 @@ function Get-HcsHostGroupCapacity {
         $cpuPercent = if ($cpuSamples.Count -gt 0) { [math]::Round(($cpuSamples | Measure-Object -Average).Average, 1) }
         elseif ($logicalProcessors -gt 0 -and $assignedProcessors -gt 0) { Get-HcsPercentUsed -Used $assignedProcessors -Total $logicalProcessors }
         else { -1 }
-        $memoryPercent = Get-HcsPercentUsed -Used ($totalMemory - $availableMemory) -Total $totalMemory
+        $memoryPercent = if ($memoryComplete) { Get-HcsPercentUsed -Used ($totalMemory - $availableMemory) -Total $totalMemory } else { -1 }
         $storagePercent = Get-HcsPercentUsed -Used ($totalStorage - $availableStorage) -Total $totalStorage
         $records.Add((Get-HcsCapacityRecord -Name $groupName -CpuPercent $cpuPercent -MemoryPercent $memoryPercent -StoragePercent $storagePercent))
     }
@@ -553,14 +560,19 @@ foreach ($facet in $modesToRun) {
             $unbound = [System.Collections.Generic.List[string]]::new()
             foreach ($adapter in $adapters) {
                 $name = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('ConnectionName', 'Name'))
-                $switchName = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('VirtualNetwork', 'LogicalNetworkMap'))
+                # An empty dictionary stringifies to its .NET type name, not an empty string.
+                # LogicalNetworkMap is not a switch identity: disconnected spare NICs with an
+                # empty map must not be evaluated as virtual-switch uplinks.
+                $switchName = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('VirtualNetwork'))
                 $connectionState = [string](Get-HcsPropertyValue -InputObject $adapter -Name @('ConnectionState', 'LinkState'))
                 if ([string]::IsNullOrWhiteSpace($switchName)) { continue }
                 if (-not [string]::IsNullOrWhiteSpace($connectionState) -and $connectionState -notin @('Connected', 'Up', 'OK')) {
                     $disconnected.Add("uplink '$name' on switch '$switchName' reports '$connectionState'")
                 }
-                $logicalNetworks = @(Get-HcsPropertyValue -InputObject $adapter -Name @('LogicalNetworks'))
-                if ($logicalNetworks.Count -eq 0) { $unbound.Add("uplink '$name' carries no logical network") }
+                $logicalNetworks = @(Get-HcsPropertyValue -InputObject $adapter -Name @('LogicalNetworks') | Where-Object { $null -ne $_ })
+                $networkMap = Get-HcsPropertyValue -InputObject $adapter -Name @('LogicalNetworkMap')
+                $mapCount = Get-HcsDouble (Get-HcsPropertyValue -InputObject $networkMap -Name @('Count'))
+                if ($logicalNetworks.Count -eq 0 -and $mapCount -eq 0) { $unbound.Add("uplink '$name' carries no logical network") }
             }
             if ($disconnected.Count -gt 0) {
                 $state = 'Critical'

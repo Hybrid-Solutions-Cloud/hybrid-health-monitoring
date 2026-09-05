@@ -387,7 +387,7 @@
                 <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
                 <SecureInput />
                 <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
-                <RequireOutput>false</RequireOutput>
+                <RequireOutput>true</RequireOutput>
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
                 <DefaultEventPolicy><StdErrMatches>.+</StdErrMatches><ExitCodeMatches>[^0]+</ExitCodeMatches></DefaultEventPolicy>
               </WriteAction>
@@ -415,7 +415,7 @@
                 <CommandLine>-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$Config/ScriptName$" $Config/Arguments$</CommandLine>
                 <SecureInput />
                 <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
-                <RequireOutput>false</RequireOutput>
+                <RequireOutput>true</RequireOutput>
                 <Files><File><Name>$Config/ScriptName$</Name><Contents>$Config/ScriptBody$</Contents><Unicode>true</Unicode></File></Files>
                 <DefaultEventPolicy><StdErrMatches>.+</StdErrMatches><ExitCodeMatches>[^0]+</ExitCodeMatches></DefaultEventPolicy>
               </WriteAction>

@@ -44,9 +44,14 @@ function Get-HcsNumber {
 # at Good that reported a broken cluster as healthy. Failures are recorded and surfaced by the caller.
 $script:HcsCollectionFailures = [System.Collections.Generic.List[string]]::new()
 function Get-HcsSafeCollection {
-    param([scriptblock]$Query, [string]$Name = 'cluster query')
+    param([scriptblock]$Query, [string]$Name = 'cluster query', [switch]$AllowNoMatchingEvents)
     try { return , @(& $Query) }
     catch {
+        # Get-WinEvent reports an empty, successful search as a non-terminating error.
+        # Only this exact condition is benign; missing logs and access failures remain faults.
+        if ($AllowNoMatchingEvents -and $_.FullyQualifiedErrorId -like 'NoMatchingEventsFound*') {
+            return , @()
+        }
         $script:HcsCollectionFailures.Add("$Name failed: $($_.Exception.Message)")
         return , @()
     }
@@ -121,7 +126,10 @@ try {
             }
 
             # ---- Cluster nodes ---------------------------------------------------
-            $nodes = Get-HcsSafeCollection { Get-ClusterNode -Cluster $cluster -ErrorAction Stop }
+            # This probe runs on a cluster node. Keep queries local: specifying the cluster
+            # network name can turn LocalSystem collection into an authenticated remote call
+            # to the owner node, which fails on passive nodes without remote cluster rights.
+            $nodes = Get-HcsSafeCollection -Name 'local cluster nodes' -Query { Get-ClusterNode -ErrorAction Stop }
             $nodeCount = $nodes.Count
             foreach ($node in $nodes) {
                 $nodeState = Get-HcsStatusText -InputObject $node -Name 'State'
@@ -134,7 +142,8 @@ try {
 
         # ---- Quorum and witness ----------------------------------------------
         $quorum = $null
-        try { $quorum = Get-ClusterQuorum -Cluster $cluster -ErrorAction Stop } catch { $quorum = $null }
+        $quorumResults = Get-HcsSafeCollection -Name 'local cluster quorum' -Query { Get-ClusterQuorum -ErrorAction Stop }
+        if ($quorumResults.Count -gt 0) { $quorum = $quorumResults[0] }
         if ($null -ne $quorum) {
             $quorumType = Get-HcsStatusText -InputObject $quorum -Name 'QuorumType'
             $witness = Get-HcsProperty -InputObject $quorum -Name 'QuorumResource' -Default $null
@@ -173,7 +182,7 @@ try {
         }
 
         # ---- Cluster networks -------------------------------------------------
-        $networks = Get-HcsSafeCollection { Get-ClusterNetwork -Cluster $cluster -ErrorAction Stop }
+        $networks = Get-HcsSafeCollection -Name 'local cluster networks' -Query { Get-ClusterNetwork -ErrorAction Stop }
         $networkCount = $networks.Count
         foreach ($network in $networks) {
             $networkState = Get-HcsStatusText -InputObject $network -Name 'State'
@@ -186,7 +195,7 @@ try {
         }
 
         # ---- Cluster groups and failover churn ---------------------------------
-        $groups = Get-HcsSafeCollection { Get-ClusterGroup -Cluster $cluster -ErrorAction Stop }
+        $groups = Get-HcsSafeCollection -Name 'local cluster groups' -Query { Get-ClusterGroup -ErrorAction Stop }
         $groupCount = $groups.Count
         foreach ($group in $groups) {
             $groupState = Get-HcsStatusText -InputObject $group -Name 'State'
@@ -194,7 +203,7 @@ try {
             if ($groupState -match 'Failed|PartialOnline') { $groupFailedCount++ }
         }
         $windowStart = (Get-Date).AddHours(-1 * $FailoverWindowHours)
-        $failoverEvents = Get-HcsSafeCollection {
+        $failoverEvents = Get-HcsSafeCollection -Name 'cluster failover events' -AllowNoMatchingEvents -Query {
             Get-WinEvent -FilterHashtable @{
                 LogName      = 'System'
                 ProviderName = 'Microsoft-Windows-FailoverClustering'
@@ -228,7 +237,7 @@ try {
 
         # ---- Cluster Shared Volumes -------------------------------------------
         if (Get-Command -Name 'Get-ClusterSharedVolume' -ErrorAction SilentlyContinue) {
-            $csvs = Get-HcsSafeCollection { Get-ClusterSharedVolume -Cluster $cluster -ErrorAction Stop }
+            $csvs = Get-HcsSafeCollection -Name 'local cluster shared volumes' -Query { Get-ClusterSharedVolume -ErrorAction Stop }
             $csvCount = $csvs.Count
             if ($csvCount -gt 0) {
                 $csvWorstFreePercent = 100.0
@@ -261,6 +270,7 @@ try {
         # ---- CSV I/O latency and queue depth -----------------------------------
         # Cluster CSV latency counters are published in seconds and are normalised to
         # milliseconds here so that thresholds read naturally to an operator.
+        if ($csvCount -gt 0) {
         $counterSet = Get-HcsSafeCollection { Get-Counter -ListSet 'Cluster CSV File System' -ErrorAction Stop }
         if ($counterSet.Count -eq 0) {
             $counterSet = Get-HcsSafeCollection { Get-Counter -ListSet 'Cluster CSV Volume Manager' -ErrorAction Stop }
@@ -288,6 +298,7 @@ try {
             }
         }
 
+        }
             $detail = "Failover Cluster and CSV depth metrics collected on '$ComputerName' for '$BoundaryId'. $csvDetail $nodeDetail $quorumDetail $networkDetail $groupDetail"
         }
     }

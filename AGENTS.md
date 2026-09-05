@@ -44,7 +44,7 @@ this file is the offline fallback.
 **Hard rules digest:**
 
 - No secrets, tokens, passwords, subscription/tenant/client IDs, or connection strings in any committed file.
-- All scripts: PowerShell 7+ — `#Requires -Version 7.0`, `Set-StrictMode -Version Latest`, `$ErrorActionPreference = 'Stop'`. Never PS 5.1, never Bash.
+- Scripts and solutions that support PowerShell 7: use PowerShell 7+ — `#Requires -Version 7.0`, `Set-StrictMode -Version Latest`, `$ErrorActionPreference = 'Stop'`. For SCOM workflows or Cluster/VMM modules that require Windows PowerShell, use their supported runtime; do not treat PS7 incompatibility as a blocker or force an unsupported import. This is the operator's explicit runtime clarification. Never Bash.
 - All documentation is Markdown only. Diagrams are draw.io only — commit the `.drawio` XML alongside any exported `.png`.
 - Commit format: `type(scope): short description` — types `feat`, `fix`, `docs`, `chore`, `refactor`, `test` — with an `AB#<id>` work-item reference.
 

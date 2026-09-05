@@ -1,5 +1,41 @@
 # Current task
 
+## September 5 checkpoint — live pre-sealing scenarios complete
+
+Availability and network fault/recovery, dependency rollup, live migration, stable VM/NIC identity,
+runtime ownership replacement, destination monitor initialization and deletion discovery all passed
+using an isolated VM with no guest SCOM agent. Corrected Cluster source passed on four Hyper-V nodes
+and the non-CSV VMM cluster; corrected VMM source passed under SCOM Run As. Candidate 1.3.5.0 XML
+rebuilt and all 13 packs schema-valid. Final full regression run: 241 passed, 0 failed, 0 skipped
+(1667.21 seconds), including all source fixes and new regression files.
+
+Test VM registration, private switches, SCOM objects and temporary validation task pack removed.
+Retain the topology hotfix until the sealed upgrade takes over. Tool policy rejected cleanup of the
+4 MiB blank test disk/empty directories; exact residual path is in HANDOFF.md. No existing workload
+VMs were modified. AGENTS.md now explicitly records the supported-runtime clarification.
+
+Remaining release gates concern the exact sealed artifact, source commit, upgrade and soak—not
+PS7 permission or authorization to create a disposable VM. Sealing/publication remain on the
+operator's other machine. Do not mislabel the unsigned transfer bundle as a certified release.
+
+## ACTIVE — release certification, not merely sealing handoff
+
+The operator clarified that all release-readiness work must be completed. Latest live findings,
+source fixes, passed checks and explicit blockers are in [RELEASE_READINESS.md](RELEASE_READINESS.md).
+No workload-VM SCOM agents. No sealing/publication on this machine. Do not describe the previous
+handoff ZIP as release-certified. The operator explicitly authorized deploying a disposable VM
+and clarified PS7 is required only where supported; use Windows PowerShell for Cluster/VMM when
+required. These are not blockers. Continue live tests without modifying existing workloads.
+
+## ACTIVE — 2026-09-04 live repair and 1.3.5.0 sealing handoff
+
+This entry supersedes the older 1.3.0.0 task below. Live SCOM is running 13 sealed 1.3.4.0 MPs.
+Topology ingestion was repaired with a temporary unsealed discovery-only hotfix on all four
+Hyper-V hosts. Permanent discovery, diagnostic-output, migration-event and CSV-query corrections
+are in source. Sealing and release publication must happen on the operator's other machine.
+See the newest [HANDOFF.md](HANDOFF.md) entry for evidence, tests and safe hotfix removal order.
+Do not remove the topology hotfix before the upgraded sealed discovery has rediscovered all hosts.
+
 ## ACTIVE — 1.3.0.0 remediation after SCOM HAAS-SDR operational audit
 
 **Plan: [`PLAN-1.3.0.0-REMEDIATION.md`](../../PLAN-1.3.0.0-REMEDIATION.md) — read §0 first.**
