@@ -5,6 +5,20 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
+## Version 1.3.5.0 live-runtime corrective release
+
+Version `1.3.5.0` is an in-place upgrade from `1.3.4.0`. It corrects the final defects found during
+live SCOM testing: rejected topology payloads caused by empty singleton submissions, discarded
+diagnostic task output, migration-start event 20413 classified as failure, passive-node Cluster
+queries that became remote LocalSystem calls, false CSV warnings for empty event results and
+non-CSV clusters, mixed VMM memory units, and empty VMM network maps interpreted as uplinks.
+
+The source passed 241 tests and live host-side fault/recovery and migration testing with no SCOM
+agent installed in the disposable workload VM. All 13 sealed packs passed Microsoft VSAE and
+strong-name verification, and the complete release package passed content and checksum validation.
+The exact sealed upgrade and planned 24-hour runtime soak remain post-publication acceptance work;
+this release note does not claim either has passed.
+
 ## Version 1.0.6.0 runtime and deployment corrective release
 
 Version `1.0.6.0` is an in-place upgrade from every `1.0.3.0` through `1.0.5.0` installation. It

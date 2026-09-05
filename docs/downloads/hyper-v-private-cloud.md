@@ -16,9 +16,9 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.3.4.0 — Private Cloud Powered by Hyper-V: A 360° View
+## Current release: 1.3.5.0 — Private Cloud Powered by Hyper-V: A 360° View
 
-`1.3.4.0` is the current production release. Every one of the 13 sealed product MPs has version `1.3.4.0`,
+`1.3.5.0` is the current production release. Every one of the 13 sealed product MPs has version `1.3.5.0`,
 delivering the full 360° Private Cloud Distributed Application service model. This includes complete
 fabric modeling across physical server chassis/hardware, top-of-rack data switches, out-of-band management switches,
 perimeter firewalls, Opengear out-of-band console servers, DHCP/IPAM, management domain services (Active Directory,
@@ -32,13 +32,20 @@ and 254 knowledge articles across host, VM, Failover Clustering, CSV, Storage Sp
 Pure Storage. Cluster-wide facts are evaluated once per cluster, host-wide facts once per host, and
 one probe run per host feeds every per-VM, per-LUN, per-session, per-port and per-intent monitor.
 
+Version 1.3.5.0 corrects final live-runtime findings in topology ingestion, diagnostic task output,
+live-migration event classification, local Cluster collection, CSV empty-result handling, VMM
+memory-unit conversion, and VMM uplink detection. The source passed 241 tests and live host-side
+fault/recovery and migration testing without a guest SCOM agent. The sealed package passed VSAE,
+strong-name, package-content, and checksum validation. The exact sealed upgrade and planned
+24-hour soak have not yet been run and are not claimed as passed.
+
 Management Packs are named for the product — `HyperVPrivateCloud.Library`,
 `HyperVPrivateCloud.Capability.Cluster`, and so on. Publisher attribution is carried in the sealed
 pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.4.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.3.4.0`. It contains no override MPs.
+- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.5.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.3.5.0`. It contains no override MPs.
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
 - [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
 - [Download canonical override templates](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — Discovery and Monitoring override templates; select and review one Discovery/Monitoring pair only.
@@ -64,9 +71,9 @@ The checksum file is written by the Windows release packager and carries CRLF li
 Linux or macOS strip them first: `tr -d '\r' < SHA256SUMS.txt | sha256sum -c -`.
 
 The immutable versioned files are also retained under
-[`1.3.4.0`](/downloads/hyper-v-private-cloud/1.3.4.0/release-assets.json). The `latest` directory
+[`1.3.5.0`](/downloads/hyper-v-private-cloud/1.3.5.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
-The previous releases stay under [`1.3.3.0`](/downloads/hyper-v-private-cloud/1.3.3.0/release-assets.json) and [`1.3.2.0`](/downloads/hyper-v-private-cloud/1.3.2.0/release-assets.json).
+The previous releases stay under [`1.3.4.0`](/downloads/hyper-v-private-cloud/1.3.4.0/release-assets.json) and [`1.3.3.0`](/downloads/hyper-v-private-cloud/1.3.3.0/release-assets.json).
 
 ## Apply a tuning profile in one command
 

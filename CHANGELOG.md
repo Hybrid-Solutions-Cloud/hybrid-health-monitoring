@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.3.5.0] — 2026-09-05
+
+Corrective release for the final live SCOM runtime findings after 1.3.4.0. All 13 sealed product
+Management Packs carry version `1.3.5.0` and retain the permanent public key token
+`54d0fb1159995c86`.
+
+**Runtime corrections**
+
+- Topology discovery no longer submits empty singleton class instances for the solution, fabric,
+  and management-stack roots. SCOM rejected the whole discovery payload when those empty instances
+  were present; the singleton objects remain valid relationship endpoints.
+- Diagnostic write actions now require output, so operator task results are returned instead of
+  being silently discarded.
+- Hyper-V VMMS event 20413 is no longer classified as a failed live migration. Live testing showed
+  it is the migration-start event; failure alerting remains on events 21502, 21501, and 21125.
+- Cluster CSV health queries nodes, quorum, networks, groups, and CSVs locally. This avoids turning
+  LocalSystem collection on a passive node into an authenticated remote query to the owner node.
+  Empty event searches and clusters without CSVs are handled without hiding genuine access or log
+  failures.
+- VMM host-group memory converts `AvailableMemory` from MiB before comparing it with byte-valued
+  `TotalMemory`. Empty logical-network maps no longer turn disconnected spare NICs into false
+  virtual-switch uplink faults.
+
+**Evidence and release boundary**
+
+The source candidate passed 241 tests with zero failures or skips, all 13 XML packs passed the SCOM
+schema, and the documentation production build passed. Live pre-sealing testing used an isolated
+disposable VM with no guest SCOM agent and proved availability and network fault/recovery,
+dependency roll-up, live migration, stable VM/vNIC identity, destination monitor initialization,
+and cleanup. Corrected Cluster probes ran through HealthService LocalSystem on all four Hyper-V
+nodes and the non-CSV management cluster; corrected VMM probes ran through SCOM Run As.
+
+The exact 1.3.5.0 sealed package passed Microsoft VSAE verification, strong-name verification,
+package-content checks, and SHA-256 validation. This does **not** claim that the sealed upgrade,
+post-upgrade topology ownership, optional providers absent from the test environment, or the
+planned 24-hour runtime soak has passed. Those remain post-publication operator acceptance work.
+
 ## [1.3.4.0] — 2026-09-04
 
 Closes every defect found in the 1.3.3.0 code audit and completes the 360° model: the physical
