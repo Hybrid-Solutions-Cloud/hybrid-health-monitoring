@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-09-05 — 1.3.5.0 published; final GitHub gates passed
+
+Release asset commit `379b988a0179e24fd471840531dc03e19b94c732` is on `origin/main`.
+GitHub Actions run `33946071914` completed successfully: **Build VitePress site**, **Validate
+Hyper-V MP source**, and **Deploy GitHub Pages** all passed. The immutable 1.3.5.0 assets and
+`latest` alias contain the same 31 exact files as the validated final build output.
+
+No SCOM agent was installed in a workload VM. Publication does not certify runtime acceptance:
+the exact sealed 1.3.5.0 upgrade/import, permanent topology takeover and temporary-hotfix removal,
+post-upgrade monitor transitions, exact-byte customer-override preservation, and 24-hour soak are
+still pending on the jump server.
+
 ## 2026-09-05 — 1.3.5.0 production package sealed and staged
 
 Release source commit: `46f3bc962b30245c7dc7ef76495b77b496764979` (includes candidate

@@ -12,6 +12,7 @@ validation with permanent token `54d0fb1159995c86`. Workload VMs do not require 
 
 | Check | Result |
 |---|---|
+| Publication CI | Commit `379b988`; Actions run `33946071914`; docs build, MP validation, and Pages deployment all passed |
 | Final sealed package | 13 sealed MPs at 1.3.5.0; VSAE and strong names pass; releaseEligible true; source `46f3bc9` |
 | Published-byte staging | 31 exact files copied without rebuild to immutable 1.3.5.0 and `latest`; filename, size, and SHA-256 sets match the validated output |
 | Installed identity | All 13 sealed product MPs are 1.3.4.0; candidate XML is 1.3.5.0 |

@@ -1,15 +1,15 @@
 # Current task
 
-## September 5 — 1.3.5.0 sealed and staged; publish and verify final Actions
+## September 5 — 1.3.5.0 sealed, published, and green
 
 Version 1.3.5.0 was built in Release mode from clean source commit `46f3bc9`, using the permanent
 signing identity and the same curated sealed dependencies as 1.3.4.0. All 13 sealed MPs passed VSAE,
 strong-name, identity, sealed-byte correction, package-content, and checksum validation. The exact
-validated assets are staged in the immutable 1.3.5.0 and `latest` download trees. Commit and push
-those bytes, then require MP tests, docs build, and Pages deployment to pass for the final commit.
+validated assets are published in the immutable 1.3.5.0 and `latest` download trees by commit
+`379b988`. GitHub Actions run `33946071914` passed the MP tests, docs build, and Pages deployment.
 
-Do not claim the sealed upgrade, permanent topology takeover/hotfix removal, or 24-hour soak passed;
-those remain post-publication runtime acceptance on the jump server.
+The remaining task is post-publication runtime acceptance on the jump server. Do not claim the
+sealed upgrade, permanent topology takeover/hotfix removal, or 24-hour soak passed.
 
 ## September 5 — source pushed; monitor Actions and hand off sealing
 
