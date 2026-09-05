@@ -58,5 +58,7 @@ try {
 }
 catch {
     $lines.Add("FAILED: $($_.Exception.Message)")
+    $lines -join [Environment]::NewLine
+    exit 1
 }
 $lines -join [Environment]::NewLine

@@ -18,7 +18,7 @@ function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== 
 $lines.Add("Hyper-V Private Cloud cluster task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
 try {
     if (-not (Get-Module -ListAvailable -Name FailoverClusters -ErrorAction SilentlyContinue)) { throw 'The FailoverClusters PowerShell module is not available on this node.' }
-    Import-Module -Name FailoverClusters -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
+    Import-Module -Name FailoverClusters -ErrorAction Stop -WarningAction SilentlyContinue 3>$null
     $cluster = Get-Cluster -ErrorAction Stop
     switch ($Action) {
         'ClusterSummary' {
@@ -34,7 +34,25 @@ try {
             Add-HcsText (Get-ClusterGroup | Where-Object State -ne 'Online' | Select-Object Name, State, OwnerNode, GroupType | Format-Table -AutoSize)
             Add-HcsSection 'Cluster Shared Volumes'
             if (Get-Command Get-ClusterSharedVolume -ErrorAction SilentlyContinue) {
-                Add-HcsText (Get-ClusterSharedVolume | ForEach-Object { $c = $_; $c.SharedVolumeInfo | ForEach-Object { [pscustomobject]@{ Resource = $c.Name; Owner = $c.OwnerNode; State = $c.State; Path = $_.FriendlyVolumeName; FreeGB = [math]::Round($_.Partition.FreeSpace / 1GB, 1); UsedPercent = $_.Partition.PercentUsed; Redirected = $_.RedirectedAccess; MaintenanceMode = $_.MaintenanceMode; FaultState = $_.FaultState } } } | Format-Table -AutoSize)
+                Add-HcsText (Get-ClusterSharedVolume | ForEach-Object {
+                    $c = $_
+                    $c.SharedVolumeInfo | ForEach-Object {
+                        $partition = $_.Partition
+                        if ($null -eq $partition -or $null -eq $partition.PSObject.Properties['Size'] -or
+                            $null -eq $partition.PSObject.Properties['FreeSpace'] -or
+                            $null -eq $partition.Size -or $null -eq $partition.FreeSpace -or
+                            $partition.Size -le 0 -or $partition.FreeSpace -lt 0 -or $partition.FreeSpace -gt $partition.Size) {
+                            throw "CSV '$($c.Name)' has unavailable or invalid partition capacity."
+                        }
+                        [pscustomobject]@{
+                            Resource = $c.Name; Owner = $c.OwnerNode; State = $c.State
+                            Path = $_.FriendlyVolumeName
+                            FreeGB = [math]::Round($partition.FreeSpace / 1GB, 1)
+                            UsedPercent = [math]::Round(100.0 * (1.0 - $partition.FreeSpace / $partition.Size), 2)
+                            Redirected = $_.RedirectedAccess; MaintenanceMode = $_.MaintenanceMode; FaultState = $_.FaultState
+                        }
+                    }
+                } | Format-Table -AutoSize)
                 Add-HcsText (Get-ClusterSharedVolumeState -ErrorAction SilentlyContinue | Where-Object StateInfo -ne 'Direct' | Select-Object Name, Node, StateInfo, VolumeFriendlyName | Format-Table -AutoSize)
             }
         }
@@ -77,5 +95,7 @@ try {
 }
 catch {
     $lines.Add("FAILED: $($_.Exception.Message)")
+    $lines -join [Environment]::NewLine
+    exit 1
 }
 $lines -join [Environment]::NewLine

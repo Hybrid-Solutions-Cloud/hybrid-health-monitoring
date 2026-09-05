@@ -1,5 +1,30 @@
 # Hyper-V 1.3.5.0 release-readiness audit
 
+## September 5 19:25 ET — fixes verified in source candidate
+
+The two operator-task defects below are now fixed in local source for candidate 1.3.6.0.
+All 13 candidate XML schemas pass, 100 selected tests pass (92 build contracts + 8 operator
+regressions), and source-coupled Cluster Summary/VMM HostStatus tasks pass live SCOM execution.
+Temporary validation pack removed. This is not verification of new sealed binaries: installed
+1.3.5.0 is unchanged and still requires a sealed upgrade. See newest HANDOFF.md entry.
+
+## September 5 evening — sealed installation result
+
+All 13 sealed 1.3.5.0 MPs are installed. Signatures, published hashes, source equivalence, XML schema
+and 64 embedded PS parse checks pass. Permanent discovery/diagnostics pass on all four hosts; the
+topology hotfix is removed. After one B01 discovery retry, all 268 object/class identities match
+baseline. All 42 host/VM pipeline monitors are healthy, and actual VMM capacity/uplink monitors
+recovered naturally to Good. Final seven-server Operations Manager event check found no new
+warnings/errors since upgrade completion.
+
+Two operator tasks are still defective: VMM Host Status lacks the VMM Run As binding; Cluster
+Summary accesses missing Partition.PercentUsed. Both hide failure behind exit 0/Succeeded while
+writing FAILED to stdout. No source fix/reseal was performed during the install/check request.
+See [SEALED_1.3.5_VALIDATION.md](SEALED_1.3.5_VALIDATION.md) for full evidence and next fixes.
+The 24-hour soak and further exact-sealed runtime acceptance remain; this is not full certification.
+
+## Earlier pre-sealing audit
+
 Status: **pre-sealing live scenarios and offline sealed-package gates passed; sealed upgrade and
 24-hour soak not certified**.
 Updated 2026-09-05 after building on the approved VSAE/signing machine.

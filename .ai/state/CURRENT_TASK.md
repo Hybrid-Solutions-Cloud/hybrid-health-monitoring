@@ -1,5 +1,33 @@
 # Current task
 
+## September 5 19:25 ET — requested operator task fixes
+
+Source fixes implemented after `git pull --ff-only` (already current). Eight regression tests
+pass; all 13 candidate 1.3.6.0 MPs build and pass schemas. Corrected Cluster Summary and VMM
+HostStatus both pass real SCOM task execution using a source-coupled temporary validation pack,
+now removed. Installed sealed 1.3.5.0 remains unchanged; new sealing/import is still required.
+See newest HANDOFF.md entry. Previous install-only checkpoint below is historical.
+
+
+## ACTIVE September 5 evening — install and validate exact sealed 1.3.5.0
+
+Update 18:42 ET: all 13 MPs installed; all four permanent discoveries and diagnostics passed.
+Topology hotfix removed. B01's temporarily missing pipeline returned after permanent-discovery
+retry; all 268 object/class identities now match baseline. VMM capacity and uplinks recovered
+naturally to Good. Two actual operator-task defects remain (missing VMM task Run As binding and
+Cluster Summary's nonexistent PercentUsed property); see SEALED_1.3.5_VALIDATION.md. No production
+source fix/reseal was made during this install/check task. Earlier "import in progress" text below
+is the chronological initial checkpoint, superseded by this result.
+
+Operator supplied `C:/Users/kristopher.turner/Downloads/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.5.0`
+and authorized import and code/runtime checks. Local checkout fast-forwarded to `9e6b760`, which
+includes the signing machine's release source `46f3bc9` and published exact artifacts. All 13
+downloaded MP hashes match the release manifest; forced strong-name verification, identity/token,
+schema, and prerequisite checks passed. All 13 embedded XML documents match rebuilt release source
+after only normalizing XML declaration/CDATA representation. All 64 embedded PS bodies parse.
+Import is in progress. Preserve topology hotfix until permanent discovery succeeds on every host.
+Evidence and import progress: `tmp/sealed-135/`; SDK helper `tmp/SealedUpgrade2.exe`.
+
 ## September 5 — 1.3.5.0 sealed, published, and green
 
 Version 1.3.5.0 was built in Release mode from clean source commit `46f3bc9`, using the permanent

@@ -1,5 +1,81 @@
 # Handoff
 
+## September 5 — synchronize fixes to main
+
+Operator requested committing and pushing all outstanding changes. Fetched origin: local main
+and origin/main both started at 9e6b760, with no ahead/behind commits. This commit includes all
+eight changed/new source, regression-test, and validation/state files. `git diff --check` passed.
+Previously verified: 100 selected tests, 13 schemas, and both corrected live SCOM tasks pass.
+No ignored temporary evidence, credentials, or sealed binaries are included. Push this commit
+to origin/main and verify identical tips and a clean worktree. Sealing/import of 1.3.6.0 remains
+the signing-machine follow-up; older entries describe the pre-commit checkpoints.
+
+
+## September 5 19:25 ET — operator task fixes implemented and live-tested
+
+Pulled main with `git pull --ff-only`: already current at 9e6b760. Preserved existing local
+validation/state changes. Fixed Cluster Summary to calculate used percentage from native Size
+and FreeSpace, rejecting missing/invalid capacity rather than inventing a healthy value. Both
+Cluster and VMM task catch blocks now print diagnostics and exit 1. All five VMM task entry-point
+write actions now bind the existing VMMServerConnectionRunAsProfile. Binding inside the composite
+member is NOT schema-valid; keep the binding on Task/WriteAction.
+
+Added `tests/unit/HyperVPrivateCloud.OperatorTaskRegression.Tests.ps1`: 8 passed, 0 failed,
+including native Windows PowerShell subprocess execution, invalid capacity and VMM access denial.
+Built 13 candidate MPs as 1.3.6.0 with Build-HyperVPrivateCloudManagementPacks.ps1 -RequireComplete;
+all 13 passed Test-HyperVPrivateCloudSchema.ps1. No published 1.3.5.0 binaries were changed.
+
+Copied the built candidate task modules and task definitions into temporary read-only MP
+Hcs.HyperVPrivateCloud.ReleaseValidation 1.0.0.6, referencing installed Library 1.3.5.0. Schema
+and SDK import passed. Actual SCOM task runs: Cluster Summary on A02 returned full CSV output
+with UsedPercent 21.76; VMM HostStatus returned all four hosts OK/Responding. Both exit 0,
+empty stderr, no FAILED text. Evidence: tmp/operator-validation/{cluster-result,vmm-result}.xml;
+builder: tmp/New-OperatorValidation.ps1. Removed the exact temporary validation MP afterwards.
+No guest agents, VM changes, Run As account changes, or customer override changes.
+
+Changed product files: Cluster task script, VMM task script, VMM XML template. Installed product
+is STILL sealed 1.3.5.0; its original tasks remain unfixed until the new version is sealed on
+the signing machine and imported. Next: finish broader tests, commit/push, then seal/publish
+1.3.6.0 on the signing machine and verify the exact sealed artifacts. Do not overwrite 1.3.5.0.
+
+Final local checks: HyperVPrivateCloud.Build.Tests.ps1 passed 92/92; operator regression suite
+passed 8/8 (100 selected tests total). `git diff --check` passed. Full unit suite and new GitHub
+Actions run were not performed in this fix step. Changes remain local/uncommitted on main.
+
+
+## September 5 evening — sealed upgrade installed; task defects found
+
+All 13 product MPs are now sealed 1.3.5.0. The topology hotfix was removed after all four permanent
+discovery tasks returned SUCCESS. B01 briefly lost its pipeline descriptor; a permanent-discovery
+retry restored it, without reintroducing the hotfix. Inventory is 38 VMs, 38 runtimes, four pipelines.
+All four upgraded diagnostic tasks pass. VMM HostGroupCapacity recovered naturally to Good.
+Read [SEALED_1.3.5_VALIDATION.md](SEALED_1.3.5_VALIDATION.md) for evidence and two newly confirmed
+operator-task defects: VMM task Run As binding is absent; Cluster Summary reads missing PercentUsed.
+Both report FAILED in stdout despite task status Succeeded. Product source was not changed in this
+install/check step. VMM uplinks also recovered naturally to Good by 18:42 ET; both corrected VMM
+monitors are healthy. All 268 object/class identities match the pre-upgrade snapshot. Do not call
+1.3.5.0 fully certified or reimport the removed topology hotfix merely because older entries say so.
+
+## ACTIVE September 5 evening — sealed 1.3.5.0 upgrade
+
+User authorized import of the 13 MPs in
+`C:/Users/kristopher.turner/Downloads/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.5.0`.
+Fast-forwarded clean local main to published handoff `9e6b760`; no source changes from this step.
+The files match published SHA-256 values; Release package validator passes; all 13 signatures,
+versions/tokens, embedded XML schemas and live prerequisites pass. Embedded XML is equivalent to
+rebuilt current source, normalizing only XML declaration and CDATA representation. All 64 PS
+bodies parse without errors. Snapshots/override exports are under `tmp/sealed-135/`.
+
+Import started around 18:30 ET, log `tmp/sealed-135/import.tsv`. Do not assume completion from this
+entry: query installed versions and the log. Keep topology hotfix until all four permanent topology
+discoveries return SUCCESS and ingested inventory is verified; then remove only that hotfix and
+verify objects persist. Do not import starter overrides over customer settings.
+
+Local verifier initially returned HRESULT 0x80131701 because legacy strong-name APIs could not
+activate their runtime. Fixed the helper's startup configuration, not the MPs or signature policy;
+forced verification then returned True/True and HRESULT 0 for every MP. The helper and config are
+`tmp/SealedUpgrade2.exe` / `.exe.config`, source `tmp/SealedUpgrade.cs`. No signing bypass was used.
+
 ## 2026-09-05 — 1.3.5.0 published; final GitHub gates passed
 
 Release asset commit `379b988a0179e24fd471840531dc03e19b94c732` is on `origin/main`.
