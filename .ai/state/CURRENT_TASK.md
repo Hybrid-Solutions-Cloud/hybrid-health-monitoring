@@ -1,5 +1,13 @@
 # Current task
 
+## September 5 — source pushed; monitor Actions and hand off sealing
+
+All implementation changes and `.ai/state/SEALING_AGENT_PROMPT.md` were committed and pushed to
+`origin/main` in `78bace53a370598b2fd172a2fbe5b688e659bfbf`. The current task is to confirm the final
+pushed commit's MP contract, documentation build and Pages deployment jobs are green, then give
+the operator the committed prompt for the other AI. Do not dispatch the separate sealing/release
+workflow from this jump server. Earlier references to uncommitted source are historical.
+
 ## September 5 checkpoint — live pre-sealing scenarios complete
 
 Availability and network fault/recovery, dependency rollup, live migration, stable VM/NIC identity,

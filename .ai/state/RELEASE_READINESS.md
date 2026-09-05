@@ -2,6 +2,8 @@
 
 Status: **pre-sealing live scenarios passed; final sealed release not certified**.
 Updated 2026-09-05 from live HAAS-SDR testing on the jump server.
+Implementation and the signing-machine prompt are now committed and pushed in `78bace5`.
+The GitHub Actions run for the final pushed source must pass before the signing-machine handoff.
 The operator's finish line is release readiness, not merely XML ready for sealing. Workload VMs
 must not require SCOM agents. Sealing and publication remain reserved for another machine.
 
@@ -100,5 +102,6 @@ applicability checked; empty optional branches must not be falsely marked health
 
 The refreshed sealing-handoff-1.3.5.0.zip contains this audit, final test receipt, candidate XML,
 source overlay, hashes and selected live evidence. It supersedes the earlier bundle but remains
-an unsigned transfer bundle, not an approved release package. Source is still uncommitted on main;
-no release was sealed or published.
+an unsigned transfer bundle, not an approved release package. The pushed source commit is now
+authoritative; the private ZIP predates the commit/push status and sealing-agent prompt additions.
+No release was sealed or published.
