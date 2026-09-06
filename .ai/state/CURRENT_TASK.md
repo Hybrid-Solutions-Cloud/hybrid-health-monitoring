@@ -1,5 +1,15 @@
 # Current task
 
+## September 6 — sealed 1.3.7.0 staged for publication
+
+Release source commit `6ffdcffc972d8ffc048102ca92d34e50daabb55c` produced all 13 sealed
+MPs at 1.3.7.0 with permanent token `54d0fb1159995c86`. Release-mode VSAE/SDK, approved-key,
+external-dependency, strong-name, identity, sealed VMM correction, 15-bundle content, and all 30
+catalogued checksum validations pass. The temporary signing-key file was deleted and confirmed
+absent. Exact assets are staged in new immutable `1.3.7.0` and refreshed `latest` trees; 1.3.6.0
+is unchanged. Commit, push, green Actions, and live-site byte verification remain. Exact sealed
+upgrade/import and runtime soak are still untested.
+
 ## September 6 — prepare and publish sealed 1.3.7.0
 
 Pulled corrected VMM source commit `573099c` from `origin/main`. Release documentation now targets

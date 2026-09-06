@@ -1,5 +1,17 @@
 # Hyper-V release-readiness audit
 
+## September 6 — sealed 1.3.7.0 package validation
+
+Clean source `6ffdcffc972d8ffc048102ca92d34e50daabb55c` was sealed in Release mode using the approved
+permanent identity and correct sealed dependencies, with SDK verification enabled. All 13 MPs have
+version 1.3.7.0 and token `54d0fb1159995c86`; all 13 forced strong-name checks pass. The release
+validator confirms VSAE, dependency identities/signatures, 15 bundle contents, release eligibility,
+and all 30 SHA-256 catalogue entries. Independent extraction of the sealed VMM XML confirms the
+compiler-temp isolation and corrected native mappings. Exact 31-file copies in immutable 1.3.7.0
+and `latest` match the validated output. The temporary private key is deleted. Publication CI and
+live-site byte verification remain, followed separately by exact sealed upgrade/import and runtime
+soak acceptance; the latter two are not claimed as passed.
+
 ## September 6 — 1.3.7.0 VMM corrective release preparation
 
 Pulled source commit `573099c`, which corrects VMM compiler temporary-directory initialization and

@@ -1,5 +1,22 @@
 # Handoff
 
+## September 6 — sealed 1.3.7.0 built and staged
+
+Built from clean source commit `6ffdcffc972d8ffc048102ca92d34e50daabb55c` using the governed
+approved private key, Microsoft VSAE/FASTSEAL, curated sealed dependencies at
+`D:/tmp/hcs-hyperv-deps-1.4.0.0`, Release mode, and SDK verification enabled. Output is
+`D:/tmp/hcs-hyperv-release-1.3.7.0-final-20260906-0005/assets`. The private-key temp file was
+deleted immediately and confirmed absent. Packager and independent validator results: 13 MPs,
+all version 1.3.7.0 and token `54d0fb1159995c86`; 13/13 forced strong-name checks; VSAE and
+external dependency strong-name checks true; 15 bundles; 30/30 checksum entries; ten direct
+assertions against the sealed VMM XML for the compiler-temp and native-mapping corrections.
+
+Copied the exact 31 assets into the new immutable `docs/public/downloads/hyper-v-private-cloud/1.3.7.0`
+tree and refreshed `latest`; filename and SHA-256 comparisons pass for all 62 staged copies, and
+both directories pass `Test-HyperVPrivateCloudReleasePackage.ps1 -RequireReleaseEligible`.
+Immutable 1.3.6.0 is unchanged. Publication commit/push, Actions, and deployed-byte verification
+remain. Exact sealed 1.3.7.0 upgrade/import and runtime soak have not been run.
+
 ## September 6 — 1.3.7.0 release preparation on the signing machine
 
 Fast-forwarded clean `main` from `97f3ac2` to `573099c`, the committed VMM initialization and
