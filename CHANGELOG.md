@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — VMM runtime corrections (1.3.7.0 candidate)
+## [1.3.7.0] — 2026-09-05
 
 - Isolate VMM module compiler temporary files in the SCOM workflow workspace and restore
   TEMP/TMP afterward. Remove the second import attempt that masked the original compiler
@@ -11,7 +11,10 @@
 - Display library share inventory and owning servers without claiming placement eligibility.
   Missing optional values are explicit; failed library queries now fail the task.
 
-These are source corrections, not published sealed artifacts. Installed 1.3.6.0 is unchanged.
+Ten source-coupled SCOM executions passed across both VMM servers using the existing Run As
+profile. The sealed release passed VSAE/SDK, strong-name, identity, package-content, and checksum
+validation with permanent token `54d0fb1159995c86`. The exact sealed 1.3.7.0 upgrade and runtime
+soak remain post-publication acceptance work and are not claimed as passed.
 
 ## [1.3.6.0] — 2026-09-05
 

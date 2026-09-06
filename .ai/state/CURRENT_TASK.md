@@ -1,5 +1,14 @@
 # Current task
 
+## September 6 — prepare and publish sealed 1.3.7.0
+
+Pulled corrected VMM source commit `573099c` from `origin/main`. Release documentation now targets
+the unused version 1.3.7.0. The complete local suite passes 258/258, all 13 management-pack schemas
+pass, dependency-document validation passes, and the VitePress production build passes. The next
+step is a clean release-source commit, followed by sealing all 13 MPs with the approved permanent
+identity and publishing the exact validated assets. Exact sealed 1.3.7.0 upgrade/import and runtime
+soak have not been run and must not be claimed as passed.
+
 ## Current — VMM source corrections implemented for 1.3.7.0
 
 Fixed compiler temporary-directory initialization across VMM task/health/discovery scripts and

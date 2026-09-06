@@ -1,5 +1,16 @@
 # Handoff
 
+## September 6 — 1.3.7.0 release preparation on the signing machine
+
+Fast-forwarded clean `main` from `97f3ac2` to `573099c`, the committed VMM initialization and
+native-data correction. Confirmed that version 1.3.7.0 has no existing immutable download directory
+or GitHub release tag. Updated current release documentation, changelog, and release notes for
+1.3.7.0 while preserving 1.3.6.0 as immutable release history. Validation before sealing: full
+Pester suite 258 passed, zero failed/skipped (770.07 seconds); all 13 schemas passed during that
+suite; dependency-document validation passed; VitePress production build passed (existing chunk-size
+advisory only); `git diff --check` passed. Exact sealed 1.3.7.0 upgrade/import and runtime soak remain
+untested and are explicitly excluded from the release claim.
+
 ## Publish VMM corrective source to main
 
 Operator requested committing all changes, pushing main, and waiting for green Actions.

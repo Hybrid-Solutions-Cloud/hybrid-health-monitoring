@@ -1,5 +1,15 @@
 # Hyper-V release-readiness audit
 
+## September 6 — 1.3.7.0 VMM corrective release preparation
+
+Pulled source commit `573099c`, which corrects VMM compiler temporary-directory initialization and
+native task/health/discovery mappings. Ten source-coupled live SCOM executions had already passed
+across both VMM servers with the existing Run As profile. On the signing machine, the complete
+Pester suite now passes 258/258, all 13 candidate schemas pass, dependency documentation is current,
+and the VitePress production build passes. Version 1.3.7.0 is unused. These results authorize a new
+sealed build but do not establish exact-sealed upgrade/import or runtime-soak acceptance; those
+remain post-publication operator tests and must not be claimed as passed.
+
 ## September 5 — 1.3.6.0 operator-task corrective release
 
 Candidate 1.3.6.0 fixes the two task defects found in sealed 1.3.5.0: Cluster Summary capacity and

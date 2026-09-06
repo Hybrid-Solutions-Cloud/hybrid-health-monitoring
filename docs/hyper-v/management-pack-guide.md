@@ -6,11 +6,11 @@ description: Public operator guide for building, installing, validating, tuning,
 # Hyper-V Management Pack administration guide
 
 This guide explains how Hyper-V Private Cloud Monitoring is installed, tuned, validated,
-upgraded, and removed. Version `1.3.6.0` ("Private Cloud Powered by Hyper-V: A 360° View") is permanently sealed with public key token
+upgraded, and removed. Version `1.3.7.0` ("Private Cloud Powered by Hyper-V: A 360° View") is permanently sealed with public key token
 `54d0fb1159995c86` and published as repository-hosted Management Packs, public overrides,
 manifests, checksums, and profile bundles.
 
-**[Download version 1.3.6.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
+**[Download version 1.3.7.0 now](../downloads/hyper-v-private-cloud.md).** Once imported,
 the [operations guide](operations-guide.md) covers day-two use: console layout, tuning, tasks.
  Import exactly one
 deployment profile's reviewed Discovery and Monitoring override pair. The former Hyper-V `0.1.0`
@@ -35,7 +35,7 @@ Each supported capability is a separate sealed adapter. Publisher-owned prerequi
 redistributed in the HCS download and must be installed before the corresponding adapter.
 
 “Four core MPs” is a dependency classification, not an instruction to reduce an existing
-installation to four files. The `1.3.6.0` deployment ZIP contains all 12 non-PureStorage solution
+installation to four files. The `1.3.7.0` deployment ZIP contains all 12 non-PureStorage solution
 MPs so one import upgrades Library, Discovery, Monitoring, Presentation, Cluster, Storage, S2D,
 File Services, Network ATC, Physical Network, SDN, and VMM together. Pure Storage is separate.
 
@@ -130,7 +130,7 @@ storage objects. The S2D package's Cluster and Windows Server prerequisites must
 and the Microsoft pack must already discover its subsystem, nodes, disks, pools, virtual disks,
 volumes, and file shares.
 
-The current HCS product release is `1.3.6.0`. Independently, its S2D adapter references the lowest
+The current HCS product release is `1.3.7.0`. Independently, its S2D adapter references the lowest
 compatible **Microsoft.Storage.Library** identity while requiring Microsoft's inspected `1.0.47.4`
 S2D package as the supported minimum. These Microsoft dependency versions are not the HCS product
 version. The adapter contributes DA membership, health rollup, query-pipeline coverage, and views
@@ -337,9 +337,10 @@ Wait for configuration distribution and then verify:
 Do not compensate for missing or duplicate topology by changing monitoring thresholds. Resolve the
 discovery problem first.
 
-When upgrading from 1.3.5.0, import all selected 1.3.6.0 sealed packs together and retain every
-customer-owned override MP. Confirm Cluster Summary returns CSV capacity and that the VMM tasks run
-through the configured VMM Run As account. Environments still upgrading from 1.3.4.0 with the
+When upgrading from 1.3.6.0, import all selected 1.3.7.0 sealed packs together and retain every
+customer-owned override MP. Confirm VMM tasks, health, and discovery initialize under the configured
+VMM Run As account and that agent-version/library fields are populated. Environments still upgrading
+from 1.3.4.0 with the
 temporary `Hcs.HyperVPrivateCloud.Topology.Hotfix` must import the new sealed packs first, confirm
 permanent discovery owns the full topology, and only then remove that hotfix. Never remove customer
 overrides during either upgrade path.
@@ -347,7 +348,7 @@ overrides during either upgrade path.
 ## Troubleshoot a dark or partially upgraded installation
 
 First prove that the complete solution was upgraded. This command must return exactly 12 rows at
-`1.3.6.0` for the non-PureStorage deployment; any other version is a failed/partial import:
+`1.3.7.0` for the non-PureStorage deployment; any other version is a failed/partial import:
 
 ```powershell
 Get-SCOMManagementPack |
@@ -358,7 +359,7 @@ Get-SCOMManagementPack |
 ```
 
 If SDN, Storage, File Services, or Network ATC still shows an older version, re-import the 12 files from
-`Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.6.0.zip` together. Do not change or remove the
+`Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.7.0.zip` together. Do not change or remove the
 customer overrides, do not disable agent proxy, and do not shorten the seed intervals to compensate.
 
 For event 21414 or 21406, record the workflow name, command line, script arguments, stdout, stderr,
@@ -377,7 +378,7 @@ Event 8304 is Failover Cluster/CSV health. Its text includes the computer, suppl
 exception type, and failed query. Run `Get-Cluster`, `Get-ClusterNode`, `Get-ClusterSharedVolume`,
 and `Get-Counter -ListSet 'Cluster CSV File System'` under the agent account. If `Get-Cluster` is
 missing, run `Install-WindowsFeature RSAT-Clustering-PowerShell`; otherwise repair the first failing
-cluster/counter query. Version 1.3.6.0 performs node, quorum, network, group, and CSV collection
+cluster/counter query. Version 1.3.7.0 performs node, quorum, network, group, and CSV collection
 locally so LocalSystem on a passive node does not authenticate remotely to the owner node. A
 NoMatchingEventsFound result is treated as an empty event set, while access and missing-log errors
 remain visible; CSV counters are skipped on clusters with no CSVs. An empty staged BoundaryId does
@@ -535,8 +536,8 @@ Generate a customer-owned pair with:
     -TuningTier Standard `
     -OrganizationId Contoso `
     -OrganizationName 'Contoso' `
-    -Version '1.3.6.0' `
-    -ProductVersion '1.3.6.0' `
+    -Version '1.3.7.0' `
+    -ProductVersion '1.3.7.0' `
     -PublicKeyToken '54d0fb1159995c86' `
     -OutputPath './out/contoso-overrides'
 ```
@@ -544,7 +545,7 @@ Generate a customer-owned pair with:
 `Version` belongs to the customer-owned override MPs. `ProductVersion` must exactly match the
 installed sealed Hyper-V Private Cloud MPs, and `PublicKeyToken` must match their signing identity.
 Neither product fact has a default because guessing produces unresolved references at import time.
-The product version and token above are the facts for release `1.3.6.0`; confirm them against the
+The product version and token above are the facts for release `1.3.7.0`; confirm them against the
 governed release manifest before generating files for a later release.
 
 The catalog explicitly names every workflow, target class, local module, property, and
@@ -555,7 +556,7 @@ performance collection. A custom profile can define different same-MP Discovery 
 groups; generation fails on cross-unsealed-MP group references.
 
 The [public overrides ZIP](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip)
-contains the canonical override templates generated for product `1.3.6.0` and token
+contains the canonical override templates generated for product `1.3.7.0` and token
 `54d0fb1159995c86`.
 
 Then:
@@ -633,7 +634,7 @@ Microsoft's import/removal documentation before proceeding.
 
 ## Complete Component, Object, and Workflow Reference (360° Architecture)
 
-Release `1.3.6.0` provides the complete 360° service model for Hyper-V Private Clouds. Below is the exhaustive reference of all components, managed classes, discoveries, unit monitors, performance rules, operator diagnostic tasks, and override parameters.
+Release `1.3.7.0` provides the complete 360° service model for Hyper-V Private Clouds. Below is the exhaustive reference of all components, managed classes, discoveries, unit monitors, performance rules, operator diagnostic tasks, and override parameters.
 
 ### 1. Component & Object Model Reference
 
