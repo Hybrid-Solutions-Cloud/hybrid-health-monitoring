@@ -1,5 +1,15 @@
 # Hyper-V release-readiness audit
 
+## September 6 — sealed 1.3.8.0 package validation
+
+Clean source `fd356e266dad446be1ba872bb9474a3f4764786d` was sealed in Release mode with the approved
+permanent identity and correct dependencies, with SDK verification enabled. All 13 MPs are version
+1.3.8.0 with token `54d0fb1159995c86`; 13/13 forced strong-name checks pass. VSAE, dependency,
+15-bundle content, and 30-checksum gates pass. Exact sealed XML independently proves 522/522
+support-knowledge coverage and 159/159 enabled unit-monitor root paths, plus the new Security,
+cluster-evidence, and VMM relationship content. The private key is deleted. Publication CI and
+deployed-byte verification remain; exact sealed upgrade/import and runtime soak are not yet tested.
+
 ## September 6 — 1.3.8.0 day-2 release preparation
 
 Pulled source through `42c9e93`, covering generated support for 522 elements, complete source-defined

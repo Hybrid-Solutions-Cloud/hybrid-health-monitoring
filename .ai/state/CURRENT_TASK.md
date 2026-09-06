@@ -1,5 +1,15 @@
 # Current task
 
+## September 6 — sealed 1.3.8.0 staged for publication
+
+Clean release source `fd356e266dad446be1ba872bb9474a3f4764786d` produced all 13 sealed
+MPs at 1.3.8.0 with permanent token `54d0fb1159995c86`. Release-mode VSAE/SDK, dependency,
+strong-name, identity, package, checksum, sealed knowledge, and exact sealed health-graph checks
+pass: 522/522 supported elements have knowledge and all 159 enabled unit monitors reach the root.
+The temporary private key was deleted and confirmed absent. Stage the exact 31-file assets in new
+immutable 1.3.8.0 and `latest`, then commit/push and verify CI and deployed bytes. Exact sealed
+upgrade/import and runtime soak remain untested.
+
 ## September 6 — seal and publish day-2 release 1.3.8.0
 
 Pulled clean `origin/main` from `8fbb62e` to `42c9e93`. The upstream source/fixture commits are

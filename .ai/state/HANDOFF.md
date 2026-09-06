@@ -1,5 +1,22 @@
 # Handoff
 
+## September 6 — sealed 1.3.8.0 built and independently validated
+
+Built from clean source `fd356e266dad446be1ba872bb9474a3f4764786d` using the governed
+approved key, Microsoft VSAE/FASTSEAL, Release mode, SDK verification enabled, and curated sealed
+dependencies `D:/tmp/hcs-hyperv-deps-1.4.0.0`. Output is
+`D:/tmp/hcs-hyperv-release-1.3.8.0-final-20260906-1540/assets`. The temporary 596-byte private-key
+file was deleted immediately and confirmed absent. The packager and validator report 13 MPs and
+15 bundles, Release mode, releaseEligible true, VSAE true, external dependency strong names true,
+and token `54d0fb1159995c86`.
+
+Independent sealed-assembly inspection confirms 13/13 version/name/token identities, 13/13 forced
+strong names, and 30/30 checksums. Extracted exact sealed XML confirms knowledge for all 522
+supported elements, seven service and five enterprise Security paths, corrected cluster failure
+evidence, all five VMM enterprise edges, and 159/159 enabled product unit monitors reaching the
+solution root with zero missing. Stage/publish the exact assets next. Exact sealed 1.3.8.0
+upgrade/import and runtime soak have not been run.
+
 ## September 6 — 1.3.8.0 release preparation on the signing machine
 
 Fast-forwarded clean main from `8fbb62e` to `42c9e93`. The pulled day-2 source is already green in
