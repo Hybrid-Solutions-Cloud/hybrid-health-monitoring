@@ -1,5 +1,13 @@
 # Current task
 
+## September 6 — 1.3.7.0 published and green
+
+Release asset commit `ec85690ef1d7fdf0768b6f17518c04b45558484b` is on `origin/main`.
+GitHub Actions run `34010765042` passed MP validation, the VitePress build, and Pages deployment.
+All 31 files downloaded from the live immutable 1.3.7.0 path match the signed build output byte for
+byte, and all 30 catalogued checksums pass. Remote main is current. The remaining acceptance work is
+the exact sealed 1.3.7.0 upgrade/import and runtime soak; neither is claimed as passed.
+
 ## September 6 — sealed 1.3.7.0 staged for publication
 
 Release source commit `6ffdcffc972d8ffc048102ca92d34e50daabb55c` produced all 13 sealed

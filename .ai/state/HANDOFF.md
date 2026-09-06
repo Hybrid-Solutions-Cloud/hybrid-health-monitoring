@@ -1,5 +1,16 @@
 # Handoff
 
+## September 6 — 1.3.7.0 published, deployed, and byte-verified
+
+Pushed release-source commit `6ffdcffc972d8ffc048102ca92d34e50daabb55c` and exact asset
+commit `ec85690ef1d7fdf0768b6f17518c04b45558484b` to `origin/main`. GitHub Actions run
+`34010765042` completed successfully: Validate Hyper-V MP source, Build VitePress site, and Deploy
+GitHub Pages all passed. Downloaded all 31 files from the live immutable 1.3.7.0 site path into
+`D:/tmp/hcs-hyperv-live-1.3.7.0-20260906-0015`; every live SHA-256 matches the original signed
+build and all 30 `SHA256SUMS.txt` entries verify. The release is published. No workload-VM SCOM
+agent was installed. Exact sealed 1.3.7.0 upgrade/import and runtime soak remain untested and must
+not be described as passed.
+
 ## September 6 — sealed 1.3.7.0 built and staged
 
 Built from clean source commit `6ffdcffc972d8ffc048102ca92d34e50daabb55c` using the governed
