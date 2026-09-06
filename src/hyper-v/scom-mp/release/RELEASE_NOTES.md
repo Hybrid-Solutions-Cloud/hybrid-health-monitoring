@@ -7,6 +7,11 @@ capability Management Packs, and separate public Discovery and Monitoring overri
 
 ## Version 1.3.6.0 operator-task corrective release
 
+Source follow-up: the unreleased 1.3.7.0 candidate fixes VMM initialization under SCOM Run As
+by isolating compiler temporary files; it also corrects native agent-version, host maintenance/CPU,
+and library status mappings. The same initialization correction covers VMM health and discovery.
+This candidate requires new sealing and exact-artifact acceptance; published 1.3.6.0 is unchanged.
+
 Version `1.3.6.0` is an in-place upgrade from `1.3.5.0`. It corrects the final two defects found
 during live validation of the sealed 1.3.5.0 upgrade. Cluster Summary now derives CSV utilization
 from native size and free-space values and explicitly fails on invalid capacity. All five VMM tasks

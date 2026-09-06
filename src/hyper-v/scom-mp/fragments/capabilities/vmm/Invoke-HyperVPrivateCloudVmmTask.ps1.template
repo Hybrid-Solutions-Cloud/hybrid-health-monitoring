@@ -15,18 +15,49 @@ $lines = [System.Collections.Generic.List[string]]::new()
 function Add-HcsText { param($Object) if ($null -ne $Object) { $lines.Add((($Object | Out-String -Width 220).TrimEnd())) } }
 function Add-HcsSection { param([string]$Title) $lines.Add(''); $lines.Add("=== $Title ===") }
 
+function Get-HcsTaskValue {
+    param($Object, [string[]]$Paths)
+    foreach ($path in $Paths) {
+        $value = $Object
+        foreach ($part in $path.Split('.')) {
+            if ($null -eq $value -or $null -eq $value.PSObject.Properties[$part]) { $value = $null; break }
+            $value = $value.PSObject.Properties[$part].Value
+        }
+        if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
+    }
+    return 'Unavailable'
+}
+
+function Import-HcsTaskVmmModule {
+    $module = Get-Module -ListAvailable -Name VirtualMachineManager -ErrorAction Stop | Select-Object -First 1
+    if ($null -eq $module) { throw 'The VirtualMachineManager PowerShell module is not available on this server.' }
+    # SCOM Run As can inherit SYSTEM's TEMP. VMM initializes C# via Add-Type; its compiler
+    # cannot reliably read source files there. Use a private directory in the task workspace.
+    $root = if ($PSScriptRoot) { $PSScriptRoot } else { [IO.Path]::GetTempPath() }
+    $scratch = [IO.Path]::GetFullPath((Join-Path $root ('HcsVmmTask-' + [guid]::NewGuid().ToString('N'))))
+    $previousTemp = $env:TEMP
+    $previousTmp = $env:TMP
+    [void][IO.Directory]::CreateDirectory($scratch)
+    try {
+        $env:TEMP = $scratch
+        $env:TMP = $scratch
+        # Import once: retrying a partially initialized module hides the initial error behind
+        # duplicate aliases. Preserve the original diagnostic instead.
+        Import-Module -Name $module.Path -Global -WarningAction SilentlyContinue -ErrorAction Stop
+    }
+    finally {
+        $env:TEMP = $previousTemp
+        $env:TMP = $previousTmp
+        # Exact, uniquely created task-owned directory; never remove the workspace itself.
+        if ([IO.Path]::GetFileName($scratch) -match '^HcsVmmTask-[a-f0-9]{32}$') {
+            Remove-Item -LiteralPath $scratch -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 $lines.Add("Hyper-V Private Cloud VMM task '$Action' on $ComputerName at $([DateTime]::UtcNow.ToString('o'))")
 try {
-    $module = Get-Module -ListAvailable -Name VirtualMachineManager -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($null -eq $module) { throw 'The VirtualMachineManager PowerShell module is not available on this server.' }
-    try {
-        # Windows PowerShell 5.1 host: VirtualMachineManager is native here. -UseWindowsPowerShell
-        # is a PowerShell 7 parameter and raises ParameterBindingException under 5.1.
-        Import-Module -Name $module.Name -WarningAction SilentlyContinue -ErrorAction Stop
-    }
-    catch {
-        Import-Module -Name $module.Path -ErrorAction Stop -WarningAction SilentlyContinue
-    }
+    Import-HcsTaskVmmModule
     $vmm = Get-SCVMMServer -ComputerName $ComputerName -ErrorAction Stop
     switch ($Action) {
         'FailedJobs' {
@@ -36,17 +67,26 @@ try {
         }
         'HostStatus' {
             Add-HcsSection 'Hosts'
-            Add-HcsText (Get-SCVMHost -VMMServer $vmm -ErrorAction Stop | Select-Object Name, OverallState, CommunicationState, MaintenanceMode, VMHostGroup, AgentVersion, HyperVVersion, CPUPercentageUsage | Format-Table -AutoSize)
+            Add-HcsText (Get-SCVMHost -VMMServer $vmm -ErrorAction Stop | Select-Object Name, OverallState, CommunicationState,
+                @{n='MaintenanceMode';e={Get-HcsTaskValue $_ @('MaintenanceHost','MaintenanceMode')}}, VMHostGroup,
+                @{n='AgentVersion';e={Get-HcsTaskValue $_ @('Agent.AgentVersion','ManagedComputer.AgentVersion','AgentVersion')}}, HyperVVersion,
+                @{n='CPUPercentageUsage';e={Get-HcsTaskValue $_ @('CpuUtilization','CPUPercentageUsage')}} | Format-Table -AutoSize)
         }
         'AgentVersions' {
             Add-HcsSection 'Server and agent versions'
             $lines.Add("VMM server $($vmm.Name) version $($vmm.ProductVersion)")
-            Add-HcsText (Get-SCVMHost -VMMServer $vmm -ErrorAction Stop | Group-Object AgentVersion | Select-Object @{ n = 'AgentVersion'; e = { $_.Name } }, Count, @{ n = 'Hosts'; e = { ($_.Group.Name -join ', ') } } | Format-Table -AutoSize -Wrap)
+            Add-HcsText (Get-SCVMHost -VMMServer $vmm -ErrorAction Stop |
+                Select-Object Name, @{n='AgentVersion';e={Get-HcsTaskValue $_ @('Agent.AgentVersion','ManagedComputer.AgentVersion','AgentVersion')}} |
+                Group-Object AgentVersion | Select-Object @{ n = 'AgentVersion'; e = { $_.Name } }, Count, @{ n = 'Hosts'; e = { ($_.Group.Name -join ', ') } } | Format-Table -AutoSize -Wrap)
         }
         'LibraryStatus' {
             Add-HcsSection 'Library servers and shares'
-            Add-HcsText (Get-SCLibraryServer -VMMServer $vmm -ErrorAction SilentlyContinue | Select-Object Name, OverallState, CommunicationState, AgentVersion | Format-Table -AutoSize)
-            Add-HcsText (Get-SCLibraryShare -VMMServer $vmm -ErrorAction SilentlyContinue | Select-Object Name, Path, State, IsAvailableForPlacement | Format-Table -AutoSize)
+            Add-HcsText (Get-SCLibraryServer -VMMServer $vmm -ErrorAction Stop | Select-Object Name,
+                @{n='Status';e={Get-HcsTaskValue $_ @('Status','ManagedComputer.State')}},
+                @{n='AgentVersion';e={Get-HcsTaskValue $_ @('ManagedComputer.AgentVersion','AgentVersion')}} | Format-Table -AutoSize)
+            # Shares expose inventory, not independent health or placement eligibility.
+            Add-HcsText (Get-SCLibraryShare -VMMServer $vmm -ErrorAction Stop | Select-Object Name, Path,
+                @{n='LibraryServer';e={Get-HcsTaskValue $_ @('LibraryServer.Name')}} | Format-Table -AutoSize)
         }
         'RefreshHost' {
             if ([string]::IsNullOrWhiteSpace($Parameter)) { throw 'Parameter must carry the host name as known to VMM.' }

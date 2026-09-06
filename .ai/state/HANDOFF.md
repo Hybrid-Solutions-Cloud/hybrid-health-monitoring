@@ -1,5 +1,64 @@
 # Handoff
 
+## Publish VMM corrective source to main
+
+Operator requested committing all changes, pushing main, and waiting for green Actions.
+Fetched origin: main and origin/main both start at 97f3ac2 with no divergence. Include all
+12 changed/new source, test, changelog, release-note, and validation/state files. Ignored
+temporary runtime evidence and candidate binaries remain local. Existing validation: 179
+selected tests and ten live SCOM executions pass; all 13 candidate schemas pass. Push this
+commit and inspect the matching Actions run through completion. Sealing 1.3.7.0 remains on
+the signing machine. Earlier local/uncommitted statements are historical checkpoints.
+
+
+## September 5 late evening — VMM source bugs fixed and live validated
+
+User explicitly directed fixing bugs found during validation, not stopping after diagnosis.
+Implemented the VMM compiler-temp isolation fix across tasks, health, and discovery; removed
+the masking import retry; corrected task property mappings and nested agent-version monitoring.
+See VMM_1.3.7_FIX_VALIDATION.md for root cause, changed behavior, and ten passing live executions
+across both VMM servers with the existing Run As profile and failure policy enabled. Native
+PowerShell 5.1 remains required for VMM. Both servers have no leftover compiler scratch folders.
+
+Product files: three VMM PS templates and VMM XML task descriptions/knowledge. Tests: operator
+regression suite and VMM runtime regression suite. CHANGELOG and release notes label this as
+unreleased 1.3.7.0 source. Candidate all-13 build/schema passes. Source is local/uncommitted on
+main at 97f3ac2; preserve previous import-report/state edits. No sealed binaries changed.
+Next release work: commit/push validated source, seal 1.3.7.0 on the signing machine, then import
+and validate those exact bytes. Do not call installed 1.3.6.0 permanently corrected by temporary
+validation tasks. Test completion and temporary validation MP cleanup are recorded below.
+
+Final results: 179 selected tests passed, zero failed/skipped (92 build contracts, 65 embedded
+script smoke cases, 15 operator regressions, seven VMM runtime regressions). Final 1.3.7.0
+all-13 candidate build and schema check passed after all source/knowledge changes; git diff
+--check passed. Ten live SCOM task/probe runs passed. The temporary ReleaseValidation MP was
+removed successfully; only installed sealed 1.3.6.0 remains. No unresolved failures in these
+checks. Full repository suite/CI and newly sealed 1.3.7.0 acceptance were not run in this step.
+
+
+## September 5 late evening — sealed 1.3.6.0 imported, further VMM defects found
+
+All 13 product MPs are installed and SDK-confirmed sealed 1.3.6.0. All four Cluster Summary,
+diagnostic, and permanent discovery tasks pass; 268 identities and all 63 unsealed packs are
+unchanged. All 42 host/VM pipeline monitors are healthy. Read SEALED_1.3.6_VALIDATION.md for
+the detailed evidence and remaining failures: AgentVersions and LibraryStatus fail repeatedly
+as actual product tasks. Diagnostic capture exposes a Get-VMMServer alias conflict during VMM
+module import on VMM02; some VMM01 diagnostic retries succeed but version/status fields are
+blank. Do not certify the release as fully green. No source/binary fixes were made in this
+import/verification step. Local main is 97f3ac2; report/state changes are uncommitted.
+The temporary read-only ReleaseValidation diagnostic MP was removed after all capture tasks
+completed. All three instrumented AgentVersions retries passed on VMM01, without reproducing
+the earlier VMM02 alias error; this does not erase repeated actual product task failures.
+
+
+## Jump-server pull of sealed 1.3.6.0
+
+Pulled origin/main with --ff-only from 1fa10f0 to 97f3ac2 at the operator's request.
+Local and remote main match. All 30 SHA256SUMS entries in the immutable 1.3.6.0 directory
+verify locally; all 13 .mp files are present. No SCOM import or runtime changes performed
+in this pull-only step. This local handoff note is the only post-pull working-tree change.
+
+
 ## September 5 — 1.3.6.0 published and green
 
 Release asset commit `a17382a77765303a94f2e7187dc4693393c883da` is on `origin/main`.

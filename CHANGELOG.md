@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] — VMM runtime corrections (1.3.7.0 candidate)
+
+- Isolate VMM module compiler temporary files in the SCOM workflow workspace and restore
+  TEMP/TMP afterward. Remove the second import attempt that masked the original compiler
+  error with a duplicate Get-VMMServer alias error. Apply this to tasks, health collection,
+  and fabric discovery.
+- Read native nested agent versions in both operator tasks and agent-version drift monitoring.
+  Use native maintenance/CPU values and library server status instead of nonexistent properties.
+- Display library share inventory and owning servers without claiming placement eligibility.
+  Missing optional values are explicit; failed library queries now fail the task.
+
+These are source corrections, not published sealed artifacts. Installed 1.3.6.0 is unchanged.
+
 ## [1.3.6.0] — 2026-09-05
 
 Corrective release for two operator-task defects confirmed while validating the sealed 1.3.5.0

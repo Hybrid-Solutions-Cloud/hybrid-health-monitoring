@@ -1,5 +1,22 @@
 # Current task
 
+## Current — VMM source corrections implemented for 1.3.7.0
+
+Fixed compiler temporary-directory initialization across VMM task/health/discovery scripts and
+corrected native VMM property mappings, including agent-version drift monitoring. Ten live
+SCOM executions pass across both VMM servers. See VMM_1.3.7_FIX_VALIDATION.md and latest HANDOFF.
+Published/installed 1.3.6.0 is unchanged; corrected source requires new sealing. Older findings
+below describe the pre-fix checkpoint, not the current source status.
+
+
+## Latest — sealed 1.3.6.0 imported and runtime-tested
+
+All 13 MPs upgraded. Original Cluster Summary and VMM HostStatus tests pass, as do four host
+diagnostics and permanent discoveries. Inventory and overrides unchanged. Broader VMM testing
+found recurring AgentVersions/LibraryStatus task failures and blank selected fields on successful
+diagnostic runs. See SEALED_1.3.6_VALIDATION.md; full acceptance is NOT green. Source unchanged.
+
+
 ## September 5 — seal and publish operator-task corrective release 1.3.6.0
 
 Pulled `1fa10f0`, which fixes the Cluster Summary capacity calculation, binds all five VMM tasks

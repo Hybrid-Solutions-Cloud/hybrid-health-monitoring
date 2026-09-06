@@ -106,13 +106,23 @@ try {
         return
     }
 
+    # Isolate VMM Add-Type compiler files from SYSTEM's inherited TEMP under SCOM Run As.
+    $root = if ($PSScriptRoot) { $PSScriptRoot } else { [IO.Path]::GetTempPath() }
+    $scratch = [IO.Path]::GetFullPath((Join-Path $root ('HcsVmmTask-' + [guid]::NewGuid().ToString('N'))))
+    $previousTemp = $env:TEMP
+    $previousTmp = $env:TMP
+    [void][IO.Directory]::CreateDirectory($scratch)
     try {
-        # Windows PowerShell 5.1 host: VirtualMachineManager is native here. -UseWindowsPowerShell
-        # is a PowerShell 7 parameter and raises ParameterBindingException under 5.1.
-        Import-Module -Name $module.Name -WarningAction SilentlyContinue -ErrorAction Stop
+        $env:TEMP = $scratch
+        $env:TMP = $scratch
+        Import-Module -Name $module.Path -Global -WarningAction SilentlyContinue -ErrorAction Stop
     }
-    catch {
-        Import-Module -Name $module.Path -ErrorAction Stop
+    finally {
+        $env:TEMP = $previousTemp
+        $env:TMP = $previousTmp
+        if ([IO.Path]::GetFileName($scratch) -match '^HcsVmmTask-[a-f0-9]{32}$') {
+            Remove-Item -LiteralPath $scratch -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
     foreach ($commandName in @('Get-SCVMMServer', 'Get-SCLogicalNetwork', 'Get-SCLogicalNetworkDefinition', 'Get-SCVMNetwork')) {
         if ($null -eq (Get-Command -Name $commandName -ErrorAction SilentlyContinue)) {

@@ -61,18 +61,28 @@ function Get-HcsPercentUsed {
 }
 
 function Import-HcsVmmModule {
-    if (Get-Command -Name 'Get-SCVMMServer' -ErrorAction SilentlyContinue) { return }
+    if (Get-Command -Name 'Get-SCVMMServer' -ListImported -ErrorAction SilentlyContinue) { return }
     $module = Get-Module -ListAvailable -Name 'VirtualMachineManager' | Select-Object -First 1
     if ($null -eq $module) {
         throw 'The VirtualMachineManager PowerShell module is unavailable. Install the matching VMM console on the VMM management server.'
     }
+    # Isolate VMM Add-Type compiler files from SYSTEM's inherited TEMP under SCOM Run As.
+    $root = if ($PSScriptRoot) { $PSScriptRoot } else { [IO.Path]::GetTempPath() }
+    $scratch = [IO.Path]::GetFullPath((Join-Path $root ('HcsVmmTask-' + [guid]::NewGuid().ToString('N'))))
+    $previousTemp = $env:TEMP
+    $previousTmp = $env:TMP
+    [void][IO.Directory]::CreateDirectory($scratch)
     try {
-        # Windows PowerShell 5.1 host: VirtualMachineManager is native here. -UseWindowsPowerShell
-        # is a PowerShell 7 parameter and raises ParameterBindingException under 5.1.
-        Import-Module -Name $module.Name -WarningAction SilentlyContinue -ErrorAction Stop
+        $env:TEMP = $scratch
+        $env:TMP = $scratch
+        Import-Module -Name $module.Path -Global -WarningAction SilentlyContinue -ErrorAction Stop
     }
-    catch {
-        Import-Module -Name $module.Path -ErrorAction Stop
+    finally {
+        $env:TEMP = $previousTemp
+        $env:TMP = $previousTmp
+        if ([IO.Path]::GetFileName($scratch) -match '^HcsVmmTask-[a-f0-9]{32}$') {
+            Remove-Item -LiteralPath $scratch -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -424,7 +434,11 @@ foreach ($facet in $modesToRun) {
             $drifted = [System.Collections.Generic.List[string]]::new()
             foreach ($vmHost in $vmHosts) {
                 $name = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('ComputerName', 'Name'))
-                $agentVersion = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('AgentVersion'))
+                $agent = Get-HcsPropertyValue -InputObject $vmHost -Name @('Agent', 'ManagedComputer')
+                $agentVersion = [string](Get-HcsPropertyValue -InputObject $agent -Name @('AgentVersion'))
+                if ([string]::IsNullOrWhiteSpace($agentVersion)) {
+                    $agentVersion = [string](Get-HcsPropertyValue -InputObject $vmHost -Name @('AgentVersion'))
+                }
                 if ([string]::IsNullOrWhiteSpace($agentVersion)) { continue }
                 $versions[$agentVersion] = $true
                 # Compare Major.Minor: VMM 2022 agents (10.22.x) and VMM 2025 servers (10.25.x) share the major

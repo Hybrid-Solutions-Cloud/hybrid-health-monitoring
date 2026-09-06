@@ -45,6 +45,7 @@ function Get-SCVMHostNetworkAdapter {
     [pscustomobject]@{ConnectionName='spare';VirtualNetwork='';LogicalNetworkMap=@{};ConnectionState='MediaDisconnected'}
     [pscustomobject]@{ConnectionName='uplink';VirtualNetwork='fixture-switch';LogicalNetworkMap=@{fixture='subnet'};ConnectionState='Connected'}
 }
+
 '@
         $result=Invoke-HcsFixtureProbe -TemplatePath $script:VmmProbe -Parameters @{ComputerName='fixture';Mode='VirtualSwitchUplink'} -Stubs $stubs
         $result.VirtualSwitchUplinkState | Should -Be 'Good'
@@ -59,5 +60,26 @@ function Get-SCVMHostNetworkAdapter { [pscustomobject]@{ConnectionName='uplink';
         $result=Invoke-HcsFixtureProbe -TemplatePath $script:VmmProbe -Parameters @{ComputerName='fixture';Mode='VirtualSwitchUplink'} -Stubs $stubs
         $result.VirtualSwitchUplinkState | Should -Be 'Critical'
         $result.VirtualSwitchUplinkStateDetail | Should -Match 'fixture-switch'
+    }
+}
+
+Describe 'Native VMM host agent version monitoring' {
+    BeforeAll { Import-Module (Join-Path $PSScriptRoot 'HcsProbeFixture.psm1') -Force }
+    It 'detects drift from the native nested agent object' {
+        $stubs=@'
+function Get-SCVMMServer { [pscustomobject]@{Name='fixture';ProductVersion='10.25.1439.0'} }
+function Get-SCVMHost { [pscustomobject]@{Name='host01';Agent=[pscustomobject]@{AgentVersion='10.22.1000.0'}} }
+'@
+        $result=Invoke-HcsFixtureProbe -TemplatePath $script:VmmProbe -Parameters @{ComputerName='fixture';Mode='AgentVersionDrift'} -Stubs $stubs
+        $result.AgentVersionDriftState | Should -Be 'Critical'
+        $result.AgentVersionDriftStateDetail | Should -Match '10.22.1000.0'
+    }
+    It 'recognizes matching native agent versions instead of NotApplicable' {
+        $stubs=@'
+function Get-SCVMMServer { [pscustomobject]@{Name='fixture';ProductVersion='10.25.1439.0'} }
+function Get-SCVMHost { [pscustomobject]@{Name='host01';ManagedComputer=[pscustomobject]@{AgentVersion='10.25.1439.0'}} }
+'@
+        $result=Invoke-HcsFixtureProbe -TemplatePath $script:VmmProbe -Parameters @{ComputerName='fixture';Mode='AgentVersionDrift'} -Stubs $stubs
+        $result.AgentVersionDriftState | Should -Be 'Good'
     }
 }
