@@ -2,6 +2,13 @@
 
 ## September 6 — authorized day-2 source commit and push
 
+Source commit `631bc9f` was pushed to main using the governed GitHub auth broker (the jump server's
+default Git login was unavailable). Automatic Actions run `34049807745` passed the site build,
+but its MP test job had 271 passes and one failure: the new positive VMM discovery fixture mocked
+VMM commands/import but not module discovery, so it depended on VMM being installed locally.
+Added a fixture-only Get-Module stub; shipped MP source is unchanged by this correction. Focused
+verification and a new automatic CI run will confirm the correction before final handoff.
+
 Operator requested commit/push of the completed day-2 work. Fetched `origin/main`; local and
 remote main were aligned at `8fbb62e`. Publishing the source, generated support documentation,
 regression tests and related validation/session notes under the existing delivery work item.

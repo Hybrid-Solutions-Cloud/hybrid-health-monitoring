@@ -38,6 +38,8 @@ function Get-WinEvent {
 Describe 'VMM enterprise diagram membership' {
     It 'emits the enterprise links in an actual discovery payload without empty singleton instances' {
         $stubs = @'
+# The positive fixture must not depend on VMM being installed on the build runner.
+function Get-Module { param([string]$Name, [switch]$ListAvailable) if ($Name -eq 'VirtualMachineManager') { [pscustomobject]@{Name=$Name;Path='fixture-vmm-module.psm1'} } }
 function Import-Module { }
 function Get-SCVMMServer { [pscustomobject]@{Name='fixture-vmm'} }
 function Get-SCLogicalNetwork { @() }
