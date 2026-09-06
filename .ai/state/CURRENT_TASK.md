@@ -11,9 +11,10 @@ unit test, dependency-document checks, all 13 schemas, and the VitePress product
 
 Release source is committed as `35caf7c`. All 13 MPs were sealed as 1.3.6.0 with the permanent
 identity; independent package, strong-name, identity, sealed-correction, bundle, and checksum gates
-pass. Exact validated bytes are staged in immutable 1.3.6.0 and `latest`. Next: commit/push these
-bytes and require green Actions. Immutable 1.3.5.0 remains untouched. Do not claim the exact sealed
-1.3.6.0 runtime upgrade or soak.
+pass. Exact validated bytes were published by `a17382a`; Actions run `34001447037` passed MP
+validation, the docs build, and Pages deployment. All 31 live-site files match the signed output and
+all 30 catalogued checksums pass. Immutable 1.3.5.0 remains untouched. The remaining work is exact
+sealed 1.3.6.0 runtime upgrade/soak acceptance, which has not been run.
 
 ## September 5 19:25 ET — requested operator task fixes
 

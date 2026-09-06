@@ -1,5 +1,18 @@
 # Handoff
 
+## September 5 — 1.3.6.0 published and green
+
+Release asset commit `a17382a77765303a94f2e7187dc4693393c883da` is on `origin/main`.
+GitHub Actions run `34001447037` passed **Validate Hyper-V MP source**, **Build VitePress site**,
+and **Deploy GitHub Pages**. Post-deployment verification downloaded all 31 files from the immutable
+1.3.6.0 site path; every file matched the signed build output, and all 30 `SHA256SUMS.txt` entries
+verified. The deployment ZIP SHA-256 is
+`b0bc4661ded106e1b95a8aaf9013053bb27afa1cfa5cc6f501e23cf45c59ff6d`.
+
+The site and `latest` alias now serve 1.3.6.0. Immutable 1.3.5.0 remains available and unchanged.
+No workload VM guest agent was installed. Do not claim the exact sealed 1.3.6.0 upgrade/import or
+runtime soak passed; those remain operator acceptance work.
+
 ## September 5 — 1.3.6.0 sealed and staged for publication
 
 Clean release source commit: `35caf7c25137483dfff10737110357eae47df9a4`. Final build root:

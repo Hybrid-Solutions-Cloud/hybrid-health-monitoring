@@ -8,8 +8,10 @@ the temporary validation pack was removed. Source regression, schema, dependency
 build gates pass. The final Release build from `35caf7c` passed VSAE/SDK, external dependency and
 product strong-name verification, 13 MP identity/version/token checks, direct sealed-correction
 assertions, 15-bundle content validation, and SHA-256 validation. Exact bytes are staged in immutable
-1.3.6.0 and `latest`; publication CI is pending. The exact sealed 1.3.6.0 upgrade/import and runtime
-soak remain untested and must not be claimed as passed.
+1.3.6.0 and `latest`; publication commit `a17382a` and Actions run `34001447037` are green. All 31
+files downloaded from the deployed immutable path match the build, and all 30 catalogued checksums
+pass. The exact sealed 1.3.6.0 upgrade/import and runtime soak remain untested and must not be claimed
+as passed.
 
 ## September 5 19:25 ET — fixes verified in source candidate
 
