@@ -1,5 +1,13 @@
 # Hyper-V release-readiness audit
 
+## September 6 — 1.3.8.0 publication result
+
+Release asset commit `d4a942ed8e79197226ba66f74e93d99ac2e05c73` is published on main.
+Actions run `34055922030` passed MP validation, VitePress build, and Pages deployment. All 31 files
+fetched from the deployed immutable 1.3.8.0 path match the signed source assets and all 30 checksum
+entries pass. Publication gates are green. Exact sealed upgrade/import and runtime-soak acceptance
+remain outstanding and are not release claims.
+
 ## September 6 — sealed 1.3.8.0 package validation
 
 Clean source `fd356e266dad446be1ba872bb9474a3f4764786d` was sealed in Release mode with the approved

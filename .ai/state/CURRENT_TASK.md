@@ -1,5 +1,13 @@
 # Current task
 
+## September 6 — 1.3.8.0 published and green
+
+Release asset commit `d4a942ed8e79197226ba66f74e93d99ac2e05c73` is on `origin/main`.
+GitHub Actions run `34055922030` passed MP validation, VitePress build, and Pages deployment. All
+31 live immutable 1.3.8.0 files match the signed output byte for byte; all 30 checksum entries pass.
+The deployment ZIP SHA-256 is `c60a78378adb3c140abb424a8bc78fc71e82f7e701ecaf8fb3a5e5b03c991b01`.
+Exact sealed 1.3.8.0 upgrade/import and runtime soak remain untested and are not claimed as passed.
+
 ## September 6 — sealed 1.3.8.0 staged for publication
 
 Clean release source `fd356e266dad446be1ba872bb9474a3f4764786d` produced all 13 sealed

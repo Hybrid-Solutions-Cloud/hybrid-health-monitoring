@@ -1,5 +1,14 @@
 # Day-2 support candidate validation — September 6, 2026
 
+## Sealed release publication
+
+The validated source is published as sealed version 1.3.8.0. Release source commit
+`fd356e266dad446be1ba872bb9474a3f4764786d` and asset commit
+`d4a942ed8e79197226ba66f74e93d99ac2e05c73` are on main. Actions run `34055922030` passed MP,
+documentation, and Pages jobs; all 31 deployed immutable assets match the signed build and all 30
+checksums pass. Exact sealed upgrade/import and runtime soak remain separate operator acceptance
+work and are not claimed as passed.
+
 ## Publication update
 
 Subsequently committed and pushed at the operator's request: source/docs/tests `631bc9f`, followed

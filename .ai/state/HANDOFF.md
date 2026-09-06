@@ -1,5 +1,17 @@
 # Handoff
 
+## September 6 — 1.3.8.0 published, deployed, and byte-verified
+
+Pushed release-source commit `fd356e266dad446be1ba872bb9474a3f4764786d` and exact asset
+commit `d4a942ed8e79197226ba66f74e93d99ac2e05c73` to `origin/main`. Actions run
+`34055922030` passed Validate Hyper-V MP source, Build VitePress site, and Deploy GitHub Pages.
+Downloaded all 31 files from the deployed immutable 1.3.8.0 path; every SHA-256 matches the original
+signed output and all 30 checksum-catalogue entries pass. Deployment ZIP SHA-256:
+`c60a78378adb3c140abb424a8bc78fc71e82f7e701ecaf8fb3a5e5b03c991b01`.
+
+No workload-VM SCOM agent was installed. Exact sealed 1.3.8.0 upgrade/import and runtime soak remain
+operator acceptance work and have not been claimed as passed.
+
 ## September 6 — sealed 1.3.8.0 built and independently validated
 
 Built from clean source `fd356e266dad446be1ba872bb9474a3f4764786d` using the governed
