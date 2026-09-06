@@ -5,8 +5,11 @@
 Candidate 1.3.6.0 fixes the two task defects found in sealed 1.3.5.0: Cluster Summary capacity and
 VMM task Run As/exit semantics. Both corrected tasks passed live source-coupled SCOM execution, and
 the temporary validation pack was removed. Source regression, schema, dependency-doc, and docs
-build gates pass. Sealing and exact-byte publication are in progress; the exact sealed 1.3.6.0
-upgrade/import and runtime soak remain untested and must not be claimed as passed.
+build gates pass. The final Release build from `35caf7c` passed VSAE/SDK, external dependency and
+product strong-name verification, 13 MP identity/version/token checks, direct sealed-correction
+assertions, 15-bundle content validation, and SHA-256 validation. Exact bytes are staged in immutable
+1.3.6.0 and `latest`; publication CI is pending. The exact sealed 1.3.6.0 upgrade/import and runtime
+soak remain untested and must not be claimed as passed.
 
 ## September 5 19:25 ET — fixes verified in source candidate
 

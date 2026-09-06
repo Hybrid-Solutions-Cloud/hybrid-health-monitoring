@@ -9,9 +9,11 @@ tasks already passed live source-coupled SCOM validation. Release documentation 
 controlled platform-task failure when its module/target is absent. Focused tests, every remaining
 unit test, dependency-document checks, all 13 schemas, and the VitePress production build pass.
 
-Next: commit this clean release source, seal all 13 MPs as 1.3.6.0 with the permanent signing
-identity, publish exact validated bytes to immutable 1.3.6.0 and `latest`, push, and require green
-Actions. Do not overwrite immutable 1.3.5.0 or claim the exact sealed 1.3.6.0 runtime upgrade/soak.
+Release source is committed as `35caf7c`. All 13 MPs were sealed as 1.3.6.0 with the permanent
+identity; independent package, strong-name, identity, sealed-correction, bundle, and checksum gates
+pass. Exact validated bytes are staged in immutable 1.3.6.0 and `latest`. Next: commit/push these
+bytes and require green Actions. Immutable 1.3.5.0 remains untouched. Do not claim the exact sealed
+1.3.6.0 runtime upgrade or soak.
 
 ## September 5 19:25 ET — requested operator task fixes
 

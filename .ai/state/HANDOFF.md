@@ -1,5 +1,25 @@
 # Handoff
 
+## September 5 — 1.3.6.0 sealed and staged for publication
+
+Clean release source commit: `35caf7c25137483dfff10737110357eae47df9a4`. Final build root:
+`D:/tmp/hcs-hyperv-release-1.3.6.0-final-20260905-2015`; assets are its `assets/` child. Built with
+`New-HyperVPrivateCloudReleasePackage.ps1` in Release mode, SDK verification enabled, approved Key
+Vault signing identity, and curated sealed dependencies `D:/tmp/hcs-hyperv-deps-1.4.0.0`. The
+temporary 596-byte `.snk` was deleted and confirmed absent.
+
+All 13 sealed MPs independently report version 1.3.6.0, public key token `54d0fb1159995c86`, and
+valid strong names. The independent release validator reports 13 MPs, 15 bundles, Release mode,
+VSAE true, external dependency strong names true, and `releaseEligible=true`. Direct sealed-resource
+inspection confirms native Cluster Size/FreeSpace calculation, invalid-capacity handling, Cluster
+and VMM exit 1 paths, and exactly five VMM task Run As bindings.
+
+The exact 31-file asset set is staged in immutable `docs/public/downloads/hyper-v-private-cloud/
+1.3.6.0/` and `latest/`; both match the final build hashes and independently validate. Only the
+stale deployment ZIP was removed from `latest`; immutable 1.3.5.0 was not changed. Next: commit,
+push, wait for all Actions/Pages jobs, then verify deployed bytes. Exact sealed 1.3.6.0 upgrade and
+runtime soak remain pending and must not be claimed as passed.
+
 ## September 5 — 1.3.6.0 replacement sealing in progress
 
 Pulled clean `main` to `1fa10f0`. That commit contains the live-validated operator-task source fix:
