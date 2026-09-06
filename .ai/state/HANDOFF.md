@@ -1,5 +1,16 @@
 # Handoff
 
+## September 6 — 1.3.8.0 release preparation on the signing machine
+
+Fast-forwarded clean main from `8fbb62e` to `42c9e93`. The pulled day-2 source is already green in
+GitHub Actions run `34050218756`; version 1.3.8.0 has no existing immutable download directory.
+Updated current release documentation, changelog, release notes, and upgrade guidance for 1.3.8.0,
+retaining 1.3.7.0 as immutable history. VitePress production build passed in 109.10 seconds with
+only the existing large-chunk advisory. The complete local Pester suite passed 272, failed zero,
+skipped zero in 774.95 seconds; it rebuilt all 13 MPs and all 13 schemas passed. `git diff --check`
+passed. Commit this release-source state cleanly before sealing. Exact sealed 1.3.8.0 upgrade/import
+and runtime soak remain post-publication acceptance work.
+
 ## September 6 — day-2 source pushed; GitHub Actions green
 
 Published source/docs/tests in `631bc9f`, followed by the CI-fixture-only correction `3dbd44d`.

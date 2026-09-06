@@ -5,6 +5,24 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
+## Version 1.3.8.0 day-2 support and health-rollup release
+
+Version `1.3.8.0` is an in-place upgrade from `1.3.7.0`. It adds generated day-2 references for
+all 522 supported elements and gives every one of the 159 enabled product unit monitors a
+source-defined path to the solution root. Newly completed paths preserve Availability,
+Performance, Configuration, and Security aspects rather than collapsing unrelated states.
+
+Cluster failure evidence now reports the actual named role, resource, owner, timestamp, and error
+code. The release also completes VMM enterprise membership; File Services and Storage containment;
+Security propagation; and disconnected SAN, Network ATC, S2D, Pure Storage, VMM, and
+host-participation health paths. A deterministic graph validator and support-coverage contracts
+protect these relationships from regression.
+
+The source passed product, supplemental, negative-graph, schema, SDK, documentation, and CI gates.
+All sealed artifacts use the permanent public key token `54d0fb1159995c86`. No workload VM guest
+agent was installed. Exact sealed 1.3.8.0 upgrade/import and runtime soak remain post-publication
+acceptance work and are not claimed as passed.
+
 ## Version 1.3.7.0 VMM runtime corrective release
 
 Version `1.3.7.0` is an in-place upgrade from `1.3.6.0`. It isolates VMM module compiler temporary

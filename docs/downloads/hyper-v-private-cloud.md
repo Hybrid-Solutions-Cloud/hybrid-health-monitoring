@@ -16,28 +16,28 @@ and a missing one is the most common cause of a failed import. Work through the
 [prerequisites](../hyper-v/prerequisites.md) before downloading anything.
 :::
 
-## Current release: 1.3.7.0 — Private Cloud Powered by Hyper-V: A 360° View
+## Current release: 1.3.8.0 — Private Cloud Powered by Hyper-V: A 360° View
 
-`1.3.7.0` is the current production release. Every one of the 13 sealed product MPs has version `1.3.7.0`,
+`1.3.8.0` is the current production release. Every one of the 13 sealed product MPs has version `1.3.8.0`,
 delivering the full 360° Private Cloud Distributed Application service model. This includes complete
 fabric modeling across physical server chassis/hardware, top-of-rack data switches, out-of-band management switches,
 perimeter firewalls, Opengear out-of-band console servers, DHCP/IPAM, management domain services (Active Directory,
 DNS resolution, and PXE/WDS bare-metal deployment), central deep-troubleshooting operator tasks, and the streamlined 2-pack override model.
 All 13 product Management Packs are sealed with the permanent public key token `54d0fb1159995c86`, verified by Microsoft VSAE,
 strong-name checked, and covered by the published SHA-256 manifest. The release catalog contains 13
-sealed Management Packs and 2 canonical override packs: 171 unit monitors, 121
+sealed Management Packs and 2 canonical override packs: 171 unit monitors, 149
 dependency roll-ups, 80 rules, 23 discoveries, 124 views, 74 operator tasks,
-and 254 knowledge articles across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
+and generated day-2 support for all 522 supported elements across host, VM, Failover Clustering, CSV, Storage Spaces Direct, SAN
 (Fibre Channel, iSCSI, MPIO), SMB/SOFS, Network ATC, physical networking, SDN host binding, VMM and
 Pure Storage. Cluster-wide facts are evaluated once per cluster, host-wide facts once per host, and
 one probe run per host feeds every per-VM, per-LUN, per-session, per-port and per-intent monitor.
 
-Version 1.3.7.0 corrects VMM module initialization under SCOM Run As by isolating compiler temporary
-files for each task, health, and discovery workflow. It also maps native nested agent versions,
-host maintenance/CPU values, and library server status correctly; library inventory no longer
-claims placement eligibility from a nonexistent field. Ten source-coupled SCOM executions passed
-across both VMM servers without installing a guest SCOM agent. The sealed package passed VSAE/SDK,
-strong-name, package-content, and checksum validation. The exact 1.3.7.0 sealed upgrade and runtime
+Version 1.3.8.0 adds generated day-2 references and completes source-defined root health paths for
+all 159 enabled product unit monitors. It preserves the correct Availability, Performance,
+Configuration, and Security aspects; fixes cluster failure-episode evidence; and completes VMM,
+File Services, Storage, SAN, Network ATC, S2D, Pure Storage, Security, and host-participation
+relationships. Validation did not install a guest SCOM agent. The sealed package passed VSAE/SDK,
+strong-name, package-content, and checksum validation. The exact 1.3.8.0 sealed upgrade and runtime
 soak have not yet been run and are not claimed as passed.
 
 Management Packs are named for the product — `HyperVPrivateCloud.Library`,
@@ -46,7 +46,7 @@ pack `Company` and `Copyright` metadata rather than in the pack ID.
 
 ## Download now
 
-- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.7.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.3.7.0`. It contains no override MPs.
+- **[Download the 12-pack solution upgrade](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Deployment-1.3.8.0.zip)** — all four core packs plus Cluster, Storage, S2D, File Services, Network ATC, Physical Network, SDN, and VMM, all at `1.3.8.0`. It contains no override MPs.
 - **[Download the complete package](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Complete.zip)** — archive containing all available product packs and optional starter templates; do not bulk-import its contents.
 - [Download the core-only bundle](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Core.zip) — Library, Discovery, Monitoring, and Presentation for deployments that intentionally use no optional capabilities.
 - [Download canonical override templates](/downloads/hyper-v-private-cloud/latest/Hyper-V-Private-Cloud-Monitoring-Overrides.zip) — Discovery and Monitoring override templates; select and review one Discovery/Monitoring pair only.
@@ -72,9 +72,10 @@ The checksum file is written by the Windows release packager and carries CRLF li
 Linux or macOS strip them first: `tr -d '\r' < SHA256SUMS.txt | sha256sum -c -`.
 
 The immutable versioned files are also retained under
-[`1.3.7.0`](/downloads/hyper-v-private-cloud/1.3.7.0/release-assets.json). The `latest` directory
+[`1.3.8.0`](/downloads/hyper-v-private-cloud/1.3.8.0/release-assets.json). The `latest` directory
 serves the same exact bytes and changes only when a newer validated version is published.
-Previous releases remain under [`1.3.6.0`](/downloads/hyper-v-private-cloud/1.3.6.0/release-assets.json),
+Previous releases remain under [`1.3.7.0`](/downloads/hyper-v-private-cloud/1.3.7.0/release-assets.json),
+[`1.3.6.0`](/downloads/hyper-v-private-cloud/1.3.6.0/release-assets.json),
 [`1.3.5.0`](/downloads/hyper-v-private-cloud/1.3.5.0/release-assets.json),
 [`1.3.4.0`](/downloads/hyper-v-private-cloud/1.3.4.0/release-assets.json), and
 [`1.3.3.0`](/downloads/hyper-v-private-cloud/1.3.3.0/release-assets.json).

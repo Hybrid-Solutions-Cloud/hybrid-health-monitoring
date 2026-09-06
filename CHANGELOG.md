@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.8.0] — 2026-09-06
+
+- Add generated day-2 support references for all 522 supported classes, monitors, rules, tasks,
+  and related elements, including state meaning, evidence, root paths, and operator response.
+- Complete source-defined health paths for all 159 enabled product unit monitors, with
+  aspect-correct Availability, Performance, Configuration, and Security propagation.
+- Correct cluster failure-episode evidence so named roles, resources, owners, timestamps, and
+  error codes are preserved instead of treating positional event fields as failover evidence.
+- Add missing VMM enterprise membership, File Services and Storage containment, Security service
+  propagation, and previously disconnected SAN, ATC, S2D, Pure, VMM, and host-participation paths.
+- Add a deterministic health-graph validator, support-guide exporter, negative graph fixtures,
+  and support coverage regression contracts.
+
+The source passed the complete product, supplemental, graph, schema, SDK, documentation, and CI
+checks recorded in `DAY2_SUPPORT_VALIDATION.md`. The exact sealed 1.3.8.0 upgrade/import and runtime
+soak remain post-publication acceptance work and are not claimed as passed.
+
 ## [1.3.7.0] — 2026-09-05
 
 - Isolate VMM module compiler temporary files in the SCOM workflow workspace and restore

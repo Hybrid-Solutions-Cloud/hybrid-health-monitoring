@@ -1,5 +1,15 @@
 # Hyper-V release-readiness audit
 
+## September 6 — 1.3.8.0 day-2 release preparation
+
+Pulled source through `42c9e93`, covering generated support for 522 elements, complete source-defined
+root paths for 159 enabled product unit monitors, corrected cluster failure evidence, and completed
+aspect-specific relationship/rollup paths. Upstream Actions run `34050218756` passed MP validation,
+the documentation build, and Pages deployment. Version 1.3.8.0 is unused; release notes and current
+documentation now target it. Signing-machine validation passes: 272/272 complete local tests,
+all 13 schemas, and the VitePress production build. No exact sealed 1.3.8.0 import, upgrade, or
+runtime soak has been performed.
+
 ## September 6 — 1.3.7.0 publication result
 
 Release asset commit `ec85690ef1d7fdf0768b6f17518c04b45558484b` is published on main.

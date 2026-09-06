@@ -1,5 +1,14 @@
 # Current task
 
+## September 6 — seal and publish day-2 release 1.3.8.0
+
+Pulled clean `origin/main` from `8fbb62e` to `42c9e93`. The upstream source/fixture commits are
+green in Actions run `34050218756` and define the unused candidate version 1.3.8.0. Release
+documentation now targets 1.3.8.0 and preserves 1.3.7.0 as immutable history. The production docs
+build passes; the fresh complete local suite passes 272/272, including all 13 schemas. Commit this
+clean release source, then seal all 13 MPs with the permanent identity. Exact sealed 1.3.8.0
+upgrade/import and runtime soak have not been run and must not be claimed as passed.
+
 ## Latest — day-2 support and 360-degree health review
 
 Committed/pushed in `631bc9f` with a test-fixture-only CI correction in `3dbd44d`. GitHub Actions
