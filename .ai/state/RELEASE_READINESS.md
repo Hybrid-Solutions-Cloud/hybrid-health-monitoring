@@ -1,4 +1,12 @@
-# Hyper-V 1.3.5.0 release-readiness audit
+# Hyper-V release-readiness audit
+
+## September 5 — 1.3.6.0 operator-task corrective release
+
+Candidate 1.3.6.0 fixes the two task defects found in sealed 1.3.5.0: Cluster Summary capacity and
+VMM task Run As/exit semantics. Both corrected tasks passed live source-coupled SCOM execution, and
+the temporary validation pack was removed. Source regression, schema, dependency-doc, and docs
+build gates pass. Sealing and exact-byte publication are in progress; the exact sealed 1.3.6.0
+upgrade/import and runtime soak remain untested and must not be claimed as passed.
 
 ## September 5 19:25 ET — fixes verified in source candidate
 

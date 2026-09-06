@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.3.6.0] — 2026-09-05
+
+Corrective release for two operator-task defects confirmed while validating the sealed 1.3.5.0
+upgrade. All 13 product Management Packs advance together to `1.3.6.0` and retain permanent public
+key token `54d0fb1159995c86`.
+
+**Operator-task corrections**
+
+- Cluster Summary calculates CSV utilization from the native `Size` and `FreeSpace` properties.
+  Missing or inconsistent capacity now produces an explicit task failure instead of reading the
+  nonexistent `PercentUsed` property or inventing a healthy value.
+- All five VMM operator tasks bind the existing Microsoft VMM server-connection Run As profile, so
+  they execute with the same supported credentials as the VMM monitoring workflows.
+- Cluster and VMM task failures now return process exit code 1 after printing their diagnostic
+  result, allowing SCOM to report task failure rather than showing a successful task containing
+  hidden `FAILED:` output.
+
+**Evidence and release boundary**
+
+The corrected Cluster Summary and VMM Host Status tasks passed real SCOM execution through a
+temporary source-coupled validation pack; that pack was removed afterward. Regression coverage
+includes native Windows PowerShell execution, invalid CSV capacity, VMM access denial, successful
+task output, and all five Run As bindings. No SCOM agent was installed in a workload VM.
+
+The sealed 1.3.6.0 package passed Microsoft VSAE/SDK, strong-name, identity, package-content, and
+SHA-256 validation. Its exact sealed upgrade and runtime soak remain post-publication acceptance
+work and are not claimed as passed.
+
 ## [1.3.5.0] — 2026-09-05
 
 Corrective release for the final live SCOM runtime findings after 1.3.4.0. All 13 sealed product

@@ -223,9 +223,22 @@ function New-Object {
         $context = "pack=$Pack script=$ScriptName args=[$($result.Arguments)] exit=$($result.ExitCode) stderr=[$($stderrText.Trim())] marker=[$($markerText.Trim())]"
 
         if ($Case.Body -notmatch 'MOM\.ScriptAPI') {
-            # Text-output task (no property bag): it must simply run to completion and print something.
-            $result.ExitCode | Should -Be 0 -Because "a task script must complete: $context"
+            # Text-output task (no property bag): it must print a result. Cluster and VMM tasks
+            # deliberately return exit 1 with a FAILED record when their platform module or target
+            # is unavailable. Their dedicated operator regression suite covers successful output,
+            # invalid-capacity handling, access denial, and Run As binding.
             "$($result.StdOut)".Trim().Length | Should -BeGreaterThan 0 -Because "a task must print its output: $context"
+            $isPlatformOperatorTask = $ScriptName -in @(
+                'HyperVPrivateCloud.Cluster.Task.ps1',
+                'HyperVPrivateCloud.VMM.Task.ps1'
+            )
+            if ($isPlatformOperatorTask -and $result.ExitCode -ne 0) {
+                "$($result.StdOut)" | Should -Match '(?m)^FAILED:' -Because "an unavailable operator task must report its controlled failure: $context"
+                $result.ExitCode | Should -Be 1 -Because "operator task failures use the documented process exit: $context"
+                $stderrText.Trim() | Should -BeNullOrEmpty -Because "controlled operator task failures stay out of stderr: $context"
+                return
+            }
+            $result.ExitCode | Should -Be 0 -Because "a task script must complete: $context"
             return
         }
 

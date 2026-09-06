@@ -5,6 +5,21 @@ Hyper-V private clouds. The release contains four required core Management Packs
 capability Management Packs, and separate public Discovery and Monitoring override starters for
 11 deployment profiles in Lab, Standard, and Strict tiers.
 
+## Version 1.3.6.0 operator-task corrective release
+
+Version `1.3.6.0` is an in-place upgrade from `1.3.5.0`. It corrects the final two defects found
+during live validation of the sealed 1.3.5.0 upgrade. Cluster Summary now derives CSV utilization
+from native size and free-space values and explicitly fails on invalid capacity. All five VMM tasks
+use the Microsoft VMM server-connection Run As profile. Cluster and VMM task exceptions now return
+exit code 1 instead of appearing as successful SCOM tasks with hidden failure text.
+
+The corrected Cluster Summary and VMM Host Status tasks passed real SCOM execution using a
+temporary source-coupled validation pack, which was removed afterward. The final sealed artifacts
+passed Microsoft VSAE/SDK, strong-name, identity, package-content, and checksum validation with
+permanent public key token `54d0fb1159995c86`. No guest SCOM agent was installed. The exact sealed
+1.3.6.0 upgrade and runtime soak remain post-publication acceptance work and are not claimed as
+passed.
+
 ## Version 1.3.5.0 live-runtime corrective release
 
 Version `1.3.5.0` is an in-place upgrade from `1.3.4.0`. It corrects the final defects found during

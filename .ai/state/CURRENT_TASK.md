@@ -1,5 +1,18 @@
 # Current task
 
+## September 5 — seal and publish operator-task corrective release 1.3.6.0
+
+Pulled `1fa10f0`, which fixes the Cluster Summary capacity calculation, binds all five VMM tasks
+to the VMM Run As profile, and makes Cluster/VMM task failures return exit 1. The two corrected
+tasks already passed live source-coupled SCOM validation. Release documentation now targets
+1.3.6.0, and the stale generic probe-smoke expectation was corrected to accept an intentional
+controlled platform-task failure when its module/target is absent. Focused tests, every remaining
+unit test, dependency-document checks, all 13 schemas, and the VitePress production build pass.
+
+Next: commit this clean release source, seal all 13 MPs as 1.3.6.0 with the permanent signing
+identity, publish exact validated bytes to immutable 1.3.6.0 and `latest`, push, and require green
+Actions. Do not overwrite immutable 1.3.5.0 or claim the exact sealed 1.3.6.0 runtime upgrade/soak.
+
 ## September 5 19:25 ET — requested operator task fixes
 
 Source fixes implemented after `git pull --ff-only` (already current). Eight regression tests

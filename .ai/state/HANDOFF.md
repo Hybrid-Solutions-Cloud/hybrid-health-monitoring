@@ -1,5 +1,21 @@
 # Handoff
 
+## September 5 — 1.3.6.0 replacement sealing in progress
+
+Pulled clean `main` to `1fa10f0`. That commit contains the live-validated operator-task source fix:
+Cluster Summary uses Size/FreeSpace, all five VMM tasks bind the VMM Run As profile, and controlled
+task exceptions return exit 1. The upstream Actions run exposed two obsolete probe-smoke assertions
+that still demanded exit 0 when Cluster/VMM modules were unavailable. The smoke contract now
+requires explicit `FAILED:` output, exit 1, and empty stderr for that controlled path; its dedicated
+operator regression suite continues to prove success, invalid-capacity, access-denial, and Run As
+behavior.
+
+Release docs now identify 1.3.6.0 as the corrective release and retain 1.3.5.0 as immutable history.
+Verified locally: focused probe/operator suite 73/73; all other tests 183 passed except the generated
+dependency-doc check, then exporter regeneration plus that check passed 8/8; all 13 schemas passed;
+VitePress production build passed. Commit this source state before sealing so the release manifest
+records an immutable clean commit. No workload VM guest agent was installed or requested.
+
 ## September 5 — synchronize fixes to main
 
 Operator requested committing and pushing all outstanding changes. Fetched origin: local main
