@@ -1,5 +1,14 @@
 # Day-2 support candidate validation — September 6, 2026
 
+## Publication update
+
+Subsequently committed and pushed at the operator's request: source/docs/tests `631bc9f`, followed
+by test-only correction `3dbd44d`. GitHub Actions run `34050218756` passed MP validation, site build
+and Pages deployment. The first CI run found a VMM fixture relying on a locally installed module;
+the corrected fixture explicitly stubs module discovery and passed all 13 focused tests before
+repush. Shipped MP logic is identical between these two commits. Sealing and actual sealed-version
+validation/import remain separate gates. The original local-validation record below is retained.
+
 ## Scope and deployment boundary
 
 Source work on `main`, based on `8fbb62e`. Installed sealed version remains **1.3.7.0**.

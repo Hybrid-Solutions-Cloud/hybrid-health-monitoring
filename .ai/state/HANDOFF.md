@@ -1,5 +1,22 @@
 # Handoff
 
+## September 6 — day-2 source pushed; GitHub Actions green
+
+Published source/docs/tests in `631bc9f`, followed by the CI-fixture-only correction `3dbd44d`.
+Actions run `34050218756` passed MP unit/contract validation, VitePress build and GitHub Pages
+deployment: https://github.com/Hybrid-Solutions-Cloud/hybrid-health-monitoring/actions/runs/34050218756.
+The correction mocks VMM module discovery as well as VMM commands, removing the test's dependency
+on a locally installed VMM console. All 13 focused tests passed locally before the correction was
+pushed. `git diff 631bc9f..3dbd44d -- src/hyper-v/scom-mp` is empty: no shipped MP logic changed.
+The support exporter also received an EOF-only formatting correction before the initial commit;
+staged whitespace and credential-pattern checks passed. Authentication used the governed broker
+in process memory; no credential was saved in repository files or Git configuration.
+
+This final status-only handoff commit does not touch workflow-trigger paths and does not require
+another product build. Branch main is being synchronized with origin; sealing/release validation
+on the signing machine and subsequent sealed import remain next. Installed 1.3.7.0, live DAs,
+alerts, cluster workloads and AD configuration were not modified by the commit/push operation.
+
 ## September 6 — authorized day-2 source commit and push
 
 Source commit `631bc9f` was pushed to main using the governed GitHub auth broker (the jump server's

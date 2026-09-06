@@ -2,6 +2,10 @@
 
 ## Latest — day-2 support and 360-degree health review
 
+Committed/pushed in `631bc9f` with a test-fixture-only CI correction in `3dbd44d`. GitHub Actions
+run `34050218756` passed MP validation, documentation build and Pages deployment. Source is ready
+for the separate sealing/release-validation step; installed sealed MPs remain at 1.3.7.0.
+
 Source changes implemented for complete object/monitor support knowledge, Microsoft references,
 traceable aspect-correct health rollups and named unhealthy-state evidence. Installed 1.3.7.0
 remains untouched. Source work is complete: 239 full product tests, 107 supplemental tests,
