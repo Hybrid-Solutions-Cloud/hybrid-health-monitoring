@@ -1,5 +1,24 @@
 # Current task
 
+## Latest — day-2 support and 360-degree health review
+
+Source changes implemented for complete object/monitor support knowledge, Microsoft references,
+traceable aspect-correct health rollups and named unhealthy-state evidence. Installed 1.3.7.0
+remains untouched. Source work is complete: 239 full product tests, 107 supplemental tests,
+13 latest support tests and 31 other unit tests passed with no failures; schemas, SDK source checks,
+documentation build and safe live probes passed. See `DAY2_SUPPORT_VALIDATION.md` and the newest
+HANDOFF entry. Existing live critical cluster-role incidents have been diagnosed
+read-only; they have not been remediated or cleared. Sealing/import remains a later deployment gate.
+
+## Latest — sealed 1.3.7.0 installed and tested
+
+All 13 MPs imported after pulling main to 8fbb62e. Twenty-two positive live task/discovery
+results pass, plus the intentional negative task test. Corrected VMM tasks each pass on both
+VMM servers; inventory/customer overrides preserved, 42 pipeline monitors healthy. No previously
+reported bug reproduced. See SEALED_1.3.7_VALIDATION.md and newest HANDOFF entry. Temporary
+health-capture MP removed. A 24-hour soak remains outside this bounded acceptance check.
+
+
 ## September 6 — 1.3.7.0 published and green
 
 Release asset commit `ec85690ef1d7fdf0768b6f17518c04b45558484b` is on `origin/main`.

@@ -77,6 +77,7 @@ $__discovered = 0
 foreach ($__bag in $api.Bags) { $__discovered += @($__bag.Instances).Count }
 $__captured['HcsInstanceCount'] = $__discovered
 $__captured['HcsEmptyClassInstanceCount'] = @($api.Bags | ForEach-Object { $_.Instances } | Where-Object { $_.Kind -eq 'Class' -and $_.Values.Count -eq 0 }).Count
+$__captured['HcsRelationships'] = @($api.Bags | ForEach-Object { $_.Instances } | Where-Object { $_.Kind -eq 'Relationship' } | ForEach-Object { [pscustomobject]@{ TypeId=$_.TypeId; SourceType=$_.Source.TypeId; TargetType=$_.Target.TypeId } })
 Write-Output ('<<<HCSFIXTURE>>>' + ($__captured | ConvertTo-Json -Depth 4 -Compress))
 '@
 

@@ -77,6 +77,11 @@ $csvMaxReadLatencyMs = 0.0
 $csvMaxWriteLatencyMs = 0.0
 $csvMaxQueueDepth = 0.0
 $csvDetail = 'No Cluster Shared Volume is present.'
+$csvExamples = [System.Collections.Generic.List[string]]::new()
+$csvWorstFreeVolume = ''
+$csvWorstReadPath = ''
+$csvWorstWritePath = ''
+$csvWorstQueuePath = ''
 $nodeCount = 0
 $nodeDownCount = 0
 $nodePausedCount = 0
@@ -137,7 +142,8 @@ try {
                 if ($nodeState -match 'Paused') { $nodePausedCount++ }
             }
             if ($nodeCount -gt 0) {
-                $nodeDetail = "Cluster '$($cluster.Name)' has $nodeCount node(s): $nodeDownCount not up, $nodePausedCount paused."
+                $nodeExamples = @($nodes | Select-Object -First 16 | ForEach-Object { "'$(Get-HcsProperty $_ 'Name' 'unknown')'=$(Get-HcsStatusText $_ 'State')" }) -join '; '
+                $nodeDetail = "Cluster '$($cluster.Name)' has $nodeCount node(s): $nodeDownCount not up, $nodePausedCount paused. Node states (first 16): $nodeExamples."
             }
 
         # ---- Quorum and witness ----------------------------------------------
@@ -169,7 +175,8 @@ try {
             $dynamicWeight = Get-HcsProperty -InputObject $node -Name 'DynamicWeight' -Default $null
             $weight = if ($null -ne $dynamicWeight) { Get-HcsNumber $dynamicWeight 1 } else { Get-HcsNumber (Get-HcsProperty -InputObject $node -Name 'NodeWeight' -Default 1) 1 }
             $quorumAssignedVotes += $weight
-            if ((Get-HcsStatusText -InputObject $node -Name 'State') -match 'Up') { $quorumCurrentVotes += $weight }
+            # Paused blocks role placement, not cluster membership. Honor its actual dynamic vote.
+            if ((Get-HcsStatusText -InputObject $node -Name 'State') -in @('Up', 'Paused')) { $quorumCurrentVotes += $weight }
         }
         $quorumAssignedVotes += $witnessVote
         if ($quorumWitnessFailedCount -eq 0) { $quorumCurrentVotes += $witnessVote }
@@ -178,7 +185,7 @@ try {
             # Votes that may still be lost before the cluster loses quorum (0 = at exact majority).
             $majority = [math]::Floor($quorumAssignedVotes / 2) + 1
             $quorumVoteMarginCount = $quorumCurrentVotes - $majority
-            $quorumDetail = "Quorum model '$quorumType' with witness '$quorumWitnessType' in state '$quorumWitnessState'. $quorumCurrentVotes of $quorumAssignedVotes vote(s) present; $quorumVoteMarginCount further vote loss(es) survivable."
+            $quorumDetail = "Quorum model '$quorumType' with witness '$quorumWitnessType' in state '$quorumWitnessState'. $quorumCurrentVotes of $quorumAssignedVotes vote(s) present; current vote margin=$quorumVoteMarginCount. This is a point-in-time vote calculation, not a guarantee of surviving that many node or storage failures; dynamic quorum, witness and pool resiliency can change the outcome."
         }
 
         # ---- Cluster networks -------------------------------------------------
@@ -191,7 +198,8 @@ try {
             if ($networkState -match 'Unavailable|Unknown') { $networkUnavailableCount++ }
         }
         if ($networkCount -gt 0) {
-            $networkDetail = "$networkCount cluster network(s): $networkDownCount down, $networkPartitionedCount partitioned, $networkUnavailableCount unavailable."
+            $networkExamples = @($networks | Select-Object -First 16 | ForEach-Object { "'$(Get-HcsProperty $_ 'Name' 'unknown')'=$(Get-HcsStatusText $_ 'State')" }) -join '; '
+            $networkDetail = "$networkCount cluster network(s): $networkDownCount down, $networkPartitionedCount partitioned, $networkUnavailableCount unavailable. Network states (first 16): $networkExamples."
         }
 
         # ---- Cluster groups and failover churn ---------------------------------
@@ -212,27 +220,37 @@ try {
                 StartTime    = $windowStart
             } -ErrorAction Stop
         }
-        # Raw event count is not a failover count. A single role transition emits 1069 once per failed
-        # resource plus 1205/1254 for the role, so one flapping role produced 1,152 "failovers" over 24h.
-        # Collapse to distinct role transitions: group by the role name carried in the event properties
-        # and a five-minute bucket, so a burst from one transition counts once.
+        # These are failure episodes, not proven ownership changes. Event 1069's FIRST property is
+        # ResourceName, whereas 1205/1254 carry ResourceGroup. Read named XML fields to correlate
+        # multiple failing resources with their role, then bucket each role in five-minute windows.
         $transitionKeys = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-        foreach ($failoverEvent in $failoverEvents) {
+        $failureExamples = [System.Collections.Generic.List[string]]::new()
+        foreach ($failoverEvent in @($failoverEvents | Sort-Object TimeCreated -Descending)) {
             $roleName = 'unknown'
+            $eventFields = @{}
             try {
-                $props = @($failoverEvent.Properties)
-                foreach ($prop in $props) {
-                    $value = [string]$prop.Value
-                    if (-not [string]::IsNullOrWhiteSpace($value)) { $roleName = $value; break }
+                [xml]$eventXml = $failoverEvent.ToXml()
+                foreach ($field in $eventXml.SelectNodes('//*[local-name()="EventData"]/*[local-name()="Data"]')) {
+                    $eventFields[$field.GetAttribute('Name')] = $field.InnerText
                 }
+                if ($eventFields['ResourceGroup']) { $roleName = $eventFields['ResourceGroup'] }
             }
-            catch { $roleName = 'unknown' }
+            catch { }
+            if ($roleName -eq 'unknown') {
+                # Preserve evidence without claiming to identify a role from a resource-name field.
+                $roleName = 'unresolved-event-' + [string](Get-HcsProperty $failoverEvent 'RecordId' $failoverEvent.TimeCreated.Ticks)
+            }
             $bucket = [int][math]::Floor($failoverEvent.TimeCreated.ToUniversalTime().Ticks / [timespan]::FromMinutes(5).Ticks)
             [void]$transitionKeys.Add("$roleName|$bucket")
+            if ($failureExamples.Count -lt 8) {
+                $failureExamples.Add("UTC=$($failoverEvent.TimeCreated.ToUniversalTime().ToString('o')); Event=$($failoverEvent.Id); Role='$roleName'; Resource='$($eventFields['ResourceName'])'; Error='$($eventFields['ApplicationErrorCode'])' ($($eventFields['ErrorCause']))")
+            }
         }
         $groupFailoverEventCount = $transitionKeys.Count
         if ($groupCount -gt 0) {
-            $groupDetail = "$groupCount cluster role(s): $groupOfflineCount offline, $groupFailedCount failed or partially online. $groupFailoverEventCount failover event(s) in the last $FailoverWindowHours hour(s)."
+            $unhealthyGroups = @($groups | Where-Object { (Get-HcsStatusText $_ 'State') -match 'Offline|Failed|PartialOnline' })
+            $roleExamples = @($unhealthyGroups | Select-Object -First 12 | ForEach-Object { "'$(Get-HcsProperty $_ 'Name' 'unknown')'=$(Get-HcsStatusText $_ 'State') (owner=$(Get-HcsProperty $_ 'OwnerNode' 'unknown'))" }) -join '; '
+            $groupDetail = "Cluster='$($cluster.Name)'; Collector='$ComputerName'; SampleUTC=$([datetime]::UtcNow.ToString('o')). $groupCount cluster role(s): $groupOfflineCount offline, $groupFailedCount failed or partially online. $groupFailoverEventCount role failure episode(s), grouped by role and five-minute window, from $($failoverEvents.Count) local System events (1069/1205/1254) in the last $FailoverWindowHours hour(s); this is NOT a count of VM migrations or confirmed failovers. Non-online roles (first 12 of $($unhealthyGroups.Count)): $roleExamples. Latest failure evidence (up to 8): $($failureExamples -join ' | '). Offline does not by itself prove an outage: check intended VM state and empty Available Storage groups. Counts can remain elevated until the event window expires after repair."
         }
 
         # ---- Cluster Shared Volumes -------------------------------------------
@@ -257,13 +275,16 @@ try {
                             $free = Get-HcsNumber (Get-HcsProperty -InputObject $partition -Name 'FreeSpace' -Default 0)
                             if ($size -gt 0) {
                                 $freePercent = [math]::Round(($free / $size) * 100, 2)
-                                if ($freePercent -lt $csvWorstFreePercent) { $csvWorstFreePercent = $freePercent }
+                                if ($freePercent -lt $csvWorstFreePercent) { $csvWorstFreePercent = $freePercent; $csvWorstFreeVolume = [string](Get-HcsProperty $csv 'Name' 'unknown') }
                             }
+                        }
+                        if ($csvExamples.Count -lt 12) {
+                            $csvExamples.Add("'$(Get-HcsProperty $csv 'Name' 'unknown')': State=$csvState; Owner=$(Get-HcsProperty $csv 'OwnerNode' 'unknown'); Path=$(Get-HcsProperty $volumeInfo 'FriendlyVolumeName' 'unknown'); Redirected=$(Get-HcsProperty $volumeInfo 'RedirectedAccess' 'unknown'); Backup=$(Get-HcsProperty $volumeInfo 'BackupInProgress' 'unknown')")
                         }
                     }
                 }
                 $csvUsedPercent = [math]::Round(100.0 - $csvWorstFreePercent, 2)
-                $csvDetail = "$csvCount Cluster Shared Volume(s): worst free space $csvWorstFreePercent%, $csvRedirectedCount in redirected access, $csvOfflineCount offline or failed, $csvPausedCount paused, $csvBackupInProgressCount in backup."
+                $csvDetail = "$csvCount Cluster Shared Volume(s): worst free space $csvWorstFreePercent% on '$csvWorstFreeVolume', $csvRedirectedCount in redirected access, $csvOfflineCount offline or failed, $csvPausedCount paused, $csvBackupInProgressCount in backup. Volume detail (up to 12): $($csvExamples -join ' | ')."
             }
         }
 
@@ -285,20 +306,21 @@ try {
                     $value = Get-HcsNumber (Get-HcsProperty -InputObject $sample -Name 'CookedValue' -Default 0)
                     if ($path -match 'Read Latency') {
                         $milliseconds = [math]::Round($value * 1000, 3)
-                        if ($milliseconds -gt $csvMaxReadLatencyMs) { $csvMaxReadLatencyMs = $milliseconds }
+                        if ($milliseconds -gt $csvMaxReadLatencyMs) { $csvMaxReadLatencyMs = $milliseconds; $csvWorstReadPath = $path }
                     }
                     elseif ($path -match 'Write Latency') {
                         $milliseconds = [math]::Round($value * 1000, 3)
-                        if ($milliseconds -gt $csvMaxWriteLatencyMs) { $csvMaxWriteLatencyMs = $milliseconds }
+                        if ($milliseconds -gt $csvMaxWriteLatencyMs) { $csvMaxWriteLatencyMs = $milliseconds; $csvWorstWritePath = $path }
                     }
                     elseif ($path -match 'Queue Length') {
-                        if ($value -gt $csvMaxQueueDepth) { $csvMaxQueueDepth = [math]::Round($value, 3) }
+                        if ($value -gt $csvMaxQueueDepth) { $csvMaxQueueDepth = [math]::Round($value, 3); $csvWorstQueuePath = $path }
                     }
                 }
             }
         }
 
         }
+            $csvDetail += " Measured maxima: ReadLatencyMs=$csvMaxReadLatencyMs (counter='$csvWorstReadPath'); WriteLatencyMs=$csvMaxWriteLatencyMs (counter='$csvWorstWritePath'); QueueDepth=$csvMaxQueueDepth (counter='$csvWorstQueuePath')."
             $detail = "Failover Cluster and CSV depth metrics collected on '$ComputerName' for '$BoundaryId'. $csvDetail $nodeDetail $quorumDetail $networkDetail $groupDetail"
         }
     }

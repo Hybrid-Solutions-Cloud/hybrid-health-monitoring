@@ -1,5 +1,187 @@
 # Handoff
 
+## September 6 — authorized day-2 source commit and push
+
+Operator requested commit/push of the completed day-2 work. Fetched `origin/main`; local and
+remote main were aligned at `8fbb62e`. Publishing the source, generated support documentation,
+regression tests and related validation/session notes under the existing delivery work item.
+Prior sealed-1.3.7 validation notes are included; raw `tmp/` evidence and build output remain ignored.
+No sealed artifacts, installed MPs, cluster resources or AD configuration are changed. Existing
+local validation remains green; GitHub Actions results will be recorded after the pushed run finishes.
+
+## September 6 — day-2 source work complete and validated
+
+Source implementation is frozen; installed sealed 1.3.7.0 is untouched. See
+`DAY2_SUPPORT_VALIDATION.md` for coverage, changes, live incident evidence and resealing gates.
+All 522 supported elements now have linked console/Markdown knowledge; 159/159 enabled product
+monitors have root paths. Explicitly reviewed all 31 core state-valued monitor branches. Fixed
+cluster role/event evidence, paused-node votes, VMM root membership, Security propagation and
+domain aspect/participation gaps. SDK caught duplicate display entries; generator fixed and
+regression added. Full product suite: 239 passed, 0 failed, 0 skipped. Final supplemental suite:
+107 passed, 0 failed; latest support/negative-graph suite: 13 passed, 0 failed; other repository
+unit tests: 31 passed, 0 failed. Negative graph tests reject empty input and an intentionally
+disconnected leaf. All 34 Microsoft links return HTTP 200. Final SDK compatibility verification
+passes all 13 packs (159 expected unsigned type warnings, zero unexpected issues). Final production
+docs build passed in 242.23 seconds with only the standard large-chunk warning. Regenerated support
+pages are byte-identical; public examples contain no investigated environment identifiers.
+
+No required test/build sessions remain running. Completed full product suite session 29949
+(`tmp/day2-release-candidate-tests.log`), documentation session 3960 (`tmp/day2-final-docs-build.log`),
+and SDK session 6388 (`tmp/day2-final-sdk.log`) all exited 0. Focused suite log:
+`tmp/day2-final-supplemental-tests.log`; added graph regression: `tmp/day2-graph-negative-tests.log`.
+Final read-only cluster/host/VM probes and actual installed DA path are in ignored
+`tmp/cluster-investigation/final-*`. Branch `main`; no commits, pushes, imports, repairs or sealing.
+Preserve prior state/SEALED_1.3.7_VALIDATION edits. Remaining operational gates are the actual
+sealed-version release validation/import and customer-owned cluster/AD incident remediation.
+
+## September 6 — active day-2 support build (in progress)
+
+Checkpoint ~11:00 ET: deeper aspect-aware graph audit found 39 enabled product leaves lacking
+root paths after the first Security/VMM fix. Corrected with explicit build-owned health routes in
+tools/HyperVPrivateCloud.HealthModel.psm1: SAN attachment/FC performance, ATC node+intent configuration,
+S2D subsystem performance/configuration, Pure array configuration, VMM server performance, and all
+four aspects for SMB/SAN HostParticipation. Added two containment relationships in capability XML,
+emitted by existing gated discoveries; build helper declares discovery relationships and localizes
+new elements. No extra inactive-capability objects and no direct live edits. New graph auditor is
+tools/Test-HyperVPrivateCloudHealthGraph.ps1 (moved from tmp/AuditDay2Rollups.ps1): **159/159 enabled
+product unit monitors now have a source-defined root path**, 12 disabled units excluded; three
+external monitor/relationship implementations remain explicitly outside static proof. Total
+dependencies now 149 (76 core + capability additions). Additions need complete fresh testing and
+runtime payload validation before acceptance. Day2Support test now asserts all enabled leaf paths.
+Source graph export adds representative paths to generated support docs; regenerate/build again.
+
+SCOM SDK read-only TryVerify of candidate content built with installed-compatible 1.3.7 references
+passed for all 13 packs, with only 157 expected TypeDefinitionInUnsealedMP warnings. This is NOT
+release-version or sealed verification. VSAE is absent on this jump server; do not claim VSAE ran.
+Helper: tmp/VerifyDay2Source.ps1, classified log tmp/day2-sdk-check-classified.log. Never import this
+same-version candidate; it exists only to resolve against installed dependencies without sealing.
+Latest added health routes postdate that SDK check and need another run. No seal/import performed.
+
+Full HyperVPrivateCloud Pester suite running in exec session **20264**, log tmp/day2-full-tests.log;
+currently in ProbeSmoke. It started before the newest 16 health routes; rerun changed focused/core
+tests after completion even if this full run passes. Latest schemas running session **46601**.
+Earlier 101-test rerun had one remaining enterprise count assertion (15 -> 20), now corrected along
+with new capability dependency/relationship counts. All 28 initial reference URLs returned HTTP200;
+four more Microsoft links added from verified search results (quorum, ATC cmdlet, VMM networking).
+Reviewed replacement articles now include CSV free space to remove reset-replication/checkpoint
+cleanup advice without adequate safeguards. Operations guide alert suppression and task safety
+wording corrected. Final docs regeneration, final tests, evidence ledger and broader per-facet
+knowledge review remain. Goal remains active; do not end as complete.
+
+Checkpoint ~10:45 ET: fresh-source inventory is **171 unit monitors**, 48 classes, 133 dependency
+monitors, 80 rules and 74 tasks (the earlier development output used to count was stale). New
+knowledge generation and all 13 official MP/MAML schemas pass. Initial broader run: 99 passed,
+two failed only on counts/selectors changed by 12 new Security dependencies; both tests corrected.
+Focused run then 7/7 passed. Full rerun still required after newest class-description changes.
+Documentation export tool now generates 11 capability/core reference pages plus catalog under
+docs/hyper-v/support, with a hand-authored triage index and VitePress nav links. First docs production
+build passed (182 seconds; standard large-chunk advisory). More recent descriptions/regeneration
+need another build before final acceptance.
+
+Catalog now has explicit descriptions for all 48 current classes, and reviewed replacement articles
+for the two cluster group monitors (old inaccurate prose removed from compiled output). Class IDs
+are FileServices.HostParticipation and Storage.HostParticipation, not old prefixed names. Builder
+fails if a class lacks an explicit description. Support module generates exact numeric detector
+expressions from each local monitor type, policy/configuration, target/rollup details and clickable
+Microsoft MAML links. Link schema requires uri href attribute, not uri text; fixed and validated.
+Still review original articles for contradictions and enrich per-facet state-valued conditions;
+do not consider blanket generic profiles alone complete support coverage.
+
+Safe live execution of corrected cluster probe passed on A01/B02 using an in-memory MOM capture
+shim under native Windows PowerShell, not a deployed SCOM workflow. The PS7 fixture shim's Return
+method is reserved under PS5.1; renamed ONLY IN THE IN-MEMORY SHIM and replaced that Return call
+for capture. No live monitoring/DA mutations. At 14:41 UTC A returned 580 failure episodes from
+1152 raw events and B 73 from 290; named actual resource errors 0x3 and 0x3eb, owners and timestamps
+were present. Collection State Good means collection succeeded, not cluster workload health.
+Evidence: tmp/cluster-investigation/corrected-live-probe.json (two JSON documents). Afterwards,
+source was further enriched with named node/network/CSV states and worst counter paths; those newest
+additions still need tests/live rerun. No sealed artifact was produced or installed.
+
+User expanded the read-only critical cluster investigation into an explicit goal to fully build
+day-2 support for every object/monitor and verify complete 360-degree rollups. Active goal is
+recorded in the product goal tool; do not mark complete. Plan: DAY2_SUPPORT_PLAN.md.
+
+Live diagnosis: all four Hyper-V nodes Up; both CSV01 volumes Online. Site A has four failed
+libxfr01 VM Configuration resources, all with current event 1069 error 0x3 (path not found) and
+VmIds absent from both nodes' registered inventory. Suspected orphaned cluster roles; no deletion
+authorized or performed. TimsLinux is registered and Off. Site B Replica Broker Network Name is
+Failed and broker Offline; current event 1194/1069 reports AD computer-object creation failure
+(0x3eb). CNO exists; VCO absent from query. Read-only CNO token-group/OU ACL inspection finds
+GenericRead via Authenticated Users, no applicable CreateChild grant; machine-account quota is 10.
+This supports a directory provisioning/permissions issue but is not a complete effective-access
+or DC-replication audit. Nothing in AD/cluster/SCOM was changed or cleared.
+
+Source changes so far: VMM fabric discovery now contributes five enterprise relationships and
+declares them, using singleton endpoints without submitting empty class instances. Builder now
+includes Security among service/enterprise health aspects (SDN certificate health previously
+stopped at component branches). Cluster CSV probe groups failure episodes by named ResourceGroup
+XML instead of the first positional field (1069 uses ResourceName first); adds role/owner/resource/
+UTC/error evidence and accurately labels failure episodes, not migrations or confirmed failovers.
+New support/support-catalog.psd1 and tools/HyperVPrivateCloud.Support.psm1 add generated console
+knowledge to classes, unit/dependency monitors, rules and tasks while preserving existing knowledge.
+The builder imports this module. These are incomplete working changes, not release artifacts.
+
+Validation: initial two Day2Support tests passed (cluster episode correlation/evidence and VMM
+enterprise declarations); a Security test was added subsequently. Candidate 1.3.8.0 builds all
+13 XMLs to ignored tmp/day2-build. Schema validation is the next check, followed by coverage,
+broader regression and SDK tests. Existing knowledge contains inaccurate/outdated/dangerous generic
+responses (e.g. old failover event semantics and invalid Get-ClusterResource -Group syntax);
+review/correct these rather than merely appending new material. Public generated support docs,
+object-specific descriptions, detailed source-based state semantics review, full topology audit
+and safe live validation remain. Initial verbal count of 186 unit monitors was arithmetic error;
+actual inventory has 170 unit monitors and 48 classes. Correct this in subsequent status.
+
+Evidence: ignored tmp/cluster-investigation/ includes alerts, leaf/availability states, compact
+native inventory, recent event JSON/XML and CNO ACL. Branch main, existing prior validation/state
+edits preserved. No commit, push, sealing or import in this task. Current installed MPs stay 1.3.7.0.
+
+
+## September 6 ~10:05 ET — morning status and main-DA location
+
+Read-only check: all 13 MPs remain 1.3.7.0; 268 identical object/class identities, 38 VMs,
+38 runtimes, four pipelines, all 42 pipeline monitors Success. All seven relevant HealthServices
+available/Success. No HyperVPrivateCloud warning/error events since import on the six Hyper-V/
+VMM servers. SCOM01's log rolled over under Microsoft SQL workflow error volume: oldest retained
+record ~14:00 UTC, so its full overnight history cannot be verified from that log. JobFailureRate
+has recovered; cloud capacity and missing logical-network site remain non-Good. This is ~9.6 hours,
+not a full 24-hour soak. No deployment, task execution, or monitoring mutations in this check.
+
+User asks where the ONE entire-solution DA is. Confirmed actual singleton root Hyper-V Private
+Cloud (8a577019-ab6a-547d-8ca0-dda7bdae122c) and sealed view at Monitoring > Hyper-V Private Cloud
+> Overview > Solution Diagram. Root contains Hyper-V Fabric and Management Stack; Fabric contains
+hvc-sdr-a and hvc-sdr-b. IMPORTANT completeness gap: separate VMM fabric service is not attached
+to the enterprise root. VMM fabric discovery does not emit the enterprise containment links that
+core topology discovery emits. Management Stack currently links only the two cluster Management
+and Monitoring Pipeline components, not the VMM fabric Management component. Do not tell the
+user the whole-solution diagram requirement is fully satisfied. View defaults to four levels and
+groups above 25 children. Evidence: tmp/sealed-137/morning/ states, events, healthservices, and
+diagram-*.tsv relation exports. Source unchanged; local report/state files remain uncommitted.
+
+
+## September 6 — exact sealed 1.3.7.0 imported and runtime checks passed
+
+Pulled clean main to 8fbb62e from 573099c. Imported all 13 immutable published 1.3.7.0 MPs;
+SDK confirms versions, token, and sealed state. Hash/signature/dependency/schema/64-script parse
+checks pass; sealed VMM script bodies equal committed source. See SEALED_1.3.7_VALIDATION.md.
+
+Twenty-two positive task/discovery outputs verified, plus one expected invalid-input failure:
+four host diagnostics, four Cluster Summaries, four permanent topology discoveries, one VMM
+fabric discovery, seven installed VMM tasks (four read-only actions plus three repeats), and two
+exact sealed health-script captures. HostStatus/AgentVersions/LibraryStatus each pass on both
+VMM servers. Real agent versions and library status are populated; no alias/temporary compiler
+failures recur. Temporary health-capture MP removed; both VMM scratch-directory counts are zero.
+
+All 268 object/class identities preserved; all 42 host/VM pipeline monitors healthy. Customer
+overrides unchanged; 62/63 unsealed exports byte-identical, with only Dell OME schedule times
+advancing in the remaining pack. Real cloud-capacity, logical-network, and job-failure conditions
+remain visible. No guest agents, VM modifications, permission changes, or product-source edits.
+
+Evidence: tmp/sealed-137/. Import ended 04:27:42 UTC. Current branch main at 8fbb62e; validation
+report/state edits remain local. Exact sealed bounded runtime checks now PASS; a 24-hour soak
+and exhaustive optional/remediation coverage were not performed. Older untested statements
+below are historical publication checkpoints, superseded by this installed validation result.
+
+
 ## September 6 — 1.3.7.0 published, deployed, and byte-verified
 
 Pushed release-source commit `6ffdcffc972d8ffc048102ca92d34e50daabb55c` and exact asset

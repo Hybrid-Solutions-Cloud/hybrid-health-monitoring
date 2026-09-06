@@ -11,6 +11,11 @@ when something goes red. For what is monitored and why, see the
 [monitoring catalog](monitoring-catalog.md); for installation, the
 [prerequisites](prerequisites.md) and the [administration guide](management-pack-guide.md).
 
+For incident handling, start with [day-2 support and health tracing](support/index.md), then open
+the [object and monitor reference](support/catalog.md). The reference includes exact compiled
+state conditions, health dependencies, diagnostic steps, safe correction and Microsoft links.
+Candidate-source knowledge is not a claim that an older installed sealed pack already contains it.
+
 ## The console layout
 
 Everything lives under **Monitoring → Hyper-V Private Cloud**:
@@ -82,7 +87,9 @@ To customize for your organization, generate organization-prefixed packs (`<Org>
 
 ### Change a single threshold
 
-Every threshold is an overridable parameter — nothing is hard-coded in scripts:
+Use the monitor's exposed override parameters for supported tuning. The source-derived support
+reference lists compiled defaults; effective overrides in your management group take precedence.
+Not every implementation constant (for example, an event-correlation bucket) is an exposed threshold:
 
 1. Health Explorer on the object (or Authoring → Monitors), find the monitor.
 2. Overrides → **Override the Monitor** → *For all objects of class…* (or a group/specific object).
@@ -100,16 +107,19 @@ Two things worth knowing:
 
 ### Alert volume
 
-Alerts are generated at each monitor's configured state (most at Error, availability-critical ones
-noted in their knowledge). To silence a monitor for a subset of objects, override `Enabled` or the
-alert severity for a **group** rather than disabling the monitor outright. Event-based alert rules
+Alerts are generated at each monitor's configured state. A yellow monitor may therefore have no
+alert if `AlertOnState` is Error. Changing alert severity does not suppress an alert, and disabling
+a monitor removes its health evaluation. Review alert generation separately from health policy;
+where supported, use the alert-generation override for a scoped group in a customer-owned pack.
+Do not disable monitoring merely to make the distributed application green. Event-based alert rules
 (live migration failures, hypervisor-not-running) suppress on event number and VM, so a storm of
 identical failures produces one alert with a repeat count.
 
 ## Tasks: your first responders
 
-63 agent tasks ship with the packs. The naming is a contract: **"Show …"** tasks are read-only
-diagnostics — safe anytime; **"Remediation: …"** tasks change state and say exactly what they do.
+The [generated reference](support/catalog.md) lists the current tasks and their targets.
+**"Show …"** tasks are intended as diagnostics; review their scope, cost and output before running
+them. **"Remediation: …"** tasks change state and require owner approval and an impact/recovery plan.
 Select an object (host, VM, cluster, disk…) and the matching tasks appear in the Tasks pane.
 
 A field-tested triage flow:

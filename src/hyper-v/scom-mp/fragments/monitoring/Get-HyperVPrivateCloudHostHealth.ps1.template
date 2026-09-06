@@ -11,7 +11,7 @@ $statesSet = @{}
 function Write-HcsState {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
     $bag.AddValue($Name, $State)
-    $bag.AddValue($Name + 'Detail', $Detail)
+    $bag.AddValue($Name + 'Detail', ("Collector={0}; SampleUTC={1}; {2}" -f $env:COMPUTERNAME, [DateTime]::UtcNow.ToString('o'), $Detail))
     $statesSet[$Name] = $true
 }
 
@@ -105,7 +105,8 @@ try {
             $vms = @(Get-VM)
 
             $unexpected = @($vms | Where-Object { $_.AutomaticStartAction -eq 'Start' -and $_.State -notin @('Running', 'Starting', 'Stopping', 'Saving', 'Pausing', 'Resuming') })
-            Write-HcsState 'VirtualMachineState' $(if ($unexpected.Count) { 'Critical' } else { 'Good' }) ("Unexpected auto-start VMs: {0}; total: {1}" -f $unexpected.Count, $vms.Count)
+            $unexpectedDetail = @($unexpected | Select-Object -First 12 | ForEach-Object { "VM=$($_.Name); state=$($_.State)" }) -join ' | '
+            Write-HcsState 'VirtualMachineState' $(if ($unexpected.Count) { 'Critical' } else { 'Good' }) ("Unexpected auto-start VMs: {0}; total: {1}; first 12 affected: {2}" -f $unexpected.Count, $vms.Count, $unexpectedDetail)
 
             $checkpoints = @($vms | Get-VMSnapshot -ErrorAction SilentlyContinue)
             $now = [DateTime]::UtcNow

@@ -456,9 +456,9 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'implements core host and agent-hosted per-VM monitoring' {
         @($script:Monitoring.SelectNodes('//UnitMonitor')).Count | Should -Be 48
-        # 21 Service-level rollups (7 branches x Availability/Performance/Configuration) + 21 domain-specific component rollups + 7 physical fabric component rollups.
-        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 64
-        @($script:Monitoring.SelectNodes('//DependencyMonitor') | Where-Object { $_.ID -match '.Enterprise.' }).Count | Should -Be 15
+        # 28 service rollups (7 branches x 4 aspects), 20 enterprise rollups and 28 component rollups.
+        @($script:Monitoring.SelectNodes('//DependencyMonitor')).Count | Should -Be 76
+        @($script:Monitoring.SelectNodes('//DependencyMonitor') | Where-Object { $_.ID -match '.Enterprise.' }).Count | Should -Be 20
         # 24 performance collection + 8 Hyper-V event collection + 10 Hyper-V event alert rules.
         @($script:Monitoring.SelectNodes('//Rule')).Count | Should -Be 42
         @($script:Monitoring.SelectNodes("//Rule[Category='EventCollection']")).Count | Should -Be 8
@@ -472,8 +472,10 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
             $script:Monitoring.SelectSingleNode("//DisplayString[@ElementID='$($task.ID)']/Name") | Should -Not -BeNullOrEmpty -Because "task $($task.ID) needs a display name"
             if ($task.ID -ne 'HyperVPrivateCloud.DiagnosticSummary.Task') { $script:Monitoring.SelectSingleNode("//KnowledgeArticle[@ElementID='$($task.ID)']") | Should -Not -BeNullOrEmpty -Because "task $($task.ID) needs knowledge" }
         }
-        # Every unit monitor (47), every alert rule (10) and every catalogue task (31) carries operator knowledge.
-        @($script:Monitoring.SelectNodes('//KnowledgeArticle')).Count | Should -Be 89
+        # Every monitored/supportable element now carries knowledge, including all rollups and rules.
+        foreach ($element in $script:Monitoring.SelectNodes('//UnitMonitor | //DependencyMonitor | //Rule | //Task')) {
+            $script:Monitoring.SelectSingleNode("//KnowledgeArticle[@ElementID='$($element.ID)']") | Should -Not -BeNullOrEmpty -Because $element.ID
+        }
         # Legacy monitors superseded by the threshold-type depth monitors ship disabled so one condition never alerts twice.
         foreach ($legacy in @('HyperVPrivateCloud.Host.Cpu.Monitor', 'HyperVPrivateCloud.Host.Memory.Monitor', 'HyperVPrivateCloud.Host.Paging.Monitor', 'HyperVPrivateCloud.VmRuntime.MemoryPressure.Monitor')) {
             $script:Monitoring.SelectSingleNode("//UnitMonitor[@ID='$legacy']").Enabled | Should -Be 'false'
@@ -700,9 +702,9 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
     }
 
     It 'discovers complete LUN, attachment, transport, and VHDX correlation topology' {
-        @($script:StorageCapability.SelectNodes('//RelationshipType')).Count | Should -Be 13
+        @($script:StorageCapability.SelectNodes('//RelationshipType')).Count | Should -Be 14
         @($script:StorageCapability.SelectNodes('//DiscoveryClass')).Count | Should -Be 6
-        @($script:StorageCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 13
+        @($script:StorageCapability.SelectNodes('//DiscoveryRelationship')).Count | Should -Be 14
         foreach ($id in @('VirtualDiskMappingReferencesVirtualHardDisk', 'VirtualDiskMappingReferencesLogicalUnit', 'VirtualHardDiskUsesLogicalUnit')) {
             $script:StorageCapability.SelectSingleNode("//RelationshipType[contains(@ID,'$id')]") | Should -Not -BeNullOrEmpty
         }
@@ -710,11 +712,11 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'monitors SAN integration, attachment availability, MPIO, iSCSI, and Fibre Channel health' {
         @($script:StorageCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 25
-        @($script:StorageCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
+        @($script:StorageCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 10
         @($script:StorageCapability.SelectNodes('//Rule')).Count | Should -Be 7
         foreach ($rollup in $script:StorageCapability.SelectNodes('//DependencyMonitor')) {
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
-            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberMonitor | Should -Be ([string]$rollup.ParentMonitorID) -Because 'domain rollups preserve the member health aspect'
         }
     }
 
@@ -796,10 +798,10 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'adds only HCS integration coverage and authoritative Microsoft S2D health rollups' {
         @($script:S2DCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 16
-        @($script:S2DCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 7
+        @($script:S2DCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 9
         @($script:S2DCapability.SelectNodes('//Rule')).Count | Should -Be 5
         foreach ($rollup in $script:S2DCapability.SelectNodes('//DependencyMonitor')) {
-            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberMonitor | Should -Be ([string]$rollup.ParentMonitorID) -Because 'domain rollups preserve the member health aspect'
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
             $rollup.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
         }
@@ -846,11 +848,11 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'uses no Pure credential or REST control path and preserves vendor leaf-alert authority' {
         @($script:PureCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 1
-        @($script:PureCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
+        @($script:PureCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 5
         @($script:PureCapability.SelectNodes('//Rule')).Count | Should -Be 0
         $script:PureCapability.OuterXml | Should -Not -Match 'FlashArrayAdminAccount|RunAs|Invoke-RestMethod|New-Pfa|Set-Pfa|Remove-Pfa'
         foreach ($rollup in $script:PureCapability.SelectNodes('//DependencyMonitor')) {
-            [string]$rollup.MemberMonitor | Should -Be 'Health!System.Health.AvailabilityState'
+            [string]$rollup.MemberMonitor | Should -Be ([string]$rollup.ParentMonitorID) -Because 'domain rollups preserve the member health aspect'
             [string]$rollup.MemberUnAvailable | Should -Be 'Success'
             $rollup.SelectSingleNode('AlertSettings') | Should -BeNullOrEmpty
         }
@@ -916,7 +918,7 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
         foreach ($classId in @('SmbShare', 'SmbClientPath', 'SmbVhdxMapping')) {
             $script:FileServicesCapability.SelectSingleNode("//ClassType[@ID='HyperVPrivateCloud.Capability.FileServices.$classId']") | Should -Not -BeNullOrEmpty
         }
-        @($script:FileServicesCapability.SelectNodes('//RelationshipType')).Count | Should -Be 7
+        @($script:FileServicesCapability.SelectNodes('//RelationshipType')).Count | Should -Be 8
         $script:FileServicesCapability.SelectSingleNode("//RelationshipType[@ID='HyperVPrivateCloud.Capability.FileServices.SmbShareReferencesMicrosoftSmbService']") | Should -Not -BeNullOrEmpty
         $script:FileServicesCapability.SelectSingleNode("//RelationshipType[@ID='HyperVPrivateCloud.Capability.FileServices.SmbVhdxMappingReferencesVirtualMachine']") | Should -Not -BeNullOrEmpty
     }
@@ -941,7 +943,7 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'monitors required SMB connections, continuous availability, and optional RDMA without duplicate Microsoft alerts' {
         @($script:FileServicesCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 12
-        @($script:FileServicesCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 3
+        @($script:FileServicesCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 7
         @($script:FileServicesCapability.SelectNodes('//Rule')).Count | Should -Be 9
         $monitor = $script:FileServicesCapability.SelectSingleNode("//UnitMonitor[@ID='HyperVPrivateCloud.Capability.FileServices.Health.Monitor']")
         $monitor.Configuration.RequireRdma | Should -Be 'false'
@@ -1035,7 +1037,7 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'implements explicit authority, convergence, adapter, and global health without remediation' {
         @($script:NetworkAtcCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 16
-        @($script:NetworkAtcCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 4
+        @($script:NetworkAtcCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 6
         @($script:NetworkAtcCapability.SelectNodes('//Rule')).Count | Should -Be 0
         $capability = $script:NetworkAtcCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'CapabilityHealth')]")
         $capability.Configuration.RequireNetworkATC | Should -Be 'false'
@@ -1207,7 +1209,7 @@ Describe 'Hyper-V Private Cloud Monitoring core build' {
 
     It 'monitors VMM query coverage and recent failed jobs without duplicating Microsoft leaf alerts' {
         @($script:VmmCapability.SelectNodes('//UnitMonitor')).Count | Should -Be 13
-        @($script:VmmCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 10
+        @($script:VmmCapability.SelectNodes('//DependencyMonitor')).Count | Should -Be 11
         @($script:VmmCapability.SelectNodes('//Rule')).Count | Should -Be 6
         $failedJobs = $script:VmmCapability.SelectSingleNode("//UnitMonitor[contains(@ID,'FailedJobs.Monitor')]")
         $failedJobs.Configuration.JobLookbackHours | Should -Be '24'

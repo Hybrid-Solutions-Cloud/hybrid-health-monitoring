@@ -71,6 +71,17 @@ function Get-HcsFabricServiceInstance {
     $components.Storage = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.StorageComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsStorageComponent']$" -BoundaryId $boundaryId -DisplayName "Storage - $VmmServer"
     $components.Network = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.NetworkComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsNetworkComponent']$" -BoundaryId $boundaryId -DisplayName "Networking - $VmmServer"
     $components.Monitoring = Complete-HcsFabricComponent -Service $service -Component ($script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.MonitoringComponent']$")) -RelationshipType "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ServiceContainsMonitoringComponent']$" -BoundaryId $boundaryId -DisplayName "Monitoring - $VmmServer"
+    # The VMM fabric is a service boundary too. Contribute the same enterprise edges as host
+    # discovery so its cloud quotas, logical networks and management health reach the main DA.
+    # Singleton endpoints already exist in SCOM: never submit empty singleton class instances.
+    $solution = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.Solution']$")
+    $fabric = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.Fabric']$")
+    $managementStack = $script:DiscoveryData.CreateClassInstance("$MPElement[Name='HCSV2Library!HyperVPrivateCloud.Enterprise.ManagementStack']$")
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.SolutionContainsFabric']$" $solution $fabric
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.SolutionContainsManagementStack']$" $solution $managementStack
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.FabricContainsService']$" $fabric $service
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementStackContainsManagementComponent']$" $managementStack $components.Management
+    Add-HcsRelationship "$MPElement[Name='HCSV2Library!HyperVPrivateCloud.ManagementStackContainsMonitoringComponent']$" $managementStack $components.Monitoring
     return $components
 }
 

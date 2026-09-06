@@ -50,6 +50,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+Import-Module (Join-Path $PSScriptRoot 'HyperVPrivateCloud.Support.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'HyperVPrivateCloud.HealthModel.psm1') -Force
+
 function ConvertTo-HcsDisplayName {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Value)
@@ -362,10 +365,11 @@ function Get-HcsRollupContent {
     $aspects = @(
         @('Availability', 'AvailabilityState', 'AvailabilityHealth'),
         @('Performance', 'PerformanceState', 'PerformanceHealth'),
-        @('Configuration', 'ConfigurationState', 'ConfigurationHealth')
+        @('Configuration', 'ConfigurationState', 'ConfigurationHealth'),
+        @('Security', 'SecurityState', 'SecurityHealth')
     )
 
-    # Service level: every branch rolls its Availability, Performance and Configuration aggregate into the DA.
+    # Service level: preserve all four SCOM health aspects, including SDN certificate Security.
     # A branch with no members for an aspect simply stays Not Monitored for that aspect.
     $serviceBranches = @(
         @('Management', 'ManagementComponent'), @('Compute', 'ComputeComponent'), @('VirtualMachines', 'VirtualMachineComponent'), @('Availability', 'AvailabilityComponent'), @('Storage', 'StorageComponent'), @('Network', 'NetworkComponent'), @('Monitoring', 'MonitoringComponent')
@@ -1025,6 +1029,8 @@ foreach ($artifact in @($manifest.artifacts | Where-Object implementationStatus 
     }
     $content = Add-HcsManagementPackDisplayString -Content $content -ManagementPackId $artifact.id -ProductName $manifest.productName
     $content = Complete-HcsDisplayStrings -Content $content
+    $content = Add-HcsReviewedHealthRoutes -Content $content
+    $content = Add-HcsSupportKnowledge -Content $content -CatalogPath (Join-Path $sourceRoot 'support/support-catalog.psd1')
     if ($content -match '\{\{[A-Z0-9_]+\}\}') {
         throw "Unresolved build token in $sourcePath"
     }

@@ -244,6 +244,7 @@ try {
         Add-HcsProperty $participation "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.HostParticipation']/FibreChannelPortCount$" $fcPortCount
         Add-HcsProperty $participation "$MPElement[Name='System!System.Entity']/DisplayName$" "SAN storage participation on $ComputerName"
         $script:DiscoveryData.AddInstance($participation)
+        Add-HcsRelationship "$MPElement[Name='HyperVPrivateCloud.Capability.Storage.ComponentContainsHostParticipation']$" $storageComponent $participation
     }
     $api.Return($script:DiscoveryData)
 }

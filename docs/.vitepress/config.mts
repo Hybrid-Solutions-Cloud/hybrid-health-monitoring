@@ -47,6 +47,8 @@ const hyperVSidebar = [
     items: [
       { text: 'Administration guide', link: '/hyper-v/management-pack-guide' },
       { text: 'Operations & troubleshooting hub', link: '/hyper-v/operations-guide' },
+      { text: 'Day-2 support and health tracing', link: '/hyper-v/support/' },
+      { text: 'Object and monitor reference', link: '/hyper-v/support/catalog' },
       { text: 'Monitoring catalog policy', link: '/hyper-v/monitoring-catalog' },
       { text: 'Management pack overview', link: '/hyper-v/scom-mp' },
     ],

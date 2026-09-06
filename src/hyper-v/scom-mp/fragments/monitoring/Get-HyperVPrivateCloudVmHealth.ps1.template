@@ -9,7 +9,7 @@ $api = New-Object -ComObject 'MOM.ScriptAPI'
 function Write-HcsState {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$State, [Parameter(Mandatory)][string]$Detail)
     $bag.AddValue($Name, $State)
-    $bag.AddValue($Name + 'Detail', $Detail)
+    $bag.AddValue($Name + 'Detail', ("VMId={0}; Collector={1}; SampleUTC={2}; {3}" -f $VMId, $env:COMPUTERNAME, [DateTime]::UtcNow.ToString('o'), $Detail))
     $statesSet[$Name] = $true
 }
 
@@ -124,7 +124,8 @@ try {
             $heartbeatState = if ($null -eq $heartbeat) { 'Warning' } elseif ([string]$heartbeat.PrimaryStatusDescription -match 'OK') { 'Good' } else { 'Critical' }
             Write-HcsState 'HeartbeatState' $heartbeatState $(if ($heartbeat) { [string]$heartbeat.PrimaryStatusDescription } else { 'Heartbeat integration service is unavailable.' })
             $unhealthyServices = @($services | Where-Object { [string]$_.PrimaryStatusDescription -notmatch 'OK' })
-            Write-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}" -f $services.Count, $unhealthyServices.Count)
+            $serviceDetail = @($unhealthyServices | Select-Object -First 12 | ForEach-Object { "$($_.Name)=$($_.PrimaryStatusDescription)" }) -join ' | '
+            Write-HcsState 'IntegrationServicesState' $(if ($unhealthyServices.Count) { 'Warning' } else { 'Good' }) ("Enabled services: {0}; unhealthy: {1}; first 12 affected: {2}" -f $services.Count, $unhealthyServices.Count, $serviceDetail)
         }
         else {
             Write-HcsState 'HeartbeatState' 'NotApplicable' 'Heartbeat is not applicable while the VM is not running.'
